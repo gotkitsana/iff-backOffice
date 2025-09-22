@@ -53,20 +53,21 @@ onUnmounted(() => {
   <!-- Mobile Overlay -->
   <div
     v-if="isMobile && isOpen"
-    class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+    class="fixed inset-0 bg-black/30 z-40 lg:hidden"
     @click="$emit('close')"
   ></div>
 
   <!-- Sidebar -->
   <aside
     :class="[
-      'fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:shadow-none border-r border-gray-200 transform transition-transform duration-300 ease-in-out',
-      isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+      'fixed inset-y-0 left-0 z-50 w-64 bg-white lg:bg-transparent transform transition-transform duration-300 ease-in-out sidebar-slide',
+      isOpen ? 'translate-x-0' : '-translate-x-full',
+      'lg:z-40',
     ]"
   >
     <div class="flex flex-col h-full">
       <!-- Logo Section -->
-      <div class="flex items-center space-x-3 p-6 border-b border-gray-200">
+      <div class="flex items-center space-x-3 p-4">
         <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-fish text-white text-sm"></i>
         </div>
@@ -74,10 +75,10 @@ onUnmounted(() => {
       </div>
 
       <!-- Navigation Menu -->
-      <nav class="flex-1 p-4 space-y-2 overflow-y-auto sidebar-scroll">
+      <nav class="flex-1 p-2 space-y-1.5 overflow-y-auto sidebar-scroll">
         <!-- ระบบหลัก -->
-        <div class="space-y-1">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        <div>
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
             ระบบหลัก
           </h3>
 
@@ -116,7 +117,9 @@ onUnmounted(() => {
 
         <!-- การตลาด -->
         <div class="space-y-1 mt-6">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">การตลาด</h3>
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
+            การตลาด
+          </h3>
 
           <!-- การตลาด (Parent) -->
           <div class="space-y-1">
@@ -151,7 +154,7 @@ onUnmounted(() => {
 
         <!-- ระบบจัดการ -->
         <div class="space-y-1 mt-6">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
             ระบบจัดการ
           </h3>
 

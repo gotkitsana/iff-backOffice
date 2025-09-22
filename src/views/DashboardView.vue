@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Dashboard ระบบประมูลปลาคราฟ</h1>
         <p class="text-gray-600 mt-1">ภาพรวมการดำเนินงานของระบบประมูลปลาคราฟ</p>
