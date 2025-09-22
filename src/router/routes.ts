@@ -1,4 +1,6 @@
 import Dashboard from '@/views/DashboardView.vue'
+import Customers from '@/views/CustomersView.vue'
+import Auction from '@/views/AuctionView.vue'
 import Login from '@/views/auth/LoginView.vue'
 import Unauthorized from '@/views/UnauthorizedView.vue'
 import NotFound from '@/views/NotFoundView.vue'
@@ -26,19 +28,38 @@ export default [
   {
     path: '/',
     component: DashboardLayout,
-    meta: { requiresAuth: true },
+    // meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'dashboard',
         component: Dashboard,
         meta: {
-          title: 'ภาพรวม',
+          title: 'หน้าหลัก',
           roles: ['user'],
           breadcrumb: [{ label: 'หน้าหลัก' }],
         },
       },
+      {
+        path: '/customers',
+        name: 'customers',
+        component: Customers,
+        meta: {
+          title: 'ลูกค้า',
+          roles: ['user'],
+          breadcrumb: [{ label: 'ลูกค้า' }],
+        },
+      },
+      {
+        path: '/auction',
+        name: 'auction',
+        component: Auction,
+        meta: {
+          title: 'Auction',
+          roles: ['user'],
+          breadcrumb: [{ label: 'การตลาด' }, { label: 'Auction' }],
+        },
+      },
     ],
   },
-
 ]

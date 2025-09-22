@@ -18,6 +18,7 @@ export function setupGuards(router: Router) {
       return next({ name: 'dashboard' })
     }
 
+    console.log(requiredAuth, !token)
     // 🔒 หน้าต้อง login แต่ไม่ได้ login
     if (requiredAuth && !token) {
       return next({ name: 'login', query: { redirect: to.fullPath } })
