@@ -212,3 +212,74 @@ body {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease,
     box-shadow 0.2s ease, transform 0.2s ease;
 }
+
+/* Login Page Styles */
+.login-page {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.login-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-input {
+  transition: all 0.3s ease;
+}
+
+.login-input:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.login-button {
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #667eea 0%, #925dc7 100%);
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Floating animation for logo */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.logo-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Background pattern animation */
+@keyframes move {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+
+  33% {
+    transform: translateX(30px) translateY(-30px);
+  }
+
+  66% {
+    transform: translateX(-20px) translateY(20px);
+  }
+
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.bg-pattern {
+  animation: move 20s ease-in-out infinite;
+}

@@ -28,7 +28,7 @@ export default [
   {
     path: '/',
     component: DashboardLayout,
-    // meta: { requiresAuth: true },
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -36,7 +36,7 @@ export default [
         component: Dashboard,
         meta: {
           title: 'หน้าหลัก',
-          roles: ['user'],
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'หน้าหลัก' }],
         },
       },

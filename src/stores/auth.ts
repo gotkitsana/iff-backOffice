@@ -6,37 +6,36 @@ import { toast } from 'vue3-toastify'
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRoute } from 'vue-router'
-// import { usePermissionStore } from './permission'
+import { usePermissionStore } from './permission'
+import type { Role } from './permission'
 
 export const useAuthStore = defineStore(
   'auth',
   () => {
     const route = useRoute()
-    // const permissionStore = usePermissionStore()
+    const permissionStore = usePermissionStore()
 
-    const user = ref<any | undefined>(undefined)
+    const user = ref<IProfile | undefined>(undefined)
     const requiredAuth = computed(() => route.meta.requiresAuth === true)
 
     const isRole = computed(
-      () => ({
-        label: 'ผู้ใช้งาน',
-        value: 3,
-        key: 'user',
-      }),
-      // permissionStore.admin_role.find((item) => item.value === user.value?.role) || {
-      //   label: 'ผู้ใช้งาน',
-      //   value: 3,
-      //   key: 'user',
-      // },
+      () =>
+        permissionStore.admin_role.find(
+          (item: { label: string; value: number; key: Role }) => item.value === user.value?.role,
+        ) || {
+          label: 'ผู้ใช้งาน',
+          value: 3,
+          key: 'user',
+        },
     )
 
     const fetchProfile = async () => {
-      const { data } = await api.get('/admin/profile')
+      const { data } = await api.get('/profile')
       user.value = data.data
       return data.data
     }
 
-    useQuery<any>({
+    useQuery<IProfile>({
       queryKey: ['get_profile'],
       queryFn: fetchProfile,
       enabled: requiredAuth,
@@ -49,7 +48,7 @@ export const useAuthStore = defineStore(
       }
     }
 
-    async function login(payload: any) {
+    async function login(payload: ILoginPayload) {
       try {
         const { data } = await api.post('/auth/login', payload)
         if (data.data) {
@@ -62,7 +61,7 @@ export const useAuthStore = defineStore(
             sameSite: 'strict',
           })
           // อัพเดท token ใน axios
-          updateAuthToken()
+          updateAuthToken(data.data.accessToken)
         } else {
           toast(data?.error?.msg || 'เกิดข้อผิดลาด', { type: 'error' })
         }
@@ -100,3 +99,24 @@ export const useAuthStore = defineStore(
     },
   },
 )
+
+
+export interface ILoginPayload {
+  username: string
+  password: string
+}
+
+
+export interface IProfile {
+  _id: string
+  username: string
+  name: string
+  password: string
+  email: string
+  image: string
+  role: number
+  block: boolean
+  cat: number
+  uat: number
+  __v: number
+}

@@ -17,6 +17,6 @@ router.beforeEach((to) => {
   document.title = title ? `${defaultTitle} : ${title}` : defaultTitle
 })
 
-// setupGuards(router)
+setupGuards(router)
 
 export default router

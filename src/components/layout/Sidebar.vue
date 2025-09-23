@@ -68,8 +68,8 @@ onUnmounted(() => {
     <div class="flex flex-col h-full">
       <!-- Logo Section -->
       <div class="flex items-center space-x-3 p-4">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <i class="pi pi-fish text-white text-sm"></i>
+        <div class="w-8 h-8 p-1 bg-blue-400 rounded-lg flex items-center justify-center">
+          <img src="@/assets/images/icon/icon.png" alt="logo" class="w-full h-full object-cover" />
         </div>
         <span class="font-bold text-gray-800">KoiFish ERP</span>
       </div>
