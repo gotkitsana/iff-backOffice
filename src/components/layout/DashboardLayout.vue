@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './Header.vue'
 import AppSidebar from './Sidebar.vue'
 
@@ -26,12 +26,12 @@ const checkMobile = () => {
 }
 
 // คำนวณ margin สำหรับ content เมื่อ sidebar ปิด
-const contentMargin = computed(() => {
-  if (isMobile.value) {
-    return 'ml-0'
-  }
-  return isSidebarOpen.value ? 'ml-0' : 'ml-0'
-})
+// const contentMargin = computed(() => {
+//   if (isMobile.value) {
+//     return 'ml-0'
+//   }
+//   return isSidebarOpen.value ? 'ml-0' : 'ml-0'
+// })
 
 onMounted(() => {
   checkMobile()
