@@ -57,7 +57,7 @@ onUnmounted(() => {
         !isMobile && isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0',
       ]"
     >
-      <div class="px-4 md:px-6 py-2">
+      <div class="p-4 lg:px-6">
         <router-view />
       </div>
     </main>

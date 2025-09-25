@@ -284,27 +284,20 @@ const handleDeleteCustomer = async () => {
 
 <template>
   <div class="space-y-4">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div>
-        <h1 class="text-2xl font-semibold! text-gray-900">จัดการลูกค้า</h1>
-        <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้าสำหรับประมูลปลาคราฟ</p>
-      </div>
-      <Button
-        label="เพิ่มลูกค้าใหม่"
-        icon="pi pi-plus"
-        size="small"
-        @click="openAddModal"
-        class="bg-blue-600 hover:bg-blue-700"
-      />
-    </div>
-
-    <!-- Customer Table -->
-    <Card>
+    <Card class="rounded-2xl bg-white/80">
       <template #header>
-        <div class="p-6 pb-0">
-          <h3 class="text-lg font-semibold! text-gray-900">รายชื่อลูกค้า</h3>
-          <p class="text-sm text-gray-600">ข้อมูลลูกค้าทั้งหมดในระบบ</p>
+        <div class="flex items-center justify-between flex-wrap gap-2 p-5 pb-0">
+          <div>
+            <h1 class="text-lg font-semibold! text-gray-900">จัดการลูกค้า</h1>
+            <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้าสำหรับประมูลปลาคราฟ</p>
+          </div>
+          <Button
+            label="เพิ่มสมาชิก"
+            icon="pi pi-plus"
+            size="small"
+            @click="openAddModal"
+            class="bg-blue-600 hover:bg-blue-700"
+          />
         </div>
       </template>
       <template #content>
@@ -313,15 +306,14 @@ const handleDeleteCustomer = async () => {
             field="username"
             header="ชื่อผู้ใช้"
             sortable
-
-            :pt="{ columnTitle: 'font-semibold! min-w-[7rem]' }"
+            :pt="{ columnTitle: 'font-semibold! ', columnHeaderContent: 'min-w-[7rem]' }"
           ></Column>
           <Column
             field="name"
             header="ชื่อ-นามสกุล"
             sortable
             p-ripple
-            :pt="{ columnTitle: 'font-semibold! min-w-[10rem]' }"
+            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'min-w-[10rem]' }"
           ></Column>
           <Column
             field="email"
@@ -335,7 +327,11 @@ const handleDeleteCustomer = async () => {
             header="สถานะประมูล"
             sortable
             p-ripple
-            :pt="{ columnTitle: 'font-semibold! min-w-[6rem]', columnHeaderContent:'justify-center', bodyCell: 'text-center' }"
+            :pt="{
+              columnTitle: 'font-semibold! ',
+              columnHeaderContent: 'justify-center min-w-[7rem]',
+              bodyCell: 'text-center',
+            }"
           >
             <template #body="slotProps">
               <Tag
@@ -344,12 +340,20 @@ const handleDeleteCustomer = async () => {
               />
             </template>
           </Column>
-          <Column field="cat" header="วันที่สร้าง" sortable :pt="{ columnTitle: 'font-semibold! min-w-[7rem]' }">
+          <Column
+            field="cat"
+            header="วันที่สร้าง"
+            sortable
+            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'min-w-[9rem]' }"
+          >
             <template #body="slotProps">
               <span>{{ formatDate(slotProps.data.cat) }}</span>
             </template>
           </Column>
-          <Column header="จัดการ" :pt="{ columnTitle: 'font-semibold!', columnHeaderContent:'justify-end' }">
+          <Column
+            header="จัดการ"
+            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'justify-end' }"
+          >
             <template #body="slotProps">
               <div class="flex space-x-2 justify-end">
                 <Button
@@ -390,28 +394,32 @@ const handleDeleteCustomer = async () => {
       header="เพิ่มลูกค้าใหม่"
       :style="{ width: '50rem' }"
       :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+      :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
     >
-      <form @submit.prevent="handleAddCustomer" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
+      <form @submit.prevent="handleAddCustomer" class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="space-y-1">
             <label class="block text-sm font-medium! text-gray-700">ชื่อผู้ใช้ *</label>
             <InputText
               v-model="newCustomer.username"
               placeholder="กรุณาใส่ชื่อผู้ใช้"
               :invalid="!newCustomer.username && isSubmitting"
               fluid
+              size="small"
             />
             <small v-if="!newCustomer.username && isSubmitting" class="text-red-500"
               >กรุณาระบุชื่อผู้ใช้</small
             >
           </div>
-          <div class="space-y-2">
+
+          <div class="space-y-1">
             <label class="block text-sm font-medium! text-gray-700">ชื่อแสดง *</label>
             <InputText
               v-model="newCustomer.displayName"
               placeholder="กรุณาใส่ชื่อแสดง"
               :invalid="!newCustomer.displayName && isSubmitting"
               fluid
+              size="small"
             />
             <small v-if="!newCustomer.displayName && isSubmitting" class="text-red-500"
               >กรุณาระบุชื่อแสดง</small
@@ -419,20 +427,21 @@ const handleDeleteCustomer = async () => {
           </div>
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-1">
           <label class="block text-sm font-medium! text-gray-700">ชื่อ-นามสกุล *</label>
           <InputText
             v-model="newCustomer.name"
             placeholder="กรุณาใส่ชื่อ-นามสกุล"
             :invalid="!newCustomer.name && isSubmitting"
             fluid
+            size="small"
           />
           <small v-if="!newCustomer.name && isSubmitting" class="text-red-500"
             >กรุณาระบุชื่อ-นามสกุล</small
           >
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-1">
           <label class="block text-sm font-medium! text-gray-700">รหัสผ่าน *</label>
           <Password
             v-model="newCustomer.password"
@@ -441,32 +450,34 @@ const handleDeleteCustomer = async () => {
             :invalid="!newCustomer.password && isSubmitting"
             toggleMask
             fluid
+            size="small"
           />
           <small v-if="!newCustomer.password && isSubmitting" class="text-red-500"
             >กรุณาระบุรหัสผ่าน</small
           >
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-1">
           <label class="block text-sm font-medium! text-gray-700">อีเมล</label>
-          <InputText v-model="newCustomer.email" placeholder="กรุณาใส่อีเมล" type="email" fluid />
+          <InputText v-model="newCustomer.email" placeholder="กรุณาใส่อีเมล" type="email" fluid size="small" />
         </div>
 
         <div class="flex items-center space-x-2">
-          <Checkbox v-model="newCustomer.bidder" :binary="true" inputId="bidder" />
+          <Checkbox v-model="newCustomer.bidder" :binary="true" inputId="bidder" size="small" />
           <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
         </div>
       </form>
 
       <template #footer>
         <div class="flex justify-end space-x-2">
-          <Button label="ยกเลิก" icon="pi pi-times" @click="closeAddModal" text />
+          <Button label="ยกเลิก" icon="pi pi-times" severity="danger" @click="closeAddModal"  size="small" />
           <Button
-            label="เพิ่มลูกค้า"
+            label="เพิ่มสมาชิก"
             icon="pi pi-check"
             @click="handleAddCustomer"
             :loading="isSubmitting"
-            class="bg-blue-600 hover:bg-blue-700"
+            severity="success"
+            size="small"
           />
         </div>
       </template>
