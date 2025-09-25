@@ -54,7 +54,7 @@ const { isPending, mutate } = useMutation({
     class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4"
   >
     <!-- Login Card -->
-    <div class="w-full max-w-lg">
+    <div class="w-full max-w-md">
       <!-- Logo Section -->
       <div class="text-center mb-8">
         <div

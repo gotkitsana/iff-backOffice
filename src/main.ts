@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 import PrimeVue from 'primevue/config'
+import Ripple from 'primevue/ripple'
 
 import 'primeicons/primeicons.css'
 import 'vue3-toastify/dist/index.css'
@@ -54,5 +55,6 @@ app.use(Vue3Toastify, {
   dangerouslyHTMLString: true,
 } as ToastContainerOptions)
 app.directive('tooltip', Tooltip)
+app.directive('ripple', Ripple)
 
 app.mount('#app')
