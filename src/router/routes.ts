@@ -1,5 +1,5 @@
 import Dashboard from '@/views/DashboardView.vue'
-import Customers from '@/views/customers/CustomersView.vue'
+import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
 import Auction from '@/views/Auction/AuctionView.vue'
 import Login from '@/views/auth/LoginView.vue'
@@ -11,6 +11,7 @@ import Production from '@/views/Production/ProductionView.vue'
 import Product from '@/views/Product/ProductView.vue'
 import Marketing from '@/views/Marketing/MarketingView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
+import Sales from '@/views/Sales/SalesView.vue'
 
 export default [
   {
@@ -41,19 +42,19 @@ export default [
         name: 'dashboard',
         component: Dashboard,
         meta: {
-          title: 'หน้าหลัก',
+          title: 'ภาพรวม',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'หน้าหลัก' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ภาพรวม' }],
         },
       },
       {
-        path: '/customers',
-        name: 'customers',
-        component: Customers,
+        path: '/sales',
+        name: 'sales',
+        component: Sales,
         meta: {
-          title: 'ลูกค้า',
+          title: 'ขาย',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ลูกค้า' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ขาย' }],
         },
       },
       {
@@ -97,6 +98,7 @@ export default [
           breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'การตลาด' }],
         },
       },
+
       {
         path: '/auction',
         name: 'auction',
@@ -107,14 +109,15 @@ export default [
           breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'Auction' }],
         },
       },
+
       {
         path: '/product',
         name: 'product',
         component: Product,
         meta: {
-          title: 'สินค้า',
+          title: 'จัดการสินค้า',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'สินค้า' }],
+          breadcrumb: [{ label: 'ระบบ POS' }, { label: 'จัดการสินค้า' }],
         },
       },
 
@@ -123,9 +126,19 @@ export default [
         name: 'admin-settings',
         component: AdminSettings,
         meta: {
-          title: 'ตั้งค่า Admin',
+          title: 'จัดการ Admin',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบจัดการ Admin' }, { label: 'ตั้งค่า Admin' }],
+          breadcrumb: [{ label: 'ระบบ Admin' }, { label: 'จัดการ Admin' }],
+        },
+      },
+      {
+        path: '/members',
+        name: 'members',
+        component: Members,
+        meta: {
+          title: 'จัดการสมาชิก',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบสมาชิก' }, { label: 'จัดการสมาชิก' }],
         },
       },
     ],

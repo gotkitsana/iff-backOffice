@@ -40,13 +40,13 @@ const menuSections = [
     items: [
       {
         icon: 'pi pi-home',
-        label: 'หน้าหลัก',
+        label: 'ภาพรวม',
         route: 'dashboard',
       },
       {
-        icon: 'pi pi-users',
-        label: 'ลูกค้า',
-        route: 'customers',
+        icon: 'pi pi-cart-plus',
+        label: 'ขาย',
+        route: 'sales',
       },
       {
         icon: 'pi pi-calculator',
@@ -69,32 +69,43 @@ const menuSections = [
     title: 'ระบบการตลาด',
     items: [
       {
-        icon: 'pi pi-chart-line',
-        label: 'การตลาด',
-        route: 'marketing',
-      },
-      {
         icon: 'pi pi-trophy',
         label: 'Auction',
         route: 'auction',
       },
+    ],
+  },
+  {
+    title: 'ระบบสมาชิก',
+    items: [
       {
-        icon: 'pi pi-box',
-        label: 'สินค้า',
-        route: 'product',
+        icon: 'pi pi-users',
+        label: 'จัดการสมาชิก',
+        route: 'members',
       },
     ],
   },
   {
-    title: 'ระบบจัดการ Admin',
+    title: 'ระบบ Admin',
     items: [
       {
         icon: 'pi pi-cog',
-        label: 'ตั้งค่า Admin',
+        label: 'จัดการ Admin',
         route: 'admin-settings',
       },
     ],
   },
+  {
+    title: 'ระบบ POS',
+    items: [
+      {
+        icon: 'pi pi-box',
+        label: 'จัดการสินค้า',
+        route: 'product',
+      },
+    ],
+  },
+
 ]
 
 onMounted(() => {
