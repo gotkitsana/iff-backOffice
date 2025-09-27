@@ -10,135 +10,39 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import { toast } from 'vue3-toastify'
-import type Header from '@/components/layout/Header.vue'
+import formatDate from '@/utils/formatDate'
+import type {
+  CreateCustomerPayload,
+  Customer,
+  EditCustomerPayload,
+} from '@/stores/customer/customer'
+import ModalAddMember from '@/components/member/ModalAddMember.vue'
 
 // Types
-interface Customer {
-  _id: string
-  username: string
-  displayName: string
-  name: string
-  password: string
-  email: string
-  bidder: boolean
-  cat: number
-  uat: number
-  __v: number
-}
-
-interface NewCustomerPayload {
-  username: string
-  displayName: string
-  name: string
-  password: string
-  email: string
-  bidder: boolean
-}
 
 // Sample data for customers
-const customers = ref<Customer[]>([
-  {
-    _id: '68a43dd53d3ae30e0e7d04db',
-    username: 'iqtech',
-    displayName: 'displayNam',
-    name: 'name test',
-    password: 'azsx1234',
-    email: 'iqtech.alpr@gmail.com',
-    bidder: false,
-    cat: 1755594197865,
-    uat: 1755594197865,
-    __v: 0,
-  },
-  {
-    _id: '68a43dd53d3ae30e0e7d04dc',
-    username: 'test_system',
-    displayName: 'test_system',
-    name: 'test system',
-    password: 'azsx1234',
-    email: 'test@example.com',
-    bidder: true,
-    cat: 1755594197865,
-    uat: 1755594197865,
-    __v: 0,
-  },
-  {
-    _id: '68a43dd53d3ae30e0e7d04dd',
-    username: 'somchai',
-    displayName: 'สมชาย ใจดี',
-    name: 'คุณสมชาย ใจดี',
-    password: 'password123',
-    email: 'somchai@email.com',
-    bidder: true,
-    cat: 1755594197865,
-    uat: 1755594197865,
-    __v: 0,
-  },
-])
+const customers = ref<Customer[]>([])
 
 // Modal states
-const showAddModal = ref(false)
+
 const showViewModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const isSubmitting = ref(false)
 const selectedCustomer = ref<Customer | null>(null)
 
-// Form data
-const newCustomer = ref<NewCustomerPayload>({
-  username: '',
+const editCustomer = ref<EditCustomerPayload>({
+  _id: '',
   displayName: '',
   name: '',
-  password: '',
   email: '',
+  phone: '',
   bidder: false,
 })
 
-const editCustomer = ref<NewCustomerPayload>({
-  username: '',
-  displayName: '',
-  name: '',
-  password: '',
-  email: '',
-  bidder: false,
-})
-
-// Computed properties
-const newCustomersCount = computed(() => {
-  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-  return customers.value.filter((customer) => customer.cat > oneWeekAgo).length
-})
-
-const bidderCustomersCount = computed(() => {
-  return customers.value.filter((customer) => customer.bidder).length
-})
-
-// Utility functions
-const formatDate = (timestamp: number) => {
-  return new Date(timestamp).toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-// Modal functions
+const showAddModal = ref(false)
 const openAddModal = () => {
-  newCustomer.value = {
-    username: '',
-    displayName: '',
-    name: '',
-    password: '',
-    email: '',
-    bidder: false,
-  }
   showAddModal.value = true
-}
-
-const closeAddModal = () => {
-  showAddModal.value = false
-  isSubmitting.value = false
 }
 
 const openViewModal = (customer: Customer) => {
@@ -154,11 +58,11 @@ const closeViewModal = () => {
 const openEditModal = (customer: Customer) => {
   selectedCustomer.value = customer
   editCustomer.value = {
-    username: customer.username,
+    _id: customer._id,
     displayName: customer.displayName,
     name: customer.name,
-    password: '',
     email: customer.email,
+    phone: customer.phone,
     bidder: customer.bidder,
   }
   showEditModal.value = true
@@ -182,45 +86,7 @@ const closeDeleteModal = () => {
 }
 
 // Form handlers
-const handleAddCustomer = async () => {
-  isSubmitting.value = true
 
-  if (
-    !newCustomer.value.username ||
-    !newCustomer.value.displayName ||
-    !newCustomer.value.name ||
-    !newCustomer.value.password
-  ) {
-    toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
-    isSubmitting.value = false
-    return
-  }
-
-  try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newCustomerData: Customer = {
-      _id: Date.now().toString(),
-      username: newCustomer.value.username,
-      displayName: newCustomer.value.displayName,
-      name: newCustomer.value.name,
-      password: newCustomer.value.password,
-      email: newCustomer.value.email,
-      bidder: newCustomer.value.bidder,
-      cat: Date.now(),
-      uat: Date.now(),
-      __v: 0,
-    }
-
-    customers.value.push(newCustomerData)
-    toast.success('เพิ่มลูกค้าใหม่สำเร็จ')
-    closeAddModal()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการเพิ่มลูกค้า')
-    isSubmitting.value = false
-  }
-}
 
 const handleEditCustomer = async () => {
   isSubmitting.value = true
@@ -388,7 +254,11 @@ const handleDeleteCustomer = async () => {
     </Card>
 
     <!-- Add Customer Modal -->
-    <Dialog
+    <ModalAddMember
+      :showAddModal="showAddModal"
+      @onCloseAddModal="showAddModal = false"
+    />
+    <!-- <Dialog
       v-model:visible="showAddModal"
       modal
       header="เพิ่มลูกค้าใหม่"
@@ -396,7 +266,7 @@ const handleDeleteCustomer = async () => {
       :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
       :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
     >
-      <form @submit.prevent="handleAddCustomer" class="space-y-3">
+      <div class="space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div class="space-y-1">
             <label class="block text-sm font-medium! text-gray-700">ชื่อผู้ใช้ *</label>
@@ -459,18 +329,30 @@ const handleDeleteCustomer = async () => {
 
         <div class="space-y-1">
           <label class="block text-sm font-medium! text-gray-700">อีเมล</label>
-          <InputText v-model="newCustomer.email" placeholder="กรุณาใส่อีเมล" type="email" fluid size="small" />
+          <InputText
+            v-model="newCustomer.email"
+            placeholder="กรุณาใส่อีเมล"
+            type="email"
+            fluid
+            size="small"
+          />
         </div>
 
         <div class="flex items-center space-x-2">
           <Checkbox v-model="newCustomer.bidder" :binary="true" inputId="bidder" size="small" />
           <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
         </div>
-      </form>
+      </div>
 
       <template #footer>
         <div class="flex justify-end space-x-2">
-          <Button label="ยกเลิก" icon="pi pi-times" severity="danger" @click="closeAddModal"  size="small" />
+          <Button
+            label="ยกเลิก"
+            icon="pi pi-times"
+            severity="danger"
+            @click="closeAddModal"
+            size="small"
+          />
           <Button
             label="เพิ่มสมาชิก"
             icon="pi pi-check"
@@ -481,7 +363,7 @@ const handleDeleteCustomer = async () => {
           />
         </div>
       </template>
-    </Dialog>
+    </Dialog> -->
 
     <!-- View Customer Modal -->
     <Dialog
