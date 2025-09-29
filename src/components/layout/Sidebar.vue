@@ -105,6 +105,16 @@ const menuSections = [
       },
     ],
   },
+  // {
+  //   title: 'ระบบแจ้งเตือน',
+  //   items: [
+  //     {
+  //       icon: 'pi pi-bell',
+  //       label: 'ตั้งค่าการแจ้งเตือน',
+  //       route: 'notification',
+  //     },
+  //   ],
+  // }
 
 ]
 

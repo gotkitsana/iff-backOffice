@@ -7,7 +7,7 @@ import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 const props = defineProps<{
   showAddModal: boolean
@@ -68,11 +68,13 @@ const handleAddCustomer = () => {
 
 const customerStore = useCustomerStore()
 
+const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: CreateCustomerPayload) => customerStore.onCreateCustomer(payload),
   onSuccess: (data: any) => {
     if(data.data) {
       toast.success('เพิ่มลูกค้าสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_customers'] })
       closeAddModal()
       isSubmitting.value = false
     } else {

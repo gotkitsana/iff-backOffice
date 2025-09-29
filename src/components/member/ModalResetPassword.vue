@@ -6,6 +6,7 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
 import { useCustomerStore } from '@/stores/customer/customer'
+import { useMutation } from '@tanstack/vue-query'
 
 const customerStore = useCustomerStore()
 
@@ -41,19 +42,12 @@ const closeResetModal = () => {
 
 const validatePassword = (password: string) => {
   const minLength = 8
-  const hasUpperCase = /[A-Z]/.test(password)
-  const hasLowerCase = /[a-z]/.test(password)
   const hasNumbers = /\d/.test(password)
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
 
   return {
-    isValid:
-      password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+    isValid: password.length >= minLength && hasNumbers,
     minLength: password.length >= minLength,
-    hasUpperCase,
-    hasLowerCase,
     hasNumbers,
-    hasSpecialChar,
   }
 }
 
@@ -71,38 +65,41 @@ const handleResetPassword = async () => {
 
   if (!newPassword.value || !confirmPassword.value) {
     toast.error('กรุณากรอกรหัสผ่านให้ครบถ้วน')
-    isSubmitting.value = false
     return
   }
 
   if (!passwordValidation.value?.isValid) {
     toast.error('รหัสผ่านไม่ตรงตามเงื่อนไข')
-    isSubmitting.value = false
     return
   }
 
   if (newPassword.value !== confirmPassword.value) {
     toast.error('รหัสผ่านไม่ตรงกัน')
-    isSubmitting.value = false
     return
   }
 
-  try {
-    const payload: ResetPasswordPayload = {
-      id: props.customerId!,
-      password: newPassword.value,
-    }
-
-    await customerStore.onResetPassword(payload)
-    toast.success('รีเซ็ตรหัสผ่านสำเร็จ')
-    closeResetModal()
-  } catch (error) {
-    console.error('Error resetting password:', error)
-    toast.error('เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน')
-  } finally {
-    isSubmitting.value = false
+  if (!props.customerId) {
+    toast.error('เกิดข้อผิดพลาดกรุณาลองใหม่อีกครั้ง')
+    return
   }
+
+  mutate({ id: props.customerId!, password: newPassword.value })
 }
+
+const { mutate, isPending } = useMutation({
+  mutationFn: (payload: ResetPasswordPayload) => customerStore.onResetPassword(payload),
+  onSuccess: (data: any) => {
+    console.log(data)
+    if (data.data) {
+      toast.success('รีเซ็ตรหัสผ่านสำเร็จ')
+      closeResetModal()
+      isSubmitting.value = false
+    } else {
+      toast.error('รีเซ็ตรหัสผ่านไม่สำเร็จ')
+      isSubmitting.value = false
+    }
+  },
+})
 </script>
 
 <template>
@@ -135,7 +132,7 @@ const handleResetPassword = async () => {
 
       <!-- Password Form -->
       <div class="space-y-4">
-        <div class="space-y-2">
+        <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700"> รหัสผ่านใหม่ * </label>
           <Password
             v-model="newPassword"
@@ -170,58 +167,20 @@ const handleResetPassword = async () => {
               <div class="flex items-center space-x-2">
                 <i
                   :class="
-                    passwordValidation?.hasUpperCase
-                      ? 'pi pi-check text-green-500'
-                      : 'pi pi-times text-red-500'
-                  "
-                ></i>
-                <span :class="passwordValidation?.hasUpperCase ? 'text-green-600' : 'text-red-600'">
-                  ตัวพิมพ์ใหญ่
-                </span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <i
-                  :class="
-                    passwordValidation?.hasLowerCase
-                      ? 'pi pi-check text-green-500'
-                      : 'pi pi-times text-red-500'
-                  "
-                ></i>
-                <span :class="passwordValidation?.hasLowerCase ? 'text-green-600' : 'text-red-600'">
-                  ตัวพิมพ์เล็ก
-                </span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <i
-                  :class="
                     passwordValidation?.hasNumbers
                       ? 'pi pi-check text-green-500'
                       : 'pi pi-times text-red-500'
                   "
                 ></i>
                 <span :class="passwordValidation?.hasNumbers ? 'text-green-600' : 'text-red-600'">
-                  ตัวเลข
-                </span>
-              </div>
-              <div class="flex items-center space-x-2 col-span-2">
-                <i
-                  :class="
-                    passwordValidation?.hasSpecialChar
-                      ? 'pi pi-check text-green-500'
-                      : 'pi pi-times text-red-500'
-                  "
-                ></i>
-                <span
-                  :class="passwordValidation?.hasSpecialChar ? 'text-green-600' : 'text-red-600'"
-                >
-                  อักขระพิเศษ (!@#$%^&*)
+                  ตัวเลข 1 ตัวขึ้นไป
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700"> ยืนยันรหัสผ่าน * </label>
           <Password
             v-model="confirmPassword"
@@ -242,7 +201,7 @@ const handleResetPassword = async () => {
       </div>
 
       <!-- Warning Message -->
-      <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mt-3">
         <div class="flex items-start space-x-3">
           <i class="pi pi-exclamation-triangle text-yellow-600 text-lg mt-0.5"></i>
           <div>
@@ -264,13 +223,12 @@ const handleResetPassword = async () => {
           @click="closeResetModal"
           severity="secondary"
           size="small"
-          :disabled="isSubmitting"
         />
         <Button
           label="รีเซ็ตรหัสผ่าน"
           icon="pi pi-key"
           @click="handleResetPassword"
-          :loading="isSubmitting"
+          :loading="isPending"
           :disabled="!isFormValid"
           severity="danger"
           size="small"

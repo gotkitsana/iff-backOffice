@@ -76,7 +76,7 @@ const closeDeleteModal = () => {
       <template #header>
         <div class="flex items-center justify-between flex-wrap gap-2 p-5 pb-0">
           <div>
-            <h1 class="text-lg font-semibold! text-gray-900">จัดการลูกค้า</h1>
+            <h1 class="text-lg font-semibold! text-gray-900">จัดการสมาชิก</h1>
             <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้าสำหรับประมูลปลาคราฟ</p>
           </div>
           <Button
