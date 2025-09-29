@@ -32,7 +32,7 @@ const newCustomer = ref<CreateCustomerPayload>({
   displayName: '',
   name: '',
   password: '',
-  phone: '',
+  // phone: '',
   email: '',
   bidder: false,
 })
@@ -43,7 +43,7 @@ const closeAddModal = () => {
     displayName: '',
     name: '',
     password: '',
-    phone: '',
+    // phone: '',
     email: '',
     bidder: false,
   }
@@ -154,7 +154,7 @@ const { mutate, isPending } = useMutation({
         >
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-1 gap-3">
         <div>
           <label class="block text-sm font-medium! text-gray-700 mb-1">อีเมล</label>
           <InputText
@@ -166,7 +166,7 @@ const { mutate, isPending } = useMutation({
           />
         </div>
 
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
           <InputMask
             id="basic"
@@ -176,7 +176,7 @@ const { mutate, isPending } = useMutation({
             fluid
             size="small"
           />
-        </div>
+        </div> -->
       </div>
 
       <div class="flex items-center space-x-2">

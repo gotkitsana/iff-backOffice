@@ -70,6 +70,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --toastify-font-family: 'LINESeedTH', sans-serif;
+  --toastify-font-size: 16px;
 }
 
 /* Custom scrollbar for sidebar */
@@ -285,3 +286,9 @@ body {
   animation: move 20s ease-in-out infinite;
 }
 
+
+.p-tooltip .p-tooltip-text {
+  font-size: 14px !important;
+  font-weight: 500;
+  padding: 6px 8px;
+}

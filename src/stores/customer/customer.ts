@@ -49,7 +49,7 @@ export interface Customer {
   name: string
   password: string
   email: string
-  phone: string
+  // phone: string
   bidder: boolean
   cat: number
   uat: number
@@ -62,7 +62,7 @@ export interface CreateCustomerPayload {
   name: string
   password: string
   email: string
-  phone: string
+  // phone: string
   bidder: boolean
 }
 
@@ -71,7 +71,7 @@ export interface EditCustomerPayload {
   displayName: string
   name: string
   email: string
-  phone: string
+  // phone: string
   bidder: boolean
 }
 

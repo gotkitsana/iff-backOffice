@@ -5,19 +5,13 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Checkbox from 'primevue/checkbox'
-import { toast } from 'vue3-toastify'
 import formatDate from '@/utils/formatDate'
-import {
-  useCustomerStore,
-  type Customer,
-  type EditCustomerPayload,
-} from '@/stores/customer/customer'
+import { useCustomerStore, type Customer } from '@/stores/customer/customer'
 import ModalAddMember from '@/components/member/ModalAddMember.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
+import ModalEditMember from '@/components/member/ModalEditMember.vue'
+import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
+import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
 import { useQuery } from '@tanstack/vue-query'
 
 const customerStore = useCustomerStore()
@@ -26,125 +20,53 @@ const { data, isLoading } = useQuery<Customer[]>({
   queryFn: () => customerStore.onGetCustomers(),
 })
 
-const customers = ref<Customer[]>([])
-
-const showViewModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const isSubmitting = ref(false)
-const selectedCustomer = ref<string | null>(null)
-
-const editCustomer = ref<EditCustomerPayload>({
-  _id: '',
-  displayName: '',
-  name: '',
-  email: '',
-  phone: '',
-  bidder: false,
-})
-
 const showAddModal = ref(false)
 const openAddModal = () => {
   showAddModal.value = true
 }
 
+const showViewModal = ref(false)
+const selectedCustomer = ref<string | null>(null)
 const openViewModal = (customer: Customer) => {
   selectedCustomer.value = customer._id
   showViewModal.value = true
 }
-
 const closeViewModal = () => {
   showViewModal.value = false
   selectedCustomer.value = null
 }
 
+const showEditModal = ref(false)
+const editCustomer = ref<Customer | null>(null)
 const openEditModal = (customer: Customer) => {
-  selectedCustomer.value = customer
-  editCustomer.value = {
-    _id: customer._id,
-    displayName: customer.displayName,
-    name: customer.name,
-    email: customer.email,
-    phone: customer.phone,
-    bidder: customer.bidder,
-  }
+  editCustomer.value = customer
   showEditModal.value = true
 }
-
 const closeEditModal = () => {
   showEditModal.value = false
-  selectedCustomer.value = null
-  isSubmitting.value = false
+  editCustomer.value = null
 }
 
+const showResetPasswordModal = ref(false)
+const resetPasswordCustomer = ref<{ id: string; name: string } | null>(null)
+const openResetPasswordModal = (customer: Customer) => {
+  showResetPasswordModal.value = true
+  resetPasswordCustomer.value = { id: customer._id, name: customer.displayName }
+}
+const closeResetPasswordModal = () => {
+  showResetPasswordModal.value = false
+  resetPasswordCustomer.value = null
+}
+
+const showDeleteModal = ref(false)
+const deleteCustomer = ref<string | null>(null)
 const openDeleteModal = (customer: Customer) => {
-  selectedCustomer.value = customer._id
+  deleteCustomer.value = customer._id
   showDeleteModal.value = true
 }
-
 const closeDeleteModal = () => {
+  deleteCustomer.value = null
   showDeleteModal.value = false
-  selectedCustomer.value = null
-  isSubmitting.value = false
-}
-
-const handleEditCustomer = async () => {
-  isSubmitting.value = true
-
-  if (!editCustomer.value.username || !editCustomer.value.displayName || !editCustomer.value.name) {
-    toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
-    isSubmitting.value = false
-    return
-  }
-
-  try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (selectedCustomer.value) {
-      const index = customers.value.findIndex((c) => c._id === selectedCustomer.value!._id)
-      if (index !== -1) {
-        customers.value[index] = {
-          ...customers.value[index],
-          username: editCustomer.value.username,
-          displayName: editCustomer.value.displayName,
-          name: editCustomer.value.name,
-          email: editCustomer.value.email,
-          bidder: editCustomer.value.bidder,
-          uat: Date.now(),
-          ...(editCustomer.value.password && { password: editCustomer.value.password }),
-        }
-      }
-    }
-
-    toast.success('แก้ไขข้อมูลลูกค้าสำเร็จ')
-    closeEditModal()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการแก้ไขข้อมูล')
-    isSubmitting.value = false
-  }
-}
-
-const handleDeleteCustomer = async () => {
-  isSubmitting.value = true
-
-  try {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (selectedCustomer.value) {
-      const index = customers.value.findIndex((c) => c._id === selectedCustomer.value!._id)
-      if (index !== -1) {
-        customers.value.splice(index, 1)
-      }
-    }
-
-    toast.success('ลบข้อมูลลูกค้าสำเร็จ')
-    closeDeleteModal()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการลบข้อมูล')
-    isSubmitting.value = false
-  }
 }
 </script>
 
@@ -235,6 +157,7 @@ const handleDeleteCustomer = async () => {
                   rounded
                   @click="openViewModal(slotProps.data)"
                   severity="info"
+                  v-tooltip.top="'ข้อมูลลูกค้า'"
                 />
                 <Button
                   icon="pi pi-pencil"
@@ -243,6 +166,16 @@ const handleDeleteCustomer = async () => {
                   rounded
                   @click="openEditModal(slotProps.data)"
                   severity="warning"
+                  v-tooltip.top="'แก้ไขข้อมูล'"
+                />
+                <Button
+                  icon="pi pi-key"
+                  size="small"
+                  text
+                  rounded
+                  severity="help"
+                  @click="openResetPasswordModal(slotProps.data)"
+                  v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
                 />
                 <Button
                   icon="pi pi-trash"
@@ -251,6 +184,7 @@ const handleDeleteCustomer = async () => {
                   rounded
                   severity="danger"
                   @click="openDeleteModal(slotProps.data)"
+                  v-tooltip.top="'ลบข้อมูล'"
                 />
               </div>
             </template>
@@ -271,121 +205,27 @@ const handleDeleteCustomer = async () => {
     />
 
     <!-- Edit Customer Modal -->
-    <Dialog
-      v-model:visible="showEditModal"
-      modal
-      header="แก้ไขข้อมูลลูกค้า"
-      :style="{ width: '50rem' }"
-      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-    >
-      <form @submit.prevent="handleEditCustomer" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="block text-sm font-medium! text-gray-700">ชื่อผู้ใช้ *</label>
-            <InputText
-              v-model="editCustomer.username"
-              placeholder="กรุณาใส่ชื่อผู้ใช้"
-              :invalid="!editCustomer.username && isSubmitting"
-              fluid
-            />
-            <small v-if="!editCustomer.username && isSubmitting" class="text-red-500"
-              >กรุณาระบุชื่อผู้ใช้</small
-            >
-          </div>
-          <div class="space-y-2">
-            <label class="block text-sm font-medium! text-gray-700">ชื่อแสดง *</label>
-            <InputText
-              v-model="editCustomer.displayName"
-              placeholder="กรุณาใส่ชื่อแสดง"
-              :invalid="!editCustomer.displayName && isSubmitting"
-              fluid
-            />
-            <small v-if="!editCustomer.displayName && isSubmitting" class="text-red-500"
-              >กรุณาระบุชื่อแสดง</small
-            >
-          </div>
-        </div>
+    <ModalEditMember
+      v-if="!!editCustomer"
+      :showEditModal="showEditModal"
+      @onCloseEditModal="closeEditModal"
+      :customerData="editCustomer"
+    />
 
-        <div class="space-y-2">
-          <label class="block text-sm font-medium! text-gray-700">ชื่อ-นามสกุล *</label>
-          <InputText
-            v-model="editCustomer.name"
-            placeholder="กรุณาใส่ชื่อ-นามสกุล"
-            :invalid="!editCustomer.name && isSubmitting"
-            fluid
-          />
-          <small v-if="!editCustomer.name && isSubmitting" class="text-red-500"
-            >กรุณาระบุชื่อ-นามสกุล</small
-          >
-        </div>
+    <ModalResetPassword
+      v-if="!!resetPasswordCustomer"
+      :showResetModal="showResetPasswordModal"
+      @onCloseResetModal="closeResetPasswordModal"
+      :customerId="resetPasswordCustomer.id"
+      :customerName="resetPasswordCustomer.name"
+    />
 
-        <div class="space-y-2">
-          <label class="block text-sm font-medium! text-gray-700">รหัสผ่าน</label>
-          <Password
-            v-model="editCustomer.password"
-            placeholder="กรุณาใส่รหัสผ่านใหม่ (เว้นว่างเพื่อไม่เปลี่ยน)"
-            :feedback="false"
-            toggleMask
-            fluid
-          />
-        </div>
-
-        <div class="space-y-2">
-          <label class="block text-sm font-medium! text-gray-700">อีเมล</label>
-          <InputText v-model="editCustomer.email" placeholder="กรุณาใส่อีเมล" type="email" fluid />
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <Checkbox v-model="editCustomer.bidder" :binary="true" inputId="editBidder" />
-          <label for="editBidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
-        </div>
-      </form>
-
-      <template #footer>
-        <div class="flex justify-end space-x-2">
-          <Button label="ยกเลิก" icon="pi pi-times" @click="closeEditModal" text />
-          <Button
-            label="บันทึกการแก้ไข"
-            icon="pi pi-check"
-            @click="handleEditCustomer"
-            :loading="isSubmitting"
-            class="bg-green-600 hover:bg-green-700"
-          />
-        </div>
-      </template>
-    </Dialog>
-
-    <!-- Delete Confirmation Modal -->
-    <Dialog
-      v-model:visible="showDeleteModal"
-      modal
-      header="ยืนยันการลบข้อมูล"
-      :style="{ width: '25rem' }"
-    >
-      <div class="flex items-center space-x-3">
-        <i class="pi pi-exclamation-triangle text-orange-500 text-2xl"></i>
-        <div>
-          <p class="font-semibold! text-gray-900">คุณต้องการลบข้อมูลลูกค้านี้หรือไม่?</p>
-          <p class="text-sm text-gray-600 mt-1">
-            {{ selectedCustomer?.name }} ({{ selectedCustomer?.username }})
-          </p>
-          <p class="text-sm text-red-600 mt-2 font-medium!">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end space-x-2">
-          <Button label="ยกเลิก" icon="pi pi-times" @click="closeDeleteModal" text />
-          <Button
-            label="ลบข้อมูล"
-            icon="pi pi-trash"
-            @click="handleDeleteCustomer"
-            :loading="isSubmitting"
-            severity="danger"
-          />
-        </div>
-      </template>
-    </Dialog>
+    <ModalDeleteMember
+      v-if="!!deleteCustomer"
+      :showDeleteModal="showDeleteModal"
+      @onCloseDeleteModal="closeDeleteModal"
+      :id="deleteCustomer"
+    />
   </div>
 </template>
 
