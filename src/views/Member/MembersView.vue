@@ -59,9 +59,9 @@ const closeResetPasswordModal = () => {
 }
 
 const showDeleteModal = ref(false)
-const deleteCustomer = ref<string | null>(null)
+const deleteCustomer = ref<{ id: string; name: string } | null>(null)
 const openDeleteModal = (customer: Customer) => {
-  deleteCustomer.value = customer._id
+  deleteCustomer.value = { id: customer._id, name: customer.name }
   showDeleteModal.value = true
 }
 const closeDeleteModal = () => {
@@ -224,7 +224,8 @@ const closeDeleteModal = () => {
       v-if="!!deleteCustomer"
       :showDeleteModal="showDeleteModal"
       @onCloseDeleteModal="closeDeleteModal"
-      :id="deleteCustomer"
+      :id="deleteCustomer.id"
+      :customerName="deleteCustomer.name"
     />
   </div>
 </template>

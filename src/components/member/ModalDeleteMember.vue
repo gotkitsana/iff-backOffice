@@ -1,33 +1,88 @@
-<template>
-  Delete
-   <!-- <Dialog
-      v-model:visible="showDeleteModal"
-      modal
-      header="ยืนยันการลบข้อมูล"
-      :style="{ width: '25rem' }"
-    >
-      <div class="flex items-center space-x-3">
-        <i class="pi pi-exclamation-triangle text-orange-500 text-2xl"></i>
-        <div>
-          <p class="font-semibold! text-gray-900">คุณต้องการลบข้อมูลลูกค้านี้หรือไม่?</p>
-          <p class="text-sm text-gray-600 mt-1">
-            {{ selectedCustomer?.name }} ({{ selectedCustomer?.username }})
-          </p>
-          <p class="text-sm text-red-600 mt-2 font-medium!">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
-        </div>
-      </div>
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useCustomerStore } from '@/stores/customer/customer'
+import { Dialog, Button } from 'primevue'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { toast } from 'vue3-toastify'
 
-      <template #footer>
-        <div class="flex justify-end space-x-2">
-          <Button label="ยกเลิก" icon="pi pi-times" @click="closeDeleteModal" text />
-          <Button
-            label="ลบข้อมูล"
-            icon="pi pi-trash"
-            @click="handleDeleteCustomer"
-            :loading="isSubmitting"
-            severity="danger"
-          />
-        </div>
-      </template>
-    </Dialog> -->
+const props = defineProps<{
+  showDeleteModal: boolean
+  id: string
+  customerName: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'onCloseDeleteModal'): void
+}>()
+
+const showDeleteModal = computed({
+  get: () => props.showDeleteModal,
+  set: (value: boolean) => {
+    if (!value) {
+      closeDeleteModal()
+    }
+  },
+})
+
+const closeDeleteModal = () => {
+  emit('onCloseDeleteModal')
+}
+
+const queryClient = useQueryClient()
+const customerStore = useCustomerStore()
+const { mutate, isPending } = useMutation({
+  mutationFn: (payload: string) => customerStore.onDeleteCustomer(payload),
+  onSuccess: (data: any) => {
+    if (data.data.deletedCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ['get_customers'] })
+      toast.success('ลบข้อมูลลูกค้าสำเร็จ')
+      closeDeleteModal()
+    } else {
+      toast.error('ลบข้อมูลลูกค้าไม่สำเร็จ')
+    }
+  },
+})
+</script>
+
+<template>
+  <Dialog
+    v-model:visible="showDeleteModal"
+    @update:visible="closeDeleteModal"
+    modal
+    header="ยืนยันการลบข้อมูล"
+    :style="{ width: '28rem' }"
+    :pt="{
+      header: 'p-4',
+      title: 'text-lg font-semibold!',
+    }"
+  >
+    <div class="flex items-center space-x-3">
+      <i class="pi pi-exclamation-triangle text-red-500 !text-3xl"></i>
+      <div>
+        <p class="font-[500]! text-gray-700">
+          คุณต้องการลบข้อมูลลูกค้า {{ customerName }} หรือไม่?
+        </p>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end space-x-2">
+        <Button
+          label="ยกเลิก"
+          icon="pi pi-times"
+          @click="closeDeleteModal"
+          severity="secondary"
+          size="small"
+        />
+        <Button
+          label="ลบข้อมูล"
+          icon="pi pi-trash"
+          @click="mutate(props.id)"
+          :loading="isPending"
+          severity="danger"
+          size="small"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>

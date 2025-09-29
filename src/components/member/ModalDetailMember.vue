@@ -38,6 +38,7 @@ const { data, isLoading } = useQuery<Customer>({
 <template>
   <Dialog
     v-model:visible="showDetailModal"
+    @update:visible="closeDetailModal"
     modal
     header="รายละเอียดลูกค้า"
     :style="{ width: '50rem' }"
@@ -63,13 +64,13 @@ const { data, isLoading } = useQuery<Customer>({
         class="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
       >
         <div
-          class="w-15 h-15 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center"
+          class="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center"
         >
           <i class="pi pi-user text-white text-2xl"></i>
         </div>
         <div class="flex-1">
-          <h3 class="text-xl font-semibold! text-gray-800">{{ data.displayName }}</h3>
-          <div class="mt-0.5">
+          <h3 class="text-lg font-semibold! text-gray-800">{{ data.displayName }}</h3>
+          <div>
             <Tag
               :value="data.bidder ? 'ลูกค้าประมูล' : 'ลูกค้าทั่วไป'"
               :severity="data.bidder ? 'success' : 'info'"

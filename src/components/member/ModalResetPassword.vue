@@ -89,8 +89,7 @@ const handleResetPassword = async () => {
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: ResetPasswordPayload) => customerStore.onResetPassword(payload),
   onSuccess: (data: any) => {
-    console.log(data)
-    if (data.data) {
+    if (data.data.modifiedCount > 0) {
       toast.success('รีเซ็ตรหัสผ่านสำเร็จ')
       closeResetModal()
       isSubmitting.value = false
@@ -105,6 +104,7 @@ const { mutate, isPending } = useMutation({
 <template>
   <Dialog
     v-model:visible="showResetModal"
+    @update:visible="closeResetModal"
     modal
     header="รีเซ็ตรหัสผ่าน"
     :style="{ width: '40rem' }"

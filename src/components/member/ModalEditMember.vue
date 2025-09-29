@@ -89,7 +89,7 @@ const { mutate, isPending } = useMutation({
     @update:visible="closeEditModal"
     modal
     header="แก้ไขข้อมูลลูกค้า"
-    :style="{ width: '45rem' }"
+    :style="{ width: '40rem' }"
     :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
     :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
   >
