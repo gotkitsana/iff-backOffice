@@ -1,5 +1,6 @@
 <template>
-   <Dialog
+  Delete
+   <!-- <Dialog
       v-model:visible="showDeleteModal"
       modal
       header="ยืนยันการลบข้อมูล"
@@ -28,5 +29,5 @@
           />
         </div>
       </template>
-    </Dialog>
+    </Dialog> -->
 </template>
