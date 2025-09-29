@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
@@ -11,25 +11,28 @@ import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import { toast } from 'vue3-toastify'
 import formatDate from '@/utils/formatDate'
-import type {
-  CreateCustomerPayload,
-  Customer,
-  EditCustomerPayload,
+import {
+  useCustomerStore,
+  type Customer,
+  type EditCustomerPayload,
 } from '@/stores/customer/customer'
 import ModalAddMember from '@/components/member/ModalAddMember.vue'
+import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
+import { useQuery } from '@tanstack/vue-query'
 
-// Types
+const customerStore = useCustomerStore()
+const { data, isLoading } = useQuery<Customer[]>({
+  queryKey: ['get_customers'],
+  queryFn: () => customerStore.onGetCustomers(),
+})
 
-// Sample data for customers
 const customers = ref<Customer[]>([])
-
-// Modal states
 
 const showViewModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const isSubmitting = ref(false)
-const selectedCustomer = ref<Customer | null>(null)
+const selectedCustomer = ref<string | null>(null)
 
 const editCustomer = ref<EditCustomerPayload>({
   _id: '',
@@ -46,7 +49,7 @@ const openAddModal = () => {
 }
 
 const openViewModal = (customer: Customer) => {
-  selectedCustomer.value = customer
+  selectedCustomer.value = customer._id
   showViewModal.value = true
 }
 
@@ -75,7 +78,7 @@ const closeEditModal = () => {
 }
 
 const openDeleteModal = (customer: Customer) => {
-  selectedCustomer.value = customer
+  selectedCustomer.value = customer._id
   showDeleteModal.value = true
 }
 
@@ -84,9 +87,6 @@ const closeDeleteModal = () => {
   selectedCustomer.value = null
   isSubmitting.value = false
 }
-
-// Form handlers
-
 
 const handleEditCustomer = async () => {
   isSubmitting.value = true
@@ -167,7 +167,13 @@ const handleDeleteCustomer = async () => {
         </div>
       </template>
       <template #content>
-        <DataTable :value="customers" :paginator="true" :rows="100" class="p-datatable-sm">
+        <DataTable
+          :value="data"
+          :paginator="true"
+          :rows="100"
+          :loading="isLoading"
+          class="p-datatable-sm"
+        >
           <Column
             field="username"
             header="ชื่อผู้ใช้"
@@ -201,7 +207,7 @@ const handleDeleteCustomer = async () => {
           >
             <template #body="slotProps">
               <Tag
-                :value="slotProps.data.bidder ? 'ประมูล' : 'ไม่ประมูล'"
+                :value="slotProps.data.bidder ? 'ลูกค้าประมูล' : 'ลูกค้าทั่วไป'"
                 :severity="slotProps.data.bidder ? 'success' : 'secondary'"
               />
             </template>
@@ -254,175 +260,15 @@ const handleDeleteCustomer = async () => {
     </Card>
 
     <!-- Add Customer Modal -->
-    <ModalAddMember
-      :showAddModal="showAddModal"
-      @onCloseAddModal="showAddModal = false"
-    />
-    <!-- <Dialog
-      v-model:visible="showAddModal"
-      modal
-      header="เพิ่มลูกค้าใหม่"
-      :style="{ width: '50rem' }"
-      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-      :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
-    >
-      <div class="space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="space-y-1">
-            <label class="block text-sm font-medium! text-gray-700">ชื่อผู้ใช้ *</label>
-            <InputText
-              v-model="newCustomer.username"
-              placeholder="กรุณาใส่ชื่อผู้ใช้"
-              :invalid="!newCustomer.username && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newCustomer.username && isSubmitting" class="text-red-500"
-              >กรุณาระบุชื่อผู้ใช้</small
-            >
-          </div>
-
-          <div class="space-y-1">
-            <label class="block text-sm font-medium! text-gray-700">ชื่อแสดง *</label>
-            <InputText
-              v-model="newCustomer.displayName"
-              placeholder="กรุณาใส่ชื่อแสดง"
-              :invalid="!newCustomer.displayName && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newCustomer.displayName && isSubmitting" class="text-red-500"
-              >กรุณาระบุชื่อแสดง</small
-            >
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="block text-sm font-medium! text-gray-700">ชื่อ-นามสกุล *</label>
-          <InputText
-            v-model="newCustomer.name"
-            placeholder="กรุณาใส่ชื่อ-นามสกุล"
-            :invalid="!newCustomer.name && isSubmitting"
-            fluid
-            size="small"
-          />
-          <small v-if="!newCustomer.name && isSubmitting" class="text-red-500"
-            >กรุณาระบุชื่อ-นามสกุล</small
-          >
-        </div>
-
-        <div class="space-y-1">
-          <label class="block text-sm font-medium! text-gray-700">รหัสผ่าน *</label>
-          <Password
-            v-model="newCustomer.password"
-            placeholder="กรุณาใส่รหัสผ่าน"
-            :feedback="false"
-            :invalid="!newCustomer.password && isSubmitting"
-            toggleMask
-            fluid
-            size="small"
-          />
-          <small v-if="!newCustomer.password && isSubmitting" class="text-red-500"
-            >กรุณาระบุรหัสผ่าน</small
-          >
-        </div>
-
-        <div class="space-y-1">
-          <label class="block text-sm font-medium! text-gray-700">อีเมล</label>
-          <InputText
-            v-model="newCustomer.email"
-            placeholder="กรุณาใส่อีเมล"
-            type="email"
-            fluid
-            size="small"
-          />
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <Checkbox v-model="newCustomer.bidder" :binary="true" inputId="bidder" size="small" />
-          <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end space-x-2">
-          <Button
-            label="ยกเลิก"
-            icon="pi pi-times"
-            severity="danger"
-            @click="closeAddModal"
-            size="small"
-          />
-          <Button
-            label="เพิ่มสมาชิก"
-            icon="pi pi-check"
-            @click="handleAddCustomer"
-            :loading="isSubmitting"
-            severity="success"
-            size="small"
-          />
-        </div>
-      </template>
-    </Dialog> -->
+    <ModalAddMember :showAddModal="showAddModal" @onCloseAddModal="showAddModal = false" />
 
     <!-- View Customer Modal -->
-    <Dialog
-      v-model:visible="showViewModal"
-      modal
-      header="ดูข้อมูลลูกค้า"
-      :style="{ width: '50rem' }"
-      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-    >
-      <div v-if="selectedCustomer" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium! text-gray-500">ชื่อผู้ใช้</label>
-            <p class="text-lg font-semibold! text-gray-900">{{ selectedCustomer.username }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium! text-gray-500">ชื่อแสดง</label>
-            <p class="text-lg font-semibold! text-gray-900">{{ selectedCustomer.displayName }}</p>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium! text-gray-500">ชื่อ-นามสกุล</label>
-          <p class="text-lg font-semibold! text-gray-900">{{ selectedCustomer.name }}</p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium! text-gray-500">อีเมล</label>
-          <p class="text-lg font-semibold! text-gray-900">
-            {{ selectedCustomer.email || 'ไม่ระบุ' }}
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium! text-gray-500">สถานะประมูล</label>
-          <Tag
-            :value="selectedCustomer.bidder ? 'ประมูล' : 'ไม่ประมูล'"
-            :severity="selectedCustomer.bidder ? 'success' : 'secondary'"
-          />
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium! text-gray-500">วันที่สร้าง</label>
-            <p class="text-sm text-gray-900">{{ formatDate(selectedCustomer.cat) }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium! text-gray-500">วันที่แก้ไขล่าสุด</label>
-            <p class="text-sm text-gray-900">{{ formatDate(selectedCustomer.uat) }}</p>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end">
-          <Button label="ปิด" icon="pi pi-times" @click="closeViewModal" text />
-        </div>
-      </template>
-    </Dialog>
+    <ModalDetailMember
+      v-if="!!selectedCustomer"
+      :showDetailModal="showViewModal"
+      @onCloseDetailModal="closeViewModal"
+      :id="selectedCustomer"
+    />
 
     <!-- Edit Customer Modal -->
     <Dialog

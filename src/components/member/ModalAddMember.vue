@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { CreateCustomerPayload } from '@/stores/customer/customer'
-import Dialog from 'primevue/dialog'
+import { computed, ref } from 'vue'
+import { useCustomerStore, type CreateCustomerPayload } from '@/stores/customer/customer'
+import { Dialog, InputMask } from 'primevue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
+import { useMutation } from '@tanstack/vue-query'
 
 const props = defineProps<{
   showAddModal: boolean
@@ -16,8 +17,14 @@ const emit = defineEmits<{
   (e: 'onCloseAddModal'): void
 }>()
 
-
-const showAddModal = ref(props.showAddModal)
+const showAddModal = computed({
+  get: () => props.showAddModal,
+  set: (value: boolean) => {
+    if (!value) {
+      closeAddModal()
+    }
+  },
+})
 
 const isSubmitting = ref(false)
 const newCustomer = ref<CreateCustomerPayload>({
@@ -31,8 +38,6 @@ const newCustomer = ref<CreateCustomerPayload>({
 })
 
 const closeAddModal = () => {
-  showAddModal.value = false
-  isSubmitting.value = false
   newCustomer.value = {
     username: '',
     displayName: '',
@@ -45,9 +50,7 @@ const closeAddModal = () => {
   emit('onCloseAddModal')
 }
 
-
-
-const handleAddCustomer = async () => {
+const handleAddCustomer = () => {
   isSubmitting.value = true
 
   if (
@@ -57,12 +60,27 @@ const handleAddCustomer = async () => {
     !newCustomer.value.password
   ) {
     toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
-    isSubmitting.value = false
     return
   }
 
-  emit('onCloseAddModal')
+  mutate(newCustomer.value)
 }
+
+const customerStore = useCustomerStore()
+
+const { mutate, isPending } = useMutation({
+  mutationFn: (payload: CreateCustomerPayload) => customerStore.onCreateCustomer(payload),
+  onSuccess: (data: any) => {
+    if(data.data) {
+      toast.success('เพิ่มลูกค้าสำเร็จ')
+      closeAddModal()
+      isSubmitting.value = false
+    } else {
+      toast.error('เพิ่มลูกค้าไม่สำเร็จ')
+      isSubmitting.value = false
+    }
+  },
+})
 </script>
 
 <template>
@@ -77,8 +95,8 @@ const handleAddCustomer = async () => {
   >
     <div class="space-y-3">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div class="space-y-1">
-          <label class="block text-sm font-medium! text-gray-700">ชื่อผู้ใช้ *</label>
+        <div>
+          <label class="block text-sm font-medium! text-gray-700 mb-1">ชื่อผู้ใช้ *</label>
           <InputText
             v-model="newCustomer.username"
             placeholder="กรุณาใส่ชื่อผู้ใช้"
@@ -120,8 +138,8 @@ const handleAddCustomer = async () => {
         >
       </div>
 
-      <div class="space-y-1">
-        <label class="block text-sm font-medium! text-gray-700">รหัสผ่าน *</label>
+      <div>
+        <label class="block text-sm font-medium! text-gray-700 mb-1">รหัสผ่าน *</label>
         <Password
           v-model="newCustomer.password"
           placeholder="กรุณาใส่รหัสผ่าน"
@@ -136,19 +154,33 @@ const handleAddCustomer = async () => {
         >
       </div>
 
-      <div class="space-y-1">
-        <label class="block text-sm font-medium! text-gray-700">อีเมล</label>
-        <InputText
-          v-model="newCustomer.email"
-          placeholder="กรุณาใส่อีเมล"
-          type="email"
-          fluid
-          size="small"
-        />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium! text-gray-700 mb-1">อีเมล</label>
+          <InputText
+            v-model="newCustomer.email"
+            placeholder="กรุณาใส่อีเมล"
+            type="email"
+            fluid
+            size="small"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+          <InputMask
+            id="basic"
+            v-model="newCustomer.phone"
+            mask="999-9999999"
+            placeholder="เบอร์โทรศัพท์"
+            fluid
+            size="small"
+          />
+        </div>
       </div>
 
       <div class="flex items-center space-x-2">
-        <Checkbox v-model="newCustomer.bidder" :binary="true" inputId="bidder" size="small" />
+        <Checkbox v-model="newCustomer.bidder" binary inputId="bidder" size="small" />
         <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
       </div>
     </div>
@@ -166,7 +198,7 @@ const handleAddCustomer = async () => {
           label="เพิ่มสมาชิก"
           icon="pi pi-check"
           @click="handleAddCustomer"
-          :loading="isSubmitting"
+          :loading="isPending"
           severity="success"
           size="small"
         />
