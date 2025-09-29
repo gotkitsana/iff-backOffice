@@ -51,7 +51,7 @@ const showResetPasswordModal = ref(false)
 const resetPasswordCustomer = ref<{ id: string; name: string } | null>(null)
 const openResetPasswordModal = (customer: Customer) => {
   showResetPasswordModal.value = true
-  resetPasswordCustomer.value = { id: customer._id, name: customer.displayName }
+  resetPasswordCustomer.value = { id: customer._id, name: customer.name }
 }
 const closeResetPasswordModal = () => {
   showResetPasswordModal.value = false

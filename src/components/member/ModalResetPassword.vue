@@ -113,15 +113,14 @@ const handleResetPassword = async () => {
     :style="{ width: '40rem' }"
     :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
     :pt="{
-      header: 'p-6 pb-4',
-      title: 'text-xl font-bold text-gray-800',
-      content: 'p-6 pt-0',
+      header: 'p-4',
+      title: 'text-lg font-semibold!',
     }"
   >
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Header Section -->
       <div
-        class="flex items-center space-x-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-100"
+        class="flex items-center space-x-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-100"
       >
         <div
           class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center"
@@ -129,7 +128,7 @@ const handleResetPassword = async () => {
           <i class="pi pi-key text-white text-xl"></i>
         </div>
         <div class="flex-1">
-          <h3 class="text-lg font-bold text-gray-800">รีเซ็ตรหัสผ่าน</h3>
+          <h3 class="text-lg font-semibold! text-gray-800">รีเซ็ตรหัสผ่าน</h3>
           <p class="text-sm text-gray-600">{{ customerName }}</p>
         </div>
       </div>
@@ -258,7 +257,7 @@ const handleResetPassword = async () => {
     </div>
 
     <template #footer>
-      <div class="flex justify-end space-x-3 p-4 bg-gray-50 border-t">
+      <div class="flex justify-end gap-x-3">
         <Button
           label="ยกเลิก"
           icon="pi pi-times"
