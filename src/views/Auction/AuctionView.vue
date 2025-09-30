@@ -1,25 +1,116 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import { useAuctionStore } from '@/stores/auction/auction'
+import { useQuery } from '@tanstack/vue-query'
+
+// Sample data for active auctions
+const activeAuctions = ref([
+  {
+    id: 1,
+    fishName: 'ปลาคราฟโคฮากุ',
+    breed: 'โคฮากุ',
+    size: 45,
+    currentPrice: 125000,
+    bidCount: 23,
+    timeLeft: '2 ชม. 15 นาที',
+  },
+  {
+    id: 2,
+    fishName: 'ปลาคราฟไทชู',
+    breed: 'ไทชู',
+    size: 38,
+    currentPrice: 98000,
+    bidCount: 15,
+    timeLeft: '1 ชม. 30 นาที',
+  },
+  {
+    id: 3,
+    fishName: 'ปลาคราฟชิโรอุตสึริ',
+    breed: 'ชิโรอุตสึริ',
+    size: 42,
+    currentPrice: 156000,
+    bidCount: 31,
+    timeLeft: '45 นาที',
+  },
+])
+
+// Sample data for recent auctions
+const recentAuctions = ref([
+  {
+    fishName: 'ปลาคราฟซันเกะ',
+    breed: 'ซันเกะ',
+    size: 50,
+    finalPrice: 189000,
+    winner: 'คุณนิดา',
+    endTime: new Date('2024-01-15T11:15:00'),
+    status: 'Completed',
+  },
+  {
+    fishName: 'ปลาคราฟเบคโกะ',
+    breed: 'เบคโกะ',
+    size: 35,
+    finalPrice: 87000,
+    winner: 'คุณปิยะ',
+    endTime: new Date('2024-01-15T10:30:00'),
+    status: 'Completed',
+  },
+  {
+    fishName: 'ปลาคราฟอูตสึริ',
+    breed: 'อูตสึริ',
+    size: 40,
+    finalPrice: 0,
+    winner: '-',
+    endTime: new Date('2024-01-15T09:45:00'),
+    status: 'No Bid',
+  },
+])
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const auctionStore = useAuctionStore()
+const { data, isLoading } = useQuery<any[]>({
+  queryKey: ['get_auctions'],
+  queryFn: () => auctionStore.onGetAuctions(),
+})
+
+console.log(data)
+</script>
+
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">ระบบประมูลปลาคราฟ</h1>
-        <p class="text-gray-600 mt-1">จัดการการประมูลปลาคราฟและติดตามผล</p>
+        <h1 class="text-xl font-semibold! text-gray-900">ระบบประมูลปลาคราฟ</h1>
+        <p class="text-gray-600">จัดการการประมูลปลาคราฟและติดตามผล</p>
       </div>
       <div class="flex space-x-3">
-        <Button label="ประมูลใหม่" icon="pi pi-plus" severity="success" />
-        <Button label="ประมูลที่กำลังดำเนิน" icon="pi pi-play" />
+        <Button label="ประมูลใหม่" icon="pi pi-plus" severity="success" size="small" />
+        <Button label="ประมูลที่กำลังดำเนิน" icon="pi pi-play" size="small" />
       </div>
     </div>
 
     <!-- Auction Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <Card class="p-6 card-hover">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card class="p-1">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">ประมูลที่กำลังดำเนิน</p>
-              <p class="text-2xl font-bold text-gray-900">12</p>
+              <p class="text-sm font-medium! text-gray-600">ประมูลที่กำลังดำเนิน</p>
+              <p class="text-xl font-[600]! text-gray-900">12</p>
             </div>
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <i class="pi pi-play text-blue-600 text-xl"></i>
@@ -28,12 +119,12 @@
         </template>
       </Card>
 
-      <Card class="p-6 card-hover">
+      <Card class="p-1">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">ประมูลที่เสร็จสิ้น</p>
-              <p class="text-2xl font-bold text-gray-900">156</p>
+              <p class="text-sm font-medium! text-gray-600">ประมูลที่เสร็จสิ้น</p>
+              <p class="text-xl font-[600]! text-gray-900">156</p>
             </div>
             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <i class="pi pi-check text-green-600 text-xl"></i>
@@ -42,12 +133,12 @@
         </template>
       </Card>
 
-      <Card class="p-6 card-hover">
+      <Card class="p-1">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">ยอดประมูลวันนี้</p>
-              <p class="text-2xl font-bold text-gray-900">฿2.3M</p>
+              <p class="text-sm font-medium! text-gray-600">ยอดประมูลวันนี้</p>
+              <p class="text-xl font-[600]! text-gray-900">฿2.3M</p>
             </div>
             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
               <i class="pi pi-money-bill text-orange-600 text-xl"></i>
@@ -56,12 +147,12 @@
         </template>
       </Card>
 
-      <Card class="p-6 card-hover">
+      <Card class="p-1">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">ผู้เข้าร่วมประมูล</p>
-              <p class="text-2xl font-bold text-gray-900">89</p>
+              <p class="text-sm font-medium! text-gray-600">ผู้เข้าร่วมประมูล</p>
+              <p class="text-xl font-[600]! text-gray-900">89</p>
             </div>
             <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <i class="pi pi-users text-purple-600 text-xl"></i>
@@ -152,83 +243,4 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
-import Card from 'primevue/card'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
 
-// Sample data for active auctions
-const activeAuctions = ref([
-  {
-    id: 1,
-    fishName: 'ปลาคราฟโคฮากุ',
-    breed: 'โคฮากุ',
-    size: 45,
-    currentPrice: 125000,
-    bidCount: 23,
-    timeLeft: '2 ชม. 15 นาที',
-  },
-  {
-    id: 2,
-    fishName: 'ปลาคราฟไทชู',
-    breed: 'ไทชู',
-    size: 38,
-    currentPrice: 98000,
-    bidCount: 15,
-    timeLeft: '1 ชม. 30 นาที',
-  },
-  {
-    id: 3,
-    fishName: 'ปลาคราฟชิโรอุตสึริ',
-    breed: 'ชิโรอุตสึริ',
-    size: 42,
-    currentPrice: 156000,
-    bidCount: 31,
-    timeLeft: '45 นาที',
-  },
-])
-
-// Sample data for recent auctions
-const recentAuctions = ref([
-  {
-    fishName: 'ปลาคราฟซันเกะ',
-    breed: 'ซันเกะ',
-    size: 50,
-    finalPrice: 189000,
-    winner: 'คุณนิดา',
-    endTime: new Date('2024-01-15T11:15:00'),
-    status: 'Completed',
-  },
-  {
-    fishName: 'ปลาคราฟเบคโกะ',
-    breed: 'เบคโกะ',
-    size: 35,
-    finalPrice: 87000,
-    winner: 'คุณปิยะ',
-    endTime: new Date('2024-01-15T10:30:00'),
-    status: 'Completed',
-  },
-  {
-    fishName: 'ปลาคราฟอูตสึริ',
-    breed: 'อูตสึริ',
-    size: 40,
-    finalPrice: 0,
-    winner: '-',
-    endTime: new Date('2024-01-15T09:45:00'),
-    status: 'No Bid',
-  },
-])
-
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-</script>
