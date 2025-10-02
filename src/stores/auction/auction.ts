@@ -9,7 +9,12 @@ export const useAuctionStore = defineStore('auction', () => {
 
   async function onGetAuctionContent() {
     const { data } = await api.get(`/auction/content`)
-    return data.data
+    return data
+  }
+
+  async function onCreateAuctionContent(payload: IContentPayload) {
+    const { data } = await api.post(`/auction/content`, payload)
+    return data
   }
 
   async function onCreateAuction(payload: IAuctionPayload) {
@@ -32,6 +37,7 @@ export const useAuctionStore = defineStore('auction', () => {
     onGetAuctionContent,
 
     onCreateAuction,
+    onCreateAuctionContent,
     onUpdateAuction,
     onDeleteAuction,
   }
