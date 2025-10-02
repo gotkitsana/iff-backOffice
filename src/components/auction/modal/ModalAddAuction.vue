@@ -1,0 +1,322 @@
+<script setup lang="ts">
+import { useAuctionStore, type IAuctionPayload } from '@/stores/auction/auction'
+import { useMutation } from '@tanstack/vue-query'
+import { computed, ref } from 'vue'
+import { toast } from 'vue3-toastify'
+import { Dialog, Button, InputNumber, Select, DatePicker } from 'primevue'
+
+const props = defineProps<{
+  showAddAuctionModal: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'onCloseAddAuctionModal'): void
+}>()
+
+const showAddAuctionModal = computed({
+  get: () => props.showAddAuctionModal,
+  set: (value: boolean) => {
+    if (!value) {
+      closeAddAuctionModal()
+    }
+  },
+})
+
+const closeAddAuctionModal = () => {
+  emit('onCloseAddAuctionModal')
+  resetForm()
+}
+
+const form = ref<IAuctionPayload>({
+  productId: '',
+  biddingTime: 0,
+  startDate: 0,
+  endDate: 0,
+  minBid: 0,
+})
+
+const startDateValue = ref<Date | null>(null)
+const endDateValue = ref<Date | null>(null)
+
+const resetForm = () => {
+  form.value = {
+    productId: '',
+    biddingTime: 0,
+    startDate: 0,
+    endDate: 0,
+    minBid: 0,
+  }
+  startDateValue.value = null
+  endDateValue.value = null
+}
+
+const isSubmitting = ref(false)
+
+// Product options (mock data - replace with actual API call)
+const productOptions = ref([
+  { label: 'ปลา', value: '1' },
+  { label: 'ปลา-2', value: '2' },
+])
+
+const validateForm = () => {
+  const errors = []
+
+  if (!form.value.productId) errors.push('กรุณาเลือกปลาคาร์ฟ')
+  if (!form.value.biddingTime) errors.push('กรุณาระบุเวลาในการประมูล (นาที)')
+  if (!startDateValue.value) errors.push('กรุณาเลือกวันที่เริ่มประมูล')
+  if (!endDateValue.value) errors.push('กรุณาเลือกวันที่สิ้นสุดประมูล')
+  if (!form.value.minBid || form.value.minBid < 0) errors.push('กรุณากรอกราคาเริ่มต้น (บาท)')
+
+  if (startDateValue.value && endDateValue.value && startDateValue.value >= endDateValue.value) {
+    errors.push('วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น')
+  }
+
+  return errors
+}
+
+const handleAddAuction = () => {
+  isSubmitting.value = true
+  const errors = validateForm()
+
+  if (errors.length > 0) {
+    toast.error(errors[0])
+    isSubmitting.value = false
+    return
+  }
+
+  console.log({
+    productId: form.value.productId,
+    biddingTime: form.value.biddingTime,
+    startDate: startDateValue.value ? startDateValue.value.getTime() : 0,
+    endDate: endDateValue.value ? endDateValue.value.getTime() : 0,
+    minBid: form.value.minBid,
+  })
+
+  // mutate({
+  //   productId: form.value.productId,
+  //   biddingTime: form.value.biddingTime,
+  //   startDate: startDateValue.value ? startDateValue.value.getTime() : 0,
+  //   endDate: endDateValue.value ? endDateValue.value.getTime() : 0,
+  //   minBid: form.value.minBid,
+  // })
+}
+
+const auctionStore = useAuctionStore()
+const { mutate, isPending } = useMutation({
+  mutationFn: (payload: IAuctionPayload) => auctionStore.onCreateAuction(payload),
+  onSuccess: (data: unknown) => {
+    isSubmitting.value = false
+    const response = data as { message?: string }
+    toast.success(response.message || 'เพิ่มประมูลสำเร็จ')
+    closeAddAuctionModal()
+  },
+  onError: (error: unknown) => {
+    isSubmitting.value = false
+    const errorResponse = error as { message?: string }
+    toast.error(errorResponse.message || 'เพิ่มประมูลไม่สำเร็จ')
+  },
+})
+</script>
+<template>
+  <Dialog
+    v-model:visible="showAddAuctionModal"
+    @update:visible="closeAddAuctionModal"
+    modal
+    :style="{ width: '45rem' }"
+    :breakpoints="{ '1199px': '85vw', '575px': '95vw' }"
+    :pt="{
+      header: 'p-4',
+      footer: 'p-4',
+    }"
+  >
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+        >
+          <i class="pi pi-plus text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold! text-gray-800">เพิ่มประมูลใหม่</h3>
+          <p class="text-sm text-gray-600">กรอกข้อมูลสำหรับประมูลให้ครบถ้วน</p>
+        </div>
+      </div>
+    </template>
+
+    <div class="space-y-4">
+      <!-- Product Selection -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="pi pi-box text-blue-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลปลาคาร์ฟ</h4>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-tag mr-1.5 !text-sm"></i>
+              เลือกสินค้า
+            </label>
+            <Select
+              v-model="form.productId"
+              :options="productOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกปลาคาร์ฟที่ต้องการประมูล"
+              :invalid="!form.productId && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small
+              v-if="!form.productId && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              <i class="pi pi-exclamation-triangle text-xs"></i>
+              กรุณาเลือกปลาคาร์ฟ
+            </small>
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-clock mr-1.5 !text-sm"></i>
+              เวลาประมูล (นาที)
+            </label>
+            <InputNumber
+              v-model="form.biddingTime"
+              :min="0"
+              :max="999999999"
+              :invalid="!form.biddingTime && isSubmitting"
+              placeholder="ระบุเวลาในการประมูล (นาที)"
+              suffix=" นาที"
+              fluid
+              size="small"
+            />
+            <small
+              v-if="!form.biddingTime && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              <i class="pi pi-exclamation-triangle text-xs"></i>
+              กรุณาระบุเวลาในการประมูล (นาที)
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auction Schedule -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="pi pi-calendar text-green-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">กำหนดการประมูล</h4>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-play mr-1.5 !text-sm"></i>
+              วันที่เริ่มประมูล
+            </label>
+            <DatePicker
+              v-model="startDateValue"
+              showIcon
+              fluid
+              iconDisplay="input"
+              :invalid="!startDateValue && isSubmitting"
+              placeholder="เลือกวันที่เริ่มประมูล"
+              size="small"
+              showTime
+              hourFormat="24"
+            />
+            <small
+              v-if="!startDateValue && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              <i class="pi pi-exclamation-triangle text-xs"></i>
+              กรุณาเลือกวันที่เริ่มประมูล
+            </small>
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-stop mr-1.5 !text-sm"></i>
+              วันที่สิ้นสุดประมูล
+            </label>
+            <DatePicker
+              v-model="endDateValue"
+              showIcon
+              fluid
+              iconDisplay="input"
+              :invalid="!endDateValue && isSubmitting"
+              placeholder="เลือกวันที่สิ้นสุดประมูล"
+              size="small"
+              showTime
+              hourFormat="24"
+            />
+            <small
+              v-if="!endDateValue && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              <i class="pi pi-exclamation-triangle text-xs"></i>
+              กรุณาเลือกวันที่สิ้นสุดประมูล
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Price Information -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="pi pi-dollar text-yellow-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลราคา</h4>
+        </div>
+
+        <div>
+          <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+            <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
+            ราคาเริ่มต้น (บาท)
+          </label>
+          <InputNumber
+            v-model="form.minBid"
+            :invalid="(!form.minBid || form.minBid < 0) && isSubmitting"
+            placeholder="กรอกราคาเริ่มต้น (บาท)"
+            :min="0"
+            :max="999999999"
+            mode="currency"
+            currency="THB"
+            locale="th-TH"
+            fluid
+            size="small"
+          />
+          <small
+            v-if="(!form.minBid || form.minBid < 0) && isSubmitting"
+            class="text-red-500 flex items-center gap-1"
+          >
+            <i class="pi pi-exclamation-triangle text-xs"></i>
+            กรุณากรอกราคาเริ่มต้น (บาท)
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <Button
+          label="ยกเลิก"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="closeAddAuctionModal"
+          :disabled="isPending"
+          size="small"
+        />
+
+        <Button
+          label="เพิ่มประมูล"
+          icon="pi pi-plus"
+          @click="handleAddAuction"
+          :loading="isPending"
+          severity="success"
+          size="small"
+        />
+      </div>
+    </template>
+  </Dialog>
+</template>

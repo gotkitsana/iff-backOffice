@@ -48,8 +48,11 @@ export type IContentPayload = {
 }
 
 export type IAuctionPayload = {
-  name: string
-  type: number
+  productId: string
+  biddingTime: number
+  startDate: number
+  endDate: number
+  minBid: number
 }
 
 export type IUpdateAuctionPayload = {

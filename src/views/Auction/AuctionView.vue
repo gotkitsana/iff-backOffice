@@ -8,6 +8,7 @@ import Tag from 'primevue/tag'
 import { useAuctionStore } from '@/stores/auction/auction'
 import { useQuery } from '@tanstack/vue-query'
 import ModalAddContent from '@/components/auction/modal/ModalAddContent.vue'
+import ModalAddAuction from '@/components/auction/modal/ModalAddAuction.vue'
 
 // Sample data for active auctions
 const activeAuctions = ref([
@@ -138,7 +139,7 @@ const closeAuctionContent = () => {
 
     <!-- Auction Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Card :pt="{ body: 'p-3 md:p-4' }">
+      <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -152,7 +153,7 @@ const closeAuctionContent = () => {
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-3 md:p-4' }">
+      <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -166,7 +167,7 @@ const closeAuctionContent = () => {
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-3 md:p-4' }">
+      <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -180,7 +181,7 @@ const closeAuctionContent = () => {
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-3 md:p-4' }">
+      <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -312,11 +313,15 @@ const closeAuctionContent = () => {
     </Card>
   </div>
 
-
   <ModalAddContent
     v-if="auctionContentModal"
     :showAddContentModal="auctionContentModal"
     @onCloseAddContentModal="closeAuctionContent"
+  />
+
+  <ModalAddAuction
+    :showAddAuctionModal="auctionSettingModal"
+    @onCloseAddAuctionModal="closeAuctionSetting"
   />
 </template>
 
