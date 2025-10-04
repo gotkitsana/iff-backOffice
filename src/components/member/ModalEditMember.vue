@@ -34,10 +34,10 @@ const showEditModal = computed({
 const isSubmitting = ref(false)
 const customerData = ref<EditCustomerPayload>({
   _id: props.customerData._id,
-  displayName: props.customerData.displayName,
+  displayName: props.customerData.displayName || '',
   name: props.customerData.name,
   email: props.customerData.email,
-  // phone: props.customerData.phone,
+  isVerify: props.customerData.isVerify,
   bidder: props.customerData.bidder,
 })
 
@@ -47,7 +47,7 @@ const closeEditModal = () => {
     displayName: '',
     name: '',
     email: '',
-    // phone: '',
+    isVerify: false,
     bidder: false,
   }
   emit('onCloseEditModal')
@@ -122,6 +122,18 @@ const { mutate, isPending } = useMutation({
         >
       </div>
 
+      <!-- <div>
+        <label class="block text-sm font-medium! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+        <InputMask
+          id="basic"
+          v-model="customerData.phone"
+          mask="9999999999"
+          placeholder="เบอร์โทรศัพท์"
+          fluid
+          size="small"
+        />
+      </div> -->
+
       <div>
         <label class="block text-sm font-medium! text-gray-700 mb-1">อีเมล</label>
         <InputText
@@ -133,21 +145,16 @@ const { mutate, isPending } = useMutation({
         />
       </div>
 
-      <!-- <div>
-        <label class="block text-sm font-medium! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
-        <InputMask
-          id="basic"
-          v-model="customerData.phone"
-          mask="999-9999999"
-          placeholder="เบอร์โทรศัพท์"
-          fluid
-          size="small"
-        />
-      </div> -->
+      <div class="grid grid-cols-2">
+        <div class="flex items-center space-x-2">
+          <Checkbox v-model="customerData.bidder" binary inputId="bidder" size="small" />
+          <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
+        </div>
 
-      <div class="flex items-center space-x-2">
-        <Checkbox v-model="customerData.bidder" binary inputId="bidder" size="small" />
-        <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
+        <div class="flex items-center space-x-2">
+          <Checkbox v-model="customerData.isVerify" binary inputId="isVerify" size="small" />
+          <label for="isVerify" class="text-sm font-medium! text-gray-700">ยืนยันตัวตน</label>
+        </div>
       </div>
     </div>
 

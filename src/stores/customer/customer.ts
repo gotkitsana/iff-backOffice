@@ -3,32 +3,32 @@ import api from '@/utils/axios'
 
 export const useCustomerStore = defineStore('customer', () => {
   async function onGetCustomers() {
-    const { data } = await api.get(`/member`)
+    const { data } = await api.get(`/user`)
     return data.data
   }
 
   async function onGetCustomerID(id: string) {
-    const { data } = await api.get(`/member?id=${id}`)
+    const { data } = await api.get(`/user?id=${id}`)
     return data.data
   }
 
   async function onDeleteCustomer(id: string) {
-    const { data } = await api.delete(`/member?id=${id}`)
+    const { data } = await api.delete(`/user?id=${id}`)
     return data
   }
 
   async function onCreateCustomer(payload: CreateCustomerPayload) {
-    const { data } = await api.post(`/member`, payload)
+    const { data } = await api.post(`/user`, payload)
     return data
   }
 
   async function onUpdateCustomer(payload: EditCustomerPayload) {
-    const { data } = await api.put(`/member`, payload)
+    const { data } = await api.put(`/user`, payload)
     return data
   }
 
   async function onResetPassword(payload: ResetPasswordPayload) {
-    const { data } = await api.put(`/member/reset/password`, payload)
+    const { data } = await api.put(`/user/reset/password`, payload)
     return data
   }
 
@@ -45,11 +45,11 @@ export const useCustomerStore = defineStore('customer', () => {
 export interface Customer {
   _id: string
   username: string
-  displayName: string
+  displayName: string | null
   name: string
   password: string
   email: string
-  // phone: string
+  isVerify: boolean
   bidder: boolean
   cat: number
   uat: number
@@ -62,7 +62,7 @@ export interface CreateCustomerPayload {
   name: string
   password: string
   email: string
-  // phone: string
+  isVerify: boolean
   bidder: boolean
 }
 
@@ -71,7 +71,7 @@ export interface EditCustomerPayload {
   displayName: string
   name: string
   email: string
-  // phone: string
+  isVerify: boolean
   bidder: boolean
 }
 

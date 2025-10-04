@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue3-toastify'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL + '/api/admin',
+  baseURL: import.meta.env.VITE_API_URL + '/erp',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -39,32 +39,47 @@ export const useProductStore = defineStore('product', () => {
 })
 
 export type IProduct = {
-  filename: string
-  fileType: string
   _id: string
   type: number
   name: string
-  price: number
+  price: number | null
   detail: string
-  category: string
+  category: string | null
+  sku: string
+  farm: string
+  size: number
+  gender: number
+  age: string
+  sold: boolean
+  rate: number
   youtube: string
+  certificate: string | null
+  filename: string
+  fileType: string
+  auctionOnly: number
   cat: number
   uat: number
 }
 
 export type IProductDetail = {
-  filename: string
-  fileType: string
   _id: string
   type: number
   name: string
-  price: number
+  price: number | null
   detail: string
-  category: {
-    _id: string
-    name: string
-  }
+  category: string | null
+  sku: string
+  farm: string
+  size: number
+  gender: number
+  age: string
+  sold: boolean
+  rate: number
   youtube: string
+  certificate: string | null
+  filename: string
+  fileType: string
+  auctionOnly: number
   cat: number
   uat: number
 }

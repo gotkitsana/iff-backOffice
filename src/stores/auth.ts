@@ -30,7 +30,7 @@ export const useAuthStore = defineStore(
     )
 
     const fetchProfile = async () => {
-      const { data } = await api.get('/profile')
+      const { data } = await api.get('/admin/profile')
       user.value = data.data
       return data.data
     }

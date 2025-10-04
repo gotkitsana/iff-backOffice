@@ -61,7 +61,7 @@ const { data, isLoading } = useQuery<Customer>({
     <div v-if="data" class="space-y-4">
       <!-- Header Section with Avatar -->
       <div
-        class="flex items-center space-x-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+        class="flex items-center space-x-3 p-4 bg-gradient-to-r from-blue-50/75 to-indigo-50/75 rounded-xl border border-blue-100/50"
       >
         <div
           class="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center"
@@ -69,11 +69,18 @@ const { data, isLoading } = useQuery<Customer>({
           <i class="pi pi-user text-white text-2xl"></i>
         </div>
         <div class="flex-1">
-          <h3 class="text-lg font-semibold! text-gray-800">{{ data.displayName }}</h3>
-          <div>
+          <h3 class="text-xl font-[500]! text-gray-800">{{ data.displayName || data.username }}</h3>
+          <div class="flex items-center gap-x-2">
             <Tag
+              class="text-xs"
               :value="data.bidder ? 'ลูกค้าประมูล' : 'ลูกค้าทั่วไป'"
               :severity="data.bidder ? 'success' : 'info'"
+            />
+
+            <Tag
+              class="text-xs"
+              :value="data.isVerify ? 'ยืนยันตัวตน' : 'ยังไม่ยืนยันตัวตน'"
+              :severity="data.isVerify ? 'info' : 'danger'"
             />
           </div>
         </div>

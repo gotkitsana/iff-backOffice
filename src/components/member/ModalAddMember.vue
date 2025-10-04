@@ -32,7 +32,7 @@ const newCustomer = ref<CreateCustomerPayload>({
   displayName: '',
   name: '',
   password: '',
-  // phone: '',
+  isVerify: false,
   email: '',
   bidder: false,
 })
@@ -43,7 +43,7 @@ const closeAddModal = () => {
     displayName: '',
     name: '',
     password: '',
-    // phone: '',
+    isVerify: false,
     email: '',
     bidder: false,
   }
@@ -72,7 +72,7 @@ const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: CreateCustomerPayload) => customerStore.onCreateCustomer(payload),
   onSuccess: (data: any) => {
-    if(data.data) {
+    if (data.data) {
       toast.success('เพิ่มลูกค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_customers'] })
       closeAddModal()
@@ -167,23 +167,18 @@ const { mutate, isPending } = useMutation({
             size="small"
           />
         </div>
-
-        <!-- <div>
-          <label class="block text-sm font-medium! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
-          <InputMask
-            id="basic"
-            v-model="newCustomer.phone"
-            mask="999-9999999"
-            placeholder="เบอร์โทรศัพท์"
-            fluid
-            size="small"
-          />
-        </div> -->
       </div>
 
-      <div class="flex items-center space-x-2">
-        <Checkbox v-model="newCustomer.bidder" binary inputId="bidder" size="small" />
-        <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
+      <div class="grid grid-cols-2">
+        <div class="flex items-center space-x-2">
+          <Checkbox v-model="newCustomer.bidder" binary inputId="bidder" size="small" />
+          <label for="bidder" class="text-sm font-medium! text-gray-700">ลูกค้าประมูล</label>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <Checkbox v-model="newCustomer.isVerify" binary inputId="isVerify" size="small" />
+          <label for="isVerify" class="text-sm font-medium! text-gray-700">ยืนยันตัวตน</label>
+        </div>
       </div>
     </div>
 

@@ -1,5 +1,5 @@
 <template>
-  <div>
-    <h1>สินค้า</h1>
-  </div>
+  <p>
+    product
+  </p>
 </template>

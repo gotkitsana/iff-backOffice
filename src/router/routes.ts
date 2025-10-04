@@ -2,6 +2,7 @@ import Dashboard from '@/views/DashboardView.vue'
 import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
 import Auction from '@/views/Auction/AuctionView.vue'
+import KoiStore from '@/views/Auction/KoiStoreView.vue'
 import Login from '@/views/auth/LoginView.vue'
 import Unauthorized from '@/views/UnauthorizedView.vue'
 import NotFound from '@/views/NotFoundView.vue'
@@ -107,6 +108,16 @@ export default [
           title: 'Auction',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'Auction' }],
+        },
+      },
+      {
+        path: '/koi-store',
+        name: 'koi-store',
+        component: KoiStore,
+        meta: {
+          title: 'คลังปลาคราฟ',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'คลังปลาคราฟ' }],
         },
       },
 

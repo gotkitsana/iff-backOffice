@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useAuctionStore, type IAuctionPayload } from '@/stores/auction/auction'
 import { useMutation } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { toast } from 'vue3-toastify'
 import { Dialog, Button, InputNumber, Select, DatePicker } from 'primevue'
+import type { IProduct } from '@/stores/auction/product'
 
 const props = defineProps<{
   showAddAuctionModal: boolean
+  availableProducts?: IProduct[]
 }>()
 
 const emit = defineEmits<{
@@ -52,11 +54,31 @@ const resetForm = () => {
 
 const isSubmitting = ref(false)
 
-// Product options (mock data - replace with actual API call)
-const productOptions = ref([
-  { label: 'ปลา', value: '1' },
-  { label: 'ปลา-2', value: '2' },
-])
+// Product options from available products
+const productOptions = computed(() => {
+  if (!props.availableProducts) return []
+  return props.availableProducts.map((product) => ({
+    label: `${product.name} (${product.size} ซม.) - ${product.category || 'ไม่ระบุหมวดหมู่'}`,
+    value: product._id,
+    product: product,
+  }))
+})
+
+// Selected product details
+const selectedProduct = computed(() => {
+  if (!form.value.productId || !props.availableProducts) return null
+  return props.availableProducts.find((p) => p._id === form.value.productId)
+})
+
+// Watch for product selection to auto-fill price
+watch(
+  () => form.value.productId,
+  (newProductId) => {
+    if (newProductId && selectedProduct.value) {
+      form.value.minBid = selectedProduct.value.price || 0
+    }
+  }
+)
 
 const validateForm = () => {
   const errors = []
@@ -74,33 +96,6 @@ const validateForm = () => {
   return errors
 }
 
-const handleAddAuction = () => {
-  isSubmitting.value = true
-  const errors = validateForm()
-
-  if (errors.length > 0) {
-    toast.error(errors[0])
-    isSubmitting.value = false
-    return
-  }
-
-  console.log({
-    productId: form.value.productId,
-    biddingTime: form.value.biddingTime,
-    startDate: startDateValue.value ? startDateValue.value.getTime() : 0,
-    endDate: endDateValue.value ? endDateValue.value.getTime() : 0,
-    minBid: form.value.minBid,
-  })
-
-  // mutate({
-  //   productId: form.value.productId,
-  //   biddingTime: form.value.biddingTime,
-  //   startDate: startDateValue.value ? startDateValue.value.getTime() : 0,
-  //   endDate: endDateValue.value ? endDateValue.value.getTime() : 0,
-  //   minBid: form.value.minBid,
-  // })
-}
-
 const auctionStore = useAuctionStore()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: IAuctionPayload) => auctionStore.onCreateAuction(payload),
@@ -116,6 +111,26 @@ const { mutate, isPending } = useMutation({
     toast.error(errorResponse.message || 'เพิ่มประมูลไม่สำเร็จ')
   },
 })
+
+// Use the mutate function
+const handleAddAuction = () => {
+  isSubmitting.value = true
+  const errors = validateForm()
+
+  if (errors.length > 0) {
+    toast.error(errors[0])
+    isSubmitting.value = false
+    return
+  }
+
+  mutate({
+    productId: form.value.productId,
+    biddingTime: form.value.biddingTime,
+    startDate: startDateValue.value ? startDateValue.value.getTime() : 0,
+    endDate: endDateValue.value ? endDateValue.value.getTime() : 0,
+    minBid: form.value.minBid,
+  })
+}
 </script>
 <template>
   <Dialog
@@ -147,15 +162,15 @@ const { mutate, isPending } = useMutation({
       <!-- Product Selection -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-box text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลปลาคาร์ฟ</h4>
+          <i class="pi pi-fish text-blue-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">เลือกปลาคาร์ฟ</h4>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-tag mr-1.5 !text-sm"></i>
-              เลือกสินค้า
+              เลือกปลาคาร์ฟ *
             </label>
             <Select
               v-model="form.productId"
@@ -179,7 +194,7 @@ const { mutate, isPending } = useMutation({
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-clock mr-1.5 !text-sm"></i>
-              เวลาประมูล (นาที)
+              เวลาประมูล (นาที) *
             </label>
             <InputNumber
               v-model="form.biddingTime"
@@ -198,6 +213,33 @@ const { mutate, isPending } = useMutation({
               <i class="pi pi-exclamation-triangle text-xs"></i>
               กรุณาระบุเวลาในการประมูล (นาที)
             </small>
+          </div>
+        </div>
+
+        <!-- Selected Product Details -->
+        <div v-if="selectedProduct" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-fish text-blue-600 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <h5 class="font-semibold text-gray-900">{{ selectedProduct.name }}</h5>
+              <p class="text-sm text-gray-600">
+                {{ selectedProduct.category || 'ไม่ระบุหมวดหมู่' }} - {{ selectedProduct.size }} ซม.
+              </p>
+              <p class="text-xs text-gray-500 mt-1">{{ selectedProduct.detail }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold text-green-600">
+                {{
+                  selectedProduct.price
+                    ? new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(
+                        selectedProduct.price
+                      )
+                    : 'ไม่ระบุราคา'
+                }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -269,30 +311,54 @@ const { mutate, isPending } = useMutation({
           <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลราคา</h4>
         </div>
 
-        <div>
-          <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-            <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-            ราคาเริ่มต้น (บาท)
-          </label>
-          <InputNumber
-            v-model="form.minBid"
-            :invalid="(!form.minBid || form.minBid < 0) && isSubmitting"
-            placeholder="กรอกราคาเริ่มต้น (บาท)"
-            :min="0"
-            :max="999999999"
-            mode="currency"
-            currency="THB"
-            locale="th-TH"
-            fluid
-            size="small"
-          />
-          <small
-            v-if="(!form.minBid || form.minBid < 0) && isSubmitting"
-            class="text-red-500 flex items-center gap-1"
+        <div class="space-y-4">
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
+              ราคาเริ่มต้น (บาท) *
+            </label>
+            <InputNumber
+              v-model="form.minBid"
+              :invalid="(!form.minBid || form.minBid < 0) && isSubmitting"
+              placeholder="กรอกราคาเริ่มต้น (บาท)"
+              :min="0"
+              :max="999999999"
+              mode="currency"
+              currency="THB"
+              locale="th-TH"
+              fluid
+              size="small"
+            />
+            <small
+              v-if="(!form.minBid || form.minBid < 0) && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              <i class="pi pi-exclamation-triangle text-xs"></i>
+              กรุณากรอกราคาเริ่มต้น (บาท)
+            </small>
+          </div>
+
+          <!-- Price Suggestion -->
+          <div
+            v-if="selectedProduct && selectedProduct.price"
+            class="p-3 bg-green-50 border border-green-200 rounded-lg"
           >
-            <i class="pi pi-exclamation-triangle text-xs"></i>
-            กรุณากรอกราคาเริ่มต้น (บาท)
-          </small>
+            <div class="flex items-center gap-2 mb-2">
+              <i class="pi pi-lightbulb text-green-600"></i>
+              <span class="text-sm font-medium text-green-800">คำแนะนำ</span>
+            </div>
+            <p class="text-sm text-green-700">
+              ราคาขายปลาคาร์ฟ:
+              <span class="font-semibold">{{
+                new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(
+                  selectedProduct.price
+                )
+              }}</span>
+            </p>
+            <p class="text-xs text-green-600 mt-1">
+              ราคาเริ่มต้นประมูลควรต่ำกว่าราคาขายเพื่อดึงดูดผู้ประมูล
+            </p>
+          </div>
         </div>
       </div>
     </div>

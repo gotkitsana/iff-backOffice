@@ -32,15 +32,18 @@ const { data, isLoading, refetch } = useQuery<IContentPayload>({
   queryFn: () => auctionStore.onGetAuctionContent(),
 })
 
+console.log(data)
 const form = ref({
   content: '',
 })
 
 watch(data, (newVal) => {
   if (newVal) {
-    form.value.content = newVal.content
-  }
-})
+      form.value.content = newVal.content
+    }
+  },
+  { immediate: true }
+)
 
 const isSubmitting = ref(false)
 const handleAddContent = () => {

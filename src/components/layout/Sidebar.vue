@@ -73,6 +73,11 @@ const menuSections = [
         label: 'Auction',
         route: 'auction',
       },
+      {
+        icon: 'pi pi-shop',
+        label: 'คลังปลาคราฟ',
+        route: 'koi-store',
+      },
     ],
   },
   {
