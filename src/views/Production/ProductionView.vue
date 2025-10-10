@@ -696,21 +696,20 @@ const handleTabChange = (value: string) => {
                     label="ส่งออกรายงาน Excel"
                     icon="pi pi-file-excel"
                     severity="success"
-
                     size="small"
                   />
+
                   <Button
                     label="ส่งออกรายงาน Word"
                     icon="pi pi-file-word"
                     severity="info"
-
                     size="small"
                   />
                   <Button
                     label="ส่งออกรายงาน PowerPoint"
                     icon="pi pi-file-powerpoint"
                     severity="warning"
-                    
+
                     size="small"
                   />
                 </div>
