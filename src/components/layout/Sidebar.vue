@@ -56,7 +56,7 @@ const menuSections = [
       {
         icon: 'pi pi-cart-plus',
         label: 'คลังสินค้า',
-        route: 'sales',
+        route: 'store',
       },
       {
         icon: 'pi pi-calculator',
