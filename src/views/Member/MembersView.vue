@@ -42,7 +42,7 @@ const closeViewModal = () => {
 const showDeleteModal = ref(false)
 const deleteCustomer = ref<{ id: string; name: string } | null>(null)
 const openDeleteModal = (customer: IMember) => {
-  deleteCustomer.value = { id: customer._id, name: customer.name }
+  deleteCustomer.value = { id: customer._id, name: customer.name || '' }
   showDeleteModal.value = true
 }
 const closeDeleteModal = () => {

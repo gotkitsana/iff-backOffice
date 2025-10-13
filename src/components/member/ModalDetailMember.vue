@@ -77,11 +77,6 @@ const { data, isLoading } = useQuery<IMember>({
               :severity="data.bidder ? 'success' : 'info'"
             />
 
-            <Tag
-              class="text-xs"
-              :value="data.isVerify ? 'ยืนยันตัวตน' : 'ยังไม่ยืนยันตัวตน'"
-              :severity="data.isVerify ? 'info' : 'danger'"
-            />
           </div>
         </div>
       </div>
@@ -97,14 +92,6 @@ const { data, isLoading } = useQuery<IMember>({
             <label class="block text-sm font-medium! text-gray-600">ชื่อ-นามสกุล</label>
             <div class="p-2 bg-gray-50 rounded-lg border border-gray-200">
               <p class="text-gray-900 font-medium!">{{ data.name }}</p>
-            </div>
-          </div>
-          <div class="space-y-1">
-            <label class="block text-sm font-medium! text-gray-600">อีเมล</label>
-            <div class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-              <p class="text-gray-900 font-medium!">
-                {{ data.email || 'ไม่ระบุ' }}
-              </p>
             </div>
           </div>
         </div>

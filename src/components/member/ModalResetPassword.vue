@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { ResetPasswordPayload } from '@/stores/auction/auction-member'
+import type { ResetPasswordPayload } from '@/stores/member/member'
 import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
-import { useAuctionMemberStore } from '@/stores/auction/auction-member'
+import { useMemberStore } from '@/stores/member/member'
 import { useMutation } from '@tanstack/vue-query'
 
-const customerStore = useAuctionMemberStore()
+const customerStore = useMemberStore()
 
 const props = defineProps<{
   showResetModal: boolean
