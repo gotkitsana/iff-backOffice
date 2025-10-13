@@ -85,7 +85,7 @@ const menuSections = [
     items: [
       {
         icon: 'pi pi-users',
-        label: 'จัดการสมาชิก',
+        label: 'ข้อมูลลูกค้า',
         route: 'members',
       },
     ],
