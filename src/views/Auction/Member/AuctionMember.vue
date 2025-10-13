@@ -4,10 +4,15 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import { useQuery } from '@tanstack/vue-query'
+import Tag from 'primevue/tag'
+import formatDate from '@/utils/formatDate'
 import { useCustomerStore, type Customer } from '@/stores/customer/customer'
 import ModalAddMember from '@/components/member/ModalAddMember.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
+import ModalEditMember from '@/components/member/ModalEditMember.vue'
+import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
+import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
+import { useQuery } from '@tanstack/vue-query'
 
 const customerStore = useCustomerStore()
 const { data, isLoading } = useQuery<Customer[]>({
@@ -42,6 +47,17 @@ const closeEditModal = () => {
   editCustomer.value = null
 }
 
+const showResetPasswordModal = ref(false)
+const resetPasswordCustomer = ref<{ id: string; name: string } | null>(null)
+const openResetPasswordModal = (customer: Customer) => {
+  showResetPasswordModal.value = true
+  resetPasswordCustomer.value = { id: customer._id, name: customer.name }
+}
+const closeResetPasswordModal = () => {
+  showResetPasswordModal.value = false
+  resetPasswordCustomer.value = null
+}
+
 const showDeleteModal = ref(false)
 const deleteCustomer = ref<{ id: string; name: string } | null>(null)
 const openDeleteModal = (customer: Customer) => {
@@ -60,8 +76,8 @@ const closeDeleteModal = () => {
       <template #header>
         <div class="flex items-center justify-between flex-wrap gap-2 p-5 pb-0">
           <div>
-            <h1 class="text-lg font-semibold! text-gray-900">ข้อมูลลูกค้า</h1>
-            <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p>
+            <h1 class="text-lg font-semibold! text-gray-900">จัดการสมาชิก</h1>
+            <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้าสำหรับประมูลปลาคราฟ</p>
           </div>
           <Button
             label="บันทึกข้อมูลลูกค้า"
@@ -187,6 +203,22 @@ const closeDeleteModal = () => {
       :showDetailModal="showViewModal"
       @onCloseDetailModal="closeViewModal"
       :id="selectedCustomer"
+    />
+
+    <!-- Edit Customer Modal -->
+    <ModalEditMember
+      v-if="!!editCustomer"
+      :showEditModal="showEditModal"
+      @onCloseEditModal="closeEditModal"
+      :customerData="editCustomer"
+    />
+
+    <ModalResetPassword
+      v-if="!!resetPasswordCustomer"
+      :showResetModal="showResetPasswordModal"
+      @onCloseResetModal="closeResetPasswordModal"
+      :customerId="resetPasswordCustomer.id"
+      :customerName="resetPasswordCustomer.name"
     />
 
     <ModalDeleteMember
