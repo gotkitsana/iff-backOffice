@@ -102,7 +102,7 @@ const menuSections = [
       {
         icon: 'pi pi-cog',
         label: 'บุคลากร',
-        route: 'admin-settings',
+        route: 'employee',
       },
       {
         icon: 'pi pi-cog',
