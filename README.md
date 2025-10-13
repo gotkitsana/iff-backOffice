@@ -37,3 +37,14 @@ pnpm build
 ```sh
 pnpm lint
 ```
+
+export enum ProductType {
+    product = 0,
+    species = 1
+}
+
+export enum GenderType {
+    male = 0,
+    female = 1,
+    unknow = 2
+}

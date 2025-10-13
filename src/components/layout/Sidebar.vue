@@ -63,6 +63,11 @@ const menuSections = [
         label: 'ผลิต',
         route: 'production',
       },
+      {
+        icon: 'pi pi-shop',
+        label: 'คลัง',
+        route: 'koi-store',
+      },
     ],
   },
   {
@@ -72,11 +77,6 @@ const menuSections = [
         icon: 'pi pi-trophy',
         label: 'Auction',
         route: 'auction',
-      },
-      {
-        icon: 'pi pi-shop',
-        label: 'คลังปลาคราฟ',
-        route: 'koi-store',
       },
     ],
   },

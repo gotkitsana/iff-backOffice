@@ -2,6 +2,8 @@ import Dashboard from '@/views/DashboardView.vue'
 import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
 import Auction from '@/views/Auction/AuctionView.vue'
+import AuctionDetail from '@/views/Auction/AuctionDetailView.vue'
+import AuctionSettings from '@/views/Auction/AuctionSettingsView.vue'
 import KoiStore from '@/views/Auction/KoiStoreView.vue'
 import Login from '@/views/auth/LoginView.vue'
 import Unauthorized from '@/views/UnauthorizedView.vue'
@@ -108,6 +110,34 @@ export default [
           title: 'Auction',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'Auction' }],
+        },
+      },
+      {
+        path: '/auction/:id',
+        name: 'auction-detail',
+        component: AuctionDetail,
+        meta: {
+          title: 'รายละเอียดการประมูล',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบการตลาด' },
+            { label: 'Auction' },
+            { label: 'รายละเอียดการประมูล' },
+          ],
+        },
+      },
+      {
+        path: '/auction/:id/settings',
+        name: 'auction-settings',
+        component: AuctionSettings,
+        meta: {
+          title: 'ตั้งค่าระบบประมูล',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบการตลาด' },
+            { label: 'Auction' },
+            { label: 'ตั้งค่าระบบประมูล' },
+          ],
         },
       },
       {

@@ -8,7 +8,7 @@ import type { IProduct } from '@/stores/auction/product'
 
 const props = defineProps<{
   showAddAuctionModal: boolean
-  availableProducts?: IProduct[]
+  availableProducts?: any[]
 }>()
 
 const emit = defineEmits<{
