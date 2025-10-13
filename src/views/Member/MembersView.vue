@@ -1,28 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import Card from 'primevue/card'
-import Button from 'primevue/button'
+import { onMounted, ref } from 'vue'
 import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { Column, Tag, Button, Card } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
-import { useCustomerStore, type Customer } from '@/stores/customer/customer'
-import ModalAddMember from '@/components/member/ModalAddMember.vue'
+import { useMemberStore, type IMember } from '@/stores/member/member'
+import ModalAddAndEditMember from '@/components/member/ModalAddAndEditMember.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 
-const customerStore = useCustomerStore()
-const { data, isLoading } = useQuery<Customer[]>({
-  queryKey: ['get_customers'],
-  queryFn: () => customerStore.onGetCustomers(),
+const memberStore = useMemberStore()
+const { data, isLoading } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
 })
 
-const showAddModal = ref(false)
+const showAddAndEditModal = ref(false)
+const editCustomer = ref<IMember | null>(null)
 const openAddModal = () => {
-  showAddModal.value = true
+  showAddAndEditModal.value = true
+}
+const openEditModal = (customer: IMember) => {
+  editCustomer.value = customer
+  showAddAndEditModal.value = true
+}
+const closeAddAndEditModal = () => {
+  showAddAndEditModal.value = false
+  editCustomer.value = null
 }
 
 const showViewModal = ref(false)
 const selectedCustomer = ref<string | null>(null)
-const openViewModal = (customer: Customer) => {
+const openViewModal = (customer: IMember) => {
   selectedCustomer.value = customer._id
   showViewModal.value = true
 }
@@ -31,20 +38,10 @@ const closeViewModal = () => {
   selectedCustomer.value = null
 }
 
-const showEditModal = ref(false)
-const editCustomer = ref<Customer | null>(null)
-const openEditModal = (customer: Customer) => {
-  editCustomer.value = customer
-  showEditModal.value = true
-}
-const closeEditModal = () => {
-  showEditModal.value = false
-  editCustomer.value = null
-}
 
 const showDeleteModal = ref(false)
 const deleteCustomer = ref<{ id: string; name: string } | null>(null)
-const openDeleteModal = (customer: Customer) => {
+const openDeleteModal = (customer: IMember) => {
   deleteCustomer.value = { id: customer._id, name: customer.name }
   showDeleteModal.value = true
 }
@@ -52,6 +49,57 @@ const closeDeleteModal = () => {
   deleteCustomer.value = null
   showDeleteModal.value = false
 }
+
+const showResetPasswordModal = ref(false)
+const resetPasswordCustomer = ref<{ id: string; name: string } | null>(null)
+const openResetPasswordModal = (customer: IMember) => {
+  resetPasswordCustomer.value = { id: customer._id, name: customer.name || '' }
+  showResetPasswordModal.value = true
+}
+const closeResetPasswordModal = () => {
+  resetPasswordCustomer.value = null
+  showResetPasswordModal.value = false
+}
+
+const products = ref<IMember[]>([])
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'cs':
+      return 'success'
+    case 'lp':
+      return 'info'
+    case 'eq':
+      return 'contrast'
+    case 'css':
+      return 'warn'
+    default:
+      return 'secondary'
+  }
+}
+
+onMounted(() => {
+  products.value = [
+    {
+      _id: '1',
+      code: '1',
+      status: 'cs',
+      contact: '0812345678',
+      contactName: 'Facebook',
+      displayName: 'John Doe',
+      name: 'John Doe',
+      address: '1234567890',
+      province: 'กรุงเทพมหานคร',
+      phone: '0812345678',
+      type: 'ลูกค้า',
+      interest: 'กล้องถ่ายรูป',
+      username: 'john.doe',
+      password: '1234567890',
+      bidder: true,
+      cat: 1,
+      uat: 1,
+    },
+  ]
+})
 </script>
 
 <template>
@@ -73,69 +121,81 @@ const closeDeleteModal = () => {
         </div>
       </template>
       <template #content>
-        <DataTable
-          :value="data"
-          :paginator="true"
-          :rows="100"
-          :loading="isLoading"
-          class="p-datatable-sm"
-        >
-         <Column
-            field="no"
+        <DataTable :value="products" dataKey="_id">
+          <Column
+            field="code"
             header="รหัสลูกค้า"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
           />
+
           <Column
             field="status"
             header="สถานะลูกค้า"
-            sortable
-          />
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="
+                  memberStore.memberStatusOptions.find(
+                    (option) => option.value === slotProps.data.status
+                  )?.label
+                "
+                :severity="getStatusLabel(slotProps.data.status)"
+                size="small"
+              />
+            </template>
+          </Column>
+
           <Column
             field="contact"
             header="ช่องทางติดต่อ"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
-            field="social"
+            field="contactName"
             header="ชื่อโซเชียล"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
-            field="nickname"
+            field="displayName"
             header="ชื่อเล่น"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
-            field="fullname"
+            field="name"
             header="ชื่อ/นามสกุล"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
-          <Column
-            field="address"
-            header="ที่อยู่"
-            sortable
-          />
+          <Column field="address" header="ที่อยู่" :pt="{ bodyCell: 'text-sm' }" />
+
+          <Column field="province" header="จังหวัด" :pt="{ bodyCell: 'text-sm' }" />
+
+          <Column field="phone" header="เบอร์โทร" :pt="{ bodyCell: 'text-sm' }" />
 
           <Column
-            field="province"
-            header="จังหวัด"
-            sortable
-          />
-
-          <Column
-            field="phone"
-            header="เบอร์โทร"
-            sortable
-          />
-
-          <Column
-            field="statusType"
+            field="type"
             header="ประเภทลูกค้า"
-            sortable
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem]', bodyCell: 'text-sm' }"
+          />
+
+          <Column
+            field="interest"
+            header="ความสนใจ"
+            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
+          />
+
+          <Column field="username" header="ยูสเซอร์" :pt="{ bodyCell: 'text-sm' }" />
+
+          <Column field="password" header="รหัสผ่าน" :pt="{ bodyCell: 'text-sm' }" />
+
+          <Column
+            field="bidder"
+            header="สถานะยูสเซอร์"
+            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
@@ -163,6 +223,15 @@ const closeDeleteModal = () => {
                   v-tooltip.top="'แก้ไขข้อมูล'"
                 />
                 <Button
+                  icon="pi pi-key"
+                  size="small"
+                  text
+                  rounded
+                  severity="help"
+                  @click="openResetPasswordModal(slotProps.data)"
+                  v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
+                />
+                <Button
                   icon="pi pi-trash"
                   size="small"
                   text
@@ -179,7 +248,11 @@ const closeDeleteModal = () => {
     </Card>
 
     <!-- Add Customer Modal -->
-    <ModalAddMember :showAddModal="showAddModal" @onCloseAddModal="showAddModal = false" />
+    <ModalAddAndEditMember
+      :showAddModal="showAddAndEditModal"
+      @onCloseAddModal="closeAddAndEditModal"
+      :id="editCustomer?._id || null"
+    />
 
     <!-- View Customer Modal -->
     <ModalDetailMember
@@ -195,6 +268,14 @@ const closeDeleteModal = () => {
       @onCloseDeleteModal="closeDeleteModal"
       :id="deleteCustomer.id"
       :customerName="deleteCustomer.name"
+    />
+
+    <ModalResetPassword
+      v-if="!!resetPasswordCustomer"
+      :showResetModal="showResetPasswordModal"
+      @onCloseResetModal="closeResetPasswordModal"
+      :customerId="resetPasswordCustomer.id"
+      :customerName="resetPasswordCustomer.name"
     />
   </div>
 </template>

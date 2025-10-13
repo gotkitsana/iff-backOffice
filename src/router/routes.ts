@@ -51,6 +51,16 @@ export default [
         },
       },
       {
+        path: '/members',
+        name: 'members',
+        component: Members,
+        meta: {
+          title: 'ข้อมูลลูกค้า',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ข้อมูลลูกค้า' }],
+        },
+      },
+      {
         path: '/sales',
         name: 'sales',
         component: Sales,
@@ -58,6 +68,26 @@ export default [
           title: 'ขาย',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ขาย' }],
+        },
+      },
+      {
+        path: '/shipping',
+        name: 'shipping',
+        component: Dashboard,
+        meta: {
+          title: 'จัดส่ง',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'จัดส่ง' }],
+        },
+      },
+      {
+        path: '/store',
+        name: 'store',
+        component: Dashboard,
+        meta: {
+          title: 'คลังสินค้า',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'คลังสินค้า' }],
         },
       },
       {
@@ -80,6 +110,7 @@ export default [
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }],
         },
       },
+
       {
         path: '/production',
         name: 'production',
@@ -87,21 +118,20 @@ export default [
         meta: {
           title: 'ผลิต',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'ผลิต' }],
+          breadcrumb: [{ label: 'ระบบการผลิต' }, { label: 'ผลิต' }],
         },
       },
 
       {
-        path: '/marketing',
-        name: 'marketing',
-        component: Marketing,
+        path: '/promotion',
+        name: 'promotion',
+        component: Dashboard,
         meta: {
-          title: 'การตลาด',
+          title: 'โปรโมชั่น',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'การตลาด' }],
+          breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'โปรโมชั่น' }],
         },
       },
-
       {
         path: '/auction',
         name: 'auction',
@@ -140,6 +170,7 @@ export default [
           ],
         },
       },
+      
       {
         path: '/koi-store',
         name: 'koi-store',
@@ -170,16 +201,6 @@ export default [
           title: 'จัดการ Admin',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบ Admin' }, { label: 'จัดการ Admin' }],
-        },
-      },
-      {
-        path: '/members',
-        name: 'members',
-        component: Members,
-        meta: {
-          title: 'จัดการสมาชิก',
-          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบสมาชิก' }, { label: 'จัดการสมาชิก' }],
         },
       },
     ],

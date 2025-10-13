@@ -104,7 +104,7 @@ api.interceptors.response.use(
       }
 
       // Call refresh token endpoint with the specified format
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/auth/token/refresh`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/erp/auth/token/refresh`, {
         refreshToken,
       })
 

@@ -76,6 +76,8 @@ body {
 :root {
   --p-tabs-tab-padding: 0.75rem 0.875rem !important;
   --p-tabs-tabpanel-padding: 0.625rem 0.875rem 0.875rem 0.875rem !important;
+  --p-datatable-body-cell-padding: 0.5rem 0.75rem;
+  --p-datatable-header-cell-padding: 0.625rem 0.875rem;
 }
 
 /* Custom scrollbar for sidebar */

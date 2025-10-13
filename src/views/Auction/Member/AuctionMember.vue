@@ -6,8 +6,8 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import formatDate from '@/utils/formatDate'
-import { useCustomerStore, type Customer } from '@/stores/customer/customer'
-import ModalAddMember from '@/components/member/ModalAddMember.vue'
+import { useCustomerStore, type Customer } from '@/stores/member/member'
+import ModalAddMember from '@/components/member/ModalAddAndEditMember.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 import ModalEditMember from '@/components/member/ModalEditMember.vue'
 import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
@@ -96,63 +96,23 @@ const closeDeleteModal = () => {
           :loading="isLoading"
           class="p-datatable-sm"
         >
-         <Column
-            field="no"
-            header="รหัสลูกค้า"
-            sortable
-          />
-          <Column
-            field="status"
-            header="สถานะลูกค้า"
-            sortable
-          />
-          <Column
-            field="contact"
-            header="ช่องทางติดต่อ"
-            sortable
-          />
+          <Column field="no" header="รหัสลูกค้า" sortable />
+          <Column field="status" header="สถานะลูกค้า" sortable />
+          <Column field="contact" header="ช่องทางติดต่อ" sortable />
 
-          <Column
-            field="social"
-            header="ชื่อโซเชียล"
-            sortable
-          />
+          <Column field="social" header="ชื่อโซเชียล" sortable />
 
-          <Column
-            field="nickname"
-            header="ชื่อเล่น"
-            sortable
-          />
+          <Column field="nickname" header="ชื่อเล่น" sortable />
 
-          <Column
-            field="fullname"
-            header="ชื่อ/นามสกุล"
-            sortable
-          />
+          <Column field="fullname" header="ชื่อ/นามสกุล" sortable />
 
-          <Column
-            field="address"
-            header="ที่อยู่"
-            sortable
-          />
+          <Column field="address" header="ที่อยู่" sortable />
 
-          <Column
-            field="province"
-            header="จังหวัด"
-            sortable
-          />
+          <Column field="province" header="จังหวัด" sortable />
 
-          <Column
-            field="phone"
-            header="เบอร์โทร"
-            sortable
-          />
+          <Column field="phone" header="เบอร์โทร" sortable />
 
-          <Column
-            field="statusType"
-            header="ประเภทลูกค้า"
-            sortable
-          />
+          <Column field="statusType" header="ประเภทลูกค้า" sortable />
 
           <Column
             header="จัดการ"

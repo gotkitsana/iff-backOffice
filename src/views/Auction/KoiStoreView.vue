@@ -264,7 +264,7 @@ const getStatusTag = (product: IProduct) => {
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-3 md:p-5' }">
+      <!-- <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -280,7 +280,7 @@ const getStatusTag = (product: IProduct) => {
             </div>
           </div>
         </template>
-      </Card>
+      </Card> -->
 
       <Card :pt="{ body: 'p-3 md:p-5' }">
         <template #content>

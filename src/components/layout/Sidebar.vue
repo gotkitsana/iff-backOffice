@@ -70,22 +70,21 @@ const menuSections = [
       },
     ],
   },
-  // {
-  //   title: 'ระบบการผลิต',
-  //   items: [
-  //     {
-  //       icon: 'pi pi-warehouse',
-  //       label: 'ผลิต',
-  //       route: 'production',
-  //     },
-  //     {
-  //       icon: 'pi pi-shop',
-  //       label: 'คลัง',
-  //       route: 'koi-store',
-  //     },
-
-  //   ],
-  // },
+  {
+    title: 'ระบบการผลิต',
+    items: [
+      {
+        icon: 'pi pi-warehouse',
+        label: 'ผลิต',
+        route: 'production',
+      },
+      // {
+      //   icon: 'pi pi-shop',
+      //   label: 'คลัง',
+      //   route: 'koi-store',
+      // },
+    ],
+  },
   {
     title: 'ระบบการตลาด',
     items: [
