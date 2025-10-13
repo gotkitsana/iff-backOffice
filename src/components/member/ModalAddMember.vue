@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useCustomerStore, type CreateCustomerPayload } from '@/stores/customer/customer'
+import { useAuctionMemberStore, type CreateCustomerPayload } from '@/stores/auction/auction-member'
 import { Dialog, InputMask } from 'primevue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -66,7 +66,7 @@ const handleAddCustomer = () => {
   mutate(newCustomer.value)
 }
 
-const customerStore = useCustomerStore()
+const customerStore = useAuctionMemberStore()
 
 const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({

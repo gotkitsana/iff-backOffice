@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCustomerStore, type Customer } from '@/stores/customer/customer'
+import { useAuctionMemberStore, type Customer } from '@/stores/auction/auction-member'
 import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import dayjs from 'dayjs'
@@ -27,7 +27,7 @@ const closeDetailModal = () => {
   emit('onCloseDetailModal')
 }
 
-const customerStore = useCustomerStore()
+const customerStore = useAuctionMemberStore()
 const { data, isLoading } = useQuery<Customer>({
   queryKey: ['get_customer_id', props.id],
   queryFn: () => customerStore.onGetCustomerID(props.id),

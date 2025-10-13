@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCustomerStore } from '@/stores/customer/customer'
+import { useAuctionMemberStore } from '@/stores/auction/auction-member'
 import { Dialog, Button } from 'primevue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
@@ -29,7 +29,7 @@ const closeDeleteModal = () => {
 }
 
 const queryClient = useQueryClient()
-const customerStore = useCustomerStore()
+const customerStore = useAuctionMemberStore()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: string) => customerStore.onDeleteCustomer(payload),
   onSuccess: (data: any) => {

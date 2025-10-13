@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
-  useCustomerStore,
+  useAuctionMemberStore,
   type Customer,
   type EditCustomerPayload,
-} from '@/stores/customer/customer'
+} from '@/stores/auction/auction-member'
 import { Dialog, InputMask } from 'primevue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -64,7 +64,7 @@ const handleEditCustomer = () => {
   mutate(customerData.value)
 }
 
-const customerStore = useCustomerStore()
+const customerStore = useAuctionMemberStore()
 
 const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({
