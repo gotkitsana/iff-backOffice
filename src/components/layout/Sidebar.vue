@@ -44,8 +44,18 @@ const menuSections = [
         route: 'dashboard',
       },
       {
+        icon: 'pi pi-users',
+        label: 'ข้อมูลลูกค้า',
+        route: 'members',
+      },
+      {
         icon: 'pi pi-cart-plus',
         label: 'ขาย',
+        route: 'sales',
+      },
+      {
+        icon: 'pi pi-cart-plus',
+        label: 'คลังสินค้า',
         route: 'sales',
       },
       {
@@ -53,11 +63,11 @@ const menuSections = [
         label: 'บัญชี',
         route: 'accounting',
       },
-      {
-        icon: 'pi pi-id-card',
-        label: 'บุคลากร',
-        route: 'employee',
-      },
+    ],
+  },
+  {
+    title: 'ระบบการผลิต',
+    items: [
       {
         icon: 'pi pi-warehouse',
         label: 'ผลิต',
@@ -68,28 +78,30 @@ const menuSections = [
         label: 'คลัง',
         route: 'koi-store',
       },
+
     ],
   },
   {
     title: 'ระบบการตลาด',
     items: [
-      {
+          {
         icon: 'pi pi-trophy',
         label: 'Auction',
         route: 'auction',
       },
     ],
   },
-  {
-    title: 'ระบบสมาชิก',
-    items: [
-      {
-        icon: 'pi pi-users',
-        label: 'ข้อมูลลูกค้า',
-        route: 'members',
-      },
-    ],
-  },
+
+  // {
+  //   title: 'ระบบสมาชิก',
+  //   items: [
+  //     {
+  //       icon: 'pi pi-users',
+  //       label: 'ข้อมูลลูกค้า',
+  //       route: 'members',
+  //     },
+  //   ],
+  // },
   {
     title: 'ระบบ Admin',
     items: [
