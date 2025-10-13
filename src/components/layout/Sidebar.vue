@@ -54,6 +54,11 @@ const menuSections = [
         route: 'sales',
       },
       {
+        icon: 'pi pi-truck',
+        label: 'จัดส่ง',
+        route: 'shipping',
+      },
+      {
         icon: 'pi pi-cart-plus',
         label: 'คลังสินค้า',
         route: 'store',

@@ -80,7 +80,7 @@ const closeDeleteModal = () => {
             <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้าสำหรับประมูลปลาคราฟ</p>
           </div>
           <Button
-            label="เพิ่มสมาชิก"
+            label="บันทึกข้อมูลลูกค้า"
             icon="pi pi-plus"
             size="small"
             @click="openAddModal"
@@ -96,54 +96,64 @@ const closeDeleteModal = () => {
           :loading="isLoading"
           class="p-datatable-sm"
         >
-          <Column
-            field="username"
-            header="ชื่อผู้ใช้"
+         <Column
+            field="no"
+            header="รหัสลูกค้า"
             sortable
-            :pt="{ columnTitle: 'font-semibold! ', columnHeaderContent: 'min-w-[7rem]' }"
-          ></Column>
+          />
           <Column
-            field="name"
-            header="ชื่อ-นามสกุล"
+            field="status"
+            header="สถานะลูกค้า"
             sortable
-            p-ripple
-            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'min-w-[10rem]' }"
-          ></Column>
+          />
           <Column
-            field="email"
-            header="อีเมล"
+            field="contact"
+            header="ช่องทางติดต่อ"
             sortable
-            p-ripple
-            :pt="{ columnTitle: 'font-semibold!' }"
-          ></Column>
+          />
+
           <Column
-            field="bidder"
-            header="สถานะประมูล"
+            field="social"
+            header="ชื่อโซเชียล"
             sortable
-            p-ripple
-            :pt="{
-              columnTitle: 'font-semibold! ',
-              columnHeaderContent: 'justify-center min-w-[7rem]',
-              bodyCell: 'text-center',
-            }"
-          >
-            <template #body="slotProps">
-              <Tag
-                :value="slotProps.data.bidder ? 'ลูกค้าประมูล' : 'ลูกค้าทั่วไป'"
-                :severity="slotProps.data.bidder ? 'success' : 'secondary'"
-              />
-            </template>
-          </Column>
+          />
+
           <Column
-            field="cat"
-            header="วันที่สร้าง"
+            field="nickname"
+            header="ชื่อเล่น"
             sortable
-            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'min-w-[9rem]' }"
-          >
-            <template #body="slotProps">
-              <span>{{ formatDate(slotProps.data.cat) }}</span>
-            </template>
-          </Column>
+          />
+
+          <Column
+            field="fullname"
+            header="ชื่อ/นามสกุล"
+            sortable
+          />
+
+          <Column
+            field="address"
+            header="ที่อยู่"
+            sortable
+          />
+
+          <Column
+            field="province"
+            header="จังหวัด"
+            sortable
+          />
+
+          <Column
+            field="phone"
+            header="เบอร์โทร"
+            sortable
+          />
+
+          <Column
+            field="statusType"
+            header="ประเภทลูกค้า"
+            sortable
+          />
+
           <Column
             header="จัดการ"
             :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'justify-end' }"
@@ -167,15 +177,6 @@ const closeDeleteModal = () => {
                   @click="openEditModal(slotProps.data)"
                   severity="warning"
                   v-tooltip.top="'แก้ไขข้อมูล'"
-                />
-                <Button
-                  icon="pi pi-key"
-                  size="small"
-                  text
-                  rounded
-                  severity="help"
-                  @click="openResetPasswordModal(slotProps.data)"
-                  v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
                 />
                 <Button
                   icon="pi pi-trash"
