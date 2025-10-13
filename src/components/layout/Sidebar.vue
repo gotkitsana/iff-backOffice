@@ -84,27 +84,26 @@ const menuSections = [
   {
     title: 'ระบบการตลาด',
     items: [
-          {
+      {
         icon: 'pi pi-trophy',
         label: 'Auction',
         route: 'auction',
       },
+      {
+        icon: 'pi pi-trophy',
+        label: 'โปรโมชั่น',
+        route: 'promotion',
+      },
     ],
   },
-
-  // {
-  //   title: 'ระบบสมาชิก',
-  //   items: [
-  //     {
-  //       icon: 'pi pi-users',
-  //       label: 'ข้อมูลลูกค้า',
-  //       route: 'members',
-  //     },
-  //   ],
-  // },
   {
-    title: 'ระบบ Admin',
+    title: 'ระบบบุคลากร',
     items: [
+      {
+        icon: 'pi pi-cog',
+        label: 'บุคลากร',
+        route: 'admin-settings',
+      },
       {
         icon: 'pi pi-cog',
         label: 'จัดการ Admin',
@@ -112,16 +111,16 @@ const menuSections = [
       },
     ],
   },
-  {
-    title: 'ระบบ POS',
-    items: [
-      {
-        icon: 'pi pi-box',
-        label: 'จัดการสินค้า',
-        route: 'product',
-      },
-    ],
-  },
+  // {
+  //   title: 'ระบบ POS',
+  //   items: [
+  //     {
+  //       icon: 'pi pi-box',
+  //       label: 'จัดการสินค้า',
+  //       route: 'product',
+  //     },
+  //   ],
+  // },
   // {
   //   title: 'ระบบแจ้งเตือน',
   //   items: [
