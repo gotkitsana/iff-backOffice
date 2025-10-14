@@ -64,7 +64,7 @@ const closeAddModal = () => {
 const memberStore = useMemberStore()
 const { data: memberData } = useQuery<IMember>({
   queryKey: ['get_member_ID', props.id],
-  queryFn: () => memberStore.onGetMemberID(props.id!),
+  queryFn: () => memberStore.onGetMemberID(props.id || ''),
   enabled: computed(() => !!props.id),
 })
 watch(
@@ -143,88 +143,11 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
   },
 })
 
-const provinceOptions = [
-  { label: 'กรุงเทพมหานคร', value: 'bangkok' },
-  { label: 'กระบี่', value: 'krabi' },
-  { label: 'กาญจนบุรี', value: 'kanchanaburi' },
-  { label: 'กาฬสินธุ์', value: 'kalasin' },
-  { label: 'กำแพงเพชร', value: 'kamphaengphet' },
-  { label: 'ขอนแก่น', value: 'khonkaen' },
-  { label: 'จันทบุรี', value: 'chanthaburi' },
-  { label: 'ฉะเชิงเทรา', value: 'chachoengsao' },
-  { label: 'ชลบุรี', value: 'chonburi' },
-  { label: 'ชัยนาท', value: 'chainat' },
-  { label: 'ชัยภูมิ', value: 'chaiyaphum' },
-  { label: 'ชุมพร', value: 'chumphon' },
-  { label: 'เชียงราย', value: 'chiangrai' },
-  { label: 'เชียงใหม่', value: 'chiangmai' },
-  { label: 'ตรัง', value: 'trang' },
-  { label: 'ตราด', value: 'trat' },
-  { label: 'ตาก', value: 'tak' },
-  { label: 'นครนายก', value: 'nakhonnayok' },
-  { label: 'นครปฐม', value: 'nakhonpathom' },
-  { label: 'นครพนม', value: 'nakhonphanom' },
-  { label: 'นครราชสีมา', value: 'nakhonratchasima' },
-  { label: 'นครศรีธรรมราช', value: 'nakhonsithammarat' },
-  { label: 'นครสวรรค์', value: 'nakhonsawan' },
-  { label: 'นนทบุรี', value: 'nonthaburi' },
-  { label: 'นราธิวาส', value: 'narathiwat' },
-  { label: 'น่าน', value: 'nan' },
-  { label: 'บึงกาฬ', value: 'buengkan' },
-  { label: 'บุรีรัมย์', value: 'buriram' },
-  { label: 'ปทุมธานี', value: 'pathumthani' },
-  { label: 'ประจวบคีรีขันธ์', value: 'prachuapkhirikhan' },
-  { label: 'ปราจีนบุรี', value: 'prachinburi' },
-  { label: 'ปัตตานี', value: 'pattani' },
-  { label: 'พระนครศรีอยุธยา', value: 'phranakhonsiayutthaya' },
-  { label: 'พะเยา', value: 'phayao' },
-  { label: 'พังงา', value: 'phangnga' },
-  { label: 'พัทลุง', value: 'phatthalung' },
-  { label: 'พิจิตร', value: 'phichit' },
-  { label: 'พิษณุโลก', value: 'phitsanulok' },
-  { label: 'เพชรบุรี', value: 'phetchaburi' },
-  { label: 'เพชรบูรณ์', value: 'phetchabun' },
-  { label: 'แพร่', value: 'phrae' },
-  { label: 'ภูเก็ต', value: 'phuket' },
-  { label: 'มหาสารคาม', value: 'mahasarakham' },
-  { label: 'มุกดาหาร', value: 'mukdahan' },
-  { label: 'แม่ฮ่องสอน', value: 'maehongson' },
-  { label: 'ยโสธร', value: 'yasothon' },
-  { label: 'ยะลา', value: 'yala' },
-  { label: 'ร้อยเอ็ด', value: 'roiet' },
-  { label: 'ระนอง', value: 'ranong' },
-  { label: 'ระยอง', value: 'rayong' },
-  { label: 'ราชบุรี', value: 'ratchaburi' },
-  { label: 'ลพบุรี', value: 'lopburi' },
-  { label: 'ลำปาง', value: 'lampang' },
-  { label: 'ลำพูน', value: 'lamphun' },
-  { label: 'เลย', value: 'loei' },
-  { label: 'ศรีสะเกษ', value: 'sisaket' },
-  { label: 'สกลนคร', value: 'sakonnakhon' },
-  { label: 'สงขลา', value: 'songkhla' },
-  { label: 'สตูล', value: 'satun' },
-  { label: 'สมุทรปราการ', value: 'samutprakan' },
-  { label: 'สมุทรสงคราม', value: 'samutsongkhram' },
-  { label: 'สมุทรสาคร', value: 'samutsakhon' },
-  { label: 'สระแก้ว', value: 'sakaeo' },
-  { label: 'สระบุรี', value: 'saraburi' },
-  { label: 'สิงห์บุรี', value: 'singburi' },
-  { label: 'สุโขทัย', value: 'sukhothai' },
-  { label: 'สุพรรณบุรี', value: 'suphanburi' },
-  { label: 'สุราษฎร์ธานี', value: 'suratthani' },
-  { label: 'สุรินทร์', value: 'surin' },
-  { label: 'หนองคาย', value: 'nongkhai' },
-  { label: 'หนองบัวลำภู', value: 'nongbualamphu' },
-  { label: 'อ่างทอง', value: 'angthong' },
-  { label: 'อำนาจเจริญ', value: 'amnatcharoen' },
-  { label: 'อุดรธานี', value: 'udonthani' },
-  { label: 'อุตรดิตถ์', value: 'uttaradit' },
-  { label: 'อุทัยธานี', value: 'uthaithani' },
-  { label: 'อุบลราชธานี', value: 'ubonratchathani' },
-]
+
 </script>
 
 <template>
+
   <Dialog
     v-model:visible="showAddModal"
     @update:visible="closeAddModal"
@@ -330,7 +253,7 @@ const provinceOptions = [
             <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
             <Select
               v-model="newMember.province"
-              :options="provinceOptions"
+              :options="memberStore.provinceOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกจังหวัด"
@@ -353,11 +276,7 @@ const provinceOptions = [
             <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทลูกค้า *</label>
             <Select
               v-model="newMember.type"
-              :options="[
-                { label: 'ลูกค้า', value: 'customer' },
-                { label: 'ฟาร์ม', value: 'farm' },
-                { label: 'คาเฟ่', value: 'cafe' },
-              ]"
+              :options="memberStore.memberTypeOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกประเภทลูกค้า"
@@ -374,12 +293,7 @@ const provinceOptions = [
             <label class="block text-sm font-medium text-gray-700 mb-1">ความสนใจ</label>
             <Select
               v-model="newMember.interest"
-              :options="[
-                { label: 'ปลา', value: 'fish' },
-                { label: 'อาหาร', value: 'food' },
-                { label: 'บริการ', value: 'service' },
-                { label: 'จุลินทรีย์', value: 'bacteria' },
-              ]"
+              :options="memberStore.memberInterestOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกความสนใจ"
@@ -406,7 +320,7 @@ const provinceOptions = [
               size="small"
             />
           </div>
-          <div>
+          <div v-if="!props.id">
             <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
             <Password
               v-model="newMember.password"
@@ -419,7 +333,7 @@ const provinceOptions = [
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">สถานะยูสเซอร์</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะยูสเซอร์</label>
             <Select
               v-model="newMember.bidder"
               :options="[

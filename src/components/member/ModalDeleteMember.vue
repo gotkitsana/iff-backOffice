@@ -34,7 +34,7 @@ const { mutate, isPending } = useMutation({
   mutationFn: (payload: string) => customerStore.onDeleteMember(payload),
   onSuccess: (data: any) => {
     if (data.data.deletedCount > 0) {
-      queryClient.invalidateQueries({ queryKey: ['get_customers'] })
+      queryClient.invalidateQueries({ queryKey: ['get_members'] })
       toast.success('ลบข้อมูลลูกค้าสำเร็จ')
       closeDeleteModal()
     } else {

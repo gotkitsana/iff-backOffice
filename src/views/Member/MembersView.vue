@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import DataTable from 'primevue/datatable'
 import { Column, Tag, Button, Card } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import ModalAddAndEditMember from '@/components/member/ModalAddAndEditMember.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
+import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
+import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
 
 const memberStore = useMemberStore()
 const { data, isLoading } = useQuery<IMember[]>({
@@ -62,20 +64,13 @@ const closeResetPasswordModal = () => {
 }
 
 const products = ref<IMember[]>([])
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'cs':
-      return 'success'
-    case 'lp':
-      return 'info'
-    case 'eq':
-      return 'contrast'
-    case 'css':
-      return 'warn'
-    default:
-      return 'secondary'
-  }
-}
+watch(data, () => {
+  products.value = data.value?.map((item,index) => ({
+    ...item,
+    idx: index + 1,
+  })) || []
+}, { immediate: true })
+
 
 onMounted(() => {
   products.value = [
@@ -121,9 +116,9 @@ onMounted(() => {
         </div>
       </template>
       <template #content>
-        <DataTable :value="products" dataKey="_id">
+        <DataTable :value="products" dataKey="_id" :loading="isLoading" paginator :rows="50" :rowsPerPageOptions="[50, 100, 150, 200]">
           <Column
-            field="code"
+            field="idx"
             header="รหัสลูกค้า"
             :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
           />
@@ -140,7 +135,7 @@ onMounted(() => {
                     (option) => option.value === slotProps.data.status
                   )?.label
                 "
-                :severity="getStatusLabel(slotProps.data.status)"
+                :severity="memberStore.getStatusLabel(slotProps.data.status)"
                 size="small"
               />
             </template>
@@ -149,8 +144,20 @@ onMounted(() => {
           <Column
             field="contact"
             header="ช่องทางติดต่อ"
-            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
-          />
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-center ', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="
+                  memberStore.memberContactOptions.find(
+                    (option) => option.value === slotProps.data.contact
+                  )?.label
+                "
+                severity="info"
+                size="small"
+              />
+            </template>
+          </Column>
 
           <Column
             field="contactName"
@@ -170,11 +177,11 @@ onMounted(() => {
             :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
-          <Column field="address" header="ที่อยู่" :pt="{ bodyCell: 'text-sm' }" />
+          <Column field="address" header="ที่อยู่" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
 
-          <Column field="province" header="จังหวัด" :pt="{ bodyCell: 'text-sm' }" />
+          <Column field="province" header="จังหวัด" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
 
-          <Column field="phone" header="เบอร์โทร" :pt="{ bodyCell: 'text-sm' }" />
+          <Column field="phone" header="เบอร์โทร" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
 
           <Column
             field="type"
@@ -186,16 +193,6 @@ onMounted(() => {
             field="interest"
             header="ความสนใจ"
             :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
-          />
-
-          <Column field="username" header="ยูสเซอร์" :pt="{ bodyCell: 'text-sm' }" />
-
-          <Column field="password" header="รหัสผ่าน" :pt="{ bodyCell: 'text-sm' }" />
-
-          <Column
-            field="bidder"
-            header="สถานะยูสเซอร์"
-            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
@@ -231,6 +228,7 @@ onMounted(() => {
                   @click="openResetPasswordModal(slotProps.data)"
                   v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
                 />
+
                 <Button
                   icon="pi pi-trash"
                   size="small"
