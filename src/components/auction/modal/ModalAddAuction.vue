@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useAuctionStore, type IAuctionPayload } from '@/stores/auction/auction'
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue3-toastify'
 import { Dialog, Button, InputNumber, Select, DatePicker } from 'primevue'
-import type { IProduct } from '@/stores/auction/product'
+import { useProductStore, type IProduct } from '@/stores/auction/product'
 
 const props = defineProps<{
   showAddAuctionModal: boolean
@@ -54,11 +54,16 @@ const resetForm = () => {
 
 const isSubmitting = ref(false)
 
-// Product options from available products
+const productStore = useProductStore()
+const {data: koiProducts} = useQuery<IProduct[]>({
+  queryKey: ['get_koi_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
 const productOptions = computed(() => {
-  if (!props.availableProducts) return []
-  return props.availableProducts.map((product) => ({
-    label: `${product.name} (${product.size} ซม.) - ${product.category || 'ไม่ระบุหมวดหมู่'}`,
+  if (!koiProducts.value) return []
+  return koiProducts.value.map((product) => ({
+    label: `${product.name} (${product.size} ซม.) - รหัส: ${product.sku}`,
     value: product._id,
     product: product,
   }))
@@ -181,6 +186,11 @@ const handleAddAuction = () => {
               :invalid="!form.productId && isSubmitting"
               fluid
               size="small"
+              :pt="{
+                optionLabel: {
+                  class: 'text-sm',
+                },
+              }"
             />
             <small
               v-if="!form.productId && isSubmitting"

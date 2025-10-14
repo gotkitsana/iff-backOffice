@@ -92,12 +92,12 @@ const formatCurrency = (value: number) => {
 }
 
 const auctionStore = useAuctionStore()
-const productStore = useProductStore()
-
-const { data } = useQuery({
+const { data: auctions } = useQuery({
   queryKey: ['get_auctions'],
   queryFn: () => auctionStore.onGetAuctions(),
 })
+
+console.log(auctions,'auctions')
 
 // Get products for auction selection
 // const { data: products } = useQuery<IProduct[]>({
@@ -495,6 +495,7 @@ const totalRevenue = computed(() =>
   />
 
   <ModalAddAuction
+    v-if="auctionSettingModal"
     :showAddAuctionModal="auctionSettingModal"
     @onCloseAddAuctionModal="closeAuctionSetting"
     :availableProducts="availableProducts"

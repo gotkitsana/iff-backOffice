@@ -97,8 +97,6 @@ const filteredProducts = computed(() => {
       return products.value.filter((p) => p.auctionOnly === 1)
     case 'sold':
       return products.value.filter((p) => p.sold === true)
-    case 'available':
-      return products.value.filter((p) => p.sold === false && p.auctionOnly === 0)
     default:
       return products.value
   }
@@ -219,10 +217,18 @@ const formatCurrency = (value: number) => {
 }
 
 const getStatusTag = (product: IProduct) => {
-  if (product.sold) return { label: 'ขายแล้ว', severity: 'success' }
+  if (product.sold) return { label: 'ขายแล้ว', severity: 'info' }
   if (product.auctionOnly === 1) return { label: 'ประมูลเท่านั้น', severity: 'warning' }
-  return { label: 'พร้อมขาย', severity: 'info' }
+  return { label: 'ทั้งหมด', severity: 'success' }
 }
+
+const filterAuction = computed(() => {
+  return products.value?.filter((p) => p.auctionOnly === 1).length || 0
+})
+
+const filterAuctionSold = computed(() => {
+  return products.value?.filter((p) => p.sold).length || 0
+})
 </script>
 
 <template>
@@ -241,71 +247,61 @@ const getStatusTag = (product: IProduct) => {
           size="small"
           @click="openAddModal"
         />
+
+        <Button
+          label="กลับ"
+          icon="pi pi-chevron-left"
+          severity="contrast"
+          size="small"
+          @click="$router.back()"
+        />
       </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Card :pt="{ body: 'p-3 md:p-5' }">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+      <Card :pt="{ body: 'p-3 lg:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium! text-gray-600">ทั้งหมด</p>
-              <p class="text-lg md:text-xl font-[600]! text-gray-900">
+              <p class="text-lg lg:text-xl font-[600]! text-gray-900">
                 {{ products?.length || 0 }}
               </p>
             </div>
             <div
               class="md:w-12 md:h-12 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"
             >
-              <i class="pi pi-fish text-blue-600 text-xl"></i>
+              <i class="pi pi-hashtag text-blue-600 text-xl"></i>
             </div>
           </div>
         </template>
       </Card>
 
-      <!-- <Card :pt="{ body: 'p-3 md:p-5' }">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium! text-gray-600">พร้อมขาย</p>
-              <p class="text-lg md:text-xl font-[600]! text-gray-900">
-                {{ products?.filter((p) => !p.sold && p.auctionOnly === 0).length || 0 }}
-              </p>
-            </div>
-            <div
-              class="md:w-12 md:h-12 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"
-            >
-              <i class="pi pi-check text-green-600 text-xl"></i>
-            </div>
-          </div>
-        </template>
-      </Card> -->
-
-      <Card :pt="{ body: 'p-3 md:p-5' }">
+      <Card :pt="{ body: 'p-3 lg:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium! text-gray-600">ประมูลเท่านั้น</p>
-              <p class="text-lg md:text-xl font-[600]! text-gray-900">
+              <p class="text-lg lg:text-xl font-[600]! text-gray-900">
                 {{ products?.filter((p) => p.auctionOnly === 1).length || 0 }}
               </p>
             </div>
             <div
               class="md:w-12 md:h-12 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center"
             >
-              <i class="pi pi-gavel text-orange-600 text-xl"></i>
+              <i class="pi pi-star text-orange-600 text-xl"></i>
             </div>
           </div>
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-3 md:p-5' }">
+      <Card :pt="{ body: 'p-3 lg:p-5' }">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium! text-gray-600">ขายแล้ว</p>
-              <p class="text-lg md:text-xl font-[600]! text-gray-900">
+              <p class="text-lg lg:text-xl font-[600]! text-gray-900">
                 {{ products?.filter((p) => p.sold).length || 0 }}
               </p>
             </div>
@@ -322,369 +318,118 @@ const getStatusTag = (product: IProduct) => {
     <!-- Products Table -->
     <Card :pt="{ body: 'p-3' }">
       <template #content>
-        <Tabs :value="activeTab" :pt="{ tablist: 'p-3' }">
+        <Tabs v-model:value="activeTab" :pt="{ tablist: 'p-3' }">
           <TabList size="small">
             <Tab value="all" as="div" class="flex items-center gap-2">
               <i class="pi pi-hashtag" />
-              <span class="font-bold whitespace-nowrap">ทั้งหมด</span>
+              <span class="font-[500]! whitespace-nowrap">ทั้งหมด</span>
               <Badge :value="products?.length || 0" severity="info" size="small" />
-            </Tab>
-
-            <Tab value="available" as="div" class="flex items-center gap-2">
-              <i class="pi pi-check-circle" />
-              <span class="font-bold whitespace-nowrap">พร้อมขาย</span>
-              <Badge
-                :value="products?.filter((p) => !p.sold && p.auctionOnly === 0).length || 0"
-                severity="success"
-                size="small"
-              />
             </Tab>
 
             <Tab value="auction" as="div" class="flex items-center gap-2">
               <i class="pi pi-gavel" />
-              <span class="font-bold whitespace-nowrap">ประมูลเท่านั้น</span>
-              <Badge
-                :value="products?.filter((p) => p.auctionOnly === 1).length || 0"
-                severity="warning"
-                size="small"
-              />
+              <span class="font-[500]! whitespace-nowrap">ประมูลเท่านั้น</span>
+              <Badge :value="filterAuction" severity="warning" size="small" />
             </Tab>
 
             <Tab value="sold" as="div" class="flex items-center gap-2">
               <i class="pi pi-shopping-cart" />
-              <span class="font-bold whitespace-nowrap">ขายแล้ว</span>
-              <Badge
-                :value="products?.filter((p) => p.sold).length || 0"
-                severity="info"
-                size="small"
-              />
+              <span class="font-[500]! whitespace-nowrap">ขายแล้ว</span>
+              <Badge :value="filterAuctionSold" severity="info" size="small" />
             </Tab>
           </TabList>
+
           <TabPanels>
-            <TabPanel value="all" as="div" class="m-0">
+            <TabPanel
+              v-for="tab in ['all', 'auction', 'sold']"
+              :key="tab"
+              :value="tab"
+              as="div"
+              class="m-0"
+            >
               <DataTable
                 :value="filteredProducts"
                 :loading="productsLoading"
                 :paginator="true"
                 :rows="10"
                 class="p-datatable-sm"
-                :pt="{
-                  table: 'min-w-full',
-                  thead: 'bg-gray-50',
-                  tbody: 'divide-y divide-gray-200',
-                }"
               >
-                <Column field="name" header="ชื่อปลา" sortable>
+                <Column field="name" header="ชื่อปลา">
                   <template #body="slotProps">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
                       <div
-                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"
+                        v-if="slotProps.data.filename"
+                        class="w-auto h-10 bg-gray-100 rounded-lg flex items-center justify-center"
+                      >
+                        <img
+                          :src="slotProps.data.filename"
+                          alt="product image"
+                          class="w-full h-full object-cover rounded-lg aspect-video"
+                        />
+                      </div>
+                      <div
+                        v-else
+                        class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"
                       >
                         <i class="pi pi-fish text-gray-400 text-lg"></i>
                       </div>
                       <div>
-                        <p class="font-medium text-gray-900">{{ slotProps.data.name }}</p>
-                        <p class="text-sm text-gray-500">SKU: {{ slotProps.data.sku }}</p>
+                        <p class="font-medium text-sm text-gray-900">{{ slotProps.data.name }}</p>
+                        <p class="text-xs text-gray-500">SKU: {{ slotProps.data.sku }}</p>
                       </div>
                     </div>
                   </template>
                 </Column>
 
-                <Column field="category" header="หมวดหมู่" sortable>
+                <Column field="size" header="ขนาด (ซม.)">
+                  <template #body="slotProps">
+                    <span class="text-sm">{{ slotProps.data.size }} ซม.</span>
+                  </template>
+                </Column>
+
+                <Column
+                  field="farm"
+                  header="ฟาร์ม"
+                  :pt="{ columnHeaderContent: 'justify-center', bodyCell: 'text-center' }"
+                >
+                  <template #body="slotProps">
+                    <template v-if="slotProps.data.farm">
+                      <Tag :value="slotProps.data.farm" severity="info" size="small" />
+                    </template>
+                    <template v-else>
+                      <span class="text-gray-500 text-sm">ไม่ระบุ</span>
+                    </template>
+                  </template>
+                </Column>
+
+                <Column
+                  field="status"
+                  header="สถานะ"
+                  :pt="{ columnHeaderContent: 'justify-center', bodyCell: 'text-center' }"
+                >
                   <template #body="slotProps">
                     <Tag
-                      :value="slotProps.data.category || 'ไม่ระบุ'"
-                      severity="info"
+                      :value="slotProps.data.auctionOnly == 1 ? 'ประมูลเท่านั้น' : 'ไม่ประมูล'"
+                      :severity="slotProps.data.auctionOnly == 1 ? 'success' : 'danger'"
                       size="small"
                     />
                   </template>
                 </Column>
 
-                <Column field="size" header="ขนาด (ซม.)" sortable>
+                <Column field="solid" header="สถานะขาย" :pt="{ columnHeaderContent: 'justify-center', bodyCell: 'text-center' }">
                   <template #body="slotProps">
-                    <span class="font-medium">{{ slotProps.data.size }} ซม.</span>
-                  </template>
-                </Column>
-
-                <Column field="price" header="ราคา" sortable>
-                  <template #body="slotProps">
-                    <span class="font-semibold text-green-600">
-                      {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
+                    <span
+                      class="font-semibold text-sm"
+                      :class="slotProps.data.solid ? 'text-green-600' : 'text-red-600'"
+                    >
+                      {{ slotProps.data.solid ? 'ขายแล้ว' : 'ยังไม่ขาย' }}
                     </span>
                   </template>
                 </Column>
 
-                <Column field="status" header="สถานะ" sortable>
+                <Column header="การจัดการ" :exportable="false" :pt="{ columnHeaderContent: 'justify-end' }">
                   <template #body="slotProps">
-                    <Tag
-                      :value="getStatusTag(slotProps.data).label"
-                      :severity="getStatusTag(slotProps.data).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column header="การจัดการ" :exportable="false" style="min-width: 8rem">
-                  <template #body="slotProps">
-                    <div class="flex gap-2">
-                      <Button
-                        icon="pi pi-pencil"
-                        severity="info"
-                        size="small"
-                        @click="openEditModal(slotProps.data)"
-                        :disabled="isUpdating"
-                      />
-                      <Button
-                        icon="pi pi-trash"
-                        severity="danger"
-                        size="small"
-                        @click="handleDeleteProduct(slotProps.data)"
-                        :disabled="isDeleting"
-                      />
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </TabPanel>
-
-            <TabPanel value="available" as="div" class="m-0">
-              <DataTable
-                :value="filteredProducts"
-                :loading="productsLoading"
-                :paginator="true"
-                :rows="10"
-                class="p-datatable-sm"
-                :pt="{
-                  table: 'min-w-full',
-                  thead: 'bg-gray-50',
-                  tbody: 'divide-y divide-gray-200',
-                }"
-              >
-                <Column field="name" header="ชื่อปลา" sortable>
-                  <template #body="slotProps">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"
-                      >
-                        <i class="pi pi-fish text-gray-400 text-lg"></i>
-                      </div>
-                      <div>
-                        <p class="font-medium text-gray-900">{{ slotProps.data.name }}</p>
-                        <p class="text-sm text-gray-500">SKU: {{ slotProps.data.sku }}</p>
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-
-                <Column field="category" header="หมวดหมู่" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="slotProps.data.category || 'ไม่ระบุ'"
-                      severity="info"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column field="size" header="ขนาด (ซม.)" sortable>
-                  <template #body="slotProps">
-                    <span class="font-medium">{{ slotProps.data.size }} ซม.</span>
-                  </template>
-                </Column>
-
-                <Column field="price" header="ราคา" sortable>
-                  <template #body="slotProps">
-                    <span class="font-semibold text-green-600">
-                      {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
-                    </span>
-                  </template>
-                </Column>
-
-                <Column field="status" header="สถานะ" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="getStatusTag(slotProps.data).label"
-                      :severity="getStatusTag(slotProps.data).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column header="การจัดการ" :exportable="false" style="min-width: 8rem">
-                  <template #body="slotProps">
-                    <div class="flex gap-2">
-                      <Button
-                        icon="pi pi-pencil"
-                        severity="info"
-                        size="small"
-                        @click="openEditModal(slotProps.data)"
-                        :disabled="isUpdating"
-                      />
-                      <Button
-                        icon="pi pi-trash"
-                        severity="danger"
-                        size="small"
-                        @click="handleDeleteProduct(slotProps.data)"
-                        :disabled="isDeleting"
-                      />
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </TabPanel>
-
-            <TabPanel value="auction" as="div" class="m-0">
-              <DataTable
-                :value="filteredProducts"
-                :loading="productsLoading"
-                :paginator="true"
-                :rows="10"
-                class="p-datatable-sm"
-                :pt="{
-                  table: 'min-w-full',
-                  thead: 'bg-gray-50',
-                  tbody: 'divide-y divide-gray-200',
-                }"
-              >
-                <Column field="name" header="ชื่อปลา" sortable>
-                  <template #body="slotProps">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"
-                      >
-                        <i class="pi pi-fish text-gray-400 text-lg"></i>
-                      </div>
-                      <div>
-                        <p class="font-medium text-gray-900">{{ slotProps.data.name }}</p>
-                        <p class="text-sm text-gray-500">SKU: {{ slotProps.data.sku }}</p>
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-
-                <Column field="category" header="หมวดหมู่" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="slotProps.data.category || 'ไม่ระบุ'"
-                      severity="info"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column field="size" header="ขนาด (ซม.)" sortable>
-                  <template #body="slotProps">
-                    <span class="font-medium">{{ slotProps.data.size }} ซม.</span>
-                  </template>
-                </Column>
-
-                <Column field="price" header="ราคา" sortable>
-                  <template #body="slotProps">
-                    <span class="font-semibold text-green-600">
-                      {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
-                    </span>
-                  </template>
-                </Column>
-
-                <Column field="status" header="สถานะ" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="getStatusTag(slotProps.data).label"
-                      :severity="getStatusTag(slotProps.data).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column header="การจัดการ" :exportable="false" style="min-width: 8rem">
-                  <template #body="slotProps">
-                    <div class="flex gap-2">
-                      <Button
-                        icon="pi pi-pencil"
-                        severity="info"
-                        size="small"
-                        @click="openEditModal(slotProps.data)"
-                        :disabled="isUpdating"
-                      />
-                      <Button
-                        icon="pi pi-trash"
-                        severity="danger"
-                        size="small"
-                        @click="handleDeleteProduct(slotProps.data)"
-                        :disabled="isDeleting"
-                      />
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </TabPanel>
-
-            <TabPanel value="sold" as="div" class="m-0">
-              <DataTable
-                :value="filteredProducts"
-                :loading="productsLoading"
-                :paginator="true"
-                :rows="10"
-                class="p-datatable-sm"
-                :pt="{
-                  table: 'min-w-full',
-                  thead: 'bg-gray-50',
-                  tbody: 'divide-y divide-gray-200',
-                }"
-              >
-                <Column field="name" header="ชื่อปลา" sortable>
-                  <template #body="slotProps">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center"
-                      >
-                        <i class="pi pi-fish text-gray-400 text-lg"></i>
-                      </div>
-                      <div>
-                        <p class="font-medium text-gray-900">{{ slotProps.data.name }}</p>
-                        <p class="text-sm text-gray-500">SKU: {{ slotProps.data.sku }}</p>
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-
-                <Column field="category" header="หมวดหมู่" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="slotProps.data.category || 'ไม่ระบุ'"
-                      severity="info"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column field="size" header="ขนาด (ซม.)" sortable>
-                  <template #body="slotProps">
-                    <span class="font-medium">{{ slotProps.data.size }} ซม.</span>
-                  </template>
-                </Column>
-
-                <Column field="price" header="ราคา" sortable>
-                  <template #body="slotProps">
-                    <span class="font-semibold text-green-600">
-                      {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
-                    </span>
-                  </template>
-                </Column>
-
-                <Column field="status" header="สถานะ" sortable>
-                  <template #body="slotProps">
-                    <Tag
-                      :value="getStatusTag(slotProps.data).label"
-                      :severity="getStatusTag(slotProps.data).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
-
-                <Column header="การจัดการ" :exportable="false" style="min-width: 8rem">
-                  <template #body="slotProps">
-                    <div class="flex gap-2">
+                    <div class="flex justify-end gap-2">
                       <Button
                         icon="pi pi-pencil"
                         severity="info"
