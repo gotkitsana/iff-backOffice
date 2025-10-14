@@ -62,13 +62,15 @@ const { data, isLoading } = useQuery<IMember>({
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
         <div class="flex items-center gap-3">
           <div
-            class="w-18 h-18 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+            class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg"
           >
             {{ data.name?.charAt(0)?.toUpperCase() || 'U' }}
           </div>
           <div class="flex-1">
-            <h2 class="text-xl font-semibold! text-gray-900">{{ data.name || 'ไม่ระบุชื่อ' }}</h2>
-            <p class="text-gray-600 mb-1">{{ data.displayName ? `(${data.displayName})` : '' }}</p>
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="text-xl font-semibold! text-gray-900">{{ data.name || 'ไม่ระบุชื่อ' }}</h2>
+              <p class="text-gray-600 text-sm">รหัสลูกค้า: {{ data.code }}</p>
+            </div>
             <div class="flex items-center gap-2">
               <Tag
                 :value="
@@ -106,35 +108,35 @@ const { data, isLoading } = useQuery<IMember>({
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อช่องทางติดต่อ</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{ data.contactName || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 text-sm">{{ data.contactName || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อเล่น</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{ data.displayName || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 text-sm">{{ data.displayName || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="md:col-span-2 space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{ data.name || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 text-sm">{{ data.name || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="md:col-span-2 space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ที่อยู่</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200 min-h-[80px]">
-              <span class="text-gray-900 whitespace-pre-line">{{ data.address || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 whitespace-pre-line text-sm">{{ data.address || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">จังหวัด</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{
+              <span class="text-gray-900 text-sm">{{
                 memberStore.provinceOptions.find((option) => option.value === data?.province)
                   ?.label || 'ไม่ระบุ'
               }}</span>
@@ -144,14 +146,14 @@ const { data, isLoading } = useQuery<IMember>({
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{ data.phone || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 text-sm">{{ data.phone || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ประเภทลูกค้า</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{
+              <span class="text-gray-900 text-sm">{{
                 memberStore.memberTypeOptions.find((option) => option.value === data?.type)
                   ?.label || 'ไม่ระบุ'
               }}</span>
@@ -161,7 +163,7 @@ const { data, isLoading } = useQuery<IMember>({
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ความสนใจ</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{
+              <span class="text-gray-900 text-sm">{{
                 memberStore.memberInterestOptions.find((option) => option.value === data?.interest)
                   ?.label || 'ไม่ระบุ'
               }}</span>
@@ -183,14 +185,14 @@ const { data, isLoading } = useQuery<IMember>({
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อผู้ใช้</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
-              <span class="text-gray-900">{{ data.username || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-900 text-sm">{{ data.username || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">รหัสผ่าน</label>
             <div class="bg-gray-50 rounded-lg p-2 border border-gray-200 overflow-hidden">
-              <span class="text-gray-500">{{ data.password || 'ไม่ระบุ' }}</span>
+              <span class="text-gray-500 text-sm">{{ data.password || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 

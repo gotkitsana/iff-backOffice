@@ -25,7 +25,7 @@ export const useMemberStore = defineStore('member', () => {
       case 'lp':
         return 'info'
       case 'eq':
-        return 'contrast'
+        return 'secondary'
       case 'css':
         return 'warn'
       default:
@@ -53,7 +53,7 @@ export const useMemberStore = defineStore('member', () => {
     return data
   }
 
-  async function onUpdateMember(payload: CreateMemberPayload) {
+  async function onUpdateMember(payload: UpdateMemberPayload) {
     const { data } = await api.put(`/user`, payload)
     return data
   }
@@ -190,12 +190,17 @@ export interface IMember {
   username?: string //ยูสเซอร์
   password?: string //รหัสผ่าน
   bidder?: boolean //สถานะยูสเซอร์
+  info?: string //ข้อมูล
+  isVerify?: boolean
+  image?: string
+  email: string
 
   cat: number
   uat: number
 }
 
 export interface CreateMemberPayload {
+  code: string
   status: string
   contact: string
   contactName: string
@@ -211,8 +216,13 @@ export interface CreateMemberPayload {
   bidder: boolean
 }
 
+export interface UpdateMemberPayload extends CreateMemberPayload {
+  _id: string
+}
+
 
 export interface ResetPasswordPayload {
   id: string
   password: string
 }
+

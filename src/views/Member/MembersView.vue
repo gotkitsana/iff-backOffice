@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import { Column, Tag, Button, Card } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
@@ -40,11 +40,10 @@ const closeViewModal = () => {
   selectedCustomer.value = null
 }
 
-
 const showDeleteModal = ref(false)
 const deleteCustomer = ref<{ id: string; name: string } | null>(null)
 const openDeleteModal = (customer: IMember) => {
-  deleteCustomer.value = { id: customer._id, name: customer.name || '' }
+  deleteCustomer.value = { id: customer._id, name: customer.contactName || '' }
   showDeleteModal.value = true
 }
 const closeDeleteModal = () => {
@@ -62,39 +61,6 @@ const closeResetPasswordModal = () => {
   resetPasswordCustomer.value = null
   showResetPasswordModal.value = false
 }
-
-const products = ref<IMember[]>([])
-watch(data, () => {
-  products.value = data.value?.map((item,index) => ({
-    ...item,
-    idx: index + 1,
-  })) || []
-}, { immediate: true })
-
-
-onMounted(() => {
-  products.value = [
-    {
-      _id: '1',
-      code: '1',
-      status: 'cs',
-      contact: '0812345678',
-      contactName: 'Facebook',
-      displayName: 'John Doe',
-      name: 'John Doe',
-      address: '1234567890',
-      province: 'กรุงเทพมหานคร',
-      phone: '0812345678',
-      type: 'ลูกค้า',
-      interest: 'กล้องถ่ายรูป',
-      username: 'john.doe',
-      password: '1234567890',
-      bidder: true,
-      cat: 1,
-      uat: 1,
-    },
-  ]
-})
 </script>
 
 <template>
@@ -116,11 +82,18 @@ onMounted(() => {
         </div>
       </template>
       <template #content>
-        <DataTable :value="products" dataKey="_id" :loading="isLoading" paginator :rows="50" :rowsPerPageOptions="[50, 100, 150, 200]">
+        <DataTable
+          :value="data"
+          dataKey="_id"
+          :loading="isLoading"
+          paginator
+          :rows="50"
+          :rowsPerPageOptions="[50, 100, 150, 200]"
+        >
           <Column
-            field="idx"
+            field="code"
             header="รหัสลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
@@ -129,15 +102,18 @@ onMounted(() => {
             :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="
-                  memberStore.memberStatusOptions.find(
-                    (option) => option.value === slotProps.data.status
-                  )?.label
-                "
-                :severity="memberStore.getStatusLabel(slotProps.data.status)"
-                size="small"
-              />
+              <template v-if="slotProps.data.status">
+                <Tag
+                  :value="
+                    memberStore.memberStatusOptions.find(
+                      (option) => option.value === slotProps.data.status
+                    )?.label
+                  "
+                  :severity="memberStore.getStatusLabel(slotProps.data.status)"
+                  size="small"
+                />
+              </template>
+              <template v-else></template>
             </template>
           </Column>
 
@@ -147,22 +123,25 @@ onMounted(() => {
             :pt="{ columnHeaderContent: 'min-w-[6rem] justify-center ', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="
-                  memberStore.memberContactOptions.find(
-                    (option) => option.value === slotProps.data.contact
-                  )?.label
-                "
-                severity="info"
-                size="small"
-              />
+              <template v-if="slotProps.data.contact">
+                <Tag
+                  :value="
+                    memberStore.memberContactOptions.find(
+                      (option) => option.value === slotProps.data.contact
+                    )?.label
+                  "
+                  severity="info"
+                  size="small"
+                />
+              </template>
+              <template v-else></template>
             </template>
           </Column>
 
           <Column
             field="contactName"
             header="ชื่อโซเชียล"
-            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
+            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
@@ -177,23 +156,69 @@ onMounted(() => {
             :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
           />
 
-          <Column field="address" header="ที่อยู่" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
+          <Column
+            field="address"
+            header="ที่อยู่"
+            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
+          />
 
-          <Column field="province" header="จังหวัด" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
+          <Column
+            field="province"
+            header="จังหวัด"
+            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
+          >
+            <template #body="slotProps">
+              <p>{{ memberStore.provinceOptions.find((option) => option.value === slotProps.data.province)?.label || 'ไม่ระบุ' }}</p>
+            </template>
+          </Column>
 
-          <Column field="phone" header="เบอร์โทร" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
+          <Column
+            field="phone"
+            header="เบอร์โทร"
+            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
+          />
 
           <Column
             field="type"
             header="ประเภทลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[5.5rem]', bodyCell: 'text-sm' }"
-          />
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <template v-if="slotProps.data.type">
+                <Tag
+                  :value="
+                    memberStore.memberTypeOptions.find(
+                      (option) => option.value === slotProps.data.type
+                    )?.label
+                  "
+                  severity="warn"
+                  size="small"
+                />
+              </template>
+              <template v-else></template>
+            </template>
+          </Column>
 
           <Column
             field="interest"
             header="ความสนใจ"
-            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
-          />
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <template v-if="slotProps.data.interest">
+                <Tag
+                  :value="
+                    memberStore.memberInterestOptions.find(
+                      (option) => option.value === slotProps.data.interest
+                    )?.label
+                  "
+                  severity="success"
+                  size="small"
+                />
+              </template>
+              <template v-else></template>
+            </template>
+          </Column>
 
           <Column
             header="จัดการ"
@@ -249,7 +274,7 @@ onMounted(() => {
     <ModalAddAndEditMember
       :showAddModal="showAddAndEditModal"
       @onCloseAddModal="closeAddAndEditModal"
-      :id="editCustomer?._id || null"
+      :data="editCustomer || null"
     />
 
     <!-- View Customer Modal -->

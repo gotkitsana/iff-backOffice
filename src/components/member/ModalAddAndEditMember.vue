@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useMemberStore, type CreateMemberPayload, type IMember } from '@/stores/member/member'
+import {
+  useMemberStore,
+  type CreateMemberPayload,
+  type IMember,
+  type UpdateMemberPayload,
+} from '@/stores/member/member'
 import { Dialog, Textarea, Select, InputText } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import dayjs from 'dayjs'
 
 const props = defineProps<{
   showAddModal: boolean
-  id: string | null
+  data: IMember | null
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +33,7 @@ const showAddModal = computed({
 
 const isSubmitting = ref(false)
 const newMember = ref<CreateMemberPayload>({
+  code: '',
   status: '',
   contact: '',
   contactName: '',
@@ -44,6 +51,7 @@ const newMember = ref<CreateMemberPayload>({
 
 const closeAddModal = () => {
   newMember.value = {
+    code: '',
     status: '',
     contact: '',
     contactName: '',
@@ -62,29 +70,26 @@ const closeAddModal = () => {
 }
 
 const memberStore = useMemberStore()
-const { data: memberData } = useQuery<IMember>({
-  queryKey: ['get_member_ID', props.id],
-  queryFn: () => memberStore.onGetMemberID(props.id || ''),
-  enabled: computed(() => !!props.id),
-})
+
 watch(
-  memberData,
-  (newVal) => {
-    if (newVal) {
+  () => props.data,
+  (newMemberData) => {
+    if (newMemberData) {
       newMember.value = {
-        status: newVal.status,
-        contact: newVal.contact,
-        contactName: newVal.contactName,
-        displayName: newVal.displayName,
-        name: newVal.name || '',
-        password: newVal.password || '',
-        bidder: newVal.bidder || false,
-        address: newVal.address || '',
-        province: newVal.province || '',
-        phone: newVal.phone || '',
-        type: newVal.type || '',
-        interest: newVal.interest || '',
-        username: newVal.username || '',
+        code: newMemberData.code,
+        status: newMemberData.status,
+        contact: newMemberData.contact,
+        contactName: newMemberData.contactName,
+        displayName: newMemberData.displayName,
+        name: newMemberData.name || '',
+        password: newMemberData.password || '',
+        bidder: newMemberData.bidder || false,
+        address: newMemberData.address || '',
+        province: newMemberData.province || '',
+        phone: newMemberData.phone || '',
+        type: newMemberData.type || '',
+        interest: newMemberData.interest || '',
+        username: newMemberData.username || '',
       }
     }
   },
@@ -105,10 +110,17 @@ const handleAddMember = () => {
     return
   }
 
-  if (props.id) {
-    mutateUpdate(newMember.value)
+  if (props.data) {
+    mutateUpdate({
+      ...newMember.value,
+      _id: props.data._id,
+    })
   } else {
-    mutate(newMember.value)
+    mutate({
+      ...newMember.value,
+      code: buildPrefix(newMember.value.status || ''),
+      username: newMember.value.username || newMember.value.phone,
+    })
   }
 }
 
@@ -129,7 +141,7 @@ const { mutate, isPending } = useMutation({
 })
 
 const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
-  mutationFn: (payload: CreateMemberPayload) => memberStore.onUpdateMember(payload),
+  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
   onSuccess: (data: any) => {
     if (data.data) {
       toast.success('แก้ไขข้อมูลลูกค้าสำเร็จ')
@@ -143,27 +155,35 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
   },
 })
 
-
+function buildPrefix(status: string) {
+  const typePart = (status || 'no').replace(/[^a-z0-9]/g, '').slice(0, 4)
+  const ym = dayjs().format('YYMMDD')
+  const con = dayjs().unix().toString().slice(-3)
+  return `${typePart}${ym}${con}`
+}
 </script>
 
 <template>
-
   <Dialog
     v-model:visible="showAddModal"
     @update:visible="closeAddModal"
     modal
-    :header="props.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'"
+    :header="props.data ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'"
     :style="{ width: '50rem' }"
     :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
     :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
   >
+
     <div class="space-y-6">
       <!-- Basic Information Section -->
       <div class="bg-gray-50 rounded-lg p-4">
-        <h3 class="font-semibold! text-gray-900 mb-4 flex items-center gap-2">
-          <i class="pi pi-user text-blue-600"></i>
-          ข้อมูลลูกค้า
-        </h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold! text-gray-900 flex items-center gap-2">
+            <i class="pi pi-user text-blue-600"></i>
+            ข้อมูลลูกค้า
+          </h3>
+          <p class="text-xs text-gray-700" v-if="!!props.data">รหัสลูกค้า: {{ props.data?.code }}</p>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -320,7 +340,7 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
               size="small"
             />
           </div>
-          <div v-if="!props.id">
+          <div v-if="!props.data">
             <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
             <Password
               v-model="newMember.password"
