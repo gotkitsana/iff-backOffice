@@ -5,10 +5,10 @@ import { ref } from 'vue'
 export const useMemberStore = defineStore('member', () => {
 
   const memberStatusOptions = ref([
-    { label: 'CS', value: 'cs' },
-    { label: 'LP', value: 'lp' },
-    { label: 'EQ', value: 'eq' },
-    { label: 'CSS', value: 'css' },
+    { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
+    { label: 'มีแนวโน้มสนใจ', value: 'lp' },
+    { label: 'สอบถาม', value: 'eq' },
+    { label: 'ลูกค้าสำคัญ', value: 'css' },
   ])
 
   const memberContactOptions = ref([

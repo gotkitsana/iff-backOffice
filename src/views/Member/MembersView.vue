@@ -72,13 +72,23 @@ const closeResetPasswordModal = () => {
             <h1 class="text-lg font-semibold! text-gray-900">ข้อมูลลูกค้า</h1>
             <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p>
           </div>
-          <Button
-            label="บันทึกข้อมูลลูกค้า"
-            icon="pi pi-plus"
-            size="small"
-            @click="openAddModal"
-            class="bg-blue-600 hover:bg-blue-700"
-          />
+
+          <div class="flex items-center gap-2">
+            <Button
+              label="บันทึกข้อมูลลูกค้า"
+              icon="pi pi-plus"
+              size="small"
+              @click="openAddModal"
+
+            />
+
+            <Button
+              label="ประวัติการซื้อ"
+              icon="pi pi-history"
+              size="small"
+              severity="success"
+            />
+          </div>
         </div>
       </template>
       <template #content>
@@ -99,7 +109,7 @@ const closeResetPasswordModal = () => {
           <Column
             field="status"
             header="สถานะลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[6.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <template v-if="slotProps.data.status">
@@ -168,7 +178,13 @@ const closeResetPasswordModal = () => {
             :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
           >
             <template #body="slotProps">
-              <p>{{ memberStore.provinceOptions.find((option) => option.value === slotProps.data.province)?.label || 'ไม่ระบุ' }}</p>
+              <p>
+                {{
+                  memberStore.provinceOptions.find(
+                    (option) => option.value === slotProps.data.province
+                  )?.label || 'ไม่ระบุ'
+                }}
+              </p>
             </template>
           </Column>
 
