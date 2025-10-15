@@ -1,29 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import {
-  Card,
-  DataTable,
-  Column,
-  Tag,
-  Button,
-  Dialog,
-  InputText,
-  Textarea,
-  Select,
-  InputNumber,
-} from 'primevue'
+import { ref, computed } from 'vue'
+import { Card, DataTable, Column, Tag, Button, Select } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/auction/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
+import ModalAddSale from '@/components/sales/ModalAddSale.vue'
+import ModalEditSale from '@/components/sales/ModalEditSale.vue'
+import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
+import StatusManager from '@/components/sales/StatusManager.vue'
+import formatCurrency from '@/utils/formatCurrency'
 
 // Stores
 const productStore = useProductStore()
 
 // Data
-const showSaleModal = ref(false)
-const showInvoiceModal = ref(false)
-const selectedProduct = ref<IProduct | null>(null)
-const statusFilter = ref('')
+const showAddModal = ref(false)
+const showEditModal = ref(false)
+const showDetailModal = ref(false)
+const showStatusManager = ref(false)
+const showSettingsModal = ref(false)
 const selectedSale = ref<{
   id: number
   orderNumber: string
@@ -51,34 +46,10 @@ const selectedSale = ref<{
   status: string
   notes: string
 } | null>(null)
-
-// Form data for new sale
-const saleForm = ref({
-  productId: '',
-  customerCode: '',
-  customerType: 'ลูกค้า',
-  customerName: '',
-  customerNickname: '',
-  customerPhone: '',
-  customerEmail: '',
-  customerAddress: '',
-  customerProvince: '',
-  productCategory: 'ขายสินค้า',
-  productType: '',
-  quantity: 1,
-  unitPrice: 0,
-  totalPrice: 0,
-  deposit: 0,
-  discount: 0,
-  netAmount: 0,
-  paymentMethod: 'SCB',
-  seller: 'Bert',
-  shippingStatus: 'รอตัดสินใจ',
-  notes: '',
-})
+const statusFilter = ref('')
 
 // Queries
-const { data: products, isLoading: productsLoading } = useQuery<IProduct[]>({
+const { isLoading: productsLoading } = useQuery<IProduct[]>({
   queryKey: ['get_products_for_sale'],
   queryFn: () => productStore.onGetProducts(),
 })
@@ -109,7 +80,7 @@ const sales = ref([
     seller: 'Bert',
     shippingStatus: 'ชำระเงินแล้ว',
     saleDate: new Date('2024-10-11T10:30:00'),
-    status: 'ชำระเงินเรียบร้อย',
+    status: 'paid_complete',
     notes: '',
   },
   {
@@ -136,25 +107,12 @@ const sales = ref([
     seller: 'Bert',
     shippingStatus: 'รอชำระเงิน',
     saleDate: new Date('2024-10-11T14:20:00'),
-    status: 'รอชำระเงิน',
+    status: 'wait_payment',
     notes: '',
   },
 ])
 
 // Computed
-const availableProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => !p.sold && p.auctionOnly === 0)
-})
-
-const productOptions = computed(() => {
-  return availableProducts.value.map((product) => ({
-    label: `${product.name} (${product.size} ซม.) - ${product.category || 'ไม่ระบุหมวดหมู่'}`,
-    value: product._id,
-    product: product,
-  }))
-})
-
 const filteredSales = computed(() => {
   if (!statusFilter.value) {
     return sales.value
@@ -165,23 +123,16 @@ const filteredSales = computed(() => {
 // Stats
 const totalSales = computed(() => sales.value.length)
 const completedSales = computed(
-  () => sales.value.filter((s) => s.status === 'ชำระเงินเรียบร้อย').length
+  () => sales.value.filter((s) => s.status === 'paid_complete').length
 )
-const pendingSales = computed(() => sales.value.filter((s) => s.status === 'รอชำระเงิน').length)
+const pendingSales = computed(() => sales.value.filter((s) => s.status === 'wait_payment').length)
 const totalRevenue = computed(() =>
   sales.value
-    .filter((s) => s.status === 'ชำระเงินเรียบร้อย')
+    .filter((s) => s.status === 'paid_complete')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 // Utility functions
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-  }).format(value)
-}
-
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('th-TH', {
     year: 'numeric',
@@ -192,21 +143,21 @@ const formatDate = (date: Date) => {
 
 const getStatusTag = (status: string) => {
   switch (status) {
-    case 'รอจัดหา':
+    case 'wait_product':
       return { label: 'รอจัดหา', severity: 'warning' }
-    case 'รอยืนยัน':
+    case 'wait_confirm':
       return { label: 'รอยืนยัน', severity: 'warning' }
-    case 'รอชำระเงิน':
+    case 'wait_payment':
       return { label: 'รอชำระเงิน', severity: 'warning' }
-    case 'ชำระเงินเรียบร้อย':
+    case 'paid_complete':
       return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
-    case 'แพ็คเตรียมสินค้ารอจัดส่ง':
+    case 'pack_and_ship':
       return { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', severity: 'info' }
-    case 'อยู่ระหว่างขนส่ง':
+    case 'shipping':
       return { label: 'อยู่ระหว่างขนส่ง', severity: 'info' }
-    case 'ได้รับสินค้าเรียบร้อย':
+    case 'received':
       return { label: 'ได้รับสินค้าเรียบร้อย', severity: 'success' }
-    case 'สินค้าเสียหาย':
+    case 'damaged':
       return { label: 'สินค้าเสียหาย', severity: 'danger' }
     default:
       return { label: status, severity: 'info' }
@@ -232,210 +183,76 @@ const getPaymentMethodTag = (method: string) => {
   }
 }
 
-const getShippingStatusTag = (status: string) => {
-  switch (status) {
-    case 'รอตัดสินใจ':
-      return { label: 'รอตัดสินใจ', severity: 'warning' }
-    case 'รอชำระเงิน':
-      return { label: 'รอชำระเงิน', severity: 'warning' }
-    case 'ชำระเงินแล้ว':
-      return { label: 'ชำระเงินแล้ว', severity: 'info' }
-    case 'กำลังจัดเตรียม':
-      return { label: 'กำลังจัดเตรียม', severity: 'info' }
-    case 'อยู่ระหว่างจัดส่ง':
-      return { label: 'อยู่ระหว่างจัดส่ง', severity: 'warning' }
-    case 'จัดส่งสำเร็จ':
-      return { label: 'จัดส่งสำเร็จ', severity: 'success' }
-    case 'รับสินค้าเรียบร้อย':
-      return { label: 'รับสินค้าเรียบร้อย', severity: 'success' }
-    default:
-      return { label: status, severity: 'secondary' }
-  }
-}
-
 // Modal functions
-const openSaleModal = () => {
-  resetSaleForm()
-  showSaleModal.value = true
+const openAddModal = () => {
+  showAddModal.value = true
 }
 
-const closeSaleModal = () => {
-  showSaleModal.value = false
-  resetSaleForm()
-}
-
-const openInvoiceModal = (sale: (typeof sales.value)[0]) => {
+const openEditModal = (sale: (typeof sales.value)[0]) => {
   selectedSale.value = sale
-  showInvoiceModal.value = true
+  showEditModal.value = true
 }
 
-const closeInvoiceModal = () => {
-  showInvoiceModal.value = false
-  selectedSale.value = null
+const openDetailModal = (sale: (typeof sales.value)[0]) => {
+  selectedSale.value = sale
+  showDetailModal.value = true
 }
 
-const resetSaleForm = () => {
-  saleForm.value = {
-    productId: '',
-    customerCode: '',
-    customerType: 'ลูกค้า',
-    customerName: '',
-    customerNickname: '',
-    customerPhone: '',
-    customerEmail: '',
-    customerAddress: '',
-    customerProvince: '',
-    productCategory: 'ขายสินค้า',
-    productType: '',
-    quantity: 1,
-    unitPrice: 0,
-    totalPrice: 0,
-    deposit: 0,
-    discount: 0,
-    netAmount: 0,
-    paymentMethod: 'SCB',
-    seller: 'Bert',
-    shippingStatus: 'รอตัดสินใจ',
-    notes: '',
-  }
-  selectedProduct.value = null
+const openStatusManager = (sale: (typeof sales.value)[0]) => {
+  selectedSale.value = sale
+  showStatusManager.value = true
 }
 
-// Selected product details
-const selectedProductDetails = computed(() => {
-  if (!saleForm.value.productId || !availableProducts.value) return null
-  return availableProducts.value.find((p) => p._id === saleForm.value.productId)
-})
-
-// Watch for product selection
-watch(
-  () => saleForm.value.productId,
-  (newProductId) => {
-    if (newProductId && selectedProductDetails.value) {
-      saleForm.value.unitPrice = selectedProductDetails.value.price || 0
-    }
+const handleSaleUpdated = (updatedSale: (typeof sales.value)[0]) => {
+  const index = sales.value.findIndex((s) => s.id === updatedSale.id)
+  if (index !== -1) {
+    sales.value[index] = updatedSale
   }
-)
-
-// Calculate totals
-const subtotal = computed(() => saleForm.value.unitPrice * saleForm.value.quantity)
-const discountAmount = computed(() => saleForm.value.discount)
-const totalAmount = computed(() => subtotal.value - discountAmount.value)
-
-// Watch for price changes to update totals
-watch(
-  [() => saleForm.value.unitPrice, () => saleForm.value.quantity, () => saleForm.value.discount],
-  () => {
-    saleForm.value.totalPrice = subtotal.value
-    saleForm.value.netAmount = totalAmount.value
-  }
-)
-
-// Handlers
-const handleCreateSale = () => {
-  if (!saleForm.value.productId || !saleForm.value.customerName) {
-    toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
-    return
-  }
-
-  const newSale = {
-    id: sales.value.length + 1,
-    orderNumber: `ORD-2024-${String(sales.value.length + 1).padStart(3, '0')}`,
-    customerCode: saleForm.value.customerCode || String(sales.value.length + 1),
-    customerType: saleForm.value.customerType,
-    customerName: saleForm.value.customerName,
-    customerNickname: saleForm.value.customerNickname,
-    customerPhone: saleForm.value.customerPhone,
-    customerEmail: saleForm.value.customerEmail,
-    customerAddress: saleForm.value.customerAddress,
-    customerProvince: saleForm.value.customerProvince,
-    productCategory: saleForm.value.productCategory,
-    productType: saleForm.value.productType,
-    productName: selectedProductDetails.value?.name || '',
-    quantity: saleForm.value.quantity,
-    unitPrice: saleForm.value.unitPrice,
-    totalPrice: saleForm.value.totalPrice,
-    deposit: saleForm.value.deposit,
-    discount: saleForm.value.discount,
-    netAmount: saleForm.value.netAmount,
-    paymentMethod: saleForm.value.paymentMethod,
-    seller: saleForm.value.seller,
-    shippingStatus: saleForm.value.shippingStatus,
-    saleDate: new Date(),
-    status: 'ชำระเงินเรียบร้อย',
-    notes: saleForm.value.notes,
-  }
-
-  sales.value.unshift(newSale)
-  toast.success('บันทึกการขายสำเร็จ')
-  closeSaleModal()
+  showEditModal.value = false
 }
 
 const handleCancelSale = (sale: (typeof sales.value)[0]) => {
   if (confirm(`คุณต้องการยกเลิกการขาย ${sale.orderNumber} หรือไม่?`)) {
-    sale.status = 'สินค้าเสียหาย'
+    sale.status = 'damaged'
     toast.success('ยกเลิกการขายสำเร็จ')
   }
 }
 
 const handleCompleteSale = (sale: (typeof sales.value)[0]) => {
   if (confirm(`คุณต้องการยืนยันการขาย ${sale.orderNumber} หรือไม่?`)) {
-    sale.status = 'ชำระเงินเรียบร้อย'
+    sale.status = 'paid_complete'
     toast.success('ยืนยันการขายสำเร็จ')
   }
 }
 
-// Payment method options
-const paymentMethods = [
-  { label: 'SCB', value: 'SCB' },
-  { label: 'KBANK', value: 'KBANK' },
-  { label: 'BBL', value: 'BBL' },
-  { label: 'เงินสด', value: 'cash' },
-  { label: 'โอนเงิน', value: 'transfer' },
-  { label: 'เครดิต', value: 'credit' },
-]
+const handleStatusChange = (newStatus: string) => {
+  if (selectedSale.value) {
+    selectedSale.value.status = newStatus
+    toast.success('เปลี่ยนสถานะสำเร็จ')
+    showStatusManager.value = false
+  }
+}
 
-// Customer type options
-const customerTypes = [
-  { label: 'ลูกค้า', value: 'ลูกค้า' },
-  { label: 'ตัวแทนจำหน่าย', value: 'ตัวแทนจำหน่าย' },
-  { label: 'ร้านค้า', value: 'ร้านค้า' },
-]
+const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
+  if (updatedData) {
+    const index = sales.value.findIndex((s) => s.id === updatedData.id)
+    if (index !== -1) {
+      sales.value[index] = updatedData
+    }
+  }
+  showSettingsModal.value = false
+}
 
-// Product category options
-const productCategories = [
-  { label: 'ขายสินค้า', value: 'ขายสินค้า' },
-  { label: 'บริการ', value: 'บริการ' },
-]
-
-// Product type options
-const productTypes = [
-  { label: 'สารปรับสภาพน้ำ', value: 'สารปรับสภาพน้ำ' },
-  { label: 'อาหารปลา', value: 'อาหารปลา' },
-  { label: 'อุปกรณ์', value: 'อุปกรณ์' },
-]
-
-// Sales status options
+// Sales status options for filter
 const salesStatuses = [
-  { label: 'รอจัดหา', value: 'รอจัดหา' },
-  { label: 'รอยืนยัน', value: 'รอยืนยัน' },
-  { label: 'รอชำระเงิน', value: 'รอชำระเงิน' },
-  { label: 'ชำระเงินเรียบร้อย', value: 'ชำระเงินเรียบร้อย' },
-  { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', value: 'แพ็คเตรียมสินค้ารอจัดส่ง' },
-  { label: 'อยู่ระหว่างขนส่ง', value: 'อยู่ระหว่างขนส่ง' },
-  { label: 'ได้รับสินค้าเรียบร้อย', value: 'ได้รับสินค้าเรียบร้อย' },
-  { label: 'สินค้าเสียหาย', value: 'สินค้าเสียหาย' },
-]
-
-// Shipping status options
-const shippingStatuses = [
-  { label: 'รอตัดสินใจ', value: 'รอตัดสินใจ' },
-  { label: 'รอชำระเงิน', value: 'รอชำระเงิน' },
-  { label: 'ชำระเงินแล้ว', value: 'ชำระเงินแล้ว' },
-  { label: 'กำลังจัดเตรียม', value: 'กำลังจัดเตรียม' },
-  { label: 'อยู่ระหว่างจัดส่ง', value: 'อยู่ระหว่างจัดส่ง' },
-  { label: 'จัดส่งสำเร็จ', value: 'จัดส่งสำเร็จ' },
-  { label: 'รับสินค้าเรียบร้อย', value: 'รับสินค้าเรียบร้อย' },
+  { label: 'รอจัดหา', value: 'wait_product' },
+  { label: 'รอยืนยัน', value: 'wait_confirm' },
+  { label: 'รอชำระเงิน', value: 'wait_payment' },
+  { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
+  { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', value: 'pack_and_ship' },
+  { label: 'อยู่ระหว่างขนส่ง', value: 'shipping' },
+  { label: 'ได้รับสินค้าเรียบร้อย', value: 'received' },
+  { label: 'สินค้าเสียหาย', value: 'damaged' },
 ]
 </script>
 
@@ -449,11 +266,11 @@ const shippingStatuses = [
       </div>
       <div class="flex space-x-3">
         <Button
-          label="ขายใหม่"
+          label="เพิ่มข้อมูล"
           icon="pi pi-plus"
           severity="success"
           size="small"
-          @click="openSaleModal"
+          @click="openAddModal"
         />
         <!-- <Button label="รายงานยอดขาย" icon="pi pi-chart-bar" severity="info" size="small" /> -->
       </div>
@@ -606,26 +423,14 @@ const shippingStatuses = [
             <template #body="slotProps">
               <span
                 class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm"
-                @click="openInvoiceModal(slotProps.data)"
+                @click="openDetailModal(slotProps.data)"
               >
                 {{ slotProps.data.orderNumber }}
               </span>
             </template>
           </Column>
 
-          <Column
-            field="status"
-            header="สถานะรายการขาย"
-            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
-          >
-            <template #body="slotProps">
-              <Tag
-                :value="getStatusTag(slotProps.data.status).label"
-                :severity="getStatusTag(slotProps.data.status).severity"
-                size="small"
-              />
-            </template>
-          </Column>
+
 
           <Column
             field="customerCode"
@@ -788,22 +593,56 @@ const shippingStatuses = [
             </template>
           </Column>
 
-          <Column
-            field="shippingStatus"
-            header="สถานะการจัดส่ง"
-            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
+           <Column
+            field="status"
+            header="สถานะรายการขาย"
+            :pt="{ columnHeaderContent: 'min-w-[12rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="getShippingStatusTag(slotProps.data.shippingStatus).label"
-                :severity="getShippingStatusTag(slotProps.data.shippingStatus).severity"
-                size="small"
-              />
+              <div class="flex flex-col items-center gap-2">
+                <Tag
+                  :value="getStatusTag(slotProps.data.status).label"
+                  :severity="getStatusTag(slotProps.data.status).severity"
+                  size="small"
+                />
+              </div>
             </template>
           </Column>
 
           <Column
-            header="การจัดการ"
+            header="จัดการการขาย"
+            :exportable="false"
+            frozen
+            :pt="{ columnHeaderContent: 'justify-end min-w-[6rem]' }"
+          >
+            <template #body="slotProps">
+              <div class="flex gap-2 justify-end">
+                <Button
+                  icon="pi pi-sync"
+                  severity="secondary"
+                  size="small"
+                  outlined
+                  @click="openStatusManager(slotProps.data)"
+                  v-tooltip.top="'เปลี่ยนสถานะการขาย'"
+                />
+                <Button
+                  v-if="
+                    slotProps.data.status === 'wait_product' ||
+                    slotProps.data.status === 'wait_confirm'
+                  "
+                  icon="pi pi-times"
+                  severity="danger"
+                  size="small"
+                  outlined
+                  @click="handleCancelSale(slotProps.data)"
+                  v-tooltip.top="'ยกเลิกการขายนี้'"
+                />
+              </div>
+            </template>
+          </Column>
+
+          <Column
+            header="จัดการ"
             :exportable="false"
             frozen
             :pt="{ columnHeaderContent: 'justify-end' }"
@@ -815,23 +654,17 @@ const shippingStatuses = [
                   severity="info"
                   size="small"
                   outlined
-                  @click="openInvoiceModal(slotProps.data)"
+                  @click="openDetailModal(slotProps.data)"
+                  v-tooltip.top="'ดูรายละเอียด'"
                 />
+
                 <Button
-                  v-if="slotProps.data.status === 'รอชำระเงิน'"
-                  icon="pi pi-check"
-                  severity="success"
+                  icon="pi pi-pencil"
+                  severity="warning"
                   size="small"
                   outlined
-                  @click="handleCompleteSale(slotProps.data)"
-                />
-                <Button
-                  v-if="slotProps.data.status === 'รอชำระเงิน'"
-                  icon="pi pi-times"
-                  severity="danger"
-                  size="small"
-                  outlined
-                  @click="handleCancelSale(slotProps.data)"
+                  @click="openEditModal(slotProps.data)"
+                  v-tooltip.top="'แก้ไขข้อมูล'"
                 />
               </div>
             </template>
@@ -841,553 +674,31 @@ const shippingStatuses = [
     </Card>
   </div>
 
-  <!-- New Sale Modal -->
-  <Dialog
-    v-model:visible="showSaleModal"
-    modal
-    :style="{ width: '60rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
-      header: 'p-4',
-      footer: 'p-4',
-    }"
-  >
-    <template #header>
-      <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
-        >
-          <i class="pi pi-plus text-white text-lg"></i>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold! text-gray-800">ขายปลาคาร์ฟ</h3>
-          <p class="text-sm text-gray-600">กรอกข้อมูลการขายให้ครบถ้วน</p>
-        </div>
-      </div>
-    </template>
+  <!-- Modal Components -->
+  <ModalAddSale v-model:visible="showAddModal" />
 
-    <div class="space-y-6">
-      <!-- Product Selection -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-fish text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">เลือกปลาคาร์ฟ</h4>
-        </div>
+  <ModalEditSale
+    v-model:visible="showEditModal"
+    :sale-data="selectedSale"
+    @sale-updated="handleSaleUpdated"
+  />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-tag mr-1.5 !text-sm"></i>
-              เลือกปลาคาร์ฟ *
-            </label>
-            <Select
-              v-model="saleForm.productId"
-              :options="productOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกปลาคาร์ฟที่ต้องการขาย"
-              fluid
-              size="small"
-            />
-          </div>
+  <ModalSaleDetail
+    v-model:visible="showDetailModal"
+    :sale-data="selectedSale"
+    @edit-sale="openEditModal"
+  />
 
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-sort-numeric-up mr-1.5 !text-sm"></i>
-              จำนวน *
-            </label>
-            <InputNumber v-model="saleForm.quantity" :min="1" :max="10" fluid size="small" />
-          </div>
+  <StatusManager
+    v-model:visible="showStatusManager"
+    :current-status="selectedSale?.status || ''"
+    :order-number="selectedSale?.orderNumber || ''"
+    @status-changed="handleStatusChange"
+  />
 
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-th-large mr-1.5 !text-sm"></i>
-              หมวดหมู่สินค้า
-            </label>
-            <Select
-              v-model="saleForm.productCategory"
-              :options="productCategories"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-tags mr-1.5 !text-sm"></i>
-              ประเภทสินค้า
-            </label>
-            <Select
-              v-model="saleForm.productType"
-              :options="productTypes"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-
-        <!-- Selected Product Details -->
-        <div
-          v-if="selectedProductDetails"
-          class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-        >
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-fish text-blue-600 text-xl"></i>
-            </div>
-            <div class="flex-1">
-              <h5 class="font-semibold text-gray-900">{{ selectedProductDetails.name }}</h5>
-              <p class="text-sm text-gray-600">
-                {{ selectedProductDetails.category || 'ไม่ระบุหมวดหมู่' }} -
-                {{ selectedProductDetails.size }} ซม.
-              </p>
-              <p class="text-xs text-gray-500 mt-1">{{ selectedProductDetails.detail }}</p>
-            </div>
-            <div class="text-right">
-              <p class="text-lg font-bold text-green-600">
-                {{
-                  selectedProductDetails.price
-                    ? formatCurrency(selectedProductDetails.price)
-                    : 'ไม่ระบุราคา'
-                }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Customer Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-user text-green-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลลูกค้า</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-hashtag mr-1.5 !text-sm"></i>
-              รหัสลูกค้า
-            </label>
-            <InputText
-              v-model="saleForm.customerCode"
-              placeholder="กรอกรหัสลูกค้า"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-users mr-1.5 !text-sm"></i>
-              ประเภทลูกค้า
-            </label>
-            <Select
-              v-model="saleForm.customerType"
-              :options="customerTypes"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ/สกุล *
-            </label>
-            <InputText
-              v-model="saleForm.customerName"
-              placeholder="กรอกชื่อ-สกุลลูกค้า"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user-plus mr-1.5 !text-sm"></i>
-              ชื่อเล่น
-            </label>
-            <InputText
-              v-model="saleForm.customerNickname"
-              placeholder="กรอกชื่อเล่น"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-phone mr-1.5 !text-sm"></i>
-              เบอร์โทรศัพท์
-            </label>
-            <InputText
-              v-model="saleForm.customerPhone"
-              placeholder="กรอกเบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-envelope mr-1.5 !text-sm"></i>
-              อีเมล
-            </label>
-            <InputText
-              v-model="saleForm.customerEmail"
-              placeholder="กรอกอีเมล"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-map-marker mr-1.5 !text-sm"></i>
-              ที่อยู่
-            </label>
-            <InputText
-              v-model="saleForm.customerAddress"
-              placeholder="กรอกที่อยู่"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-building mr-1.5 !text-sm"></i>
-              จังหวัด
-            </label>
-            <InputText
-              v-model="saleForm.customerProvince"
-              placeholder="กรอกจังหวัด"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Pricing -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-dollar text-yellow-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลราคา</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-              ราคาต่อหน่วย (บาท) *
-            </label>
-            <InputNumber
-              v-model="saleForm.unitPrice"
-              :min="0"
-              :max="999999999"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-wallet mr-1.5 !text-sm"></i>
-              มัดจำ (บาท)
-            </label>
-            <InputNumber
-              v-model="saleForm.deposit"
-              :min="0"
-              :max="saleForm.unitPrice * saleForm.quantity"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-percentage mr-1.5 !text-sm"></i>
-              ส่วนลด (บาท)
-            </label>
-            <InputNumber
-              v-model="saleForm.discount"
-              :min="0"
-              :max="saleForm.unitPrice * saleForm.quantity"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-credit-card mr-1.5 !text-sm"></i>
-              วิธีการชำระเงิน *
-            </label>
-            <Select
-              v-model="saleForm.paymentMethod"
-              :options="paymentMethods"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ผู้ขาย
-            </label>
-            <InputText v-model="saleForm.seller" placeholder="กรอกชื่อผู้ขาย" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-truck mr-1.5 !text-sm"></i>
-              สถานะการจัดส่ง
-            </label>
-            <Select
-              v-model="saleForm.shippingStatus"
-              :options="shippingStatuses"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-
-        <!-- Price Summary -->
-        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-gray-600">ยอดรวมก่อนส่วนลด:</span>
-            <span class="font-medium">{{ formatCurrency(subtotal) }}</span>
-          </div>
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-gray-600">มัดจำ:</span>
-            <span class="font-medium text-blue-600">{{ formatCurrency(saleForm.deposit) }}</span>
-          </div>
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-gray-600">ส่วนลด:</span>
-            <span class="font-medium text-red-600">-{{ formatCurrency(discountAmount) }}</span>
-          </div>
-          <div class="flex justify-between items-center pt-2 border-t border-gray-200">
-            <span class="text-lg font-bold text-gray-900">ยอดสุทธิหลังส่วนลด:</span>
-            <span class="text-xl font-bold text-green-600">{{ formatCurrency(totalAmount) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-file-edit text-purple-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">หมายเหตุ</h4>
-        </div>
-
-        <Textarea
-          v-model="saleForm.notes"
-          placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
-          rows="3"
-          fluid
-          size="small"
-        />
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeSaleModal"
-          size="small"
-        />
-        <Button
-          label="บันทึกการขาย"
-          icon="pi pi-check"
-          @click="handleCreateSale"
-          severity="success"
-          size="small"
-        />
-      </div>
-    </template>
-  </Dialog>
-
-  <!-- Invoice Modal -->
-  <Dialog
-    v-model:visible="showInvoiceModal"
-    modal
-    :style="{ width: '50rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
-      header: 'p-4',
-      footer: 'p-4',
-    }"
-  >
-    <template #header>
-      <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
-          <i class="pi pi-file-pdf text-white text-lg"></i>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold! text-gray-800">ใบเสร็จรับเงิน</h3>
-          <p class="text-sm text-gray-600">{{ selectedSale?.orderNumber }}</p>
-        </div>
-      </div>
-    </template>
-
-    <div v-if="selectedSale" class="space-y-4">
-      <!-- Invoice Header -->
-      <div class="text-center border-b border-gray-200 pb-4">
-        <h2 class="text-2xl font-bold text-gray-900">ใบเสร็จรับเงิน</h2>
-        <p class="text-gray-600">เลขที่: {{ selectedSale.orderNumber }}</p>
-        <p class="text-gray-600">วันที่: {{ formatDate(selectedSale.saleDate) }}</p>
-      </div>
-
-      <!-- Customer Info -->
-      <div class="grid grid-cols-2 gap-6">
-        <div>
-          <h4 class="font-semibold text-gray-900 mb-2">ข้อมูลลูกค้า</h4>
-          <p class="text-sm text-gray-600">รหัส: {{ selectedSale.customerCode }}</p>
-          <p class="text-sm text-gray-600">ชื่อ: {{ selectedSale.customerName }}</p>
-          <p class="text-sm text-gray-600">ชื่อเล่น: {{ selectedSale.customerNickname }}</p>
-          <p class="text-sm text-gray-600">โทร: {{ selectedSale.customerPhone }}</p>
-          <p class="text-sm text-gray-600">ที่อยู่: {{ selectedSale.customerAddress }}</p>
-          <p class="text-sm text-gray-600">จังหวัด: {{ selectedSale.customerProvince }}</p>
-        </div>
-        <div>
-          <h4 class="font-semibold text-gray-900 mb-2">ข้อมูลสินค้า</h4>
-          <p class="text-sm text-gray-600">หมวดหมู่: {{ selectedSale.productCategory }}</p>
-          <p class="text-sm text-gray-600">ประเภท: {{ selectedSale.productType }}</p>
-          <p class="text-sm text-gray-600">รายการ: {{ selectedSale.productName }}</p>
-          <p class="text-sm text-gray-600">จำนวน: {{ selectedSale.quantity }}</p>
-          <p class="text-sm text-gray-600">ผู้ขาย: {{ selectedSale.seller }}</p>
-        </div>
-      </div>
-
-      <!-- Invoice Details -->
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <table class="w-full">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-900">รายการ</th>
-              <th class="px-4 py-2 text-center text-sm font-medium text-gray-900">จำนวน</th>
-              <th class="px-4 py-2 text-right text-sm font-medium text-gray-900">ราคา</th>
-              <th class="px-4 py-2 text-right text-sm font-medium text-gray-900">รวม</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-t border-gray-200">
-              <td class="px-4 py-2 text-sm text-gray-900">{{ selectedSale.productName }}</td>
-              <td class="px-4 py-2 text-center text-sm text-gray-900">
-                {{ selectedSale.quantity }}
-              </td>
-              <td class="px-4 py-2 text-right text-sm text-gray-900">
-                {{ formatCurrency(selectedSale.unitPrice) }}
-              </td>
-              <td class="px-4 py-2 text-right text-sm text-gray-900">
-                {{ formatCurrency(selectedSale.unitPrice * selectedSale.quantity) }}
-              </td>
-            </tr>
-          </tbody>
-          <tfoot class="bg-gray-50">
-            <tr>
-              <td colspan="3" class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                ยอดรวมก่อนส่วนลด:
-              </td>
-              <td class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                {{ formatCurrency(selectedSale.totalPrice) }}
-              </td>
-            </tr>
-            <tr>
-              <td colspan="3" class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                มัดจำ:
-              </td>
-              <td class="px-4 py-2 text-right text-sm font-medium text-blue-600">
-                {{ formatCurrency(selectedSale.deposit) }}
-              </td>
-            </tr>
-            <tr>
-              <td colspan="3" class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                ส่วนลด:
-              </td>
-              <td class="px-4 py-2 text-right text-sm font-medium text-red-600">
-                -{{ formatCurrency(selectedSale.discount) }}
-              </td>
-            </tr>
-            <tr class="border-t-2 border-gray-300">
-              <td colspan="3" class="px-4 py-2 text-right text-lg font-bold text-gray-900">
-                ยอดสุทธิหลังส่วนลด:
-              </td>
-              <td class="px-4 py-2 text-right text-lg font-bold text-green-600">
-                {{ formatCurrency(selectedSale.netAmount) }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <!-- Payment Info -->
-      <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-        <div>
-          <p class="text-sm text-gray-600">วิธีการชำระเงิน:</p>
-          <Tag
-            :value="getPaymentMethodTag(selectedSale.paymentMethod).label"
-            :severity="getPaymentMethodTag(selectedSale.paymentMethod).severity"
-            size="small"
-          />
-        </div>
-        <div class="text-center">
-          <p class="text-sm text-gray-600">สถานะการขาย:</p>
-          <Tag
-            :value="getStatusTag(selectedSale.status).label"
-            :severity="getStatusTag(selectedSale.status).severity"
-            size="small"
-          />
-        </div>
-        <div class="text-right">
-          <p class="text-sm text-gray-600">สถานะการจัดส่ง:</p>
-          <Tag
-            :value="getShippingStatusTag(selectedSale.shippingStatus).label"
-            :severity="getShippingStatusTag(selectedSale.shippingStatus).severity"
-            size="small"
-          />
-        </div>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-end gap-3">
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeInvoiceModal"
-          size="small"
-        />
-        <Button label="พิมพ์ใบเสร็จ" icon="pi pi-print" severity="info" size="small" />
-      </div>
-    </template>
-  </Dialog>
+  <SaleSettingsModal
+    v-model:visible="showSettingsModal"
+    :sale-data="selectedSale"
+    @settings-updated="handleSettingsUpdated"
+  />
 </template>

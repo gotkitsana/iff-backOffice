@@ -1,6 +1,10 @@
 const formatCurrency = (value: number) => {
-  if (!value) return 0
-  return value.toLocaleString('th-TH', { minimumFractionDigits: 0, currency: 'THB' })
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+  }).format(value)
 }
 
 export default formatCurrency
+
+
