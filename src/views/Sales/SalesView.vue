@@ -2,12 +2,6 @@
 import { ref, computed, watch } from 'vue'
 import {
   Card,
-  Tabs,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tab,
-  Badge,
   DataTable,
   Column,
   Tag,
@@ -17,42 +11,74 @@ import {
   Textarea,
   Select,
   InputNumber,
-  Calendar,
-  Dropdown,
 } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/auction/product'
-import { useQuery, useMutation } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 
 // Stores
 const productStore = useProductStore()
 
 // Data
-const activeTab = ref('overview')
 const showSaleModal = ref(false)
 const showInvoiceModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
-const selectedSale = ref<any>(null)
+const statusFilter = ref('')
+const selectedSale = ref<{
+  id: number
+  orderNumber: string
+  customerCode: string
+  customerType: string
+  customerName: string
+  customerNickname: string
+  customerPhone: string
+  customerEmail: string
+  customerAddress: string
+  customerProvince: string
+  productCategory: string
+  productType: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  deposit: number
+  discount: number
+  netAmount: number
+  paymentMethod: string
+  seller: string
+  shippingStatus: string
+  saleDate: Date
+  status: string
+  notes: string
+} | null>(null)
 
 // Form data for new sale
 const saleForm = ref({
   productId: '',
+  customerCode: '',
+  customerType: 'ลูกค้า',
   customerName: '',
+  customerNickname: '',
   customerPhone: '',
   customerEmail: '',
+  customerAddress: '',
+  customerProvince: '',
+  productCategory: 'ขายสินค้า',
+  productType: '',
   quantity: 1,
   unitPrice: 0,
+  totalPrice: 0,
+  deposit: 0,
   discount: 0,
-  paymentMethod: 'cash',
+  netAmount: 0,
+  paymentMethod: 'SCB',
+  seller: 'Bert',
+  shippingStatus: 'รอตัดสินใจ',
   notes: '',
 })
 
 // Queries
-const {
-  data: products,
-  isLoading: productsLoading,
-  refetch: refetchProducts,
-} = useQuery<IProduct[]>({
+const { data: products, isLoading: productsLoading } = useQuery<IProduct[]>({
   queryKey: ['get_products_for_sale'],
   queryFn: () => productStore.onGetProducts(),
 })
@@ -61,48 +87,57 @@ const {
 const sales = ref([
   {
     id: 1,
-    invoiceNumber: 'INV-2024-001',
+    orderNumber: 'ORD-2024-001',
+    customerCode: '28',
+    customerType: 'ลูกค้า',
     customerName: 'คุณสมชาย ใจดี',
+    customerNickname: 'ชาย',
     customerPhone: '081-234-5678',
-    productName: 'ปลาคราฟโคฮากุ',
-    productSize: 45,
-    quantity: 1,
-    unitPrice: 150000,
-    discount: 5000,
-    totalAmount: 145000,
-    paymentMethod: 'transfer',
-    saleDate: new Date('2024-01-15T10:30:00'),
-    status: 'completed',
+    customerEmail: 'somchai@email.com',
+    customerAddress: '123 ถนนสุขุมวิท',
+    customerProvince: 'กรุงเทพฯ',
+    productCategory: 'ขายสินค้า',
+    productType: 'สารปรับสภาพน้ำ',
+    productName: 'จุลินทรีย์ SUMI',
+    quantity: 2,
+    unitPrice: 590,
+    totalPrice: 1180,
+    deposit: 0,
+    discount: 0,
+    netAmount: 1180,
+    paymentMethod: 'SCB',
+    seller: 'Bert',
+    shippingStatus: 'ชำระเงินแล้ว',
+    saleDate: new Date('2024-10-11T10:30:00'),
+    status: 'ชำระเงินเรียบร้อย',
+    notes: '',
   },
   {
     id: 2,
-    invoiceNumber: 'INV-2024-002',
+    orderNumber: 'ORD-2024-002',
+    customerCode: '25',
+    customerType: 'ลูกค้า',
     customerName: 'คุณนิดา สวยงาม',
+    customerNickname: 'นิดา',
     customerPhone: '082-345-6789',
-    productName: 'ปลาคราฟไทชู',
-    productSize: 38,
-    quantity: 1,
-    unitPrice: 120000,
+    customerEmail: 'nida@email.com',
+    customerAddress: '456 ถนนรัชดาภิเษก',
+    customerProvince: 'กรุงเทพฯ',
+    productCategory: 'ขายสินค้า',
+    productType: 'สารปรับสภาพน้ำ',
+    productName: 'จุลินทรีย์ SUMI',
+    quantity: 2,
+    unitPrice: 590,
+    totalPrice: 1180,
+    deposit: 0,
     discount: 0,
-    totalAmount: 120000,
-    paymentMethod: 'cash',
-    saleDate: new Date('2024-01-15T14:20:00'),
-    status: 'completed',
-  },
-  {
-    id: 3,
-    invoiceNumber: 'INV-2024-003',
-    customerName: 'คุณปิยะ เก่งมาก',
-    customerPhone: '083-456-7890',
-    productName: 'ปลาคราฟชิโรอุตสึริ',
-    productSize: 42,
-    quantity: 1,
-    unitPrice: 180000,
-    discount: 10000,
-    totalAmount: 170000,
-    paymentMethod: 'credit',
-    saleDate: new Date('2024-01-15T16:45:00'),
-    status: 'pending',
+    netAmount: 1180,
+    paymentMethod: 'SCB',
+    seller: 'Bert',
+    shippingStatus: 'รอชำระเงิน',
+    saleDate: new Date('2024-10-11T14:20:00'),
+    status: 'รอชำระเงิน',
+    notes: '',
   },
 ])
 
@@ -121,26 +156,22 @@ const productOptions = computed(() => {
 })
 
 const filteredSales = computed(() => {
-  switch (activeTab.value) {
-    case 'completed':
-      return sales.value.filter((sale) => sale.status === 'completed')
-    case 'pending':
-      return sales.value.filter((sale) => sale.status === 'pending')
-    case 'cancelled':
-      return sales.value.filter((sale) => sale.status === 'cancelled')
-    default:
-      return sales.value
+  if (!statusFilter.value) {
+    return sales.value
   }
+  return sales.value.filter((sale) => sale.status === statusFilter.value)
 })
 
 // Stats
 const totalSales = computed(() => sales.value.length)
-const completedSales = computed(() => sales.value.filter((s) => s.status === 'completed').length)
-const pendingSales = computed(() => sales.value.filter((s) => s.status === 'pending').length)
+const completedSales = computed(
+  () => sales.value.filter((s) => s.status === 'ชำระเงินเรียบร้อย').length
+)
+const pendingSales = computed(() => sales.value.filter((s) => s.status === 'รอชำระเงิน').length)
 const totalRevenue = computed(() =>
   sales.value
-    .filter((s) => s.status === 'completed')
-    .reduce((sum, sale) => sum + sale.totalAmount, 0)
+    .filter((s) => s.status === 'ชำระเงินเรียบร้อย')
+    .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 // Utility functions
@@ -154,21 +185,29 @@ const formatCurrency = (value: number) => {
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('th-TH', {
     year: 'numeric',
-    month: 'short',
+    month: 'numeric',
     day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   })
 }
 
 const getStatusTag = (status: string) => {
   switch (status) {
-    case 'completed':
-      return { label: 'เสร็จสิ้น', severity: 'success' }
-    case 'pending':
-      return { label: 'รอดำเนินการ', severity: 'warning' }
-    case 'cancelled':
-      return { label: 'ยกเลิก', severity: 'danger' }
+    case 'รอจัดหา':
+      return { label: 'รอจัดหา', severity: 'warning' }
+    case 'รอยืนยัน':
+      return { label: 'รอยืนยัน', severity: 'warning' }
+    case 'รอชำระเงิน':
+      return { label: 'รอชำระเงิน', severity: 'warning' }
+    case 'ชำระเงินเรียบร้อย':
+      return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
+    case 'แพ็คเตรียมสินค้ารอจัดส่ง':
+      return { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', severity: 'info' }
+    case 'อยู่ระหว่างขนส่ง':
+      return { label: 'อยู่ระหว่างขนส่ง', severity: 'info' }
+    case 'ได้รับสินค้าเรียบร้อย':
+      return { label: 'ได้รับสินค้าเรียบร้อย', severity: 'success' }
+    case 'สินค้าเสียหาย':
+      return { label: 'สินค้าเสียหาย', severity: 'danger' }
     default:
       return { label: status, severity: 'info' }
   }
@@ -176,6 +215,12 @@ const getStatusTag = (status: string) => {
 
 const getPaymentMethodTag = (method: string) => {
   switch (method) {
+    case 'SCB':
+      return { label: 'SCB', severity: 'info' }
+    case 'KBANK':
+      return { label: 'KBANK', severity: 'info' }
+    case 'BBL':
+      return { label: 'BBL', severity: 'info' }
     case 'cash':
       return { label: 'เงินสด', severity: 'success' }
     case 'transfer':
@@ -184,6 +229,27 @@ const getPaymentMethodTag = (method: string) => {
       return { label: 'เครดิต', severity: 'warning' }
     default:
       return { label: method, severity: 'secondary' }
+  }
+}
+
+const getShippingStatusTag = (status: string) => {
+  switch (status) {
+    case 'รอตัดสินใจ':
+      return { label: 'รอตัดสินใจ', severity: 'warning' }
+    case 'รอชำระเงิน':
+      return { label: 'รอชำระเงิน', severity: 'warning' }
+    case 'ชำระเงินแล้ว':
+      return { label: 'ชำระเงินแล้ว', severity: 'info' }
+    case 'กำลังจัดเตรียม':
+      return { label: 'กำลังจัดเตรียม', severity: 'info' }
+    case 'อยู่ระหว่างจัดส่ง':
+      return { label: 'อยู่ระหว่างจัดส่ง', severity: 'warning' }
+    case 'จัดส่งสำเร็จ':
+      return { label: 'จัดส่งสำเร็จ', severity: 'success' }
+    case 'รับสินค้าเรียบร้อย':
+      return { label: 'รับสินค้าเรียบร้อย', severity: 'success' }
+    default:
+      return { label: status, severity: 'secondary' }
   }
 }
 
@@ -198,7 +264,7 @@ const closeSaleModal = () => {
   resetSaleForm()
 }
 
-const openInvoiceModal = (sale: any) => {
+const openInvoiceModal = (sale: (typeof sales.value)[0]) => {
   selectedSale.value = sale
   showInvoiceModal.value = true
 }
@@ -211,13 +277,25 @@ const closeInvoiceModal = () => {
 const resetSaleForm = () => {
   saleForm.value = {
     productId: '',
+    customerCode: '',
+    customerType: 'ลูกค้า',
     customerName: '',
+    customerNickname: '',
     customerPhone: '',
     customerEmail: '',
+    customerAddress: '',
+    customerProvince: '',
+    productCategory: 'ขายสินค้า',
+    productType: '',
     quantity: 1,
     unitPrice: 0,
+    totalPrice: 0,
+    deposit: 0,
     discount: 0,
-    paymentMethod: 'cash',
+    netAmount: 0,
+    paymentMethod: 'SCB',
+    seller: 'Bert',
+    shippingStatus: 'รอตัดสินใจ',
     notes: '',
   }
   selectedProduct.value = null
@@ -244,6 +322,15 @@ const subtotal = computed(() => saleForm.value.unitPrice * saleForm.value.quanti
 const discountAmount = computed(() => saleForm.value.discount)
 const totalAmount = computed(() => subtotal.value - discountAmount.value)
 
+// Watch for price changes to update totals
+watch(
+  [() => saleForm.value.unitPrice, () => saleForm.value.quantity, () => saleForm.value.discount],
+  () => {
+    saleForm.value.totalPrice = subtotal.value
+    saleForm.value.netAmount = totalAmount.value
+  }
+)
+
 // Handlers
 const handleCreateSale = () => {
   if (!saleForm.value.productId || !saleForm.value.customerName) {
@@ -253,18 +340,30 @@ const handleCreateSale = () => {
 
   const newSale = {
     id: sales.value.length + 1,
-    invoiceNumber: `INV-2024-${String(sales.value.length + 1).padStart(3, '0')}`,
+    orderNumber: `ORD-2024-${String(sales.value.length + 1).padStart(3, '0')}`,
+    customerCode: saleForm.value.customerCode || String(sales.value.length + 1),
+    customerType: saleForm.value.customerType,
     customerName: saleForm.value.customerName,
+    customerNickname: saleForm.value.customerNickname,
     customerPhone: saleForm.value.customerPhone,
+    customerEmail: saleForm.value.customerEmail,
+    customerAddress: saleForm.value.customerAddress,
+    customerProvince: saleForm.value.customerProvince,
+    productCategory: saleForm.value.productCategory,
+    productType: saleForm.value.productType,
     productName: selectedProductDetails.value?.name || '',
-    productSize: selectedProductDetails.value?.size || 0,
     quantity: saleForm.value.quantity,
     unitPrice: saleForm.value.unitPrice,
+    totalPrice: saleForm.value.totalPrice,
+    deposit: saleForm.value.deposit,
     discount: saleForm.value.discount,
-    totalAmount: totalAmount.value,
+    netAmount: saleForm.value.netAmount,
     paymentMethod: saleForm.value.paymentMethod,
+    seller: saleForm.value.seller,
+    shippingStatus: saleForm.value.shippingStatus,
     saleDate: new Date(),
-    status: 'completed',
+    status: 'ชำระเงินเรียบร้อย',
+    notes: saleForm.value.notes,
   }
 
   sales.value.unshift(newSale)
@@ -272,25 +371,71 @@ const handleCreateSale = () => {
   closeSaleModal()
 }
 
-const handleCancelSale = (sale: any) => {
-  if (confirm(`คุณต้องการยกเลิกการขาย ${sale.invoiceNumber} หรือไม่?`)) {
-    sale.status = 'cancelled'
+const handleCancelSale = (sale: (typeof sales.value)[0]) => {
+  if (confirm(`คุณต้องการยกเลิกการขาย ${sale.orderNumber} หรือไม่?`)) {
+    sale.status = 'สินค้าเสียหาย'
     toast.success('ยกเลิกการขายสำเร็จ')
   }
 }
 
-const handleCompleteSale = (sale: any) => {
-  if (confirm(`คุณต้องการยืนยันการขาย ${sale.invoiceNumber} หรือไม่?`)) {
-    sale.status = 'completed'
+const handleCompleteSale = (sale: (typeof sales.value)[0]) => {
+  if (confirm(`คุณต้องการยืนยันการขาย ${sale.orderNumber} หรือไม่?`)) {
+    sale.status = 'ชำระเงินเรียบร้อย'
     toast.success('ยืนยันการขายสำเร็จ')
   }
 }
 
 // Payment method options
 const paymentMethods = [
+  { label: 'SCB', value: 'SCB' },
+  { label: 'KBANK', value: 'KBANK' },
+  { label: 'BBL', value: 'BBL' },
   { label: 'เงินสด', value: 'cash' },
   { label: 'โอนเงิน', value: 'transfer' },
   { label: 'เครดิต', value: 'credit' },
+]
+
+// Customer type options
+const customerTypes = [
+  { label: 'ลูกค้า', value: 'ลูกค้า' },
+  { label: 'ตัวแทนจำหน่าย', value: 'ตัวแทนจำหน่าย' },
+  { label: 'ร้านค้า', value: 'ร้านค้า' },
+]
+
+// Product category options
+const productCategories = [
+  { label: 'ขายสินค้า', value: 'ขายสินค้า' },
+  { label: 'บริการ', value: 'บริการ' },
+]
+
+// Product type options
+const productTypes = [
+  { label: 'สารปรับสภาพน้ำ', value: 'สารปรับสภาพน้ำ' },
+  { label: 'อาหารปลา', value: 'อาหารปลา' },
+  { label: 'อุปกรณ์', value: 'อุปกรณ์' },
+]
+
+// Sales status options
+const salesStatuses = [
+  { label: 'รอจัดหา', value: 'รอจัดหา' },
+  { label: 'รอยืนยัน', value: 'รอยืนยัน' },
+  { label: 'รอชำระเงิน', value: 'รอชำระเงิน' },
+  { label: 'ชำระเงินเรียบร้อย', value: 'ชำระเงินเรียบร้อย' },
+  { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', value: 'แพ็คเตรียมสินค้ารอจัดส่ง' },
+  { label: 'อยู่ระหว่างขนส่ง', value: 'อยู่ระหว่างขนส่ง' },
+  { label: 'ได้รับสินค้าเรียบร้อย', value: 'ได้รับสินค้าเรียบร้อย' },
+  { label: 'สินค้าเสียหาย', value: 'สินค้าเสียหาย' },
+]
+
+// Shipping status options
+const shippingStatuses = [
+  { label: 'รอตัดสินใจ', value: 'รอตัดสินใจ' },
+  { label: 'รอชำระเงิน', value: 'รอชำระเงิน' },
+  { label: 'ชำระเงินแล้ว', value: 'ชำระเงินแล้ว' },
+  { label: 'กำลังจัดเตรียม', value: 'กำลังจัดเตรียม' },
+  { label: 'อยู่ระหว่างจัดส่ง', value: 'อยู่ระหว่างจัดส่ง' },
+  { label: 'จัดส่งสำเร็จ', value: 'จัดส่งสำเร็จ' },
+  { label: 'รับสินค้าเรียบร้อย', value: 'รับสินค้าเรียบร้อย' },
 ]
 </script>
 
@@ -299,8 +444,8 @@ const paymentMethods = [
     <!-- Page Header -->
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
-        <h1 class="text-xl font-semibold! text-gray-900">ระบบขายปลาคาร์ฟ</h1>
-        <p class="text-gray-600">จัดการการขายปลาคาร์ฟและติดตามยอดขาย</p>
+        <h1 class="text-xl font-semibold! text-gray-900">ระบบขาย</h1>
+        <p class="text-gray-600">จัดการการขายและติดตามยอดขาย</p>
       </div>
       <div class="flex space-x-3">
         <Button
@@ -309,53 +454,22 @@ const paymentMethods = [
           severity="success"
           size="small"
           @click="openSaleModal"
-          :disabled="availableProducts.length === 0"
         />
-        <Button label="รายงานยอดขาย" icon="pi pi-chart-bar" severity="info" size="small" />
-        <Button
-          label="จัดการปลาคาร์ฟ"
-          icon="pi pi-fish"
-          severity="secondary"
-          size="small"
-          @click="$router.push('/koi-store')"
-        />
-      </div>
-    </div>
-
-    <!-- Alert for no available products -->
-    <div
-      v-if="availableProducts.length === 0"
-      class="bg-yellow-50 border border-yellow-200 rounded-lg p-4"
-    >
-      <div class="flex items-center gap-3">
-        <i class="pi pi-exclamation-triangle text-yellow-600 text-xl"></i>
-        <div>
-          <h3 class="text-sm font-medium text-yellow-800">ไม่มีปลาคาร์ฟพร้อมขาย</h3>
-          <p class="text-sm text-yellow-700 mt-1">
-            กรุณาเพิ่มปลาคาร์ฟในหน้า "จัดการปลาคาร์ฟ" ก่อนเริ่มขาย
-          </p>
-        </div>
-        <Button
-          label="ไปจัดการปลาคาร์ฟ"
-          icon="pi pi-arrow-right"
-          severity="warning"
-          size="small"
-          @click="$router.push('/koi-store')"
-        />
+        <!-- <Button label="รายงานยอดขาย" icon="pi pi-chart-bar" severity="info" size="small" /> -->
       </div>
     </div>
 
     <!-- Sales Stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Card :pt="{ body: 'p-4 md:p-6' }" class="hover:shadow-lg transition-shadow duration-200">
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 mb-1">ยอดขายทั้งหมด</p>
-              <p class="text-2xl md:text-3xl font-bold text-blue-600">
+              <p class="text-sm font-[600]! text-gray-600 mb-1">ยอดขายทั้งหมด</p>
+              <p class="text-xl md:text-2xl text-blue-600">
                 {{ totalSales }}
               </p>
-              <p class="text-xs text-gray-500 mt-1">รายการ</p>
+              <p class="text-xs text-gray-500">รายการ</p>
             </div>
             <div
               class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
@@ -366,15 +480,15 @@ const paymentMethods = [
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-4 md:p-6' }" class="hover:shadow-lg transition-shadow duration-200">
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 mb-1">ขายเสร็จสิ้น</p>
-              <p class="text-2xl md:text-3xl font-bold text-green-600">
+              <p class="text-sm font-[600]! text-gray-600 mb-1">ขายเสร็จสิ้น</p>
+              <p class="text-xl md:text-2xl text-green-600">
                 {{ completedSales }}
               </p>
-              <p class="text-xs text-gray-500 mt-1">รายการ</p>
+              <p class="text-xs text-gray-500">รายการ</p>
             </div>
             <div
               class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
@@ -385,15 +499,15 @@ const paymentMethods = [
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-4 md:p-6' }" class="hover:shadow-lg transition-shadow duration-200">
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 mb-1">รอดำเนินการ</p>
-              <p class="text-2xl md:text-3xl font-bold text-orange-600">
+              <p class="text-sm font-[600]! text-gray-600 mb-1">รอดำเนินการ</p>
+              <p class="text-xl md:text-2xl text-orange-600">
                 {{ pendingSales }}
               </p>
-              <p class="text-xs text-gray-500 mt-1">รายการ</p>
+              <p class="text-xs text-gray-500">รายการ</p>
             </div>
             <div
               class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg"
@@ -404,173 +518,325 @@ const paymentMethods = [
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-4 md:p-6' }" class="hover:shadow-lg transition-shadow duration-200">
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 mb-1">ยอดขายรวม</p>
-              <p class="text-2xl md:text-3xl font-bold text-purple-600">
+              <p class="text-sm font-[600]! text-gray-600 mb-1">ยอดขายรวม</p>
+              <p class="text-xl md:text-2xl text-purple-600">
                 {{ formatCurrency(totalRevenue) }}
               </p>
-              <p class="text-xs text-gray-500 mt-1">บาท</p>
+              <p class="text-xs text-gray-500">บาท</p>
             </div>
-            <!-- <div
+            <div
               class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
             >
               <i class="pi pi-money-bill text-white text-2xl"></i>
-            </div> -->
+            </div>
           </div>
         </template>
       </Card>
     </div>
 
+    <!-- Filter Section -->
+    <Card :pt="{ body: 'p-4' }">
+      <template #content>
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-filter text-gray-600"></i>
+              <span class="font-medium text-gray-700">กรองข้อมูล:</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-600">สถานะรายการขาย:</label>
+              <Select
+                v-model="statusFilter"
+                :options="[{ label: 'ทั้งหมด', value: '' }, ...salesStatuses]"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกสถานะ"
+                class="min-w-[200px]"
+                size="small"
+                clearable
+              />
+            </div>
+          </div>
+          <div class="flex items-center gap-4 text-sm text-gray-600">
+            <span
+              >ทั้งหมด: <span class="font-semibold text-blue-600">{{ totalSales }}</span></span
+            >
+            <span
+              >เสร็จสิ้น:
+              <span class="font-semibold text-green-600">{{ completedSales }}</span></span
+            >
+            <span
+              >รอดำเนินการ:
+              <span class="font-semibold text-orange-600">{{ pendingSales }}</span></span
+            >
+          </div>
+        </div>
+      </template>
+    </Card>
+
     <!-- Sales Table -->
     <Card :pt="{ body: 'p-3' }">
       <template #content>
-        <Tabs :value="activeTab">
-          <TabList size="small">
-            <Tab value="overview" as="div" class="flex items-center gap-2">
-              <i class="pi pi-hashtag" />
-              <span class="font-bold whitespace-nowrap">ทั้งหมด</span>
-              <Badge :value="totalSales" severity="info" size="small" />
-            </Tab>
+        <DataTable
+          :value="filteredSales"
+          :loading="productsLoading"
+          :paginator="true"
+          :rows="10"
+          scrollHeight="600px"
+        >
+          <Column
+            field="saleDate"
+            header="วันที่ขาย"
+            :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }"
+          >
+            <template #body="slotProps">
+              <span class="text-sm text-gray-600">{{ formatDate(slotProps.data.saleDate) }}</span>
+            </template>
+          </Column>
 
-            <Tab value="completed" as="div" class="flex items-center gap-2">
-              <i class="pi pi-check-circle" />
-              <span class="font-bold whitespace-nowrap">เสร็จสิ้น</span>
-              <Badge :value="completedSales" severity="success" size="small" />
-            </Tab>
-
-            <Tab value="pending" as="div" class="flex items-center gap-2">
-              <i class="pi pi-clock" />
-              <span class="font-bold whitespace-nowrap">รอดำเนินการ</span>
-              <Badge :value="pendingSales" severity="warning" size="small" />
-            </Tab>
-
-            <Tab value="cancelled" as="div" class="flex items-center gap-2">
-              <i class="pi pi-times-circle" />
-              <span class="font-bold whitespace-nowrap">ยกเลิก</span>
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel value="overview" as="div">
-              <DataTable
-                :value="filteredSales"
-                :loading="productsLoading"
-                :paginator="true"
-                :rows="10"
-                class="p-datatable-sm"
+          <Column
+            field="orderNumber"
+            header="เลขรายการ"
+            :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }"
+          >
+            <template #body="slotProps">
+              <span
+                class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm"
+                @click="openInvoiceModal(slotProps.data)"
               >
-                <Column field="invoiceNumber" header="เลขที่ใบเสร็จ" sortable :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
-                  <template #body="slotProps">
-                    <span
-                      class="font-medium text-blue-600 cursor-pointer hover:underline"
-                      @click="openInvoiceModal(slotProps.data)"
-                    >
-                      {{ slotProps.data.invoiceNumber }}
-                    </span>
-                  </template>
-                </Column>
+                {{ slotProps.data.orderNumber }}
+              </span>
+            </template>
+          </Column>
 
-                <Column field="customerName" header="ลูกค้า" sortable :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
-                  <template #body="slotProps">
-                    <div>
-                      <p class="font-medium text-gray-900">{{ slotProps.data.customerName }}</p>
-                      <p class="text-sm text-gray-500">{{ slotProps.data.customerPhone }}</p>
-                    </div>
-                  </template>
-                </Column>
+          <Column
+            field="status"
+            header="สถานะรายการขาย"
+            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="getStatusTag(slotProps.data.status).label"
+                :severity="getStatusTag(slotProps.data.status).severity"
+                size="small"
+              />
+            </template>
+          </Column>
 
-                <Column field="productName" header="สินค้า" sortable :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
-                  <template #body="slotProps">
-                    <div>
-                      <p class="font-medium text-gray-900">{{ slotProps.data.productName }}</p>
-                      <p class="text-sm text-gray-500">{{ slotProps.data.productSize }} ซม.</p>
-                    </div>
-                  </template>
-                </Column>
+          <Column
+            field="customerCode"
+            header="รหัสลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <span class="font-medium text-sm text-gray-900">{{
+                slotProps.data.customerCode
+              }}</span>
+            </template>
+          </Column>
 
-                <Column field="totalAmount" header="ยอดรวม" sortable>
-                  <template #body="slotProps">
-                    <span class="font-semibold text-green-600">
-                      {{ formatCurrency(slotProps.data.totalAmount) }}
-                    </span>
-                  </template>
-                </Column>
+          <Column
+            field="customerType"
+            header="ประเภทลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag :value="slotProps.data.customerType" severity="info" size="small" />
+            </template>
+          </Column>
 
-                <Column field="paymentMethod" header="ชำระเงิน" sortable :pt="{ columnHeaderContent: 'min-w-[5rem]' }">
-                  <template #body="slotProps">
-                    <Tag
-                      :value="getPaymentMethodTag(slotProps.data.paymentMethod).label"
-                      :severity="getPaymentMethodTag(slotProps.data.paymentMethod).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
+          <Column
+            field="productCategory"
+            header="หมวดหมู่สินค้า"
+            :pt="{ columnHeaderContent: 'min-w-[6.25rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag :value="slotProps.data.productCategory" severity="success" size="small" />
+            </template>
+          </Column>
 
-                <Column field="saleDate" header="วันที่ขาย" sortable :pt="{ columnHeaderContent: 'min-w-[7.5rem]' }">
-                  <template #body="slotProps">
-                    <span class="text-sm text-gray-600">{{
-                      formatDate(slotProps.data.saleDate)
-                    }}</span>
-                  </template>
-                </Column>
+          <Column
+            field="productType"
+            header="ประเภทสินค้า"
+            :pt="{ columnHeaderContent: 'min-w-[7.5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag :value="slotProps.data.productType" severity="secondary" size="small" />
+            </template>
+          </Column>
 
-                <Column field="status" header="สถานะ" sortable :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }">
-                  <template #body="slotProps">
-                    <Tag
-                      :value="getStatusTag(slotProps.data.status).label"
-                      :severity="getStatusTag(slotProps.data.status).severity"
-                      size="small"
-                    />
-                  </template>
-                </Column>
+          <Column field="productName" header="รายการ" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
+            <template #body="slotProps">
+              <span class="text-sm text-gray-900">{{ slotProps.data.productName }}</span>
+            </template>
+          </Column>
 
-                <Column header="การจัดการ" :exportable="false" style="min-width: 8rem">
-                  <template #body="slotProps">
-                    <div class="flex gap-2">
-                      <Button
-                        icon="pi pi-eye"
-                        severity="info"
-                        size="small"
-                        outlined
-                        @click="openInvoiceModal(slotProps.data)"
-                      />
-                      <Button
-                        v-if="slotProps.data.status === 'pending'"
-                        icon="pi pi-check"
-                        severity="success"
-                        size="small"
-                        outlined
-                        @click="handleCompleteSale(slotProps.data)"
-                      />
-                      <Button
-                        v-if="slotProps.data.status === 'pending'"
-                        icon="pi pi-times"
-                        severity="danger"
-                        size="small"
-                        outlined
-                        @click="handleCancelSale(slotProps.data)"
-                      />
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </TabPanel>
+          <Column
+            field="quantity"
+            header="จำนวน"
+            :pt="{ columnHeaderContent: 'min-w-[4rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <span class="text-center text-sm">{{ slotProps.data.quantity }}</span>
+            </template>
+          </Column>
 
-            <TabPanel value="completed" as="div" class="m-0">
-              <!-- Same table as overview but filtered -->
-            </TabPanel>
+          <Column
+            field="unitPrice"
+            header="ราคาต่อหน่วย"
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <span class="font-medium text-gray-900 text-sm">
+                {{ formatCurrency(slotProps.data.unitPrice) }}
+              </span>
+            </template>
+          </Column>
 
-            <TabPanel value="pending" as="div" class="m-0">
-              <!-- Same table as overview but filtered -->
-            </TabPanel>
+          <Column
+            field="totalPrice"
+            header="ราคารวม"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <span class="font-medium text-gray-900 text-sm">
+                {{ formatCurrency(slotProps.data.totalPrice) }}
+              </span>
+            </template>
+          </Column>
 
-            <TabPanel value="cancelled" as="div" class="m-0">
-              <!-- Same table as overview but filtered -->
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+          <Column
+            field="deposit"
+            header="มัดจำ"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <span class="text-gray-900 text-sm">
+                {{ formatCurrency(slotProps.data.deposit) }}
+              </span>
+            </template>
+          </Column>
+
+          <Column
+            field="discount"
+            header="ส่วนลด"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <span class="text-red-600 text-sm">
+                {{ formatCurrency(slotProps.data.discount) }}
+              </span>
+            </template>
+          </Column>
+
+          <Column
+            field="netAmount"
+            header="ยอดสุทธิ"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <span class="font-semibold text-green-600 text-sm">
+                {{ formatCurrency(slotProps.data.netAmount) }}
+              </span>
+            </template>
+          </Column>
+
+          <Column
+            field="paymentMethod"
+            header="ช่องทางการชำระเงิน"
+            :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="getPaymentMethodTag(slotProps.data.paymentMethod).label"
+                :severity="getPaymentMethodTag(slotProps.data.paymentMethod).severity"
+                size="small"
+              />
+            </template>
+          </Column>
+
+          <Column field="seller" header="ผู้ขาย" :pt="{ columnHeaderContent: 'min-w-[4rem]' }">
+            <template #body="slotProps">
+              <span class="text-sm text-gray-900">{{ slotProps.data.seller }}</span>
+            </template>
+          </Column>
+
+          <Column
+            field="customerName"
+            header="ชื่อ/สกุล"
+            :pt="{ columnHeaderContent: 'min-w-[7rem]' }"
+          >
+            <template #body="slotProps">
+              <div>
+                <p class="font-medium text-gray-900 text-sm">{{ slotProps.data.customerName }}</p>
+                <p class="text-sm text-gray-500">{{ slotProps.data.customerNickname }}</p>
+              </div>
+            </template>
+          </Column>
+
+          <Column
+            field="customerPhone"
+            header="เบอร์โทร"
+            :pt="{ columnHeaderContent: 'min-w-[6rem]' }"
+          >
+            <template #body="slotProps">
+              <span class="text-sm text-gray-900">{{ slotProps.data.customerPhone }}</span>
+            </template>
+          </Column>
+
+          <Column
+            field="shippingStatus"
+            header="สถานะการจัดส่ง"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="getShippingStatusTag(slotProps.data.shippingStatus).label"
+                :severity="getShippingStatusTag(slotProps.data.shippingStatus).severity"
+                size="small"
+              />
+            </template>
+          </Column>
+
+          <Column
+            header="การจัดการ"
+            :exportable="false"
+            frozen
+            :pt="{ columnHeaderContent: 'justify-end' }"
+          >
+            <template #body="slotProps">
+              <div class="flex gap-2 justify-end">
+                <Button
+                  icon="pi pi-eye"
+                  severity="info"
+                  size="small"
+                  outlined
+                  @click="openInvoiceModal(slotProps.data)"
+                />
+                <Button
+                  v-if="slotProps.data.status === 'รอชำระเงิน'"
+                  icon="pi pi-check"
+                  severity="success"
+                  size="small"
+                  outlined
+                  @click="handleCompleteSale(slotProps.data)"
+                />
+                <Button
+                  v-if="slotProps.data.status === 'รอชำระเงิน'"
+                  icon="pi pi-times"
+                  severity="danger"
+                  size="small"
+                  outlined
+                  @click="handleCancelSale(slotProps.data)"
+                />
+              </div>
+            </template>
+          </Column>
+        </DataTable>
       </template>
     </Card>
   </div>
@@ -632,6 +898,36 @@ const paymentMethods = [
             </label>
             <InputNumber v-model="saleForm.quantity" :min="1" :max="10" fluid size="small" />
           </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-th-large mr-1.5 !text-sm"></i>
+              หมวดหมู่สินค้า
+            </label>
+            <Select
+              v-model="saleForm.productCategory"
+              :options="productCategories"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-tags mr-1.5 !text-sm"></i>
+              ประเภทสินค้า
+            </label>
+            <Select
+              v-model="saleForm.productType"
+              :options="productTypes"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+            />
+          </div>
         </div>
 
         <!-- Selected Product Details -->
@@ -674,12 +970,53 @@ const paymentMethods = [
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-hashtag mr-1.5 !text-sm"></i>
+              รหัสลูกค้า
+            </label>
+            <InputText
+              v-model="saleForm.customerCode"
+              placeholder="กรอกรหัสลูกค้า"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-users mr-1.5 !text-sm"></i>
+              ประเภทลูกค้า
+            </label>
+            <Select
+              v-model="saleForm.customerType"
+              :options="customerTypes"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อลูกค้า *
+              ชื่อ/สกุล *
             </label>
             <InputText
               v-model="saleForm.customerName"
-              placeholder="กรอกชื่อลูกค้า"
+              placeholder="กรอกชื่อ-สกุลลูกค้า"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-user-plus mr-1.5 !text-sm"></i>
+              ชื่อเล่น
+            </label>
+            <InputText
+              v-model="saleForm.customerNickname"
+              placeholder="กรอกชื่อเล่น"
               fluid
               size="small"
             />
@@ -698,7 +1035,7 @@ const paymentMethods = [
             />
           </div>
 
-          <div class="md:col-span-2">
+          <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-envelope mr-1.5 !text-sm"></i>
               อีเมล
@@ -706,6 +1043,32 @@ const paymentMethods = [
             <InputText
               v-model="saleForm.customerEmail"
               placeholder="กรอกอีเมล"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-map-marker mr-1.5 !text-sm"></i>
+              ที่อยู่
+            </label>
+            <InputText
+              v-model="saleForm.customerAddress"
+              placeholder="กรอกที่อยู่"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-building mr-1.5 !text-sm"></i>
+              จังหวัด
+            </label>
+            <InputText
+              v-model="saleForm.customerProvince"
+              placeholder="กรอกจังหวัด"
               fluid
               size="small"
             />
@@ -730,6 +1093,23 @@ const paymentMethods = [
               v-model="saleForm.unitPrice"
               :min="0"
               :max="999999999"
+              mode="currency"
+              currency="THB"
+              locale="th-TH"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-wallet mr-1.5 !text-sm"></i>
+              มัดจำ (บาท)
+            </label>
+            <InputNumber
+              v-model="saleForm.deposit"
+              :min="0"
+              :max="saleForm.unitPrice * saleForm.quantity"
               mode="currency"
               currency="THB"
               locale="th-TH"
@@ -769,6 +1149,29 @@ const paymentMethods = [
               size="small"
             />
           </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-user mr-1.5 !text-sm"></i>
+              ผู้ขาย
+            </label>
+            <InputText v-model="saleForm.seller" placeholder="กรอกชื่อผู้ขาย" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-truck mr-1.5 !text-sm"></i>
+              สถานะการจัดส่ง
+            </label>
+            <Select
+              v-model="saleForm.shippingStatus"
+              :options="shippingStatuses"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+            />
+          </div>
         </div>
 
         <!-- Price Summary -->
@@ -778,11 +1181,15 @@ const paymentMethods = [
             <span class="font-medium">{{ formatCurrency(subtotal) }}</span>
           </div>
           <div class="flex justify-between items-center mb-2">
+            <span class="text-sm text-gray-600">มัดจำ:</span>
+            <span class="font-medium text-blue-600">{{ formatCurrency(saleForm.deposit) }}</span>
+          </div>
+          <div class="flex justify-between items-center mb-2">
             <span class="text-sm text-gray-600">ส่วนลด:</span>
             <span class="font-medium text-red-600">-{{ formatCurrency(discountAmount) }}</span>
           </div>
           <div class="flex justify-between items-center pt-2 border-t border-gray-200">
-            <span class="text-lg font-bold text-gray-900">ยอดรวมทั้งสิ้น:</span>
+            <span class="text-lg font-bold text-gray-900">ยอดสุทธิหลังส่วนลด:</span>
             <span class="text-xl font-bold text-green-600">{{ formatCurrency(totalAmount) }}</span>
           </div>
         </div>
@@ -845,7 +1252,7 @@ const paymentMethods = [
         </div>
         <div>
           <h3 class="text-lg font-semibold! text-gray-800">ใบเสร็จรับเงิน</h3>
-          <p class="text-sm text-gray-600">{{ selectedSale?.invoiceNumber }}</p>
+          <p class="text-sm text-gray-600">{{ selectedSale?.orderNumber }}</p>
         </div>
       </div>
     </template>
@@ -854,7 +1261,7 @@ const paymentMethods = [
       <!-- Invoice Header -->
       <div class="text-center border-b border-gray-200 pb-4">
         <h2 class="text-2xl font-bold text-gray-900">ใบเสร็จรับเงิน</h2>
-        <p class="text-gray-600">เลขที่: {{ selectedSale.invoiceNumber }}</p>
+        <p class="text-gray-600">เลขที่: {{ selectedSale.orderNumber }}</p>
         <p class="text-gray-600">วันที่: {{ formatDate(selectedSale.saleDate) }}</p>
       </div>
 
@@ -862,13 +1269,20 @@ const paymentMethods = [
       <div class="grid grid-cols-2 gap-6">
         <div>
           <h4 class="font-semibold text-gray-900 mb-2">ข้อมูลลูกค้า</h4>
-          <p class="text-sm text-gray-600">{{ selectedSale.customerName }}</p>
-          <p class="text-sm text-gray-600">{{ selectedSale.customerPhone }}</p>
+          <p class="text-sm text-gray-600">รหัส: {{ selectedSale.customerCode }}</p>
+          <p class="text-sm text-gray-600">ชื่อ: {{ selectedSale.customerName }}</p>
+          <p class="text-sm text-gray-600">ชื่อเล่น: {{ selectedSale.customerNickname }}</p>
+          <p class="text-sm text-gray-600">โทร: {{ selectedSale.customerPhone }}</p>
+          <p class="text-sm text-gray-600">ที่อยู่: {{ selectedSale.customerAddress }}</p>
+          <p class="text-sm text-gray-600">จังหวัด: {{ selectedSale.customerProvince }}</p>
         </div>
         <div>
           <h4 class="font-semibold text-gray-900 mb-2">ข้อมูลสินค้า</h4>
-          <p class="text-sm text-gray-600">{{ selectedSale.productName }}</p>
-          <p class="text-sm text-gray-600">ขนาด: {{ selectedSale.productSize }} ซม.</p>
+          <p class="text-sm text-gray-600">หมวดหมู่: {{ selectedSale.productCategory }}</p>
+          <p class="text-sm text-gray-600">ประเภท: {{ selectedSale.productType }}</p>
+          <p class="text-sm text-gray-600">รายการ: {{ selectedSale.productName }}</p>
+          <p class="text-sm text-gray-600">จำนวน: {{ selectedSale.quantity }}</p>
+          <p class="text-sm text-gray-600">ผู้ขาย: {{ selectedSale.seller }}</p>
         </div>
       </div>
 
@@ -903,7 +1317,15 @@ const paymentMethods = [
                 ยอดรวมก่อนส่วนลด:
               </td>
               <td class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                {{ formatCurrency(selectedSale.unitPrice * selectedSale.quantity) }}
+                {{ formatCurrency(selectedSale.totalPrice) }}
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3" class="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                มัดจำ:
+              </td>
+              <td class="px-4 py-2 text-right text-sm font-medium text-blue-600">
+                {{ formatCurrency(selectedSale.deposit) }}
               </td>
             </tr>
             <tr>
@@ -916,10 +1338,10 @@ const paymentMethods = [
             </tr>
             <tr class="border-t-2 border-gray-300">
               <td colspan="3" class="px-4 py-2 text-right text-lg font-bold text-gray-900">
-                ยอดรวมทั้งสิ้น:
+                ยอดสุทธิหลังส่วนลด:
               </td>
               <td class="px-4 py-2 text-right text-lg font-bold text-green-600">
-                {{ formatCurrency(selectedSale.totalAmount) }}
+                {{ formatCurrency(selectedSale.netAmount) }}
               </td>
             </tr>
           </tfoot>
@@ -936,11 +1358,19 @@ const paymentMethods = [
             size="small"
           />
         </div>
-        <div class="text-right">
-          <p class="text-sm text-gray-600">สถานะ:</p>
+        <div class="text-center">
+          <p class="text-sm text-gray-600">สถานะการขาย:</p>
           <Tag
             :value="getStatusTag(selectedSale.status).label"
             :severity="getStatusTag(selectedSale.status).severity"
+            size="small"
+          />
+        </div>
+        <div class="text-right">
+          <p class="text-sm text-gray-600">สถานะการจัดส่ง:</p>
+          <Tag
+            :value="getShippingStatusTag(selectedSale.shippingStatus).label"
+            :severity="getShippingStatusTag(selectedSale.shippingStatus).severity"
             size="small"
           />
         </div>
