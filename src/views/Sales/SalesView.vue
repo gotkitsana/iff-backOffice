@@ -9,9 +9,11 @@ import ModalEditSale from '@/components/sales/ModalEditSale.vue'
 import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
+import { useSalesStore } from '@/stores/sales/sales'
 
 // Stores
 const productStore = useProductStore()
+const salesStore = useSalesStore()
 
 // Data
 const showAddModal = ref(false)
@@ -141,47 +143,7 @@ const formatDate = (date: Date) => {
   })
 }
 
-const getStatusTag = (status: string) => {
-  switch (status) {
-    case 'wait_product':
-      return { label: 'รอจัดหา', severity: 'warning' }
-    case 'wait_confirm':
-      return { label: 'รอยืนยัน', severity: 'warning' }
-    case 'wait_payment':
-      return { label: 'รอชำระเงิน', severity: 'warning' }
-    case 'paid_complete':
-      return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
-    case 'pack_and_ship':
-      return { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', severity: 'info' }
-    case 'shipping':
-      return { label: 'อยู่ระหว่างขนส่ง', severity: 'info' }
-    case 'received':
-      return { label: 'ได้รับสินค้าเรียบร้อย', severity: 'success' }
-    case 'damaged':
-      return { label: 'สินค้าเสียหาย', severity: 'danger' }
-    default:
-      return { label: status, severity: 'info' }
-  }
-}
 
-const getPaymentMethodTag = (method: string) => {
-  switch (method) {
-    case 'SCB':
-      return { label: 'SCB', severity: 'info' }
-    case 'KBANK':
-      return { label: 'KBANK', severity: 'info' }
-    case 'BBL':
-      return { label: 'BBL', severity: 'info' }
-    case 'cash':
-      return { label: 'เงินสด', severity: 'success' }
-    case 'transfer':
-      return { label: 'โอนเงิน', severity: 'info' }
-    case 'credit':
-      return { label: 'เครดิต', severity: 'warning' }
-    default:
-      return { label: method, severity: 'secondary' }
-  }
-}
 
 // Modal functions
 const openAddModal = () => {
@@ -218,13 +180,6 @@ const handleCancelSale = (sale: (typeof sales.value)[0]) => {
   }
 }
 
-const handleCompleteSale = (sale: (typeof sales.value)[0]) => {
-  if (confirm(`คุณต้องการยืนยันการขาย ${sale.orderNumber} หรือไม่?`)) {
-    sale.status = 'paid_complete'
-    toast.success('ยืนยันการขายสำเร็จ')
-  }
-}
-
 const handleStatusChange = (newStatus: string) => {
   if (selectedSale.value) {
     selectedSale.value.status = newStatus
@@ -242,18 +197,6 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
   }
   showSettingsModal.value = false
 }
-
-// Sales status options for filter
-const salesStatuses = [
-  { label: 'รอจัดหา', value: 'wait_product' },
-  { label: 'รอยืนยัน', value: 'wait_confirm' },
-  { label: 'รอชำระเงิน', value: 'wait_payment' },
-  { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
-  { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', value: 'pack_and_ship' },
-  { label: 'อยู่ระหว่างขนส่ง', value: 'shipping' },
-  { label: 'ได้รับสินค้าเรียบร้อย', value: 'received' },
-  { label: 'สินค้าเสียหาย', value: 'damaged' },
-]
 </script>
 
 <template>
@@ -368,7 +311,7 @@ const salesStatuses = [
               <label class="text-sm font-medium text-gray-600">สถานะรายการขาย:</label>
               <Select
                 v-model="statusFilter"
-                :options="[{ label: 'ทั้งหมด', value: '' }, ...salesStatuses]"
+                :options="[{ label: 'ทั้งหมด', value: '' }, ...salesStore.sellingStatusOptions]"
                 optionLabel="label"
                 optionValue="value"
                 placeholder="เลือกสถานะ"
@@ -557,8 +500,8 @@ const salesStatuses = [
           >
             <template #body="slotProps">
               <Tag
-                :value="getPaymentMethodTag(slotProps.data.paymentMethod).label"
-                :severity="getPaymentMethodTag(slotProps.data.paymentMethod).severity"
+                :value="salesStore.getPaymentMethodTag(slotProps.data.paymentMethod).label"
+                :severity="salesStore.getPaymentMethodTag(slotProps.data.paymentMethod).severity"
                 size="small"
               />
             </template>
@@ -601,8 +544,8 @@ const salesStatuses = [
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
                 <Tag
-                  :value="getStatusTag(slotProps.data.status).label"
-                  :severity="getStatusTag(slotProps.data.status).severity"
+                  :value="salesStore.getStatusTag(slotProps.data.status).label"
+                  :severity="salesStore.getStatusTag(slotProps.data.status).severity"
                   size="small"
                 />
               </div>

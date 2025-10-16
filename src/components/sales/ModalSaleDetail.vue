@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Tag, Button } from 'primevue'
+import { useSalesStore } from '@/stores/sales/sales';
 
 // Props
 const props = defineProps<{
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   'edit-sale': [sale: any]
 }>()
 
+const salesStore = useSalesStore()
 // Utility functions
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('th-TH', {
@@ -28,69 +30,6 @@ const formatDate = (date: Date) => {
     month: 'numeric',
     day: 'numeric',
   })
-}
-
-const getStatusTag = (status: string) => {
-  switch (status) {
-    case 'รอจัดหา':
-      return { label: 'รอจัดหา', severity: 'warning' }
-    case 'รอยืนยัน':
-      return { label: 'รอยืนยัน', severity: 'warning' }
-    case 'รอชำระเงิน':
-      return { label: 'รอชำระเงิน', severity: 'warning' }
-    case 'ชำระเงินเรียบร้อย':
-      return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
-    case 'แพ็คเตรียมสินค้ารอจัดส่ง':
-      return { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', severity: 'info' }
-    case 'อยู่ระหว่างขนส่ง':
-      return { label: 'อยู่ระหว่างขนส่ง', severity: 'info' }
-    case 'ได้รับสินค้าเรียบร้อย':
-      return { label: 'ได้รับสินค้าเรียบร้อย', severity: 'success' }
-    case 'สินค้าเสียหาย':
-      return { label: 'สินค้าเสียหาย', severity: 'danger' }
-    default:
-      return { label: status, severity: 'info' }
-  }
-}
-
-const getPaymentMethodTag = (method: string) => {
-  switch (method) {
-    case 'SCB':
-      return { label: 'SCB', severity: 'info' }
-    case 'KBANK':
-      return { label: 'KBANK', severity: 'info' }
-    case 'BBL':
-      return { label: 'BBL', severity: 'info' }
-    case 'cash':
-      return { label: 'เงินสด', severity: 'success' }
-    case 'transfer':
-      return { label: 'โอนเงิน', severity: 'info' }
-    case 'credit':
-      return { label: 'เครดิต', severity: 'warning' }
-    default:
-      return { label: method, severity: 'secondary' }
-  }
-}
-
-const getShippingStatusTag = (status: string) => {
-  switch (status) {
-    case 'รอตัดสินใจ':
-      return { label: 'รอตัดสินใจ', severity: 'warning' }
-    case 'รอชำระเงิน':
-      return { label: 'รอชำระเงิน', severity: 'warning' }
-    case 'ชำระเงินแล้ว':
-      return { label: 'ชำระเงินแล้ว', severity: 'info' }
-    case 'กำลังจัดเตรียม':
-      return { label: 'กำลังจัดเตรียม', severity: 'info' }
-    case 'อยู่ระหว่างจัดส่ง':
-      return { label: 'อยู่ระหว่างจัดส่ง', severity: 'warning' }
-    case 'จัดส่งสำเร็จ':
-      return { label: 'จัดส่งสำเร็จ', severity: 'success' }
-    case 'รับสินค้าเรียบร้อย':
-      return { label: 'รับสินค้าเรียบร้อย', severity: 'success' }
-    default:
-      return { label: status, severity: 'secondary' }
-  }
 }
 
 // Handlers
@@ -284,24 +223,16 @@ const handleEdit = () => {
         <div class="bg-gray-50 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-2">วิธีการชำระเงิน</h4>
           <Tag
-            :value="getPaymentMethodTag(saleData.paymentMethod).label"
-            :severity="getPaymentMethodTag(saleData.paymentMethod).severity"
+            :value="salesStore.getPaymentMethodTag(saleData.paymentMethod).label"
+            :severity="salesStore.getPaymentMethodTag(saleData.paymentMethod).severity"
             size="small"
           />
         </div>
         <div class="bg-gray-50 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-2">สถานะการขาย</h4>
           <Tag
-            :value="getStatusTag(saleData.status).label"
-            :severity="getStatusTag(saleData.status).severity"
-            size="small"
-          />
-        </div>
-        <div class="bg-gray-50 rounded-lg p-4">
-          <h4 class="font-semibold text-gray-900 mb-2">สถานะการจัดส่ง</h4>
-          <Tag
-            :value="getShippingStatusTag(saleData.shippingStatus).label"
-            :severity="getShippingStatusTag(saleData.shippingStatus).severity"
+            :value="salesStore.getStatusTag(saleData.status).label"
+            :severity="salesStore.getStatusTag(saleData.status).severity"
             size="small"
           />
         </div>
