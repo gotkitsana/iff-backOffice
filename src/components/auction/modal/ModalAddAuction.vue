@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue3-toastify'
 import { Dialog, Button, InputNumber, Select, DatePicker } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/auction/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 
 const props = defineProps<{
   showAddAuctionModal: boolean

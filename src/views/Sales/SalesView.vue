@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Card, DataTable, Column, Tag, Button, Select } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/auction/product'
+import { Card, DataTable, Column, Tag, Button, Tabs, TabList, Tab } from 'primevue'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import ModalAddSale from '@/components/sales/ModalAddSale.vue'
@@ -48,7 +48,7 @@ const selectedSale = ref<{
   status: string
   notes: string
 } | null>(null)
-const statusFilter = ref('')
+const activeTab = ref('all')
 
 // Queries
 const { isLoading: productsLoading } = useQuery<IProduct[]>({
@@ -112,14 +112,130 @@ const sales = ref([
     status: 'wait_payment',
     notes: '',
   },
+  {
+    id: 3,
+    orderNumber: 'ORD-2024-003',
+    customerCode: '30',
+    customerType: 'ลูกค้า',
+    customerName: 'คุณสมศักดิ์ ใจดี',
+    customerNickname: 'ศักดิ์',
+    customerPhone: '083-456-7890',
+    customerEmail: 'somsak@email.com',
+    customerAddress: '789 ถนนลาดพร้าว',
+    customerProvince: 'กรุงเทพฯ',
+    productCategory: 'ขายสินค้า',
+    productType: 'อาหารปลา',
+    productName: 'อาหารปลาคาร์ฟ',
+    quantity: 1,
+    unitPrice: 1200,
+    totalPrice: 1200,
+    deposit: 0,
+    discount: 100,
+    netAmount: 1100,
+    paymentMethod: 'KTB',
+    seller: 'Alice',
+    shippingStatus: 'รอจัดหา',
+    saleDate: new Date('2024-10-12T09:15:00'),
+    status: 'wait_product',
+    notes: 'ต้องการสีแดง',
+  },
+  {
+    id: 4,
+    orderNumber: 'ORD-2024-004',
+    customerCode: '35',
+    customerType: 'ลูกค้า',
+    customerName: 'คุณมาลี สวยงาม',
+    customerNickname: 'มาลี',
+    customerPhone: '084-567-8901',
+    customerEmail: 'malee@email.com',
+    customerAddress: '321 ถนนสุขุมวิท',
+    customerProvince: 'กรุงเทพฯ',
+    productCategory: 'ขายสินค้า',
+    productType: 'อุปกรณ์',
+    productName: 'เครื่องกรองน้ำ',
+    quantity: 1,
+    unitPrice: 2500,
+    totalPrice: 2500,
+    deposit: 500,
+    discount: 0,
+    netAmount: 2000,
+    paymentMethod: 'BBL',
+    seller: 'Charlie',
+    shippingStatus: 'อยู่ระหว่างขนส่ง',
+    saleDate: new Date('2024-10-12T16:30:00'),
+    status: 'shipping',
+    notes: 'ส่งด่วน',
+  },
+  {
+    id: 5,
+    orderNumber: 'ORD-2024-005',
+    customerCode: '40',
+    customerType: 'ลูกค้า',
+    customerName: 'คุณวิชัย ใจดี',
+    customerNickname: 'วิชัย',
+    customerPhone: '085-678-9012',
+    customerEmail: 'wichai@email.com',
+    customerAddress: '654 ถนนรัชดาภิเษก',
+    customerProvince: 'กรุงเทพฯ',
+    productCategory: 'ขายสินค้า',
+    productType: 'ปลา',
+    productName: 'ปลาคาร์ฟ',
+    quantity: 3,
+    unitPrice: 800,
+    totalPrice: 2400,
+    deposit: 0,
+    discount: 0,
+    netAmount: 2400,
+    paymentMethod: 'SCB',
+    seller: 'David',
+    shippingStatus: 'ได้รับสินค้าเรียบร้อย',
+    saleDate: new Date('2024-10-13T11:45:00'),
+    status: 'delivered',
+    notes: 'ลูกค้าพอใจมาก',
+  },
 ])
 
 // Computed
 const filteredSales = computed(() => {
-  if (!statusFilter.value) {
+  if (activeTab.value === 'all') {
     return sales.value
   }
-  return sales.value.filter((sale) => sale.status === statusFilter.value)
+  return sales.value.filter((sale) => sale.status === activeTab.value)
+})
+
+// Tab counts
+const allCount = computed(() => sales.value.length)
+const waitProductCount = computed(
+  () => sales.value.filter((s) => s.status === 'wait_product').length
+)
+const waitConfirmCount = computed(
+  () => sales.value.filter((s) => s.status === 'wait_confirm').length
+)
+const waitPaymentCount = computed(
+  () => sales.value.filter((s) => s.status === 'wait_payment').length
+)
+const paidCompleteCount = computed(
+  () => sales.value.filter((s) => s.status === 'paid_complete').length
+)
+const preparingCount = computed(() => sales.value.filter((s) => s.status === 'preparing').length)
+const shippingCount = computed(() => sales.value.filter((s) => s.status === 'shipping').length)
+const deliveredCount = computed(() => sales.value.filter((s) => s.status === 'delivered').length)
+const damagedCount = computed(() => sales.value.filter((s) => s.status === 'damaged').length)
+
+// Current filter display
+const currentFilterDisplay = computed(() => {
+  const statusMap: Record<string, string> = {
+    all: 'ทั้งหมด',
+    wait_product: 'รอจัดหา',
+    wait_confirm: 'รอยืนยัน',
+    wait_payment: 'รอชำระเงิน',
+    paid_complete: 'ชำระเงินเรียบร้อย',
+    preparing: 'แพ็คเตรียมสินค้ารอจัดส่ง',
+    shipping: 'อยู่ระหว่างขนส่ง',
+    delivered: 'ได้รับสินค้าเรียบร้อย',
+    damaged: 'สินค้าเสียหาย',
+  }
+  return statusMap[activeTab.value] || 'ทั้งหมด'
 })
 
 // Stats
@@ -127,7 +243,6 @@ const totalSales = computed(() => sales.value.length)
 const completedSales = computed(
   () => sales.value.filter((s) => s.status === 'paid_complete').length
 )
-const pendingSales = computed(() => sales.value.filter((s) => s.status === 'wait_payment').length)
 const totalRevenue = computed(() =>
   sales.value
     .filter((s) => s.status === 'paid_complete')
@@ -142,8 +257,6 @@ const formatDate = (date: Date) => {
     day: 'numeric',
   })
 }
-
-
 
 // Modal functions
 const openAddModal = () => {
@@ -207,25 +320,15 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
         <h1 class="text-xl font-semibold! text-gray-900">ระบบขาย</h1>
         <p class="text-gray-600">จัดการการขายและติดตามยอดขาย</p>
       </div>
-      <div class="flex space-x-3">
-        <Button
-          label="เพิ่มข้อมูล"
-          icon="pi pi-plus"
-          severity="success"
-          size="small"
-          @click="openAddModal"
-        />
-        <!-- <Button label="รายงานยอดขาย" icon="pi pi-chart-bar" severity="info" size="small" /> -->
-      </div>
     </div>
 
     <!-- Sales Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
       <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-[600]! text-gray-600 mb-1">ยอดขายทั้งหมด</p>
+              <p class="text-sm font-[600]! text-gray-600 mb-1">ยอดขาย</p>
               <p class="text-xl md:text-2xl text-blue-600">
                 {{ totalSales }}
               </p>
@@ -259,7 +362,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
         </template>
       </Card>
 
-      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+      <!-- <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -276,7 +379,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </div>
           </div>
         </template>
-      </Card>
+      </Card> -->
 
       <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
@@ -298,48 +401,114 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
       </Card>
     </div>
 
-    <!-- Filter Section -->
-    <Card :pt="{ body: 'p-4' }">
+    <!-- Filter Tabs -->
+    <Card :pt="{ body: 'p-0' }">
       <template #content>
-        <div class="flex items-center justify-between flex-wrap gap-3">
-          <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-filter text-gray-600"></i>
-              <span class="font-medium text-gray-700">กรองข้อมูล:</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <label class="text-sm font-medium text-gray-600">สถานะรายการขาย:</label>
-              <Select
-                v-model="statusFilter"
-                :options="[{ label: 'ทั้งหมด', value: '' }, ...salesStore.sellingStatusOptions]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกสถานะ"
-                class="min-w-[200px]"
-                size="small"
-                clearable
-              />
-            </div>
-          </div>
-          <div class="flex items-center gap-4 text-sm text-gray-600">
-            <span
-              >ทั้งหมด: <span class="font-semibold text-blue-600">{{ totalSales }}</span></span
-            >
-            <span
-              >เสร็จสิ้น:
-              <span class="font-semibold text-green-600">{{ completedSales }}</span></span
-            >
-            <span
-              >รอดำเนินการ:
-              <span class="font-semibold text-orange-600">{{ pendingSales }}</span></span
-            >
-          </div>
-        </div>
+        <Tabs v-model="activeTab" class="w-full" :value="activeTab">
+          <TabList class="flex border-b border-gray-200 overflow-x-auto">
+            <Tab value="all" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-list text-blue-600"></i>
+                <span class="font-medium">ทั้งหมด</span>
+                <Tag :value="allCount.toString()" severity="info" size="small" />
+              </div>
+            </Tab>
+            <Tab value="wait_product" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-box text-orange-600"></i>
+                <span class="font-medium">รอจัดหา</span>
+                <Tag :value="waitProductCount.toString()" severity="warning" size="small" />
+              </div>
+            </Tab>
+            <Tab value="wait_confirm" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-clock text-yellow-600"></i>
+                <span class="font-medium">รอยืนยัน</span>
+                <Tag :value="waitConfirmCount.toString()" severity="warning" size="small" />
+              </div>
+            </Tab>
+            <Tab value="wait_payment" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-credit-card text-red-600"></i>
+                <span class="font-medium">รอชำระเงิน</span>
+                <Tag :value="waitPaymentCount.toString()" severity="danger" size="small" />
+              </div>
+            </Tab>
+            <Tab value="paid_complete" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-check text-green-600"></i>
+                <span class="font-medium">ชำระเงินเรียบร้อย</span>
+                <Tag :value="paidCompleteCount.toString()" severity="success" size="small" />
+              </div>
+            </Tab>
+            <Tab value="preparing" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-box text-purple-600"></i>
+                <span class="font-medium">แพ็คเตรียมสินค้า</span>
+                <Tag :value="preparingCount.toString()" severity="info" size="small" />
+              </div>
+            </Tab>
+            <Tab value="shipping" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-truck text-indigo-600"></i>
+                <span class="font-medium">อยู่ระหว่างขนส่ง</span>
+                <Tag :value="shippingCount.toString()" severity="info" size="small" />
+              </div>
+            </Tab>
+            <Tab value="delivered" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-home text-green-600"></i>
+                <span class="font-medium">ได้รับสินค้าเรียบร้อย</span>
+                <Tag :value="deliveredCount.toString()" severity="success" size="small" />
+              </div>
+            </Tab>
+            <Tab value="damaged" class="flex-shrink-0">
+              <div class="flex items-center gap-2 py-3 px-4">
+                <i class="pi pi-exclamation-triangle text-red-600"></i>
+                <span class="font-medium">สินค้าเสียหาย</span>
+                <Tag :value="damagedCount.toString()" severity="danger" size="small" />
+              </div>
+            </Tab>
+          </TabList>
+        </Tabs>
       </template>
     </Card>
 
     <!-- Sales Table -->
     <Card :pt="{ body: 'p-3' }">
+      <template #header>
+        <div class="flex items-center justify-between px-3 pt-3">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-filter text-gray-600"></i>
+              <span class="font-medium text-gray-700">แสดงข้อมูล:</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <Tag
+                :value="currentFilterDisplay"
+                :severity="
+                  activeTab === 'all'
+                    ? 'info'
+                    : activeTab === 'paid_complete' || activeTab === 'delivered'
+                    ? 'success'
+                    : activeTab === 'damaged'
+                    ? 'danger'
+                    : 'warning'
+                "
+                size="small"
+              />
+              <span class="text-sm text-gray-600"> ({{ filteredSales.length }} รายการ) </span>
+            </div>
+          </div>
+          <Button
+            label="บันทึกรายการขาย"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="openAddModal"
+          />
+        </div>
+      </template>
       <template #content>
         <DataTable
           :value="filteredSales"
@@ -373,7 +542,21 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </template>
           </Column>
 
-
+          <Column
+            field="status"
+            header="สถานะรายการ"
+            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <div class="flex flex-col items-center gap-2">
+                <Tag
+                  :value="salesStore.getStatusTag(slotProps.data.status).label"
+                  :severity="salesStore.getStatusTag(slotProps.data.status).severity"
+                  size="small"
+                />
+              </div>
+            </template>
+          </Column>
 
           <Column
             field="customerCode"
@@ -389,7 +572,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
 
           <Column
             field="customerType"
-            header="ประเภทลูกค้า"
+            header="สถานะลูกค้า"
             :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
@@ -514,46 +697,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
           </Column>
 
           <Column
-            field="customerName"
-            header="ชื่อ/สกุล"
-            :pt="{ columnHeaderContent: 'min-w-[7rem]' }"
-          >
-            <template #body="slotProps">
-              <div>
-                <p class="font-medium text-gray-900 text-sm">{{ slotProps.data.customerName }}</p>
-                <p class="text-sm text-gray-500">{{ slotProps.data.customerNickname }}</p>
-              </div>
-            </template>
-          </Column>
-
-          <Column
-            field="customerPhone"
-            header="เบอร์โทร"
-            :pt="{ columnHeaderContent: 'min-w-[6rem]' }"
-          >
-            <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.customerPhone }}</span>
-            </template>
-          </Column>
-
-           <Column
-            field="status"
-            header="สถานะรายการขาย"
-            :pt="{ columnHeaderContent: 'min-w-[12rem] justify-center', bodyCell: 'text-center' }"
-          >
-            <template #body="slotProps">
-              <div class="flex flex-col items-center gap-2">
-                <Tag
-                  :value="salesStore.getStatusTag(slotProps.data.status).label"
-                  :severity="salesStore.getStatusTag(slotProps.data.status).severity"
-                  size="small"
-                />
-              </div>
-            </template>
-          </Column>
-
-          <Column
-            header="จัดการการขาย"
+            header="จัดการสถานะ"
             :exportable="false"
             frozen
             :pt="{ columnHeaderContent: 'justify-end min-w-[6rem]' }"
@@ -592,15 +736,6 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
           >
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
-                <Button
-                  icon="pi pi-eye"
-                  severity="info"
-                  size="small"
-                  outlined
-                  @click="openDetailModal(slotProps.data)"
-                  v-tooltip.top="'ดูรายละเอียด'"
-                />
-
                 <Button
                   icon="pi pi-pencil"
                   severity="warning"

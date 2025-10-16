@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Dialog, InputText, Textarea, Select, InputNumber, Button } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/auction/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'

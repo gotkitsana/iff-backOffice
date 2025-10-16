@@ -17,7 +17,6 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
-
   async function onUpdateProduct(payload: IUpdateProductPayload) {
     const { data } = await api.put(`/product`, payload)
     return data
@@ -85,19 +84,43 @@ export type IProductDetail = {
 }
 
 export type ICreateProductPayload = {
+  type: number
   name: string
-  cateId: string
-  detail: string
-  cat: number
   price: number
+  detail: string
+  sku: string
+  farm: string
+  size: number
+  gender: number
+  age: string
+  sold: boolean
+  rate: number
+  youtube: string
+  images?: { filename: string; type: string }[]
+  certificate: string | null
+  auctionOnly: number
 }
 
-export interface IUpdateProductPayload extends ICreateProductPayload {
+export type IUpdateProductPayload = {
   _id: string
+  type: number
   name: string
-  cateId: string
-  detail: string
-  cat: number
   price: number
+  detail: string
+  sku: string
+  farm: string
+  size: number
+  gender: number
+  age: string
+  sold: boolean
+  rate: number
+  youtube: string
+  certificate: string | null
+  images?: [
+    {
+      filename: string
+      type: string
+    },
+  ]
+  auctionOnly: number
 }
-

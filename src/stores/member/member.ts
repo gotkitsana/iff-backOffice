@@ -5,9 +5,8 @@ import { ref } from 'vue'
 export const useMemberStore = defineStore('member', () => {
 
   const memberStatusOptions = ref([
+    { label: 'สอบถาม', value: 'ci' },
     { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
-    { label: 'มีแนวโน้มสนใจ', value: 'lp' },
-    { label: 'สอบถาม', value: 'eq' },
     { label: 'ลูกค้าสำคัญ', value: 'css' },
   ])
 
@@ -20,12 +19,10 @@ export const useMemberStore = defineStore('member', () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'ci':
+        return 'secondary'
       case 'cs':
         return 'success'
-      case 'lp':
-        return 'info'
-      case 'eq':
-        return 'secondary'
       case 'css':
         return 'warn'
       default:

@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { Card, Tag, Button } from 'primevue'
 import { useAuctionStore } from '@/stores/auction/auction'
-import { useProductStore } from '@/stores/auction/product'
 import { useQuery } from '@tanstack/vue-query'
 import ModalAddContent from '@/components/auction/modal/ModalAddContent.vue'
 import ModalAddAuction from '@/components/auction/modal/ModalAddAuction.vue'

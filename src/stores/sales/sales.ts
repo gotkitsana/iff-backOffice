@@ -13,11 +13,13 @@ export const useSalesStore = defineStore('sales', () => {
   ]
 
   const productTypes = [
-    { label: 'สารปรับสภาพน้ำ', value: 'water' },
     { label: 'ปลา', value: 'fish' },
-    { label: 'เวชภัณฑ์', value: 'medicine' },
+    { label: 'สารปรับสภาพน้ำ', value: 'water' },
+    { label: 'คอนสทรัคชั่น', value: 'construction' },
     { label: 'บริการ', value: 'service' },
     { label: 'อาหาร', value: 'food' },
+    { label: 'ยา', value: 'medicine' },
+    { label: 'อุปกรณ์', value: 'equipment' },
   ]
 
   const paymentMethods = [

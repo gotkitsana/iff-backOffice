@@ -4,7 +4,6 @@ import Accounting from '@/views/Accounting/AccountingView.vue'
 import Auction from '@/views/Auction/AuctionView.vue'
 import AuctionDetail from '@/views/Auction/AuctionDetailView.vue'
 import AuctionSettings from '@/views/Auction/AuctionSettingsView.vue'
-import KoiStore from '@/views/Auction/KoiStoreView.vue'
 import Login from '@/views/auth/LoginView.vue'
 import Unauthorized from '@/views/UnauthorizedView.vue'
 import NotFound from '@/views/NotFoundView.vue'
@@ -81,9 +80,9 @@ export default [
         },
       },
       {
-        path: '/store',
-        name: 'store',
-        component: Dashboard,
+        path: '/storage',
+        name: 'storage',
+        component: Product,
         meta: {
           title: 'คลังสินค้า',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
@@ -170,17 +169,17 @@ export default [
           ],
         },
       },
-      
-      {
-        path: '/koi-store',
-        name: 'koi-store',
-        component: KoiStore,
-        meta: {
-          title: 'คลังปลาคราฟ',
-          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'คลังปลาคราฟ' }],
-        },
-      },
+
+      // {
+      //   path: '/koi-store',
+      //   name: 'koi-store',
+      //   component: KoiStore,
+      //   meta: {
+      //     title: 'คลังปลาคราฟ',
+      //     roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+      //     breadcrumb: [{ label: 'ระบบการตลาด' }, { label: 'คลังปลาคราฟ' }],
+      //   },
+      // },
 
       {
         path: '/product',
