@@ -10,8 +10,9 @@ import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore, type ISales } from '@/stores/sales/sales'
-
+import { useMemberStore } from '@/stores/member/member'
 // Stores
+const memberStore = useMemberStore()
 const productStore = useProductStore()
 const salesStore = useSalesStore()
 
@@ -20,7 +21,6 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const showStatusManager = ref(false)
-const showSettingsModal = ref(false)
 const selectedSale = ref<{
   id: number
   orderNumber: string
@@ -66,8 +66,8 @@ const sales = ref([
   {
     id: 1,
     orderNumber: 'ORD-2024-001',
-    customerCode: '28',
-    customerType: 'ลูกค้า',
+    customerCode: 'ci28',
+    customerType: 'ci',
     customerName: 'คุณสมชาย ใจดี',
     customerNickname: 'ชาย',
     customerPhone: '081-234-5678',
@@ -93,8 +93,8 @@ const sales = ref([
   {
     id: 2,
     orderNumber: 'ORD-2024-002',
-    customerCode: '25',
-    customerType: 'ลูกค้า',
+    customerCode: 'cs25',
+    customerType: 'cs',
     customerName: 'คุณนิดา สวยงาม',
     customerNickname: 'นิดา',
     customerPhone: '082-345-6789',
@@ -120,8 +120,8 @@ const sales = ref([
   {
     id: 3,
     orderNumber: 'ORD-2024-003',
-    customerCode: '30',
-    customerType: 'ลูกค้า',
+    customerCode: 'css30',
+    customerType: 'css',
     customerName: 'คุณสมศักดิ์ ใจดี',
     customerNickname: 'ศักดิ์',
     customerPhone: '083-456-7890',
@@ -143,168 +143,6 @@ const sales = ref([
     saleDate: new Date('2024-10-12T09:15:00'),
     status: 'wait_product',
     notes: 'ต้องการสีแดง',
-  },
-  {
-    id: 4,
-    orderNumber: 'ORD-2024-004',
-    customerCode: '35',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณมาลี สวยงาม',
-    customerNickname: 'มาลี',
-    customerPhone: '084-567-8901',
-    customerEmail: 'malee@email.com',
-    customerAddress: '321 ถนนสุขุมวิท',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'คอนสทรัคชั่น',
-    productName: 'เครื่องกรองน้ำ',
-    quantity: 1,
-    unitPrice: 2500,
-    totalPrice: 2500,
-    deposit: 500,
-    discount: 0,
-    netAmount: 2000,
-    paymentMethod: 'BBL',
-    seller: 'Charlie',
-    shippingStatus: 'อยู่ระหว่างขนส่ง',
-    saleDate: new Date('2024-10-12T16:30:00'),
-    status: 'shipping',
-    notes: 'ส่งด่วน',
-  },
-  {
-    id: 5,
-    orderNumber: 'ORD-2024-005',
-    customerCode: '40',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณวิชัย ใจดี',
-    customerNickname: 'วิชัย',
-    customerPhone: '085-678-9012',
-    customerEmail: 'wichai@email.com',
-    customerAddress: '654 ถนนรัชดาภิเษก',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'ปลา',
-    productName: 'ปลาคาร์ฟ',
-    quantity: 3,
-    unitPrice: 800,
-    totalPrice: 2400,
-    deposit: 0,
-    discount: 0,
-    netAmount: 2400,
-    paymentMethod: 'SCB',
-    seller: 'David',
-    shippingStatus: 'ได้รับสินค้าเรียบร้อย',
-    saleDate: new Date('2024-10-13T11:45:00'),
-    status: 'delivered',
-    notes: 'ลูกค้าพอใจมาก',
-  },
-  {
-    id: 6,
-    orderNumber: 'ORD-2024-006',
-    customerCode: '45',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณสมพร ใจดี',
-    customerNickname: 'สมพร',
-    customerPhone: '086-789-0123',
-    customerEmail: 'somporn@email.com',
-    customerAddress: '987 ถนนวิภาวดี',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'บริการ',
-    productName: 'บริการติดตั้งระบบกรอง',
-    quantity: 1,
-    unitPrice: 5000,
-    totalPrice: 5000,
-    deposit: 1000,
-    discount: 0,
-    netAmount: 4000,
-    paymentMethod: 'KTB',
-    seller: 'Eve',
-    shippingStatus: 'ชำระเงินแล้ว',
-    saleDate: new Date('2024-10-14T08:20:00'),
-    status: 'paid_complete',
-    notes: 'ติดตั้งเสร็จแล้ว',
-  },
-  {
-    id: 7,
-    orderNumber: 'ORD-2024-007',
-    customerCode: '50',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณวิไล สวยงาม',
-    customerNickname: 'วิไล',
-    customerPhone: '087-890-1234',
-    customerEmail: 'wilai@email.com',
-    customerAddress: '147 ถนนลาดพร้าว',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'ปลา',
-    productName: 'ปลาคาร์ฟสีแดง',
-    quantity: 2,
-    unitPrice: 1500,
-    totalPrice: 3000,
-    deposit: 0,
-    discount: 200,
-    netAmount: 2800,
-    paymentMethod: 'BBL',
-    seller: 'Frank',
-    shippingStatus: 'ชำระเงินแล้ว',
-    saleDate: new Date('2024-10-14T15:45:00'),
-    status: 'paid_complete',
-    notes: 'ปลาสวยมาก',
-  },
-  {
-    id: 8,
-    orderNumber: 'ORD-2024-008',
-    customerCode: '55',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณสมศักดิ์ ใจดี',
-    customerNickname: 'ศักดิ์',
-    customerPhone: '088-901-2345',
-    customerEmail: 'somsak2@email.com',
-    customerAddress: '258 ถนนรัชดาภิเษก',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'อุปกรณ์',
-    productName: 'ปั๊มน้ำ',
-    quantity: 1,
-    unitPrice: 3500,
-    totalPrice: 3500,
-    deposit: 0,
-    discount: 0,
-    netAmount: 3500,
-    paymentMethod: 'SCB',
-    seller: 'Grace',
-    shippingStatus: 'ชำระเงินแล้ว',
-    saleDate: new Date('2024-10-15T10:30:00'),
-    status: 'paid_complete',
-    notes: 'อุปกรณ์คุณภาพดี',
-  },
-  {
-    id: 9,
-    orderNumber: 'ORD-2024-009',
-    customerCode: '60',
-    customerType: 'ลูกค้า',
-    customerName: 'คุณมาลี สวยงาม',
-    customerNickname: 'มาลี',
-    customerPhone: '089-012-3456',
-    customerEmail: 'malee2@email.com',
-    customerAddress: '369 ถนนสุขุมวิท',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'ยา',
-    productName: 'ยาปฏิชีวนะสำหรับปลา',
-    quantity: 3,
-    unitPrice: 800,
-    totalPrice: 2400,
-    deposit: 0,
-    discount: 100,
-    netAmount: 2300,
-    paymentMethod: 'KTB',
-    seller: 'Henry',
-    shippingStatus: 'ชำระเงินแล้ว',
-    saleDate: new Date('2024-10-15T14:20:00'),
-    status: 'paid_complete',
-    notes: 'ยาคุณภาพสูง',
   },
 ])
 
@@ -350,12 +188,6 @@ const currentFilterDisplay = computed(() => {
   }
   return statusMap[activeTab.value] || 'ทั้งหมด'
 })
-
-// Stats
-const totalSales = computed(() => sales.value.length)
-const completedSales = computed(
-  () => sales.value.filter((s) => s.status === 'paid_complete').length
-)
 
 // Revenue calculations by category
 const totalRevenue = computed(() =>
@@ -457,16 +289,6 @@ const handleStatusChange = (newStatus: string) => {
     showStatusManager.value = false
   }
 }
-
-const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
-  if (updatedData) {
-    const index = sales.value.findIndex((s) => s.id === updatedData.id)
-    if (index !== -1) {
-      sales.value[index] = updatedData
-    }
-  }
-  showSettingsModal.value = false
-}
 </script>
 
 <template>
@@ -507,7 +329,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             <div
               class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-md"
             >
-              <i class="pi pi-fish text-white text-2xl"></i>
+              <i class="pi pi-box text-white text-2xl"></i>
             </div>
             <div class="flex-1">
               <h4 class="font-[500]! text-gray-900">ยอดอุปกรณ์</h4>
@@ -567,7 +389,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             <div
               class="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center shadow-sm mx-auto mb-2"
             >
-              <i class="pi pi-cog text-white text-lg"></i>
+              <i class="pi pi-cart-arrow-down text-white text-lg"></i>
             </div>
             <h5 class="text-sm font-medium! text-gray-700">ยอดขายปลา</h5>
             <p class="font-semibold! text-gray-600">
@@ -629,11 +451,11 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
     <!-- Filter Tabs -->
     <Card :pt="{ body: 'p-1.5' }">
       <template #content>
-        <Tabs v-model="activeTab" class="w-full " :value="activeTab">
+        <Tabs v-model="activeTab" class="w-full" :value="activeTab">
           <TabList class="flex border-b border-gray-200 overflow-x-auto bg-gray-50/50">
             <Tab value="all" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-list text-blue-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ทั้งหมด</span>
@@ -642,7 +464,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="wait_product" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-box text-orange-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ระหว่างจัดหา</span>
@@ -656,7 +478,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="wait_confirm" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-clock text-yellow-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">รอคอมเปริม</span>
@@ -670,7 +492,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="paid_complete" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-check text-green-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ชำระเงินเรียบร้อย</span>
@@ -684,7 +506,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="preparing" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-box text-purple-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ระหว่างรอจัดส่ง</span>
@@ -693,7 +515,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="shipping" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-truck text-indigo-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ระหว่างขนส่ง</span>
@@ -702,7 +524,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="delivered" class="flex-shrink-0">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-home text-green-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ได้รับสินค้าแล้ว</span>
@@ -716,7 +538,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </Tab>
             <Tab value="damaged" class="flex-shrink-0 pr-10">
               <div
-                class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-exclamation-triangle text-red-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">สินค้าเสียหาย</span>
@@ -755,7 +577,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             </div>
           </div>
           <Button
-            label="บันทึกรายการขาย"
+            label="สร้างรายการขาย"
             icon="pi pi-plus"
             severity="success"
             size="small"
@@ -807,6 +629,9 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
                   :value="salesStore.getStatusTag(slotProps.data.status).label"
                   :severity="salesStore.getStatusTag(slotProps.data.status).severity"
                   size="small"
+                  class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                  @click="openStatusManager(slotProps.data)"
+                  v-tooltip.top="'คลิกเพื่อเปลี่ยนสถานะ'"
                 />
               </div>
             </template>
@@ -818,9 +643,17 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <span class="font-medium text-sm text-gray-900">{{
-                slotProps.data.customerCode
-              }}</span>
+              <span
+                class="font-medium text-sm "
+                :class="
+                  slotProps.data.customerType === 'css'
+                    ? 'text-yellow-600'
+                    : slotProps.data.customerType === 'cs'
+                    ? 'text-green-600'
+                    : 'text-gray-600'
+                "
+                >{{ slotProps.data.customerCode }}</span
+              >
             </template>
           </Column>
 
@@ -830,23 +663,25 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
             :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag :value="slotProps.data.customerType" severity="info" size="small" />
-            </template>
-          </Column>
-
-          <Column
-            field="productCategory"
-            header="หมวดหมู่สินค้า"
-            :pt="{ columnHeaderContent: 'min-w-[6.25rem] justify-center', bodyCell: 'text-center' }"
-          >
-            <template #body="slotProps">
-              <Tag :value="slotProps.data.productCategory" severity="success" size="small" />
+              <Tag
+                :value="
+                  memberStore.memberStatusOptions.find(
+                    (option) => option.value === slotProps.data.customerType
+                  )?.label
+                "
+                :severity="
+                  memberStore.memberStatusOptions.find(
+                    (option) => option.value === slotProps.data.customerType
+                  )?.severity
+                "
+                size="small"
+              />
             </template>
           </Column>
 
           <Column
             field="productType"
-            header="ประเภทสินค้า"
+            header="หมวดหมู่สินค้า"
             :pt="{ columnHeaderContent: 'min-w-[7.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
@@ -951,21 +786,13 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
           </Column>
 
           <Column
-            header="จัดการสถานะ"
+            header="จัดการ"
             :exportable="false"
             frozen
-            :pt="{ columnHeaderContent: 'justify-end min-w-[6rem]' }"
+            :pt="{ columnHeaderContent: 'justify-end' }"
           >
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
-                <Button
-                  icon="pi pi-sync"
-                  severity="secondary"
-                  size="small"
-                  outlined
-                  @click="openStatusManager(slotProps.data)"
-                  v-tooltip.top="'เปลี่ยนสถานะการขาย'"
-                />
                 <Button
                   v-if="
                     slotProps.data.status === 'wait_product' ||
@@ -978,18 +805,6 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
                   @click="handleCancelSale(slotProps.data)"
                   v-tooltip.top="'ยกเลิกการขายนี้'"
                 />
-              </div>
-            </template>
-          </Column>
-
-          <Column
-            header="จัดการ"
-            :exportable="false"
-            frozen
-            :pt="{ columnHeaderContent: 'justify-end' }"
-          >
-            <template #body="slotProps">
-              <div class="flex gap-2 justify-end">
                 <Button
                   icon="pi pi-pencil"
                   severity="warning"

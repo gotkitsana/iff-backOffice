@@ -22,11 +22,6 @@ export const useSalesStore = defineStore('sales', () => {
     return data
   }
 
-  const productCategories = [
-    { label: 'ขายสินค้า', value: 'sell' },
-    { label: 'บริการ', value: 'service' },
-  ]
-
   const productTypes = [
     { label: 'ปลา', value: 'fish' },
     { label: 'สารปรับสภาพน้ำ', value: 'water' },
@@ -109,8 +104,6 @@ export const useSalesStore = defineStore('sales', () => {
     onGetSalesDetail,
     onCreateSalesDetail,
     onUpdateSalesDetail,
-
-    productCategories,
     productTypes,
     paymentMethods,
     sellers,

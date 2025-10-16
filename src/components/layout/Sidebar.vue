@@ -59,7 +59,7 @@ const menuSections = [
         route: 'shipping',
       },
       {
-        icon: 'pi pi-cart-plus',
+        icon: 'pi pi-building-columns',
         label: 'คลังสินค้า',
         route: 'storage',
       },
