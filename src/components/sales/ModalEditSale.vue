@@ -270,30 +270,12 @@ const handleClose = () => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-th-large mr-1.5 !text-sm"></i>
-              หมวดหมู่สินค้า
-            </label>
-            <Select
-              v-model="saleForm.productCategory"
-              :options="salesStore.productCategories"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              placeholder="เลือกหมวดหมู่สินค้า"
-              :invalid="!saleForm.productCategory && isSubmitting"
-            />
-            <small v-if="!saleForm.productCategory && isSubmitting" class="text-red-500"
-              >กรุณาเลือกหมวดหมู่สินค้า</small
-            >
-          </div>
+
 
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-tags mr-1.5 !text-sm"></i>
-              ประเภทสินค้า
+              หมวดหมู่สินค้า
             </label>
             <Select
               v-model="saleForm.productType"
@@ -301,12 +283,12 @@ const handleClose = () => {
               optionLabel="label"
               optionValue="value"
               fluid
-              placeholder="เลือกประเภทสินค้า"
+              placeholder="เลือกหมวดหมู่สินค้า"
               size="small"
               :invalid="!saleForm.productType && isSubmitting"
             />
             <small v-if="!saleForm.productType && isSubmitting" class="text-red-500"
-              >กรุณาเลือกประเภทสินค้า</small
+              >กรุณาเลือกหมวดหมู่สินค้า</small
             >
           </div>
 
