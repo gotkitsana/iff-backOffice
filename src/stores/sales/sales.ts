@@ -3,8 +3,23 @@ import api from '@/utils/axios'
 
 export const useSalesStore = defineStore('sales', () => {
   async function onGetSales() {
-    const { data } = await api.get(`/sales`)
+    const { data } = await api.get(`/sale`)
     return data.data
+  }
+
+  async function onGetSalesDetail(id: string) {
+    const { data } = await api.get(`/sale?id=${id}`)
+    return data.data
+  }
+
+  async function onCreateSalesDetail(payload: ICreateSalesPayload) {
+    const { data } = await api.post(`/sale`, payload)
+    return data
+  }
+
+  async function onUpdateSalesDetail(payload: IUpdateSalesPayload) {
+    const { data } = await api.put(`/sale`, payload)
+    return data
   }
 
   const productCategories = [
@@ -91,6 +106,9 @@ export const useSalesStore = defineStore('sales', () => {
 
   return {
     onGetSales,
+    onGetSalesDetail,
+    onCreateSalesDetail,
+    onUpdateSalesDetail,
 
     productCategories,
     productTypes,
@@ -102,21 +120,58 @@ export const useSalesStore = defineStore('sales', () => {
   }
 })
 
-export type IContentPayload = {
-  content: string
+export type ICreateSalesPayload = {
+  item: string
+  status: string
+  user: string
+  product: { id: string; quantity: number }[]
+  deposit: number
+  discount: number
+  payment: string
+  seller: string
+  deliveryStatus: string
+  note: string
 }
 
-export type IAuctionPayload = {
-  productId: string
-  biddingTime: number
-  startDate: number
-  endDate: number
-  minBid: number
-}
-
-export type IUpdateAuctionPayload = {
-  _id: string
-  name: string
+export type IUpdateSalesPayload = {
+  item: string
+  status: string
+  user: string
+  product: { id: string; quantity: number }[]
+  quantity: number
+  deposit: number
+  discount: number
+  payment: string
+  seller: string
+  deliveryStatus: string
+  note: string
   cat: number
-  type: number
+  _id: string
 }
+
+export type ISales = {
+  _id: string
+  item: string
+  status: string
+  user: string
+  products: [
+    {
+      name: string
+      price: number | null
+      type: number
+      category: string | null
+      id: string
+      quantity: number
+    },
+  ]
+  deposit: number
+  discount: number
+  payment: string
+  seller: string
+  deliveryStatus: string
+  note: string
+  cat: number
+  uat: number
+  __v: number
+}
+
