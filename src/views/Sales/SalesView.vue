@@ -714,7 +714,7 @@ const handleSettingsUpdated = (updatedData: (typeof sales.value)[0] | null) => {
                 />
               </div>
             </Tab>
-            <Tab value="damaged" class="flex-shrink-0">
+            <Tab value="damaged" class="flex-shrink-0 pr-10">
               <div
                 class="flex items-center gap-1.5  px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
