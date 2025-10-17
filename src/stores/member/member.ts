@@ -4,23 +4,23 @@ import { ref } from 'vue'
 
 export const useMemberStore = defineStore('member', () => {
   const memberStatusOptions = ref([
-    { label: 'สอบถาม', value: 'ci'  },
+    { label: 'สอบถาม', value: 'ci' },
     { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
     { label: 'ลูกค้าสำคัญ', value: 'css' },
   ])
 
-   const getStatusLabel = (status: string) => {
-     switch (status) {
-       case 'ci':
-         return 'secondary'
-       case 'cs':
-         return 'success'
-       case 'css':
-         return 'warn'
-       default:
-         return 'secondary'
-     }
-   }
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ci':
+        return 'secondary'
+      case 'cs':
+        return 'success'
+      case 'css':
+        return 'warn'
+      default:
+        return 'secondary'
+    }
+  }
 
   const memberContactOptions = ref([
     { label: 'Facebook', value: 'facebook' },
@@ -29,7 +29,6 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'Line กลุ่ม', value: 'line_group' },
     { label: 'TikTok', value: 'tiktok' },
   ])
-
 
   async function onGetMembers() {
     const { data } = await api.get(`/user`)
@@ -154,6 +153,18 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'จุลินทรีย์', value: 'bacteria' },
   ])
 
+  const memberExperienceOptions = ref([
+    { label: 'เป็นมือใหม่', value: 'newbie' },
+    { label: 'เลี้ยงสวยงามที่บ้าน', value: 'hobbyist' },
+    { label: 'สายประกวด', value: 'competitor' },
+  ])
+
+  const memberFishPreferenceOptions = ref([
+    { label: 'ชอบเลี้ยงปลาใหญ่เลย', value: 'large' },
+    { label: 'เลี้ยงTosai', value: 'tosai' },
+    { label: 'Nisai ดูพัฒนาการ', value: 'nisai' },
+  ])
+
   return {
     onGetMembers,
     onGetMemberID,
@@ -169,6 +180,8 @@ export const useMemberStore = defineStore('member', () => {
     provinceOptions,
     memberTypeOptions,
     memberInterestOptions,
+    memberExperienceOptions,
+    memberFishPreferenceOptions,
   }
 })
 
@@ -184,7 +197,6 @@ export interface IMember {
   type: string //ประเภทลูกค้า
   contacts?: { index: number; type: string; value: string }[] //{index:number,type:key ทางติดต่อ,value:ชื่อชองทางติดต่อ} []
   interests?: { index: number; type: string; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
-  payment: 'เงินสด' | 'โอน' | 'บัตรเครดิต' | 'QR PromptPay' | 'อื่นๆ' //การชำระเงิน    enum: ["เงินสด", "โอน", "บัตรเครดิต", "QR PromptPay", "อื่นๆ"],
 
   username?: string //ยูสเซอร์
   password?: string //รหัสผ่าน
@@ -193,13 +205,6 @@ export interface IMember {
   isVerify?: boolean
   image?: string
   email: string
-
-  // ข้อมูลพฤติกรรมความสนใจ
-  experience?: string //ประสบการณ์เลี้ยง
-  fishAgeInterest?: string //ลูกค้าสนใจปลาอายุที่ปี
-  pondSize?: string //ขนาดบ่อที่เลี้ยง
-  hasBudgetLimit?: number //ลูกค้าจำกัดงบมั้ยครับ
-  fishQuality?: string //คุณภาพปลา
 
   interest?: string
   contact?: string
@@ -211,8 +216,8 @@ export interface IMember {
 export interface CreateMemberPayload {
   code: string
   status: string
-  contacts: {index:number,type:string,value:string}[]
-  interests: {index:number,type:string,value:string}[]
+  contacts: { index: number; type: string; value: string }[]
+  interests: { index: number; type: string; value: string }[]
   displayName: string
   name?: string
   address?: string

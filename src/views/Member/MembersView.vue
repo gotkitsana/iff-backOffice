@@ -8,6 +8,8 @@ import ModalAddAndEditMember from '@/components/member/ModalAddAndEditMember.vue
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
 import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
+import _ from 'lodash'
+import { toast } from 'vue3-toastify'
 
 const memberStore = useMemberStore()
 const { data, isLoading } = useQuery<IMember[]>({
@@ -85,11 +87,9 @@ const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text)
     // แสดง toast notification
-    const { toast } = await import('vue3-toastify')
     toast.success(`คัดลอก ${text} เรียบร้อย`)
   } catch (err) {
     console.error('ไม่สามารถคัดลอกได้:', err)
-    const { toast } = await import('vue3-toastify')
     toast.error('ไม่สามารถคัดลอกได้')
   }
 }
@@ -124,7 +124,7 @@ const createContactTooltip = (contactName: string) => {
       </template>
       <template #content>
         <DataTable
-          :value="data"
+          :value="_.orderBy(data, 'code', 'asc')"
           dataKey="_id"
           :loading="isLoading"
           paginator

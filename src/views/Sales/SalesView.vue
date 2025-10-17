@@ -670,9 +670,7 @@ const handleStatusChange = (newStatus: string) => {
                   )?.label
                 "
                 :severity="
-                  memberStore.memberStatusOptions.find(
-                    (option) => option.value === slotProps.data.customerType
-                  )?.severity
+                  memberStore.getStatusLabel(slotProps.data.customerType)
                 "
                 size="small"
               />
