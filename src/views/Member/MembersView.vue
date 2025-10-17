@@ -8,7 +8,7 @@ import ModalAddAndEditMember from '@/components/member/ModalAddAndEditMember.vue
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
 import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
-import _ from 'lodash'
+import { orderBy } from 'lodash-es'
 import { toast } from 'vue3-toastify'
 
 const memberStore = useMemberStore()
@@ -45,7 +45,7 @@ const closeViewModal = () => {
 const showDeleteModal = ref(false)
 const deleteCustomer = ref<{ id: string; name: string } | null>(null)
 const openDeleteModal = (customer: IMember) => {
-  deleteCustomer.value = { id: customer._id, name: customer.contactName || '' }
+  deleteCustomer.value = { id: customer._id, name: customer.displayName || '' }
   showDeleteModal.value = true
 }
 const closeDeleteModal = () => {
@@ -98,6 +98,8 @@ const copyToClipboard = async (text: string) => {
 const createContactTooltip = (contactName: string) => {
   return `ชื่อช่องทางติดต่อ\n👤 ${contactName || 'ไม่ระบุชื่อ'}\n\n💡 คลิกเพื่อคัดลอก`
 }
+
+
 </script>
 
 <template>
@@ -124,7 +126,7 @@ const createContactTooltip = (contactName: string) => {
       </template>
       <template #content>
         <DataTable
-          :value="_.orderBy(data, 'code', 'asc')"
+          :value="orderBy(data, 'code', 'asc')"
           dataKey="_id"
           :loading="isLoading"
           paginator
@@ -252,7 +254,7 @@ const createContactTooltip = (contactName: string) => {
             :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
           />
 
-          <Column
+          <!-- <Column
             field="type"
             header="ประเภทลูกค้า"
             :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
@@ -271,7 +273,7 @@ const createContactTooltip = (contactName: string) => {
               </template>
               <template v-else></template>
             </template>
-          </Column>
+          </Column> -->
 
           <Column
             header="จัดการ"
@@ -319,7 +321,7 @@ const createContactTooltip = (contactName: string) => {
       :showAddModal="showAddAndEditModal"
       @onCloseAddModal="closeAddAndEditModal"
       :data="editCustomer || null"
-      :memberNo="data?.length || 0"
+      :memberData="data || []"
     />
 
     <!-- View Customer Modal -->

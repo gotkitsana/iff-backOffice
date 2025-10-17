@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   useMemberStore,
   type CreateMemberPayload,
@@ -15,7 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 const props = defineProps<{
   showAddModal: boolean
   data: IMember | null
-  memberNo: number
+  memberData: IMember[]
 }>()
 
 const emit = defineEmits<{
@@ -91,7 +91,10 @@ const memberStore = useMemberStore()
 const addContact = () => {
   if (newMember.value.contacts.length < 5) {
     const newIndex = Math.max(...newMember.value.contacts.map((c) => c.index), -1) + 1
-    newMember.value.contacts.push({ index: newIndex, type: '', value: '' })
+    newMember.value.contacts = [
+      ...newMember.value.contacts,
+      { index: newIndex, type: '', value: '' }
+    ]
   }
 }
 
@@ -102,10 +105,11 @@ const removeContact = (index: number) => {
 }
 
 const updateContact = (index: number, field: 'type' | 'value', value: string | undefined) => {
-  const contact = newMember.value.contacts.find((c) => c.index === index)
-  if (contact && value !== undefined) {
-    contact[field] = value
-  }
+  newMember.value.contacts = newMember.value.contacts.map(contact =>
+    contact.index === index
+      ? { ...contact, [field]: value || '' }
+      : contact
+  )
 }
 
 watch(
@@ -146,6 +150,7 @@ watch(
 )
 
 const handleAddMember = () => {
+  console.log(buildPrefix())
   isSubmitting.value = true
 
   // ตรวจสอบ contacts
@@ -236,8 +241,12 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
 })
 
 function buildPrefix() {
-  const sequence = String(props.memberNo + 1).padStart(4, '0') // เพิ่ม 1 เพื่อให้เริ่มจาก 0001
-  return `ci${sequence}`
+  const maxNumber = props.memberData
+    .map(member => member.code)
+    .filter(code => code?.startsWith('ci'))
+    .map(code => parseInt(code.replace('ci', ''), 10) || 0)
+    .reduce((max, num) => Math.max(max, num), 0)
+  return `ci${String(maxNumber + 1).padStart(4, '0')}`
 }
 </script>
 
@@ -259,7 +268,7 @@ function buildPrefix() {
             <i class="pi pi-user text-blue-600"></i>
             ข้อมูลลูกค้า
           </h3>
-          <p class="text-xs text-gray-700" v-if="!!props.data">
+          <p class="text-xs text-gray-700 capitalize" v-if="!!props.data">
             รหัสลูกค้า: {{ props.data?.code }}
           </p>
         </div>
