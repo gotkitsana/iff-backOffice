@@ -6,16 +6,16 @@ import {
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText } from 'primevue'
+import { Dialog, Textarea, Select, InputText, InputNumber } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import dayjs from 'dayjs'
 
 const props = defineProps<{
   showAddModal: boolean
   data: IMember | null
+  memberNo: number
 }>()
 
 const emit = defineEmits<{
@@ -33,10 +33,14 @@ const showAddModal = computed({
 
 const isSubmitting = ref(false)
 const newMember = ref<CreateMemberPayload>({
-  code: '',
   status: '',
+  code: '',
   contact: '',
   contactName: '',
+  contact2: '',
+  contactName2: '',
+  contact3: '',
+  contactName3: '',
   displayName: '',
   name: '',
   password: '',
@@ -47,14 +51,24 @@ const newMember = ref<CreateMemberPayload>({
   type: '',
   interest: '',
   username: '',
+  // ข้อมูลพฤติกรรมความสนใจ
+  experience: '',
+  fishAgeInterest: '',
+  pondSize: '',
+  hasBudgetLimit: undefined,
+  fishQuality: '',
 })
 
 const closeAddModal = () => {
   newMember.value = {
-    code: '',
     status: '',
+    code: '',
     contact: '',
     contactName: '',
+    contact2: '',
+    contactName2: '',
+    contact3: '',
+    contactName3: '',
     displayName: '',
     name: '',
     password: '',
@@ -65,6 +79,12 @@ const closeAddModal = () => {
     type: '',
     interest: '',
     username: '',
+    // ข้อมูลพฤติกรรมความสนใจ
+    experience: '',
+    fishAgeInterest: '',
+    pondSize: '',
+    hasBudgetLimit: undefined,
+    fishQuality: '',
   }
   emit('onCloseAddModal')
 }
@@ -80,6 +100,10 @@ watch(
         status: newMemberData.status,
         contact: newMemberData.contact,
         contactName: newMemberData.contactName,
+        contact2: (newMemberData as any).contact2 || '',
+        contactName2: (newMemberData as any).contactName2 || '',
+        contact3: (newMemberData as any).contact3 || '',
+        contactName3: (newMemberData as any).contactName3 || '',
         displayName: newMemberData.displayName,
         name: newMemberData.name || '',
         password: newMemberData.password || '',
@@ -90,6 +114,12 @@ watch(
         type: newMemberData.type || '',
         interest: newMemberData.interest || '',
         username: newMemberData.username || '',
+        // ข้อมูลพฤติกรรมความสนใจ
+        experience: newMemberData.experience || '',
+        fishAgeInterest: newMemberData.fishAgeInterest || '',
+        pondSize: newMemberData.pondSize || '',
+        hasBudgetLimit: newMemberData.hasBudgetLimit || undefined,
+        fishQuality: newMemberData.fishQuality || '',
       }
     }
   },
@@ -98,13 +128,10 @@ watch(
 
 const handleAddMember = () => {
   isSubmitting.value = true
-
   if (
-    !newMember.value.status ||
     !newMember.value.contact ||
     !newMember.value.contactName ||
-    !newMember.value.displayName ||
-    !newMember.value.type
+    !newMember.value.displayName
   ) {
     toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
     return
@@ -118,7 +145,8 @@ const handleAddMember = () => {
   } else {
     mutate({
       ...newMember.value,
-      code: buildPrefix(newMember.value.status || ''),
+      code: buildPrefix(),
+      status: 'ci',
       username: newMember.value.username || newMember.value.phone,
     })
   }
@@ -155,11 +183,9 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
   },
 })
 
-function buildPrefix(status: string) {
-  const typePart = (status || 'no').replace(/[^a-z0-9]/g, '').slice(0, 4)
-  const ym = dayjs().format('YYMMDD')
-  const con = dayjs().unix().toString().slice(-3)
-  return `${typePart}${ym}${con}`
+function buildPrefix() {
+  const sequence = String(props.memberNo + 1).padStart(4, '0') // เพิ่ม 1 เพื่อให้เริ่มจาก 0001
+  return `ci${sequence}`
 }
 </script>
 
@@ -173,7 +199,6 @@ function buildPrefix(status: string) {
     :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
     :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
   >
-
     <div class="space-y-6">
       <!-- Basic Information Section -->
       <div class="bg-gray-50 rounded-lg p-4">
@@ -182,11 +207,13 @@ function buildPrefix(status: string) {
             <i class="pi pi-user text-blue-600"></i>
             ข้อมูลลูกค้า
           </h3>
-          <p class="text-xs text-gray-700" v-if="!!props.data">รหัสลูกค้า: {{ props.data?.code }}</p>
+          <p class="text-xs text-gray-700" v-if="!!props.data">
+            รหัสลูกค้า: {{ props.data?.code }}
+          </p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+          <!-- <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ *</label>
             <Select
               v-model="newMember.status"
@@ -201,37 +228,106 @@ function buildPrefix(status: string) {
             <small v-if="!newMember.status && isSubmitting" class="text-red-500 text-xs mt-1"
               >กรุณาเลือกสถานะ</small
             >
+          </div> -->
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ช่องทางติดต่อ 1 *</label>
+              <Select
+                v-model="newMember.contact"
+                :options="memberStore.memberContactOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกช่องทางติดต่อ"
+                :invalid="!newMember.contact && isSubmitting"
+                fluid
+                size="small"
+              />
+              <small v-if="!newMember.contact && isSubmitting" class="text-red-500 text-xs mt-1"
+                >กรุณาเลือกช่องทางติดต่อ</small
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ชื่อช่องทางติดต่อ 1 *</label
+              >
+              <InputText
+                v-model="newMember.contactName"
+                placeholder="กรุณาใส่ชื่อช่องทางติดต่อ"
+                :invalid="!newMember.contactName && isSubmitting"
+                fluid
+                size="small"
+              />
+              <small v-if="!newMember.contactName && isSubmitting" class="text-red-500 text-xs mt-1"
+                >กรุณาระบุชื่อช่องทางติดต่อ</small
+              >
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ช่องทางติดต่อ *</label>
-            <Select
-              v-model="newMember.contact"
-              :options="memberStore.memberContactOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกช่องทางติดต่อ"
-              :invalid="!newMember.contact && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.contact && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกช่องทางติดต่อ</small
-            >
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ช่องทางติดต่อ 2</label>
+              <Select
+                v-model="newMember.contact2"
+                :options="memberStore.memberContactOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกช่องทางติดต่อ"
+                fluid
+                size="small"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ชื่อช่องทางติดต่อ 2</label
+              >
+              <InputText
+                v-model="newMember.contactName2"
+                placeholder="กรุณาใส่ชื่อช่องทางติดต่อ"
+                fluid
+                size="small"
+                :invalid="!!newMember.contact2 && !newMember.contactName2 && isSubmitting"
+              />
+              <small
+                v-if="!!newMember.contact2 && !newMember.contactName2 && isSubmitting"
+                class="text-red-500 text-xs mt-1"
+                >กรุณาระบุชื่อช่องทางติดต่อ</small
+              >
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อช่องทางติดต่อ *</label>
-            <InputText
-              v-model="newMember.contactName"
-              placeholder="กรุณาใส่ชื่อช่องทางติดต่อ"
-              :invalid="!newMember.contactName && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.contactName && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาระบุชื่อช่องทางติดต่อ</small
-            >
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ช่องทางติดต่อ 3</label>
+              <Select
+                v-model="newMember.contact3"
+                :options="memberStore.memberContactOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกช่องทางติดต่อ"
+                fluid
+                size="small"
+                :invalid="!!newMember.contact3 && !newMember.contactName3 && isSubmitting"
+              />
+              <small
+                v-if="!!newMember.contact3 && !newMember.contactName3 && isSubmitting"
+                class="text-red-500 text-xs mt-1"
+                >กรุณาระบุชื่อช่องทางติดต่อ</small
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ชื่อช่องทางติดต่อ 3</label
+              >
+              <InputText
+                v-model="newMember.contactName3"
+                placeholder="กรุณาใส่ชื่อช่องทางติดต่อ"
+                fluid
+                size="small"
+              />
+            </div>
           </div>
 
           <div>
@@ -248,7 +344,7 @@ function buildPrefix(status: string) {
             >
           </div>
 
-          <div class="md:col-span-2">
+          <div class="col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
             <InputText
               v-model="newMember.name"
@@ -292,7 +388,7 @@ function buildPrefix(status: string) {
             />
           </div>
 
-          <div>
+          <!-- <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทลูกค้า *</label>
             <Select
               v-model="newMember.type"
@@ -307,9 +403,9 @@ function buildPrefix(status: string) {
             <small v-if="!newMember.type && isSubmitting" class="text-red-500 text-xs mt-1"
               >กรุณาเลือกประเภทลูกค้า</small
             >
-          </div>
+          </div> -->
 
-          <div>
+          <!-- <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ความสนใจ</label>
             <Select
               v-model="newMember.interest"
@@ -317,6 +413,89 @@ function buildPrefix(status: string) {
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกความสนใจ"
+              fluid
+              size="small"
+            />
+          </div> -->
+        </div>
+      </div>
+
+      <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
+          <i class="pi pi-heart text-purple-600"></i>
+          ข้อมูลพฤติกรรม ความสนใจของลูกค้า
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ประสบการณ์เลี้ยง</label>
+            <Select
+              v-model="newMember.experience"
+              :options="[
+                { label: 'มือใหม่', value: 'newbie' },
+                { label: 'นักเลี้ยง', value: 'hobbyist' },
+                { label: 'สายประกวด', value: 'competitor' },
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกประสบการณ์เลี้ยง"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >ลูกค้าสนใจปลาอายุที่ปี</label
+            >
+            <Select
+              v-model="newMember.fishAgeInterest"
+              :options="[
+                { label: '1 ปี', value: '1' },
+                { label: '2 ปี', value: '2' },
+                { label: '3 ปี', value: '3' },
+                { label: '4 ปี', value: '4' },
+                { label: '5 ปี', value: '5' },
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกอายุปลาที่สนใจ"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อที่เลี้ยง</label>
+            <InputText
+              v-model="newMember.pondSize"
+              placeholder="กรุณาใส่ขนาดบ่อที่เลี้ยง"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ลูกค้าจำกัดงบ</label>
+            <InputNumber
+              v-model="newMember.hasBudgetLimit"
+              placeholder="กรุณาใส่งบประมาณ"
+              fluid
+              size="small"
+              mode="currency"
+              currency="THB"
+              locale="th-TH"
+              :min="0"
+              :max="999999999"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">คุณภาพปลา</label>
+            <InputText
+              v-model="newMember.fishQuality"
+              placeholder="กรุณาใส่คุณภาพปลา"
               fluid
               size="small"
             />
@@ -340,6 +519,8 @@ function buildPrefix(status: string) {
               size="small"
             />
           </div>
+
+          <!-- แสดงรหัสผ่านเฉพาะเมื่อสร้างใหม่ และยังไม่มีประวัติการซื้อ -->
           <div v-if="!props.data">
             <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
             <Password
@@ -352,7 +533,8 @@ function buildPrefix(status: string) {
             />
           </div>
 
-          <div>
+          <!-- แสดงสถานะยูสเซอร์เฉพาะเมื่อสร้างใหม่ -->
+          <div v-if="!props.data">
             <label class="block text-sm font-medium text-gray-700 mb-1">สถานะยูสเซอร์</label>
             <Select
               v-model="newMember.bidder"

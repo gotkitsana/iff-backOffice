@@ -3,32 +3,33 @@ import api from '@/utils/axios'
 import { ref } from 'vue'
 
 export const useMemberStore = defineStore('member', () => {
-
   const memberStatusOptions = ref([
-    { label: 'สอบถาม', value: 'ci', severity: 'secondary' },
-    { label: 'ลูกค้าซื้อแล้ว', value: 'cs', severity: 'success' },
-    { label: 'ลูกค้าสำคัญ', value: 'css', severity: 'warn' },
+    { label: 'สอบถาม', value: 'ci'  },
+    { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
+    { label: 'ลูกค้าสำคัญ', value: 'css' },
   ])
+
+   const getStatusLabel = (status: string) => {
+     switch (status) {
+       case 'ci':
+         return 'secondary'
+       case 'cs':
+         return 'success'
+       case 'css':
+         return 'warn'
+       default:
+         return 'secondary'
+     }
+   }
 
   const memberContactOptions = ref([
     { label: 'Facebook', value: 'facebook' },
-    { label: 'Line Official', value: 'line_official' },
-    { label: 'Line พี่เบิท', value: 'line_pibet' },
+    { label: 'Line Official', value: 'line_oa' },
+    { label: 'Line พี่เบิท', value: 'line_chat' },
     { label: 'Line กลุ่ม', value: 'line_group' },
+    { label: 'TikTok', value: 'tiktok' },
   ])
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ci':
-        return 'secondary'
-      case 'cs':
-        return 'success'
-      case 'css':
-        return 'warn'
-      default:
-        return 'secondary'
-    }
-  }
 
   async function onGetMembers() {
     const { data } = await api.get(`/user`)
@@ -175,15 +176,16 @@ export interface IMember {
   _id: string
   code: string //รหัสลูกค้า
   status: string //สถานะ
-  contact: string //ช่องทางติดต่อ
-  contactName: string //ชื่อติดต่อ
   displayName: string //ชื่อเล่น
   name?: string //ชื่อ/สกุล
   address?: string //ที่อยู่
   province?: string //จังหวัด
   phone?: string //เบอร์โทร
   type: string //ประเภทลูกค้า
-  interest?: string // ความสนใจ
+  contacts?: { index: number; type: string; value: string }[] //{index:number,type:key ทางติดต่อ,value:ชื่อชองทางติดต่อ} []
+  interests?: { index: number; type: string; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
+  payment: 'เงินสด' | 'โอน' | 'บัตรเครดิต' | 'QR PromptPay' | 'อื่นๆ' //การชำระเงิน    enum: ["เงินสด", "โอน", "บัตรเครดิต", "QR PromptPay", "อื่นๆ"],
+
   username?: string //ยูสเซอร์
   password?: string //รหัสผ่าน
   bidder?: boolean //สถานะยูสเซอร์
@@ -192,6 +194,16 @@ export interface IMember {
   image?: string
   email: string
 
+  // ข้อมูลพฤติกรรมความสนใจ
+  experience?: string //ประสบการณ์เลี้ยง
+  fishAgeInterest?: string //ลูกค้าสนใจปลาอายุที่ปี
+  pondSize?: string //ขนาดบ่อที่เลี้ยง
+  hasBudgetLimit?: number //ลูกค้าจำกัดงบมั้ยครับ
+  fishQuality?: string //คุณภาพปลา
+
+  interest?: string
+  contact?: string
+  contactName?: string
   cat: number
   uat: number
 }
@@ -199,27 +211,25 @@ export interface IMember {
 export interface CreateMemberPayload {
   code: string
   status: string
-  contact: string
-  contactName: string
+  contacts: {index:number,type:string,value:string}[]
+  interests: {index:number,type:string,value:string}[]
   displayName: string
-  name: string
-  address: string
-  province: string
-  phone: string
-  type: string
-  interest: string
-  username: string
-  password: string
-  bidder: boolean
+  name?: string
+  address?: string
+  province?: string
+  phone?: string
+  type?: string
+
+  username?: string
+  password?: string
+  bidder?: boolean
 }
 
 export interface UpdateMemberPayload extends CreateMemberPayload {
   _id: string
 }
 
-
 export interface ResetPasswordPayload {
   id: string
   password: string
 }
-
