@@ -411,35 +411,6 @@ function buildPrefix() {
             />
           </div>
 
-          <!-- <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทลูกค้า *</label>
-            <Select
-              v-model="newMember.type"
-              :options="memberStore.memberTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกประเภทลูกค้า"
-              fluid
-              size="small"
-              :invalid="!newMember.type && isSubmitting"
-            />
-            <small v-if="!newMember.type && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกประเภทลูกค้า</small
-            >
-          </div> -->
-
-          <!-- <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ความสนใจ</label>
-            <Select
-              v-model="newMember.interest"
-              :options="memberStore.memberInterestOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกความสนใจ"
-              fluid
-              size="small"
-            />
-          </div> -->
         </div>
       </div>
 

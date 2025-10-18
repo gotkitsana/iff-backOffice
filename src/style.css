@@ -78,6 +78,8 @@ body {
   --p-tabs-tabpanel-padding: 0.625rem 0.875rem 0.875rem 0.875rem !important;
   --p-datatable-body-cell-padding: 0.5rem 0.75rem;
   --p-datatable-header-cell-padding: 0.625rem 0.875rem;
+  --p-form-field-padding-y: 0.35rem !important;
+  --p-form-field-padding-x: 0.55rem !important;
 }
 
 /* Custom scrollbar for sidebar */

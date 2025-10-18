@@ -3,6 +3,11 @@ import { useMemberStore, type IMember } from '../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { Dialog, Button, Skeleton, Tag } from 'primevue'
+import fbIcon from '@/assets/images/icon/fb.png'
+import lineOaIcon from '@/assets/images/icon/line-oa.webp'
+import lineChatIcon from '@/assets/images/icon/line.png'
+import lineGroupIcon from '@/assets/images/icon/line.png'
+import tiktokIcon from '@/assets/images/icon/tiktok.png'
 
 const props = defineProps<{
   showDetailModal: boolean
@@ -37,15 +42,15 @@ const { data, isLoading } = useQuery<IMember>({
 const getContactImage = (contactType: string): string | undefined => {
   switch (contactType) {
     case 'facebook':
-      return '/src/assets/images/icon/fb.png'
+      return fbIcon
     case 'line_oa':
-      return '/src/assets/images/icon/line-oa.webp'
+      return lineOaIcon
     case 'line_chat':
-      return '/src/assets/images/icon/line.png'
+      return lineChatIcon
     case 'line_group':
-      return '/src/assets/images/icon/line.png'
+      return lineGroupIcon
     case 'tiktok':
-      return '/src/assets/images/icon/tiktok.png'
+      return tiktokIcon
     default:
       return undefined
   }

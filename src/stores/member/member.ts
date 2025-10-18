@@ -3,7 +3,7 @@ import api from '@/utils/axios'
 import { ref } from 'vue'
 
 export const useMemberStore = defineStore('member', () => {
-  const memberStatusOptions = ref([
+  const memberStatusOptions = ref<{ label: MemberStatusLabel; value: MemberStatus }[]>([
     { label: 'สอบถาม', value: 'ci' },
     { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
     { label: 'ลูกค้าสำคัญ', value: 'css' },
@@ -11,11 +11,11 @@ export const useMemberStore = defineStore('member', () => {
 
   const getStatusTag = (status: string): 'secondary' | 'success' | 'warn' => {
     switch (status) {
-      case 'ci':
+      case 'Ci':
         return 'secondary'
-      case 'cs':
+      case 'Cs':
         return 'success'
-      case 'css':
+      case 'Css':
         return 'warn'
       default:
         return 'secondary'
@@ -146,13 +146,6 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'คาเฟ่', value: 'cafe' },
   ])
 
-  const memberInterestOptions = ref([
-    { label: 'ปลา', value: 'fish' },
-    { label: 'อาหาร', value: 'food' },
-    { label: 'บริการ', value: 'service' },
-    { label: 'จุลินทรีย์', value: 'bacteria' },
-  ])
-
   const memberExperienceOptions = ref([
     { label: 'เป็นมือใหม่', value: 'newbie' },
     { label: 'เลี้ยงสวยงามที่บ้าน', value: 'hobbyist' },
@@ -178,8 +171,6 @@ export const useMemberStore = defineStore('member', () => {
     memberContactOptions,
     getStatusTag,
     provinceOptions,
-    memberTypeOptions,
-    memberInterestOptions,
     memberExperienceOptions,
     memberFishPreferenceOptions,
   }
@@ -238,3 +229,7 @@ export interface ResetPasswordPayload {
   id: string
   password: string
 }
+
+
+export type MemberStatus = 'ci' | 'cs' | 'css'
+export type MemberStatusLabel = 'สอบถาม' | 'ลูกค้าซื้อแล้ว' | 'ลูกค้าสำคัญ'

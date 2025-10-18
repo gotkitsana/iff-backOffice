@@ -200,7 +200,7 @@ export const useSalesStore = defineStore('sales', () => {
 
 export type ICreateSalesPayload = {
   item: string // เลขรายการ
-  status: SellingStatus // สถานะรายการ
+  status: string // สถานะรายการ
   user: string // ผู้ซื้อ
   products: { id: string; quantity: number }[] // สินค้า
   deposit: number // มัดจำ
@@ -212,7 +212,7 @@ export type ICreateSalesPayload = {
 export type IUpdateSalesPayload = {
   _id: string
   item: string // เลขรายการ
-  status: SellingStatus // สถานะรายการ
+  status: string // สถานะรายการ
   user: string // ผู้ซื้อ
   products: { id: string; quantity: number }[] // สินค้า
   deposit: number // มัดจำ
