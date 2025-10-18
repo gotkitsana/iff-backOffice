@@ -780,10 +780,7 @@ const handleStatusChange = (
             :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <div class="flex flex-col items-center">
-                <span class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</span>
-                <span class="text-xs text-gray-500">{{ slotProps.data.deliveryStatus }}</span>
-              </div>
+                <p class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</p>
             </template>
           </Column>
 

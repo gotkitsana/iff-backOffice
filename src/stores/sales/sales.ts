@@ -53,7 +53,7 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'รอตัดสินใจ', value: 'wait_confirm' },
     { label: 'รอชำระเงิน', value: 'wait_payment' },
     { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
-    { label: 'ระหว่างรอจัดส่ง', value: 'preparing' },
+    { label: 'จัดเตรียมสินค้า', value: 'preparing' },
     { label: 'ระหว่างขนส่ง', value: 'shipping' },
     { label: 'ได้รับสินค้าแล้ว', value: 'received' },
     { label: 'สินค้าเสียหาย', value: 'damaged' },
