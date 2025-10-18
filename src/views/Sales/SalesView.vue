@@ -6,6 +6,7 @@ import { toast } from 'vue3-toastify'
 import ModalAddSale from '@/components/sales/ModalAddSale.vue'
 import ModalEditSale from '@/components/sales/ModalEditSale.vue'
 import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
+import ModalProductDetail from '@/components/sales/ModalProductDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
@@ -21,6 +22,7 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const showStatusManager = ref(false)
+const showProductDetailModal = ref(false)
 const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
@@ -210,7 +212,8 @@ const getSaleTotalAmount = (sale: ISales) => {
   const productTotal = sale.products.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0)
-  return productTotal - sale.discount + sale.deposit
+  const netAmount = productTotal - sale.discount + sale.deposit
+  return netAmount < 0 ? 0 : netAmount
 }
 
 const getSaleProductCount = (sale: ISales) => {
@@ -270,6 +273,11 @@ const openDetailModal = (sale: ISales) => {
 const openStatusManager = (sale: ISales) => {
   selectedSale.value = sale
   showStatusManager.value = true
+}
+
+const openProductDetailModal = (sale: ISales) => {
+  selectedSale.value = sale
+  showProductDetailModal.value = true
 }
 
 const handleSaleUpdated = (updatedSale: ISales) => {
@@ -666,13 +674,16 @@ const handleStatusChange = (
             :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <p class="text-sm capitalize font-[500]!"
+              <p
+                class="text-sm capitalize font-[500]!"
                 :class="{
-                    'text-gray-500': slotProps.data.user.status == 'ci',
-                    'text-green-500': slotProps.data.user.status == 'cs',
-                    'text-yellow-600': slotProps.data.user.status == 'css',
+                  'text-gray-500': slotProps.data.user.status == 'ci',
+                  'text-green-500': slotProps.data.user.status == 'cs',
+                  'text-yellow-600': slotProps.data.user.status == 'css',
                 }"
-              >{{ slotProps.data.user?.code }}</p>
+              >
+                {{ slotProps.data.user?.code }}
+              </p>
             </template>
           </Column>
 
@@ -683,7 +694,11 @@ const handleStatusChange = (
           >
             <template #body="slotProps">
               <Tag
-                :value="memberStore.memberStatusOptions.find((s) => s.value === slotProps.data.user.status)?.label"
+                :value="
+                  memberStore.memberStatusOptions.find(
+                    (s) => s.value === slotProps.data.user.status
+                  )?.label
+                "
                 :severity="memberStore.getStatusTag(slotProps.data.user.status)"
                 size="small"
               />
@@ -693,51 +708,20 @@ const handleStatusChange = (
           <Column
             field="products"
             header="สินค้า"
-            :pt="{ columnHeaderContent: 'min-w-[12rem]', bodyCell: 'p-2' }"
+            :pt="{ columnHeaderContent: 'min-w-[9rem]', bodyCell: 'p-2' }"
           >
             <template #body="slotProps">
-              <div class="space-y-2">
-                <!-- Product List -->
-                <div class="space-y-1">
-                  <div
-                    v-for="(product, index) in slotProps.data.products"
-                    :key="index"
-                    class="flex items-center justify-between bg-gray-50 rounded-lg p-2"
-                  >
-                    <div class="flex items-center gap-2 flex-1 min-w-0">
-                      <i
-                        :class="`pi ${getCategoryIcon(product.category)} text-sm ${getCategoryColor(
-                          product.category
-                        )}`"
-                      ></i>
-                      <span class="text-sm text-gray-900 truncate">{{ product.name }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs text-gray-600">
-                      <span>{{ product.quantity }} ชิ้น</span>
-                      <span class="font-medium">
-                        {{ formatCurrency((product.price || 0) * product.quantity) }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Summary -->
-                <div class="flex items-center justify-between pt-1 border-t border-gray-200">
-                  <div class="flex items-center gap-1">
-                    <span class="text-xs text-gray-500">รวม:</span>
-                    <span class="text-sm font-medium text-gray-900"
-                      >{{ getSaleProductCount(slotProps.data) }} ชิ้น</span
-                    >
-                  </div>
-                  <div class="text-sm font-semibold text-gray-900">
-                    {{
-                      formatCurrency(
-                        slotProps.data.products.reduce(
-                          (sum: number, p: { price: number | null; quantity: number }) => sum + (p.price || 0) * p.quantity,
-                          0
-                        )
-                      )
-                    }}
+              <div
+                class="cursor-pointer group"
+                @click="openProductDetailModal(slotProps.data)"
+                v-tooltip.top="'ดูรายละเอียดสินค้า'"
+              >
+                <div class="flex items-center justify-between gap-x-1.5">
+                  <p class="text-sm text-gray-600 group-hover:text-blue-500">
+                    รายการสินค้า {{ slotProps.data.products.length }} รายการ
+                  </p>
+                  <div class="flex items-center !text-xs text-gray-600 group-hover:text-blue-500">
+                    <i class="pi pi-eye"></i>
                   </div>
                 </div>
               </div>
@@ -745,38 +729,38 @@ const handleStatusChange = (
           </Column>
 
           <Column
-            field="categories"
-            header="หมวดหมู่"
-            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
+            field="totalAmount"
+            header="ราคารวม"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
           >
             <template #body="slotProps">
-              <div class="flex flex-wrap gap-1 justify-center">
-                <Tag
-                  v-for="category in getSaleCategories(slotProps.data)"
-                  :key="category"
-                  :value="
-                    salesStore.categoryTypes.find((t) => t.value === category)?.label || category
-                  "
-                  severity="secondary"
-                  size="small"
-                  class="text-xs"
-                />
+              <div class="text-end">
+                <div class="font-semibold text-green-600 text-sm">
+                  {{ formatCurrency(
+                    slotProps.data.products.reduce(
+                      (sum: number, product: any) => sum + ((product.price || 0) * product.quantity), 0)
+                    )
+                  }}
+                </div>
+                <div class="text-xs text-gray-500 mt-0.5">
+                  {{ slotProps.data.products.length }} รายการ
+                </div>
               </div>
             </template>
           </Column>
 
           <Column
-            field="deposit"
+            field="deposit-discount"
             header="มัดจำ/ส่วนลด"
-            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-end', bodyCell: 'text-end' }"
           >
             <template #body="slotProps">
-              <div class="text-end space-y-1">
+              <div class="text-end space-y-0.5">
                 <div v-if="slotProps.data.deposit > 0" class="text-gray-900 text-sm">
                   มัดจำ: {{ formatCurrency(slotProps.data.deposit) }}
                 </div>
                 <div v-if="slotProps.data.discount > 0" class="text-red-600 text-sm">
-                  ส่วนลด: -{{ formatCurrency(slotProps.data.discount) }}
+                  ส่วนลด: {{ formatCurrency(slotProps.data.discount) }}
                 </div>
                 <div
                   v-if="slotProps.data.deposit === 0 && slotProps.data.discount === 0"
@@ -798,7 +782,7 @@ const handleStatusChange = (
                 <div class="font-semibold text-green-600 text-sm">
                   {{ formatCurrency(getSaleTotalAmount(slotProps.data)) }}
                 </div>
-                <div class="text-xs text-gray-500 mt-1">
+                <div class="text-xs text-gray-500 mt-0.5">
                   {{ slotProps.data.products.length }} รายการ
                 </div>
               </div>
@@ -811,43 +795,19 @@ const handleStatusChange = (
             :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <div class="flex flex-col items-center gap-1">
-                <div v-if="slotProps.data.payment === 'transfer' && slotProps.data.bankCode">
+              <div class="flex flex-col items-center">
+                <div v-if="slotProps.data.bankCode" class="flex items-center gap-1.5">
                   <img
                     :src="BankData[slotProps.data.bankCode]?.icon"
                     :alt="slotProps.data.bankCode"
                     class="w-6 h-6 mx-auto"
                   />
-                  <div class="text-xs text-gray-500 mt-1">
+                  <div class="text-sm text-gray-600">
                     {{ BankData[slotProps.data.bankCode]?.name || slotProps.data.bankCode }}
                   </div>
                 </div>
                 <div v-else class="flex items-center gap-2">
-                  <i
-                    :class="[
-                      `pi ${
-                        slotProps.data.payment === 'cash'
-                          ? 'pi-money-bill'
-                          : slotProps.data.payment === 'credit'
-                          ? 'pi-credit-card'
-                          : slotProps.data.payment === 'promptpay'
-                          ? 'pi-qrcode'
-                          : 'pi-question-circle'
-                      } text-lg`,
-                      {
-                        'text-green-600': slotProps.data.payment === 'cash',
-                        'text-blue-600': slotProps.data.payment === 'credit',
-                        'text-purple-600': slotProps.data.payment === 'promptpay',
-                        'text-gray-600': slotProps.data.payment === 'other',
-                      },
-                    ]"
-                  ></i>
-                  <span class="text-xs text-gray-600">
-                    {{
-                      salesStore.paymentMethods.find((p) => p.value === slotProps.data.payment)
-                        ?.label || slotProps.data.payment
-                    }}
-                  </span>
+                  <i class="pi pi-question-circle text-lg text-gray-600"></i>
                 </div>
               </div>
             </template>
@@ -930,5 +890,11 @@ const handleStatusChange = (
     :current-status="selectedSale?.status || ''"
     :order-number="selectedSale?.item || ''"
     @status-changed="handleStatusChange"
+  />
+
+  <ModalProductDetail
+    v-if="selectedSale"
+    v-model:visible="showProductDetailModal"
+    :sale-data="selectedSale"
   />
 </template>

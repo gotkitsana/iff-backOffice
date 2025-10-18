@@ -156,16 +156,14 @@ export type ISales = {
     status: 'ci' | 'cs' | 'css'
     type: string
   }
-  products: [
-    {
+  products: {
       name: string
       price: number | null
       type: number
       category: string | null
       id: string
       quantity: number
-    },
-  ]
+  }[]
   deposit: number
   discount: number
   seller: string
