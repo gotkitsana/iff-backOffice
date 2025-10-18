@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
+import type { IMember } from '../member/member'
 
 export const useSalesStore = defineStore('sales', () => {
   async function onGetSales() {
@@ -116,7 +117,7 @@ export const useSalesStore = defineStore('sales', () => {
 
 export type ICreateSalesPayload = {
   item: string // เลขรายการ
-  status: string // สถานะรายการ
+  status: SellingStatus // สถานะรายการ
   user: string // ผู้ซื้อ
   products: { id: string; quantity: number }[] // สินค้า
   deposit: number // มัดจำ
@@ -128,7 +129,7 @@ export type ICreateSalesPayload = {
 export type IUpdateSalesPayload = {
   _id: string
   item: string // เลขรายการ
-  status: string // สถานะรายการ
+  status: SellingStatus // สถานะรายการ
   user: string // ผู้ซื้อ
   products: { id: string; quantity: number }[] // สินค้า
   deposit: number // มัดจำ
@@ -146,8 +147,15 @@ export type IUpdateSalesPayload = {
 export type ISales = {
   _id: string
   item: string
-  status: string
-  user: string | null
+  status: SellingStatus
+  user: {
+    _id: string
+    displayName: string
+    code: string
+    name: string
+    status: 'ci' | 'cs' | 'css'
+    type: string
+  }
   products: [
     {
       name: string
@@ -170,5 +178,12 @@ export type ISales = {
   bankAccount: string
 }
 
-
-export type SellingStatus = 'wait_product' | 'wait_confirm' | 'wait_payment' | 'paid_complete' | 'preparing' | 'shipping' | 'received' | 'damaged'
+export type SellingStatus =
+  | 'wait_product'
+  | 'wait_confirm'
+  | 'wait_payment'
+  | 'paid_complete'
+  | 'preparing'
+  | 'shipping'
+  | 'received'
+  | 'damaged'

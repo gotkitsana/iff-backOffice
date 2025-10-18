@@ -10,9 +10,11 @@ import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
 import { useSalesStore, type ISales, type SellingStatus } from '@/stores/sales/sales'
+import { useMemberStore } from '@/stores/member/member'
 
 // Stores
 const salesStore = useSalesStore()
+const memberStore = useMemberStore()
 
 // Data
 const showAddModal = ref(false)
@@ -56,7 +58,7 @@ const shippingCount = computed(
   () => salesData.value?.filter((s) => s.status === 'shipping').length || 0
 )
 const deliveredCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'delivered').length || 0
+  () => salesData.value?.filter((s) => s.status === 'received').length || 0
 )
 const damagedCount = computed(
   () => salesData.value?.filter((s) => s.status === 'damaged').length || 0
@@ -620,18 +622,18 @@ const handleStatusChange = (
           :rows="10"
           scrollHeight="600px"
         >
-          <Column field="uat" header="วันที่ขาย" :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }">
+          <Column field="uat" header="วันที่ขาย" :pt="{ columnHeaderContent: 'min-w-[4rem]' }">
             <template #body="slotProps">
               <span class="text-sm text-gray-600">{{
-                formatDate(new Date(slotProps.data.uat * 1000))
+                formatDate(new Date(slotProps.data.uat))
               }}</span>
             </template>
           </Column>
 
-          <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }">
+          <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[5.25rem]' }">
             <template #body="slotProps">
               <span
-                class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm"
+                class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm uppercase"
                 @click="openDetailModal(slotProps.data)"
               >
                 {{ slotProps.data.item }}
@@ -642,7 +644,7 @@ const handleStatusChange = (
           <Column
             field="status"
             header="สถานะรายการ"
-            :pt="{ columnHeaderContent: 'min-w-[9.25rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
@@ -659,17 +661,32 @@ const handleStatusChange = (
           </Column>
 
           <Column
-            field="user"
-            header="ลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-center', bodyCell: 'text-center' }"
+            field="user.code"
+            header="รหัสลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <div class="flex flex-col items-center">
-                <span class="font-medium text-sm text-gray-900">
-                  {{ slotProps.data.user || 'ไม่ระบุ' }}
-                </span>
-                <span class="text-xs text-gray-500"> ID: {{ slotProps.data._id.slice(-6) }} </span>
-              </div>
+              <p class="text-sm capitalize font-[500]!"
+                :class="{
+                    'text-gray-500': slotProps.data.user.status == 'ci',
+                    'text-green-500': slotProps.data.user.status == 'cs',
+                    'text-yellow-600': slotProps.data.user.status == 'css',
+                }"
+              >{{ slotProps.data.user?.code }}</p>
+            </template>
+          </Column>
+
+          <Column
+            field="user.status"
+            header="สถานะลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[5.75rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="memberStore.memberStatusOptions.find((s) => s.value === slotProps.data.user.status)?.label"
+                :severity="memberStore.getStatusTag(slotProps.data.user.status)"
+                size="small"
+              />
             </template>
           </Column>
 

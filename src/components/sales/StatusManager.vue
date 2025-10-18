@@ -200,10 +200,10 @@ const handleStatusChange = (newStatus: string) => {
 }
 
 const handleBankSelection = () => {
-  if (selectedBank.value && accountNumber.value && targetStatus.value) {
+  if (selectedBank.value && targetStatus.value) {
     const bankInfo = {
       bank: selectedBank.value,
-      accountNumber: accountNumber.value,
+      accountNumber: '1234567890',
       amount: paymentAmount.value ? parseFloat(paymentAmount.value) : undefined,
     }
     emit('status-changed', targetStatus.value, bankInfo)
@@ -280,9 +280,9 @@ const { mutate: updateSalesDetail } = useMutation({
       </div>
     </template>
 
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Step Indicator -->
-      <div class="bg-white rounded-lg p-4 border">
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
         <h4 class="font-semibold text-gray-900 mb-4">ขั้นตอนการขาย</h4>
         <div class="flex flex-wrap gap-2">
           <div
@@ -390,17 +390,6 @@ const { mutate: updateSalesDetail } = useMutation({
                 <div class="flex-1">
                   <h5 class="font-medium text-gray-900">{{ step.label }}</h5>
                   <p class="text-xs text-gray-600 mt-1">{{ step.description }}</p>
-                  <div
-                    v-if="
-                      requiresBankSelection(step.value) || willPassThroughWaitPayment(step.value)
-                    "
-                    class="mt-2"
-                  >
-                    <span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                      <i class="pi pi-credit-card mr-1"></i>
-                      ต้องเลือกบัญชีธนาคารของบริษัท
-                    </span>
-                  </div>
                 </div>
                 <i class="pi pi-arrow-right text-gray-400"></i>
               </div>
@@ -419,88 +408,27 @@ const { mutate: updateSalesDetail } = useMutation({
               </div>
               <div>
                 <h4 class="font-semibold text-blue-900">ข้อมูลการชำระเงิน</h4>
-                <p class="text-sm text-blue-700">
-                  {{
-                    targetStatus === 'wait_payment'
-                      ? 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าจะโอนเงินมา'
-                      : willPassThroughWaitPayment(targetStatus)
-                      ? 'เลือกบัญชีธนาคารของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
-                      : 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
-                  }}
-                </p>
+                <p class="text-sm text-blue-700">เลือกบัญชีธนาคารที่จะให้ลูกค้าจะโอนเงินมา</p>
               </div>
             </div>
 
             <!-- Bank Selection -->
-            <div class="space-y-3">
-              <label class="block text-sm font-medium text-gray-700">
-                {{
-                  targetStatus === 'wait_payment'
-                    ? 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าจะโอนเงินมา'
-                    : willPassThroughWaitPayment(targetStatus)
-                    ? 'เลือกบัญชีธนาคารของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
-                    : 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
-                }}
-              </label>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <div
-                  v-for="bank in bankOptions"
-                  :key="bank.value"
-                  :class="`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedBank === bank.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`"
-                  @click="selectedBank = bank.value"
-                >
-                  <div class="flex items-center gap-2">
-                    <img :src="bank.icon" :alt="bank.label" class="w-6 h-6" />
-                    <span class="text-sm font-medium">{{ bank.label }}</span>
-                  </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div
+                v-for="bank in bankOptions"
+                :key="bank.value"
+                :class="`p-3 rounded-lg border cursor-pointer transition-all ${
+                  selectedBank === bank.value
+                    ? 'border-blue-400 bg-blue-500/90 text-white'
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-500/90 hover:text-white'
+                }`"
+                @click="selectedBank = bank.value"
+              >
+                <div class="flex items-center gap-2">
+                  <img :src="bank.icon" :alt="bank.label" class="w-6 h-6" />
+                  <span class="text-sm font-medium">{{ bank.label }}</span>
                 </div>
               </div>
-            </div>
-
-            <!-- Account Number -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">
-                {{
-                  targetStatus === 'wait_payment'
-                    ? 'หมายเลขบัญชีของบริษัทที่ลูกค้าจะโอนเงินมา'
-                    : willPassThroughWaitPayment(targetStatus)
-                    ? 'หมายเลขบัญชีของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
-                    : 'หมายเลขบัญชีของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
-                }}
-              </label>
-              <InputText v-model="accountNumber" placeholder="กรอกหมายเลขบัญชี" class="w-full" />
-            </div>
-
-            <!-- Payment Amount -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
-              <InputText
-                v-model="paymentAmount"
-                type="number"
-                placeholder="กรอกจำนวนเงิน"
-                class="w-full"
-              />
-            </div>
-
-            <!-- Payment Note -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">หมายเหตุ (ไม่บังคับ)</label>
-              <Textarea
-                v-model="paymentNote"
-                :placeholder="
-                  targetStatus === 'wait_payment'
-                    ? 'กรอกหมายเหตุเพิ่มเติมสำหรับการตั้งค่าบัญชีรับโอนเงิน'
-                    : willPassThroughWaitPayment(targetStatus)
-                    ? 'กรอกหมายเหตุเพิ่มเติมสำหรับการผ่านขั้นตอนการชำระเงิน'
-                    : 'กรอกหมายเหตุเพิ่มเติมสำหรับการรับโอนเงิน'
-                "
-                rows="3"
-                class="w-full"
-              />
             </div>
           </template>
         </Card>
@@ -530,17 +458,11 @@ const { mutate: updateSalesDetail } = useMutation({
         />
         <Button
           v-if="showBankSelection"
-          :label="
-            targetStatus === 'wait_payment'
-              ? 'ยืนยันการตั้งค่าบัญชีรับโอนเงิน'
-              : willPassThroughWaitPayment(targetStatus)
-              ? 'ยืนยันการผ่านขั้นตอนการชำระเงิน'
-              : 'ยืนยันการรับโอนเงิน'
-          "
+          label="ยืนยันการเปลี่ยนสถานะ"
           icon="pi pi-check"
           severity="primary"
           @click="handleBankSelection"
-          :disabled="!selectedBank || !accountNumber"
+          :disabled="!selectedBank"
           size="small"
         />
         <Button

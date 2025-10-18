@@ -9,7 +9,7 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'ลูกค้าสำคัญ', value: 'css' },
   ])
 
-  const getStatusLabel = (status: string) => {
+  const getStatusTag = (status: 'ci' | 'cs' | 'css'): 'secondary' | 'success' | 'warn' => {
     switch (status) {
       case 'ci':
         return 'secondary'
@@ -176,7 +176,7 @@ export const useMemberStore = defineStore('member', () => {
 
     memberStatusOptions,
     memberContactOptions,
-    getStatusLabel,
+    getStatusTag,
     provinceOptions,
     memberTypeOptions,
     memberInterestOptions,
