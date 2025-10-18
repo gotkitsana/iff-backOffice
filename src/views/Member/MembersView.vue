@@ -156,7 +156,7 @@ const createContactTooltip = (contactName: string) => {
                       (option) => option.value === slotProps.data.status
                     )?.label
                   "
-                  :severity="memberStore.getStatusLabel(slotProps.data.status)"
+                  :severity="memberStore.getStatusTag(slotProps.data.status)"
                   size="small"
                 />
               </template>

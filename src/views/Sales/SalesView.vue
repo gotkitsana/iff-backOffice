@@ -261,7 +261,7 @@ const handleStatusChange = (
   bankInfo?: { bank: string; accountNumber?: string; amount?: number }
 ) => {
   if (selectedSale.value) {
-    selectedSale.value.status = newStatus
+    selectedSale.value.status = newStatus as SellingStatus
 
     // Update bank information if provided
     if (bankInfo) {

@@ -238,14 +238,14 @@ const handleClose = () => {
               }}</span>
             </div>
 
-            <div v-if="saleData?.discount > 0" class="flex justify-between items-center">
+            <div v-if="saleData?.discount && saleData.discount > 0" class="flex justify-between items-center">
               <span class="text-sm text-gray-600">ส่วนลด:</span>
               <span class="text-sm font-semibold text-red-600"
                 >-{{ formatCurrency(saleData.discount) }}</span
               >
             </div>
 
-            <div v-if="saleData?.deposit > 0" class="flex justify-between items-center">
+            <div v-if="saleData?.deposit && saleData.deposit > 0" class="flex justify-between items-center">
               <span class="text-sm text-gray-600">มัดจำ:</span>
               <span class="text-sm font-semibold text-blue-600"
                 >+{{ formatCurrency(saleData.deposit) }}</span

@@ -107,7 +107,7 @@ const getInterestValue = (type: string): string | undefined => {
                   memberStore.memberStatusOptions.find((option) => option.value === data?.status)
                     ?.label || ''
                 "
-                :severity="memberStore.getStatusLabel(data.status)"
+                :severity="memberStore.getStatusTag(data?.status)"
                 size="small"
                 class="font-medium"
               />
