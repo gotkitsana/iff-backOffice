@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import api from '@/utils/axios'
 
 export const useCategoryStore = defineStore('category', () => {
-  async function onGetCategory({ type }: { type: number }) {
-    const { data } = await api.get(`/category?type=${type}`)
+  async function onGetCategory() {
+    const { data } = await api.get(`/category`)
     return data.data
   }
 

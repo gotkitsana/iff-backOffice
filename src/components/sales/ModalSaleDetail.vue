@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Tag, Button } from 'primevue'
-import { useSalesStore, type ISales } from '@/stores/sales/sales';
+import { useSalesStore} from '@/stores/sales/sales';
+import type { ISales } from '@/types/sales';
 import dayjs from 'dayjs';
 
 // Props

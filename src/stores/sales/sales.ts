@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
-import type { IMember } from '../member/member'
+import type { ICreateSalesPayload, ISalesProduct, ISalesProductLabel, IUpdateSalesPayload, SellingLabel, SellingStatus, StatusWorkflow } from '@/types/sales'
 
 export const useSalesStore = defineStore('sales', () => {
   async function onGetSales() {
@@ -13,13 +13,18 @@ export const useSalesStore = defineStore('sales', () => {
     return data.data
   }
 
-  async function onCreateSalesDetail(payload: ICreateSalesPayload) {
+  async function onCreateSales(payload: ICreateSalesPayload) {
     const { data } = await api.post(`/sale`, payload)
     return data
   }
 
-  async function onUpdateSalesDetail(payload: IUpdateSalesPayload) {
+  async function onUpdateSales(payload: IUpdateSalesPayload) {
     const { data } = await api.put(`/sale`, payload)
+    return data
+  }
+
+  async function onDeleteSales(id: string) {
+    const { data } = await api.delete(`/sale?id=${id}`)
     return data
   }
 
@@ -31,7 +36,7 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'อื่นๆ', value: 'other' },
   ]
 
-  const categoryTypes = [
+  const categoryTypes: { label: ISalesProductLabel; value: ISalesProduct }[] = [
     { label: 'ปลา', value: 'fish' },
     { label: 'สารปรับสภาพน้ำ', value: 'microorganism' },
     { label: 'คอนสทรัคชั่น', value: 'construction' },
@@ -184,110 +189,87 @@ export const useSalesStore = defineStore('sales', () => {
     }
   }
 
+  const getCategoryColor = (category: string | null) => {
+    const colorMap: Record<ISalesProduct, string> = {
+      fish: 'text-gray-600',
+      equipment: 'text-green-600',
+      service: 'text-purple-600',
+      construction: 'text-orange-600',
+      medicine: 'text-red-600',
+      food: 'text-pink-600',
+      microorganism: 'text-teal-600',
+    }
+    return colorMap[category as ISalesProduct] || 'text-gray-600'
+  }
+
+  const getCategoryBgColor = (category: string | null) => {
+    const bgColorMap: Record<ISalesProduct, string> = {
+      fish: 'bg-gray-50',
+      equipment: 'bg-green-50',
+      service: 'bg-purple-50',
+      construction: 'bg-orange-50',
+      medicine: 'bg-red-50',
+      food: 'bg-pink-50',
+      microorganism: 'bg-teal-50',
+    }
+    return bgColorMap[category as ISalesProduct] || 'bg-gray-50'
+  }
+
+  const getCategoryBgIcon = (category: string | null) => {
+    const bgColorMap: Record<ISalesProduct, string> = {
+      fish: 'bg-gray-100',
+      equipment: 'bg-green-100',
+      service: 'bg-purple-100',
+      construction: 'bg-orange-100',
+      medicine: 'bg-red-100',
+      food: 'bg-pink-100',
+      microorganism: 'bg-teal-100',
+    }
+    return bgColorMap[category as ISalesProduct] || 'bg-gray-100'
+  }
+
+  const getCategoryBorderColor = (category: string | null) => {
+    const borderColorMap: Record<ISalesProduct, string> = {
+      fish: 'border-gray-200',
+      equipment: 'border-green-200',
+      service: 'border-purple-200',
+      construction: 'border-orange-200',
+      medicine: 'border-red-200',
+      food: 'border-pink-200',
+      microorganism: 'border-teal-200',
+    }
+    return borderColorMap[category as ISalesProduct] || 'border-gray-200'
+  }
+
+  const getCategoryIcon = (category: string | null) => {
+    const iconMap: Record<ISalesProduct, string> = {
+      fish: 'pi-fish',
+      equipment: 'pi-box',
+      service: 'pi-wrench',
+      construction: 'pi-building',
+      medicine: 'pi-plus-circle',
+      food: 'pi-heart',
+      microorganism: 'pi-circle',
+    }
+    return iconMap[category as ISalesProduct] || 'pi-box'
+  }
+
   return {
     onGetSales,
     onGetSalesDetail,
-    onCreateSalesDetail,
-    onUpdateSalesDetail,
+    onCreateSales,
+    onUpdateSales,
+    onDeleteSales,
     categoryTypes,
     sellers,
     sellingStatusOptions,
     getStatusTag,
     paymentMethods,
     statusWorkflow,
+    getCategoryColor,
+    getCategoryBgColor,
+    getCategoryBgIcon,
+    getCategoryBorderColor,
+    getCategoryIcon,
   }
 })
-
-export type ICreateSalesPayload = {
-  item: string // เลขรายการ
-  status: string // สถานะรายการ
-  user: string // ผู้ซื้อ
-  products: { id: string; quantity: number }[] // สินค้า
-  deposit: number // มัดจำ
-  discount: number // ส่วนลด
-  seller: string // ผู้ขาย
-  note: string // หมายเหตุ
-}
-
-export type IUpdateSalesPayload = {
-  _id: string
-  item: string // เลขรายการ
-  status: string // สถานะรายการ
-  user: string // ผู้ซื้อ
-  products: { id: string; quantity: number }[] // สินค้า
-  deposit: number // มัดจำ
-  discount: number // ส่วนลด
-  seller: string // ผู้ขาย
-  note: string // หมายเหตุ
-
-  payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
-  bankCode: string
-  bankAccount: string
-
-  cat: number
-}
-
-export type ISales = {
-  _id: string
-  item: string
-  status: SellingStatus
-  user: {
-    _id: string
-    displayName: string
-    code: string
-    name: string
-    status: 'ci' | 'cs' | 'css'
-    type: string
-  }
-  products: {
-    name: string
-    price: number | null
-    type: number
-    category: string | null
-    id: string
-    quantity: number
-  }[]
-  deposit: number
-  discount: number
-  seller: string
-  deliveryStatus: string
-  note: string
-  cat: number
-  uat: number
-  payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
-  bankCode: string
-  bankAccount: string
-}
-
-export type StatusWorkflow = Record<
-  SellingStatus,
-  {
-    label: SellingLabel
-    color: 'secondary' | 'info' | 'success' | 'warning' | 'danger'
-    icon: string
-    nextSteps: SellingStatus[]
-    description: string
-    stepOrder: number
-  }
->
-
-export type SellingStatus =
-  | 'wait_product'
-  | 'wait_confirm'
-  | 'wait_payment'
-  | 'paid_complete'
-  | 'preparing'
-  | 'shipping'
-  | 'received'
-  | 'damaged'
-
-export type SellingLabel =
-  | 'ระหว่างจัดหา'
-  | 'รอตัดสินใจ'
-  | 'รอชำระเงิน'
-  | 'ชำระเงินเรียบร้อย'
-  | 'จัดเตรียมสินค้า'
-  | 'แพ็คจัดเตรียมสินค้า'
-  | 'ระหว่างขนส่ง'
-  | 'ได้รับสินค้าแล้ว'
-  | 'สินค้าเสียหาย'

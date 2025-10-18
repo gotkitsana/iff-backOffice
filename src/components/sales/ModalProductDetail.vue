@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Button, Card, Tag, Divider } from 'primevue'
-import { useSalesStore, type ISales } from '@/stores/sales/sales'
+import { useSalesStore } from '@/stores/sales/sales'
 import formatCurrency from '@/utils/formatCurrency'
+import type { ISales } from '@/types/sales'
+import CardProductList from './CardProductList.vue'
+import { useQuery } from '@tanstack/vue-query'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 
 // Props
 const props = defineProps<{
@@ -14,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
+
 
 // Stores
 const salesStore = useSalesStore()
@@ -35,65 +40,19 @@ const productTotal = computed(() => {
   }, 0)
 })
 
-const getCategoryIcon = (category: string | null) => {
-  const iconMap: Record<string, string> = {
-    fish: 'pi-fish',
-    equipment: 'pi-box',
-    service: 'pi-wrench',
-    construction: 'pi-building',
-    medicine: 'pi-plus-circle',
-    food: 'pi-heart',
-    microorganism: 'pi-circle',
-    water: 'pi-droplet',
-  }
-  return iconMap[category || ''] || 'pi-box'
-}
-
-const getCategoryColor = (category: string | null) => {
-  const colorMap: Record<string, string> = {
-    fish: 'text-gray-600',
-    equipment: 'text-green-600',
-    service: 'text-purple-600',
-    construction: 'text-orange-600',
-    medicine: 'text-red-600',
-    food: 'text-pink-600',
-    microorganism: 'text-teal-600',
-    water: 'text-blue-600',
-  }
-  return colorMap[category || ''] || 'text-gray-600'
-}
-
-const getCategoryBgColor = (category: string | null) => {
-  const bgColorMap: Record<string, string> = {
-    fish: 'bg-gray-50',
-    equipment: 'bg-green-50',
-    service: 'bg-purple-50',
-    construction: 'bg-orange-50',
-    medicine: 'bg-red-50',
-    food: 'bg-pink-50',
-    microorganism: 'bg-teal-50',
-    water: 'bg-blue-50',
-  }
-  return bgColorMap[category || ''] || 'bg-gray-50'
-}
-
-const getCategoryBorderColor = (category: string | null) => {
-  const borderColorMap: Record<string, string> = {
-    fish: 'border-gray-200',
-    equipment: 'border-green-200',
-    service: 'border-purple-200',
-    construction: 'border-orange-200',
-    medicine: 'border-red-200',
-    food: 'border-pink-200',
-    microorganism: 'border-teal-200',
-    water: 'border-blue-200',
-  }
-  return borderColorMap[category || ''] || 'border-gray-200'
-}
-
 // Handlers
 const handleClose = () => {
   emit('update:visible', false)
+}
+
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
+const handleFindCategory = (id: string | null | undefined) => {
+  if (!id) return ''
+  return categories.value?.find((category) => category._id === id)?.name
 }
 </script>
 
@@ -167,61 +126,15 @@ const handleClose = () => {
         </h4>
 
         <div class="space-y-2">
-          <Card
+          <CardProductList
             v-for="(product, index) in products"
             :key="index"
-            :pt="{ body: 'p-3' }"
-            :class="`${getCategoryBgColor(product.category)} border ${getCategoryBorderColor(
-              product.category
-            )}`"
-          >
-            <template #content>
-              <div class="flex items-center justify-between">
-                <!-- Product Info -->
-                <div class="flex items-center gap-3 flex-1">
-                  <div
-                    class="w-10 h-10 rounded-lg flex items-center justify-center"
-                    :class="getCategoryBgColor(product.category)"
-                  >
-                    <i
-                      :class="`pi ${getCategoryIcon(product.category)} text-lg ${getCategoryColor(
-                        product.category
-                      )}`"
-                    ></i>
-                  </div>
-
-                  <div class="flex-1 min-w-0">
-                    <h5 class="font-semibold text-gray-900 text-sm mb-1">{{ product.name }}</h5>
-                    <div class="flex items-center gap-2">
-                      <Tag
-                        :value="
-                          salesStore.categoryTypes.find((t) => t.value === product.category)
-                            ?.label ||
-                          product.category ||
-                          'ไม่ระบุ'
-                        "
-                        severity="secondary"
-                        size="small"
-                        class="text-xs"
-                      />
-                      <span class="text-xs text-gray-500">ID: {{ product.id }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Quantity & Price -->
-                <div class="text-right">
-                  <div class="text-sm font-semibold text-gray-900">{{ product.quantity }} ชิ้น</div>
-                  <div class="text-xs text-gray-500">
-                    ราคา: {{ formatCurrency(product.price || 0) }} / ชิ้น
-                  </div>
-                  <div class="text-sm font-bold text-green-600 mt-1">
-                    {{ formatCurrency((product.price || 0) * product.quantity) }}
-                  </div>
-                </div>
-              </div>
-            </template>
-          </Card>
+            :name="product.name || ''"
+            :quantity="product.quantity || 0"
+            :price="product.price || 0"
+            :detail="''"
+            :category="handleFindCategory(product.category) || ''"
+          />
         </div>
       </div>
 
@@ -238,14 +151,20 @@ const handleClose = () => {
               }}</span>
             </div>
 
-            <div v-if="saleData?.discount && saleData.discount > 0" class="flex justify-between items-center">
+            <div
+              v-if="saleData?.discount && saleData.discount > 0"
+              class="flex justify-between items-center"
+            >
               <span class="text-sm text-gray-600">ส่วนลด:</span>
               <span class="text-sm font-semibold text-red-600"
                 >-{{ formatCurrency(saleData.discount) }}</span
               >
             </div>
 
-            <div v-if="saleData?.deposit && saleData.deposit > 0" class="flex justify-between items-center">
+            <div
+              v-if="saleData?.deposit && saleData.deposit > 0"
+              class="flex justify-between items-center"
+            >
               <span class="text-sm text-gray-600">มัดจำ:</span>
               <span class="text-sm font-semibold text-blue-600"
                 >+{{ formatCurrency(saleData.deposit) }}</span

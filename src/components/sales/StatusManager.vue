@@ -2,7 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { Dialog, Button, Tag, Card, InputText, Textarea } from 'primevue'
 import BankData from '../../config/BankData'
-import { useSalesStore, type StatusWorkflow, type IUpdateSalesPayload } from '@/stores/sales/sales'
+import { useSalesStore } from '@/stores/sales/sales'
+import type { StatusWorkflow, IUpdateSalesPayload, SellingStatus } from '@/types/sales'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 
@@ -49,7 +50,7 @@ const currentStatusInfo = computed(() => {
 
 const availableNextSteps = computed(() => {
   if (!currentStatusInfo.value) return []
-  return currentStatusInfo.value.nextSteps.map((status) => ({
+  return currentStatusInfo.value.nextSteps.map((status: SellingStatus) => ({
     value: status,
     ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
   }))
@@ -156,7 +157,7 @@ const getStatusColor = (status: string) => {
 
 const salesStore = useSalesStore()
 const { mutate: updateSalesDetail } = useMutation({
-  mutationFn: async (payload: IUpdateSalesPayload) => await salesStore.onUpdateSalesDetail(payload),
+  mutationFn: async (payload: IUpdateSalesPayload) => await salesStore.onUpdateSales(payload),
   onSuccess: (data: any) => {
     console.log(data)
     toast.success('เปลี่ยนสถานะการขายสำเร็จ')

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { Dialog, InputText, Textarea, Select, InputNumber, Button } from 'primevue'
+import { ref, computed } from 'vue'
+import { Dialog, Textarea, Select, InputNumber, Button, Card, Tag } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useMemberStore, type IMember } from '@/stores/member/member'
-import { useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import formatCurrency from '@/utils/formatCurrency'
-import { useSalesStore, type ICreateSalesPayload } from '@/stores/sales/sales'
-import type { filter } from 'lodash-es'
+import { useSalesStore } from '@/stores/sales/sales'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import type { ICreateSalesPayload } from '@/types/sales'
+import CardProductList from './CardProductList.vue'
 
 // Props
 defineProps<{
@@ -23,13 +25,14 @@ const emit = defineEmits<{
 const productStore = useProductStore()
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
+const categoryStore = useCategoryStore()
 
 // Form data
 const saleForm = ref<ICreateSalesPayload>({
   item: '',
   status: '',
   user: '',
-  products: [{ id: '', quantity: 0 }],
+  products: [{ id: '', quantity: 1 }],
   deposit: 0,
   discount: 0,
   seller: '',
@@ -47,6 +50,16 @@ const { data: members, isLoading: membersLoading } = useQuery<IMember[]>({
   queryFn: () => memberStore.onGetMembers(),
 })
 
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
+
+const handleFindCategory = (id: string | null | undefined) => {
+  if (!id) return ''
+  return categories.value?.find((category) => category._id === id)?.name
+}
+
 // Computed
 const availableProducts = computed(() => {
   if (!products.value) return []
@@ -60,9 +73,47 @@ const productOptions = computed(() => {
   }))
 })
 
+const getProductOptionsForIndex = (currentIndex: number) => {
+  if (!availableProducts.value) return []
+
+  // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
+  const selectedProductIds = saleForm.value.products
+    .map((p, index) => index !== currentIndex ? p.id : '')
+    .filter(id => id !== '')
+
+  // กรองสินค้าที่ยังไม่ได้เลือก
+  const unselectedProducts = availableProducts.value.filter(
+    product => !selectedProductIds.includes(product._id)
+  )
+
+  return unselectedProducts.map((product) => ({
+    label: `${product.name} (รหัส: ${product.sku})`,
+    value: product._id,
+  }))
+}
+
 const selectedProductDetails = computed(() => {
-  if (!saleForm.value.products[0].id || !availableProducts.value) return null
-  return availableProducts.value.find((p) => p._id === saleForm.value.products[0].id)
+  return saleForm.value.products.map((product: { id: string; quantity: number }) => {
+    if (!product.id || !availableProducts.value) return null
+    return {
+      ...availableProducts.value.find((p) => p._id === product.id),
+      quantity: product.quantity,
+    }
+  })
+})
+
+const totalAmount = computed(() => {
+  return saleForm.value.products.reduce((sum, product) => {
+    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    if (productDetail && productDetail.price) {
+      return sum + productDetail.price * product.quantity
+    }
+    return sum
+  }, 0)
+})
+
+const netAmount = computed(() => {
+  return totalAmount.value - saleForm.value.discount
 })
 
 const memberOptions = computed(() => {
@@ -81,22 +132,76 @@ const selectedMemberDetails = computed(() => {
   return members.value.find((m) => m._id === saleForm.value.user)
 })
 
+// Product management functions
+const addProduct = () => {
+  if (saleForm.value.products.length < 10) {
+    saleForm.value.products.push({ id: '', quantity: 1 })
+  } else {
+    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
+  }
+}
+
+const removeProduct = (index: number) => {
+  if (saleForm.value.products.length > 1) {
+    saleForm.value.products.splice(index, 1)
+  } else {
+    toast.warning('ต้องมีสินค้าอย่างน้อย 1 รายการ')
+  }
+}
+
+const isProductValid = (product: { id: string; quantity: number }) => {
+  return product.id && product.quantity > 0
+}
+
 // Handlers
 const handleSubmit = () => {
   isSubmitting.value = true
-  if (
-    !saleForm.value.user ||
-    !saleForm.value.products[0].id ||
-    !saleForm.value.products[0].quantity ||
-    !saleForm.value.seller ||
-    !saleForm.value.status
-  ) {
-    toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
+
+  // Validation
+  if (!saleForm.value.user) {
+    toast.error('กรุณาเลือกลูกค้า')
     return
   }
 
-  toast.success('เพิ่มข้อมูลการขายสำเร็จ')
+  if (!saleForm.value.status) {
+    toast.error('กรุณาเลือกสถานะรายการขาย')
+    return
+  }
+
+  if (!saleForm.value.seller) {
+    toast.error('กรุณาเลือกผู้ขาย')
+    return
+  }
+
+  // Check if all products are valid
+  const invalidProducts = saleForm.value.products.filter((p) => !isProductValid(p))
+  if (invalidProducts.length > 0) {
+    toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
+    return
+  }
+
+  createSale({
+    ...saleForm.value,
+    item: `SALE-${Date.now().toString().slice(-8)}`,
+  })
 }
+
+const queryClient = useQueryClient()
+const { mutate: createSale, isPending: isCreatingSale } = useMutation({
+  mutationFn: (sale: ICreateSalesPayload) => salesStore.onCreateSales(sale),
+  onSuccess: (data: any) => {
+    if(data.data) {
+      toast.success('เพิ่มข้อมูลการขายสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+      handleClose()
+    } else {
+      toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+  },
+})
 
 const isSubmitting = ref(false)
 const handleClose = () => {
@@ -110,7 +215,7 @@ const resetForm = () => {
     item: '',
     status: '',
     user: '',
-    products: [{ id: '', quantity: 0 }],
+    products: [{ id: '', quantity: 1 }],
     deposit: 0,
     discount: 0,
     seller: '',
@@ -237,80 +342,91 @@ const resetForm = () => {
 
       <!-- Product Information -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Select
-              v-model="saleForm.products[0].id"
-              :options="productOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกสินค้าที่ต้องการขาย"
-              fluid
-              size="small"
-              :invalid="!saleForm.products[0].id && isSubmitting"
-            />
-            <small v-if="!saleForm.products[0].id && isSubmitting" class="text-red-500"
-              >กรุณาเลือกสินค้า</small
-            >
-          </div>
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-box text-blue-600"></i>
+            รายการสินค้า
+          </h4>
+          <Button
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addProduct"
+            :disabled="saleForm.products.length >= 10"
+          />
+        </div>
 
-          <div>
-            <InputNumber
-              v-model="saleForm.products[0].quantity"
-              :min="1"
-              :max="10"
-              fluid
-              size="small"
-              placeholder="ระบุจำนวนสินค้า"
-              :invalid="!saleForm.products[0].quantity && isSubmitting"
-            />
-            <small v-if="!saleForm.products[0].quantity && isSubmitting" class="text-red-500"
-              >กรุณากรอกจำนวนสินค้า</small
-            >
-          </div>
-
+        <div class="space-y-4">
           <div
-            v-if="selectedProductDetails"
-            class="p-4 bg-blue-50 border border-blue-200 rounded-lg md:col-span-2 flex justify-between gap-x-4"
+            v-for="(product, index) in saleForm.products"
+            :key="index"
+            class="p-3 bg-gray-50 border border-gray-200 rounded-xl"
           >
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-box text-blue-600 text-xl"></i>
+            <div class="flex items-center justify-between mb-2">
+              <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
+              <Button
+                v-if="saleForm.products.length > 1"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                text
+                rounded
+                @click="removeProduct(index)"
+                v-tooltip.top="'ลบสินค้านี้'"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <Select
+                  v-model="product.id"
+                  :options="getProductOptionsForIndex(index)"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกสินค้าที่ต้องการขาย"
+                  fluid
+                  size="small"
+                  :invalid="!product.id && isSubmitting"
+                  showClear
+                />
+                <small v-if="!product.id && isSubmitting" class="text-red-500"
+                  >กรุณาเลือกสินค้า</small
+                >
               </div>
-              <div class="flex-1">
-                <h5 class="font-semibold text-gray-900">ชื่อสินค้า: {{ selectedProductDetails.name }}</h5>
-                <p class="text-xs text-gray-500 mt-1">รายละเอียด: {{ selectedProductDetails.detail }}</p>
+
+              <div>
+                <InputNumber
+                  v-model="product.quantity"
+                  :min="1"
+                  :max="100"
+                  fluid
+                  size="small"
+                  placeholder="ระบุจำนวนสินค้า"
+                  :invalid="!product.quantity && isSubmitting"
+                />
+                <small v-if="!product.quantity && isSubmitting" class="text-red-500"
+                  >กรุณากรอกจำนวนสินค้า</small
+                >
               </div>
             </div>
-            <div>
-              <div class="text-right">
-                <p class="text-gray-500 text-sm">
-                  ราคาต่อหน่วย:
-                  {{
-                    selectedProductDetails.price
-                      ? formatCurrency(selectedProductDetails.price)
-                      : 'ไม่ระบุราคา'
-                  }}
-                </p>
-                <p class="mt-1 font-[500]! text-green-600">
-                  ราคารวม:
-                  {{
-                    selectedProductDetails.price
-                      ? formatCurrency(selectedProductDetails.price * saleForm.products[0].quantity)
-                      : 'ไม่ระบุราคา'
-                  }}
-                </p>
-              </div>
-            </div>
+
+            <CardProductList
+              v-if="selectedProductDetails[index]"
+              :name="selectedProductDetails[index]?.name || ''"
+              :quantity="selectedProductDetails[index]?.quantity || 0"
+              :price="selectedProductDetails[index]?.price || 0"
+              :detail="selectedProductDetails[index]?.detail || ''"
+              :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+            />
           </div>
         </div>
-      </div>
 
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+        >
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-wallet mr-1.5 !text-sm"></i>
               มัดจำ (บาท)
             </label>
             <InputNumber
@@ -327,7 +443,6 @@ const resetForm = () => {
 
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-percentage mr-1.5 !text-sm"></i>
               ส่วนลด (บาท)
             </label>
             <InputNumber
@@ -340,6 +455,30 @@ const resetForm = () => {
               size="small"
               placeholder="ระบุส่วนลด"
             />
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-calculator text-green-600"></i>
+              <span class="font-semibold text-gray-800">สรุปยอดเงิน</span>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-600">
+                มูลค่าสินค้า: {{ formatCurrency(totalAmount) }}
+              </div>
+              <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-0.5">
+                ส่วนลด: {{ formatCurrency(saleForm.discount) }}
+              </div>
+              <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
+                มัดจำ: {{ formatCurrency(saleForm.deposit) }}
+              </div>
+              <div class="font-[500]! text-green-600 border-t border-green-300 pt-1 mt-1">
+                ยอดสุทธิ: {{ formatCurrency(netAmount) }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -374,6 +513,7 @@ const resetForm = () => {
           label="บันทึกข้อมูล"
           icon="pi pi-check"
           @click="handleSubmit"
+          :loading="isCreatingSale"
           severity="success"
           size="small"
         />

@@ -10,8 +10,9 @@ import ModalProductDetail from '@/components/sales/ModalProductDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
-import { useSalesStore, type ISales, type SellingStatus } from '@/stores/sales/sales'
+import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
+import type { ISales, ISalesProduct, SellingStatus } from '@/types/sales'
 
 // Stores
 const salesStore = useSalesStore()
@@ -38,7 +39,6 @@ const filteredSales = computed(() => {
   }
   return salesData.value?.filter((sale) => sale.status === activeTab.value) || []
 })
-console.log(filteredSales)
 
 // Tab counts
 const allCount = computed(() => salesData.value?.length || 0)
@@ -600,7 +600,7 @@ const handleStatusChange = (
             </template>
           </Column>
 
-          <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[5.25rem]' }">
+          <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
             <template #body="slotProps">
               <span
                 class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm uppercase"
