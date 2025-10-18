@@ -31,7 +31,7 @@ const totalAmount = computed(() => {
   const productTotal = products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0)
-  return productTotal - props.saleData.discount + props.saleData.deposit
+  return productTotal - props.saleData.discount
 })
 
 const productTotal = computed(() => {
@@ -157,7 +157,7 @@ const handleFindCategory = (id: string | null | undefined) => {
             >
               <span class="text-sm text-gray-600">ส่วนลด:</span>
               <span class="text-sm font-semibold text-red-600"
-                >-{{ formatCurrency(saleData.discount) }}</span
+                >{{ formatCurrency(saleData.discount) }}</span
               >
             </div>
 
@@ -167,7 +167,7 @@ const handleFindCategory = (id: string | null | undefined) => {
             >
               <span class="text-sm text-gray-600">มัดจำ:</span>
               <span class="text-sm font-semibold text-blue-600"
-                >+{{ formatCurrency(saleData.deposit) }}</span
+                >{{ formatCurrency(saleData.deposit) }}</span
               >
             </div>
 
