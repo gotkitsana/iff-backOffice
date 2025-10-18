@@ -216,45 +216,6 @@ const getSaleTotalAmount = (sale: ISales) => {
   return netAmount < 0 ? 0 : netAmount
 }
 
-const getSaleProductCount = (sale: ISales) => {
-  return sale.products.reduce((sum, product) => sum + product.quantity, 0)
-}
-
-const getSaleCategories = (sale: ISales) => {
-  const categories = [
-    ...new Set(sale.products.map((p) => p.category).filter((cat): cat is string => cat !== null)),
-  ]
-  return categories
-}
-
-const getCategoryIcon = (category: string | null) => {
-  const iconMap: Record<string, string> = {
-    fish: 'pi-fish',
-    equipment: 'pi-box',
-    service: 'pi-wrench',
-    construction: 'pi-building',
-    medicine: 'pi-plus-circle',
-    food: 'pi-heart',
-    microorganism: 'pi-circle',
-    water: 'pi-droplet',
-  }
-  return iconMap[category || ''] || 'pi-box'
-}
-
-const getCategoryColor = (category: string | null) => {
-  const colorMap: Record<string, string> = {
-    fish: 'text-gray-600',
-    equipment: 'text-green-600',
-    service: 'text-purple-600',
-    construction: 'text-orange-600',
-    medicine: 'text-red-600',
-    food: 'text-pink-600',
-    microorganism: 'text-teal-600',
-    water: 'text-blue-600',
-  }
-  return colorMap[category || ''] || 'text-gray-600'
-}
-
 // Modal functions
 const openAddModal = () => {
   showAddModal.value = true
@@ -335,7 +296,7 @@ const handleStatusChange = (
           </div>
           <div class="hidden md:block">
             <div class="text-right">
-              <p class="text-3xl font-bold">{{ formatCurrency(totalRevenue) }}</p>
+              <p class="text-3xl font-semibold!">{{ formatCurrency(totalRevenue) }}</p>
               <p class="text-blue-100">ยอดขายรวมทั้งหมด</p>
             </div>
           </div>
@@ -677,9 +638,9 @@ const handleStatusChange = (
               <p
                 class="text-sm capitalize font-[500]!"
                 :class="{
-                  'text-gray-500': slotProps.data.user.status == 'ci',
-                  'text-green-500': slotProps.data.user.status == 'cs',
-                  'text-yellow-600': slotProps.data.user.status == 'css',
+                  'text-gray-500': slotProps.data.user?.status == 'ci',
+                  'text-green-500': slotProps.data.user?.status == 'cs',
+                  'text-yellow-600': slotProps.data.user?.status == 'css',
                 }"
               >
                 {{ slotProps.data.user?.code }}
@@ -696,10 +657,10 @@ const handleStatusChange = (
               <Tag
                 :value="
                   memberStore.memberStatusOptions.find(
-                    (s) => s.value === slotProps.data.user.status
+                    (s) => s.value === slotProps.data.user?.status
                   )?.label
                 "
-                :severity="memberStore.getStatusTag(slotProps.data.user.status)"
+                :severity="memberStore.getStatusTag(slotProps.data.user?.status)"
                 size="small"
               />
             </template>
@@ -870,21 +831,24 @@ const handleStatusChange = (
     </Card>
   </div>
 
-  <!-- Modal Components -->
+  <!-- เพิ่มรายการขาย -->
   <ModalAddSale v-model:visible="showAddModal" />
 
+  <!-- แก้ไขรายการขาย -->
   <ModalEditSale
     v-model:visible="showEditModal"
     :sale-data="selectedSale"
     @sale-updated="handleSaleUpdated"
   />
 
+  <!-- รายละเอียดรายการขาย -->
   <ModalSaleDetail
     v-if="selectedSale"
     v-model:visible="showDetailModal"
     :sale-data="selectedSale"
   />
 
+  <!-- จัดการสถานะการขาย -->
   <StatusManager
     v-model:visible="showStatusManager"
     :current-status="selectedSale?.status || ''"
@@ -892,6 +856,7 @@ const handleStatusChange = (
     @status-changed="handleStatusChange"
   />
 
+  <!-- รายละเอียดสินค้า -->
   <ModalProductDetail
     v-if="selectedSale"
     v-model:visible="showProductDetailModal"

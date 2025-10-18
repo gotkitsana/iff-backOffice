@@ -33,7 +33,7 @@ export const useSalesStore = defineStore('sales', () => {
 
   const categoryTypes = [
     { label: 'ปลา', value: 'fish' },
-    { label: 'สารปรับสภาพน้ำ', value: 'water' },
+    { label: 'สารปรับสภาพน้ำ', value: 'microorganism' },
     { label: 'คอนสทรัคชั่น', value: 'construction' },
     { label: 'บริการ', value: 'service' },
     { label: 'อาหาร', value: 'food' },
