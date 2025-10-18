@@ -22,7 +22,15 @@ export const useSalesStore = defineStore('sales', () => {
     return data
   }
 
-  const productTypes = [
+  const paymentMethods = [
+    { label: 'เงินสด', value: 'cash' },
+    { label: 'โอน', value: 'transfer' },
+    { label: 'บัตรเครดิต', value: 'credit' },
+    { label: 'QR PromptPay', value: 'promptpay' },
+    { label: 'อื่นๆ', value: 'other' },
+  ]
+
+  const categoryTypes = [
     { label: 'ปลา', value: 'fish' },
     { label: 'สารปรับสภาพน้ำ', value: 'water' },
     { label: 'คอนสทรัคชั่น', value: 'construction' },
@@ -32,12 +40,6 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'อุปกรณ์', value: 'equipment' },
   ]
 
-  const paymentMethods = [
-    { label: 'SCB', value: 'SCB' },
-    { label: 'KBANK', value: 'KBANK' },
-    { label: 'BBL', value: 'BBL' },
-  ]
-
   const sellers = [
     { label: 'Bert', value: 'Bert' },
     { label: 'Little', value: 'Little' },
@@ -45,14 +47,14 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'Sale02', value: 'Sale02' },
   ]
 
-  const sellingStatusOptions = [
-    { label: 'รอจัดหา', value: 'wait_product' },
-    { label: 'รอยืนยัน', value: 'wait_confirm' },
+  const sellingStatusOptions: { label: string; value: SellingStatus }[] = [
+    { label: 'ระหว่างจัดหา', value: 'wait_product' },
+    { label: 'รอตัดสินใจ', value: 'wait_confirm' },
     { label: 'รอชำระเงิน', value: 'wait_payment' },
     { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
-    { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', value: 'pack_and_ship' },
-    { label: 'อยู่ระหว่างขนส่ง', value: 'shipping' },
-    { label: 'ได้รับสินค้าเรียบร้อย', value: 'received' },
+    { label: 'ระหว่างรอจัดส่ง', value: 'preparing' },
+    { label: 'ระหว่างขนส่ง', value: 'shipping' },
+    { label: 'ได้รับสินค้าแล้ว', value: 'received' },
     { label: 'สินค้าเสียหาย', value: 'damaged' },
   ]
 
@@ -98,18 +100,17 @@ export const useSalesStore = defineStore('sales', () => {
     }
   }
 
-
   return {
     onGetSales,
     onGetSalesDetail,
     onCreateSalesDetail,
     onUpdateSalesDetail,
-    productTypes,
-    paymentMethods,
+    categoryTypes,
     sellers,
     sellingStatusOptions,
     getPaymentMethodTag,
     getStatusTag,
+    paymentMethods,
   }
 })
 
@@ -117,7 +118,7 @@ export type ICreateSalesPayload = {
   item: string
   status: string
   user: string
-  product: { id: string; quantity: number }[]
+  products: { id: string; quantity: number }[]
   deposit: number
   discount: number
   payment: string
@@ -130,7 +131,7 @@ export type IUpdateSalesPayload = {
   item: string
   status: string
   user: string
-  product: { id: string; quantity: number }[]
+  products: { id: string; quantity: number }[]
   quantity: number
   deposit: number
   discount: number
@@ -139,6 +140,8 @@ export type IUpdateSalesPayload = {
   deliveryStatus: string
   note: string
   cat: number
+  bankCode: string
+  bankAccount: string
   _id: string
 }
 
@@ -146,7 +149,7 @@ export type ISales = {
   _id: string
   item: string
   status: string
-  user: string
+  user: string | null
   products: [
     {
       name: string
@@ -159,12 +162,15 @@ export type ISales = {
   ]
   deposit: number
   discount: number
-  payment: string
   seller: string
   deliveryStatus: string
   note: string
   cat: number
   uat: number
-  __v: number
+  payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
+  bankCode: string
+  bankAccount: string
 }
 
+
+export type SellingStatus = 'wait_product' | 'wait_confirm' | 'wait_payment' | 'paid_complete' | 'preparing' | 'shipping' | 'received' | 'damaged'

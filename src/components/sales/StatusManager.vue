@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Dialog, Button, Tag, Card } from 'primevue'
-import { useSalesStore } from '@/stores/sales/sales'
+import { ref, computed, watch } from 'vue'
+import { Dialog, Button, Tag, Card, InputText, Textarea } from 'primevue'
+import BankData from '../../config/BankData'
+import { useSalesStore, type ISales, type IUpdateSalesPayload } from '@/stores/sales/sales'
+import { useMutation } from '@tanstack/vue-query'
+import { toast } from 'vue3-toastify'
 
 // Props
 const props = defineProps<{
@@ -13,48 +16,83 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'status-changed': [newStatus: string]
+  'status-changed': [
+    newStatus: string,
+    bankInfo?: { bank: string; accountNumber?: string; amount?: number }
+  ]
 }>()
 
-// Stores
-const salesStore = useSalesStore()
+// Local state
+const selectedBank = ref('')
+const accountNumber = ref('')
+const paymentAmount = ref<string>('')
+const paymentNote = ref('')
+const showBankSelection = ref(false)
 
-// Status workflow configuration
+// Status workflow configuration with step order
 const statusWorkflow = {
   wait_product: {
     label: 'รอจัดหา',
     color: 'warning',
     icon: 'pi pi-clock',
-    nextSteps: ['wait_confirm'],
+    nextSteps: [
+      'wait_confirm',
+      'wait_payment',
+      'paid_complete',
+      'pack_and_ship',
+      'shipping',
+      'received',
+      'damaged',
+    ],
     description: 'กำลังจัดหาสินค้าตามที่ลูกค้าต้องการ',
+    stepOrder: 1,
   },
   wait_confirm: {
     label: 'รอยืนยัน',
     color: 'info',
     icon: 'pi pi-check-circle',
-    nextSteps: ['wait_payment', 'wait_product'],
+    nextSteps: [
+      'wait_payment',
+      'paid_complete',
+      'pack_and_ship',
+      'shipping',
+      'received',
+      'damaged',
+      'wait_product',
+    ],
     description: 'รอการยืนยันจากลูกค้า',
+    stepOrder: 2,
   },
   wait_payment: {
     label: 'รอชำระเงิน',
     color: 'warning',
     icon: 'pi pi-credit-card',
-    nextSteps: ['paid_complete', 'wait_confirm'],
+    nextSteps: [
+      'paid_complete',
+      'pack_and_ship',
+      'shipping',
+      'received',
+      'damaged',
+      'wait_confirm',
+    ],
     description: 'รอการชำระเงินจากลูกค้า',
+    stepOrder: 3,
   },
   paid_complete: {
     label: 'ชำระเงินเรียบร้อย',
     color: 'success',
     icon: 'pi pi-check',
-    nextSteps: ['pack_and_ship'],
+    nextSteps: ['pack_and_ship', 'shipping', 'received', 'damaged'],
     description: 'การชำระเงินเสร็จสิ้นแล้ว',
+    stepOrder: 4,
   },
   pack_and_ship: {
     label: 'แพ็คเตรียมสินค้ารอจัดส่ง',
     color: 'info',
     icon: 'pi pi-box',
-    nextSteps: ['shipping'],
+    nextSteps: ['shipping', 'received', 'damaged'],
     description: 'กำลังแพ็คและเตรียมสินค้าสำหรับจัดส่ง',
+    stepOrder: 5,
   },
   shipping: {
     label: 'อยู่ระหว่างขนส่ง',
@@ -62,6 +100,7 @@ const statusWorkflow = {
     icon: 'pi pi-truck',
     nextSteps: ['received', 'damaged'],
     description: 'สินค้าอยู่ระหว่างการขนส่ง',
+    stepOrder: 6,
   },
   received: {
     label: 'ได้รับสินค้าเรียบร้อย',
@@ -69,15 +108,27 @@ const statusWorkflow = {
     icon: 'pi pi-check-circle',
     nextSteps: [],
     description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
+    stepOrder: 7,
   },
   damaged: {
     label: 'สินค้าเสียหาย',
     color: 'danger',
     icon: 'pi pi-times-circle',
-    nextSteps: ['wait_product'],
+    nextSteps: ['wait_product', 'wait_confirm', 'wait_payment'],
     description: 'สินค้าเสียหายระหว่างการขนส่ง',
+    stepOrder: 8,
   },
 }
+
+// Bank options for payment
+const bankOptions = computed(() => {
+  return Object.entries(BankData).map(([key, bank]) => ({
+    value: key,
+    label: (bank as { name: string; icon: string; color: string }).name,
+    icon: (bank as { name: string; icon: string; color: string }).icon,
+    color: (bank as { name: string; icon: string; color: string }).color,
+  }))
+})
 
 // Computed
 const currentStatusInfo = computed(() => {
@@ -92,21 +143,115 @@ const availableNextSteps = computed(() => {
   }))
 })
 
+// Step indicator logic
+const allSteps = computed(() => {
+  return Object.entries(statusWorkflow)
+    .sort(([, a], [, b]) => a.stepOrder - b.stepOrder)
+    .map(([key, status]) => ({
+      key,
+      ...status,
+    }))
+})
+
+const currentStepIndex = computed(() => {
+  return allSteps.value.findIndex((step) => step.key === props.currentStatus)
+})
+
+const isStepCompleted = (stepIndex: number) => {
+  return stepIndex < currentStepIndex.value
+}
+
+const isStepCurrent = (stepIndex: number) => {
+  return stepIndex === currentStepIndex.value
+}
+
+// Check if bank selection is required
+const requiresBankSelection = (status: string) => {
+  // ต้องเลือกบัญชีธนาคารของบริษัทเมื่อจะผ่านขั้นตอน "รอชำระเงิน"
+  // หรือเมื่อเปลี่ยนไปยังสถานะที่เกี่ยวข้องกับการชำระเงิน
+  return status === 'wait_payment' || status === 'paid_complete'
+}
+
+// Check if the status change will pass through "wait_payment" step
+const willPassThroughWaitPayment = (newStatus: string) => {
+  const currentStep = currentStepIndex.value
+  const newStep = allSteps.value.findIndex((step) => step.key === newStatus)
+
+  // ถ้าขั้นตอนใหม่อยู่หลังขั้นตอน "รอชำระเงิน" และขั้นตอนปัจจุบันอยู่ก่อนขั้นตอน "รอชำระเงิน"
+  const waitPaymentStepIndex = allSteps.value.findIndex((step) => step.key === 'wait_payment')
+
+  return currentStep < waitPaymentStepIndex && newStep > waitPaymentStepIndex
+}
+
 // Handlers
+const targetStatus = ref('')
+
 const handleStatusChange = (newStatus: string) => {
-  emit('status-changed', newStatus)
-  emit('update:visible', false)
+  const needsBankSelection =
+    requiresBankSelection(newStatus) || willPassThroughWaitPayment(newStatus)
+
+  if (needsBankSelection) {
+    showBankSelection.value = true
+    targetStatus.value = newStatus
+  } else {
+    emit('status-changed', newStatus)
+    emit('update:visible', false)
+  }
+}
+
+const handleBankSelection = () => {
+  if (selectedBank.value && accountNumber.value && targetStatus.value) {
+    const bankInfo = {
+      bank: selectedBank.value,
+      accountNumber: accountNumber.value,
+      amount: paymentAmount.value ? parseFloat(paymentAmount.value) : undefined,
+    }
+    emit('status-changed', targetStatus.value, bankInfo)
+    emit('update:visible', false)
+    resetForm()
+  }
 }
 
 const handleClose = () => {
   emit('update:visible', false)
+  resetForm()
 }
+
+const resetForm = () => {
+  selectedBank.value = ''
+  accountNumber.value = ''
+  paymentAmount.value = ''
+  paymentNote.value = ''
+  showBankSelection.value = false
+  targetStatus.value = ''
+}
+
+// Watch for dialog visibility changes
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (!newVal) {
+      resetForm()
+    }
+  }
+)
 
 // Get status color for Tag component
 const getStatusColor = (status: string) => {
   const statusInfo = statusWorkflow[status as keyof typeof statusWorkflow]
   return statusInfo?.color || 'secondary'
 }
+
+const salesStore = useSalesStore()
+const { mutate: updateSalesDetail } = useMutation({
+  mutationFn: async (payload: IUpdateSalesPayload) => await salesStore.onUpdateSalesDetail(payload),
+  onSuccess: (data: any) => {
+    console.log(data)
+    toast.success('เปลี่ยนสถานะการขายสำเร็จ')
+    emit('update:visible', false)
+    resetForm()
+  },
+})
 </script>
 
 <template>
@@ -136,6 +281,35 @@ const getStatusColor = (status: string) => {
     </template>
 
     <div class="space-y-6">
+      <!-- Step Indicator -->
+      <div class="bg-white rounded-lg p-4 border">
+        <h4 class="font-semibold text-gray-900 mb-4">ขั้นตอนการขาย</h4>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="(step, index) in allSteps"
+            :key="step.key"
+            :class="`flex items-center gap-2 px-3 py-2 rounded-full text-sm transition-all duration-200 ${
+              isStepCompleted(index)
+                ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                : isStepCurrent(index)
+                ? 'bg-blue-200 text-blue-800 border-2 border-blue-400 font-medium'
+                : 'bg-gray-100 text-gray-500 border border-gray-200'
+            }`"
+          >
+            <i
+              :class="`${step.icon} ${
+                isStepCompleted(index)
+                  ? 'text-blue-600'
+                  : isStepCurrent(index)
+                  ? 'text-blue-700'
+                  : 'text-gray-400'
+              }`"
+            ></i>
+            <span>{{ step.label }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Current Status -->
       <Card :pt="{ body: 'p-4' }" class="bg-gray-50">
         <template #content>
@@ -178,7 +352,7 @@ const getStatusColor = (status: string) => {
       </Card>
 
       <!-- Available Next Steps -->
-      <div v-if="availableNextSteps.length > 0">
+      <div v-if="availableNextSteps.length > 0 && !showBankSelection">
         <h4 class="font-semibold text-gray-900 mb-3">เปลี่ยนเป็นสถานะ:</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card
@@ -216,6 +390,17 @@ const getStatusColor = (status: string) => {
                 <div class="flex-1">
                   <h5 class="font-medium text-gray-900">{{ step.label }}</h5>
                   <p class="text-xs text-gray-600 mt-1">{{ step.description }}</p>
+                  <div
+                    v-if="
+                      requiresBankSelection(step.value) || willPassThroughWaitPayment(step.value)
+                    "
+                    class="mt-2"
+                  >
+                    <span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                      <i class="pi pi-credit-card mr-1"></i>
+                      ต้องเลือกบัญชีธนาคารของบริษัท
+                    </span>
+                  </div>
                 </div>
                 <i class="pi pi-arrow-right text-gray-400"></i>
               </div>
@@ -224,8 +409,105 @@ const getStatusColor = (status: string) => {
         </div>
       </div>
 
+      <!-- Bank Selection Modal -->
+      <div v-if="showBankSelection" class="space-y-4">
+        <Card :pt="{ body: 'p-4' }" class="bg-blue-50 border-blue-200">
+          <template #content>
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-credit-card text-blue-600 text-lg"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-blue-900">ข้อมูลการชำระเงิน</h4>
+                <p class="text-sm text-blue-700">
+                  {{
+                    targetStatus === 'wait_payment'
+                      ? 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าจะโอนเงินมา'
+                      : willPassThroughWaitPayment(targetStatus)
+                      ? 'เลือกบัญชีธนาคารของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
+                      : 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Bank Selection -->
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700">
+                {{
+                  targetStatus === 'wait_payment'
+                    ? 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าจะโอนเงินมา'
+                    : willPassThroughWaitPayment(targetStatus)
+                    ? 'เลือกบัญชีธนาคารของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
+                    : 'เลือกบัญชีธนาคารของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
+                }}
+              </label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div
+                  v-for="bank in bankOptions"
+                  :key="bank.value"
+                  :class="`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    selectedBank === bank.value
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`"
+                  @click="selectedBank = bank.value"
+                >
+                  <div class="flex items-center gap-2">
+                    <img :src="bank.icon" :alt="bank.label" class="w-6 h-6" />
+                    <span class="text-sm font-medium">{{ bank.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Number -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">
+                {{
+                  targetStatus === 'wait_payment'
+                    ? 'หมายเลขบัญชีของบริษัทที่ลูกค้าจะโอนเงินมา'
+                    : willPassThroughWaitPayment(targetStatus)
+                    ? 'หมายเลขบัญชีของบริษัทเพื่อผ่านขั้นตอนการชำระเงิน'
+                    : 'หมายเลขบัญชีของบริษัทที่ลูกค้าโอนเงินมาแล้ว'
+                }}
+              </label>
+              <InputText v-model="accountNumber" placeholder="กรอกหมายเลขบัญชี" class="w-full" />
+            </div>
+
+            <!-- Payment Amount -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
+              <InputText
+                v-model="paymentAmount"
+                type="number"
+                placeholder="กรอกจำนวนเงิน"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Payment Note -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">หมายเหตุ (ไม่บังคับ)</label>
+              <Textarea
+                v-model="paymentNote"
+                :placeholder="
+                  targetStatus === 'wait_payment'
+                    ? 'กรอกหมายเหตุเพิ่มเติมสำหรับการตั้งค่าบัญชีรับโอนเงิน'
+                    : willPassThroughWaitPayment(targetStatus)
+                    ? 'กรอกหมายเหตุเพิ่มเติมสำหรับการผ่านขั้นตอนการชำระเงิน'
+                    : 'กรอกหมายเหตุเพิ่มเติมสำหรับการรับโอนเงิน'
+                "
+                rows="3"
+                class="w-full"
+              />
+            </div>
+          </template>
+        </Card>
+      </div>
+
       <!-- No Next Steps Available -->
-      <div v-else class="text-center py-8">
+      <div v-else-if="!showBankSelection" class="text-center py-8">
         <div
           class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"
         >
@@ -234,30 +516,35 @@ const getStatusColor = (status: string) => {
         <h4 class="font-medium text-gray-900 mb-2">สถานะสุดท้าย</h4>
         <p class="text-sm text-gray-600">รายการนี้อยู่ในสถานะสุดท้ายแล้ว ไม่สามารถเปลี่ยนได้</p>
       </div>
-
-      <!-- Status Flow Visualization -->
-      <div class="bg-gray-50 rounded-lg p-4">
-        <h4 class="font-semibold text-gray-900 mb-3">ขั้นตอนการขาย</h4>
-        <div class="flex flex-wrap gap-2">
-          <div
-            v-for="(status, key) in statusWorkflow"
-            :key="key"
-            :class="`flex items-center gap-2 px-3 py-2 rounded-full text-sm ${
-              key === currentStatus
-                ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                : 'bg-white text-gray-600 border border-gray-200'
-            }`"
-          >
-            <i :class="status.icon"></i>
-            <span>{{ status.label }}</span>
-          </div>
-        </div>
-      </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
         <Button
+          v-if="showBankSelection"
+          label="ยกเลิก"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="resetForm"
+          size="small"
+        />
+        <Button
+          v-if="showBankSelection"
+          :label="
+            targetStatus === 'wait_payment'
+              ? 'ยืนยันการตั้งค่าบัญชีรับโอนเงิน'
+              : willPassThroughWaitPayment(targetStatus)
+              ? 'ยืนยันการผ่านขั้นตอนการชำระเงิน'
+              : 'ยืนยันการรับโอนเงิน'
+          "
+          icon="pi pi-check"
+          severity="primary"
+          @click="handleBankSelection"
+          :disabled="!selectedBank || !accountNumber"
+          size="small"
+        />
+        <Button
+          v-else
           label="ปิด"
           icon="pi pi-times"
           severity="secondary"

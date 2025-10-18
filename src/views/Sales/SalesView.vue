@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Card, DataTable, Column, Tag, Button, Tabs, TabList, Tab } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import ModalAddSale from '@/components/sales/ModalAddSale.vue'
@@ -9,11 +8,12 @@ import ModalEditSale from '@/components/sales/ModalEditSale.vue'
 import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
-import { useSalesStore, type ISales } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
+import BankData from '@/config/BankData'
+import { useSalesStore, type ISales, type SellingStatus } from '@/stores/sales/sales'
+
 // Stores
 const memberStore = useMemberStore()
-const productStore = useProductStore()
 const salesStore = useSalesStore()
 
 // Data
@@ -50,191 +50,92 @@ const selectedSale = ref<{
 } | null>(null)
 const activeTab = ref('all')
 
-// Queries
-const { isLoading: productsLoading } = useQuery<IProduct[]>({
-  queryKey: ['get_products'],
-  queryFn: () => productStore.onGetProducts(),
-})
-
 const { data: salesData, isLoading: isLoadingSales } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
 })
 
-// Sample sales data
-const sales = ref([
-  {
-    id: 1,
-    orderNumber: 'ORD-2024-001',
-    customerCode: 'ci28',
-    customerType: 'ci',
-    customerName: 'คุณสมชาย ใจดี',
-    customerNickname: 'ชาย',
-    customerPhone: '081-234-5678',
-    customerEmail: 'somchai@email.com',
-    customerAddress: '123 ถนนสุขุมวิท',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'จุลินทรีย์',
-    productName: 'จุลินทรีย์ SUMI',
-    quantity: 2,
-    unitPrice: 590,
-    totalPrice: 1180,
-    deposit: 0,
-    discount: 0,
-    netAmount: 1180,
-    paymentMethod: 'SCB',
-    seller: 'Bert',
-    shippingStatus: 'ชำระเงินแล้ว',
-    saleDate: new Date('2024-10-11T10:30:00'),
-    status: 'paid_complete',
-    notes: '',
-  },
-  {
-    id: 2,
-    orderNumber: 'ORD-2024-002',
-    customerCode: 'cs25',
-    customerType: 'cs',
-    customerName: 'คุณนิดา สวยงาม',
-    customerNickname: 'นิดา',
-    customerPhone: '082-345-6789',
-    customerEmail: 'nida@email.com',
-    customerAddress: '456 ถนนรัชดาภิเษก',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'จุลินทรีย์',
-    productName: 'จุลินทรีย์ SUMI',
-    quantity: 2,
-    unitPrice: 590,
-    totalPrice: 1180,
-    deposit: 0,
-    discount: 0,
-    netAmount: 1180,
-    paymentMethod: 'SCB',
-    seller: 'Bert',
-    shippingStatus: 'รอชำระเงิน',
-    saleDate: new Date('2024-10-11T14:20:00'),
-    status: 'wait_payment',
-    notes: '',
-  },
-  {
-    id: 3,
-    orderNumber: 'ORD-2024-003',
-    customerCode: 'css30',
-    customerType: 'css',
-    customerName: 'คุณสมศักดิ์ ใจดี',
-    customerNickname: 'ศักดิ์',
-    customerPhone: '083-456-7890',
-    customerEmail: 'somsak@email.com',
-    customerAddress: '789 ถนนลาดพร้าว',
-    customerProvince: 'กรุงเทพฯ',
-    productCategory: 'ขายสินค้า',
-    productType: 'อาหาร',
-    productName: 'อาหารปลาคาร์ฟ',
-    quantity: 1,
-    unitPrice: 1200,
-    totalPrice: 1200,
-    deposit: 0,
-    discount: 100,
-    netAmount: 1100,
-    paymentMethod: 'KTB',
-    seller: 'Alice',
-    shippingStatus: 'รอจัดหา',
-    saleDate: new Date('2024-10-12T09:15:00'),
-    status: 'wait_product',
-    notes: 'ต้องการสีแดง',
-  },
-])
-
 // Computed
 const filteredSales = computed(() => {
   if (activeTab.value === 'all') {
-    return sales.value
+    return salesData.value || []
   }
-  return sales.value.filter((sale) => sale.status === activeTab.value)
+  return salesData.value?.filter((sale) => sale.status === activeTab.value) || []
 })
 
 // Tab counts
-const allCount = computed(() => sales.value.length)
+const allCount = computed(() => salesData.value?.length || 0)
 const waitProductCount = computed(
-  () => sales.value.filter((s) => s.status === 'wait_product').length
+  () => salesData.value?.filter((s) => s.status === 'wait_product').length || 0
 )
 const waitConfirmCount = computed(
-  () => sales.value.filter((s) => s.status === 'wait_confirm').length
+  () => salesData.value?.filter((s) => s.status === 'wait_confirm').length || 0
 )
 const waitPaymentCount = computed(
-  () => sales.value.filter((s) => s.status === 'wait_payment').length
+  () => salesData.value?.filter((s) => s.status === 'wait_payment').length || 0
 )
 const paidCompleteCount = computed(
-  () => sales.value.filter((s) => s.status === 'paid_complete').length
+  () => salesData.value?.filter((s) => s.status === 'paid_complete').length || 0
 )
-const preparingCount = computed(() => sales.value.filter((s) => s.status === 'preparing').length)
-const shippingCount = computed(() => sales.value.filter((s) => s.status === 'shipping').length)
-const deliveredCount = computed(() => sales.value.filter((s) => s.status === 'delivered').length)
-const damagedCount = computed(() => sales.value.filter((s) => s.status === 'damaged').length)
+const preparingCount = computed(() => salesData.value?.filter((s) => s.status === 'preparing').length)
+const shippingCount = computed(() => salesData.value?.filter((s) => s.status === 'shipping').length)
+const deliveredCount = computed(() => salesData.value?.filter((s) => s.status === 'delivered').length)
+const damagedCount = computed(() => salesData.value?.filter((s) => s.status === 'damaged').length)
 
 // Current filter display
 const currentFilterDisplay = computed(() => {
-  const statusMap: Record<string, string> = {
+  const statusMap: Record<SellingStatus | 'all', string> = {
     all: 'ทั้งหมด',
-    wait_product: 'รอจัดหา',
-    wait_confirm: 'รอยืนยัน',
+    wait_product: 'ระหว่างจัดหา',
+    wait_confirm: 'รอตัดสินใจ',
     wait_payment: 'รอชำระเงิน',
     paid_complete: 'ชำระเงินเรียบร้อย',
-    preparing: 'แพ็คเตรียมสินค้ารอจัดส่ง',
-    shipping: 'อยู่ระหว่างขนส่ง',
-    delivered: 'ได้รับสินค้าเรียบร้อย',
+    preparing: 'ระหว่างรอจัดส่ง',
+    shipping: 'ระหว่างขนส่ง',
+    received: 'ได้รับสินค้าแล้ว',
     damaged: 'สินค้าเสียหาย',
   }
-  return statusMap[activeTab.value] || 'ทั้งหมด'
+  return statusMap[activeTab.value as SellingStatus | 'all'] || 'ทั้งหมด'
 })
 
 // Revenue calculations by category
 const totalRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete')
+  salesData.value?.filter((s) => s.status === 'paid_complete')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const fishRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'ปลา')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'fish'))
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const serviceRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'บริการ')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'service'))
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const constructionRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'คอนสทรัคชั่น')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'construction'))
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const microorganismRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'จุลินทรีย์')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'จุลินทรีย์')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const foodRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'อาหาร')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'อาหาร')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const equipmentRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'อุปกรณ์')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'อุปกรณ์')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
 const medicineRevenue = computed(() =>
-  sales.value
-    .filter((s) => s.status === 'paid_complete' && s.productType === 'ยา')
+  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'ยา')
     .reduce((sum, sale) => sum + sale.netAmount, 0)
 )
 
@@ -481,9 +382,23 @@ const handleStatusChange = (newStatus: string) => {
                 class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-clock text-yellow-600 text-sm"></i>
-                <span class="text-sm font-medium text-gray-700">รอคอมเปริม</span>
+                <span class="text-sm font-medium text-gray-700">รอตัดสินใจ</span>
                 <Tag
                   :value="waitConfirmCount.toString()"
+                  severity="warning"
+                  size="small"
+                  class="ml-1"
+                />
+              </div>
+            </Tab>
+            <Tab value="wait_payment" class="flex-shrink-0">
+              <div
+                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
+              >
+                <i class="pi pi-credit-card text-blue-600 text-sm"></i>
+                <span class="text-sm font-medium text-gray-700">รอชำระเงิน</span>
+                <Tag
+                  :value="waitPaymentCount.toString()"
                   severity="warning"
                   size="small"
                   class="ml-1"
@@ -588,7 +503,7 @@ const handleStatusChange = (newStatus: string) => {
       <template #content>
         <DataTable
           :value="filteredSales"
-          :loading="productsLoading"
+          :loading="isLoadingSales"
           :paginator="true"
           :rows="10"
           scrollHeight="600px"
@@ -621,7 +536,7 @@ const handleStatusChange = (newStatus: string) => {
           <Column
             field="status"
             header="สถานะรายการ"
-            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[9.25rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
@@ -769,11 +684,7 @@ const handleStatusChange = (newStatus: string) => {
             :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="salesStore.getPaymentMethodTag(slotProps.data.paymentMethod).label"
-                :severity="salesStore.getPaymentMethodTag(slotProps.data.paymentMethod).severity"
-                size="small"
-              />
+              <img :src="BankData[slotProps.data.paymentMethod].icon" :alt="slotProps.data.paymentMethod" class="w-6 h-6 mx-auto" />
             </template>
           </Column>
 
