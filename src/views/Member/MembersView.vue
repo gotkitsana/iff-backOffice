@@ -10,6 +10,10 @@ import ModalDeleteMember from '@/components/member/ModalDeleteMember.vue'
 import ModalResetPassword from '@/components/member/ModalResetPassword.vue'
 import { orderBy } from 'lodash-es'
 import { toast } from 'vue3-toastify'
+import fbImg from '@/assets/images/icon/fb.png'
+import lineOaImg from '@/assets/images/icon/line-oa.webp'
+import lineImg from '@/assets/images/icon/line.png'
+import tiktokImg from '@/assets/images/icon/tiktok.png'
 
 const memberStore = useMemberStore()
 const { data, isLoading } = useQuery<IMember[]>({
@@ -68,15 +72,15 @@ const closeResetPasswordModal = () => {
 const getContactImage = (contactType: string): string | undefined => {
   switch (contactType) {
     case 'facebook':
-      return '/src/assets/images/icon/fb.png'
+      return fbImg
     case 'line_oa':
-      return '/src/assets/images/icon/line-oa.webp'
+      return lineOaImg
     case 'line_chat':
-      return '/src/assets/images/icon/line.png'
+      return lineImg
     case 'line_group':
-      return '/src/assets/images/icon/line.png'
+      return lineImg
     case 'tiktok':
-      return '/src/assets/images/icon/tiktok.png'
+      return tiktokImg
     default:
       return undefined
   }
