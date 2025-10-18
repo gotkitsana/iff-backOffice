@@ -48,33 +48,116 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'Sale02', value: 'Sale02' },
   ]
 
-  const sellingStatusOptions: { label: string; value: SellingStatus }[] = [
+  const sellingStatusOptions: { label: SellingLabel; value: SellingStatus }[] = [
     { label: 'ระหว่างจัดหา', value: 'wait_product' },
     { label: 'รอตัดสินใจ', value: 'wait_confirm' },
     { label: 'รอชำระเงิน', value: 'wait_payment' },
     { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
-    { label: 'จัดเตรียมสินค้า', value: 'preparing' },
+    { label: 'แพ็คจัดเตรียมสินค้า', value: 'preparing' },
     { label: 'ระหว่างขนส่ง', value: 'shipping' },
     { label: 'ได้รับสินค้าแล้ว', value: 'received' },
     { label: 'สินค้าเสียหาย', value: 'damaged' },
   ]
 
-  const getStatusTag = (status: string) => {
+  const statusWorkflow: StatusWorkflow = {
+    wait_product: {
+      label: 'ระหว่างจัดหา',
+      color: 'warning',
+      icon: 'pi pi-clock',
+      nextSteps: [
+        'wait_confirm',
+        'wait_payment',
+        'paid_complete',
+        'preparing',
+        'shipping',
+        'received',
+        'damaged',
+      ],
+      description: 'กำลังจัดหาสินค้าตามที่ลูกค้าต้องการ',
+      stepOrder: 1,
+    },
+    wait_confirm: {
+      label: 'รอตัดสินใจ',
+      color: 'info',
+      icon: 'pi pi-check-circle',
+      nextSteps: [
+        'wait_payment',
+        'paid_complete',
+        'preparing',
+        'shipping',
+        'received',
+        'damaged',
+        'wait_product',
+      ],
+      description: 'รอการยืนยันรายการขาย',
+      stepOrder: 2,
+    },
+    wait_payment: {
+      label: 'รอชำระเงิน',
+      color: 'warning',
+      icon: 'pi pi-credit-card',
+      nextSteps: ['paid_complete', 'preparing', 'shipping', 'received', 'damaged', 'wait_confirm'],
+      description: 'รอการชำระเงินจากลูกค้า',
+      stepOrder: 3,
+    },
+    paid_complete: {
+      label: 'ชำระเงินเรียบร้อย',
+      color: 'success',
+      icon: 'pi pi-check',
+      nextSteps: ['preparing', 'shipping', 'received', 'damaged'],
+      description: 'การชำระเงินเสร็จสิ้นแล้ว',
+      stepOrder: 4,
+    },
+    preparing: {
+      label: 'แพ็คจัดเตรียมสินค้า',
+      color: 'info',
+      icon: 'pi pi-box',
+      nextSteps: ['shipping', 'received', 'damaged'],
+      description: 'กำลังแพ็คและเตรียมสินค้าสำหรับจัดส่ง',
+      stepOrder: 5,
+    },
+    shipping: {
+      label: 'ระหว่างขนส่ง',
+      color: 'info',
+      icon: 'pi pi-truck',
+      nextSteps: ['received', 'damaged'],
+      description: 'สินค้าอยู่ระหว่างการขนส่ง',
+      stepOrder: 6,
+    },
+    received: {
+      label: 'ได้รับสินค้าแล้ว',
+      color: 'success',
+      icon: 'pi pi-check-circle',
+      nextSteps: [],
+      description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
+      stepOrder: 7,
+    },
+    damaged: {
+      label: 'สินค้าเสียหาย',
+      color: 'danger',
+      icon: 'pi pi-times-circle',
+      nextSteps: ['wait_product', 'wait_confirm', 'wait_payment'],
+      description: 'สินค้าเสียหายระหว่างการขนส่ง',
+      stepOrder: 8,
+    },
+  }
+
+  const getStatusTag = (status: SellingStatus): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warning' | 'danger' } => {
     switch (status) {
       case 'wait_product':
-        return { label: 'รอจัดหา', severity: 'warning' }
+        return { label: 'ระหว่างจัดหา', severity: 'warning' }
       case 'wait_confirm':
-        return { label: 'รอยืนยัน', severity: 'warning' }
+        return { label: 'รอตัดสินใจ', severity: 'warning' }
       case 'wait_payment':
         return { label: 'รอชำระเงิน', severity: 'warning' }
       case 'paid_complete':
         return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
-      case 'pack_and_ship':
-        return { label: 'แพ็คเตรียมสินค้ารอจัดส่ง', severity: 'info' }
+      case 'preparing':
+        return { label: 'แพ็คจัดเตรียมสินค้า', severity: 'info' }
       case 'shipping':
-        return { label: 'อยู่ระหว่างขนส่ง', severity: 'info' }
+        return { label: 'ระหว่างขนส่ง', severity: 'info' }
       case 'received':
-        return { label: 'ได้รับสินค้าเรียบร้อย', severity: 'success' }
+        return { label: 'ได้รับสินค้าแล้ว', severity: 'success' }
       case 'damaged':
         return { label: 'สินค้าเสียหาย', severity: 'danger' }
       default:
@@ -84,7 +167,7 @@ export const useSalesStore = defineStore('sales', () => {
 
   const getPaymentMethodTag = (method: string) => {
     switch (method) {
-      case 'SCB':
+      case 'SCBA':
         return { label: 'SCB', severity: 'info' }
       case 'KBANK':
         return { label: 'KBANK', severity: 'info' }
@@ -109,9 +192,9 @@ export const useSalesStore = defineStore('sales', () => {
     categoryTypes,
     sellers,
     sellingStatusOptions,
-    getPaymentMethodTag,
     getStatusTag,
     paymentMethods,
+    statusWorkflow,
   }
 })
 
@@ -157,12 +240,12 @@ export type ISales = {
     type: string
   }
   products: {
-      name: string
-      price: number | null
-      type: number
-      category: string | null
-      id: string
-      quantity: number
+    name: string
+    price: number | null
+    type: number
+    category: string | null
+    id: string
+    quantity: number
   }[]
   deposit: number
   discount: number
@@ -176,6 +259,18 @@ export type ISales = {
   bankAccount: string
 }
 
+export type StatusWorkflow = Record<
+  SellingStatus,
+  {
+    label: SellingLabel
+    color: 'secondary' | 'info' | 'success' | 'warning' | 'danger'
+    icon: string
+    nextSteps: SellingStatus[]
+    description: string
+    stepOrder: number
+  }
+>
+
 export type SellingStatus =
   | 'wait_product'
   | 'wait_confirm'
@@ -185,3 +280,14 @@ export type SellingStatus =
   | 'shipping'
   | 'received'
   | 'damaged'
+
+export type SellingLabel =
+  | 'ระหว่างจัดหา'
+  | 'รอตัดสินใจ'
+  | 'รอชำระเงิน'
+  | 'ชำระเงินเรียบร้อย'
+  | 'จัดเตรียมสินค้า'
+  | 'แพ็คจัดเตรียมสินค้า'
+  | 'ระหว่างขนส่ง'
+  | 'ได้รับสินค้าแล้ว'
+  | 'สินค้าเสียหาย'

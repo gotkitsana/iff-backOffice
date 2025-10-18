@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { Dialog, Button, Tag, Card, InputText, Textarea } from 'primevue'
 import BankData from '../../config/BankData'
-import { useSalesStore, type ISales, type IUpdateSalesPayload } from '@/stores/sales/sales'
+import { useSalesStore, type StatusWorkflow, type IUpdateSalesPayload } from '@/stores/sales/sales'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 
@@ -30,95 +30,7 @@ const paymentNote = ref('')
 const showBankSelection = ref(false)
 
 // Status workflow configuration with step order
-const statusWorkflow = {
-  wait_product: {
-    label: 'รอจัดหา',
-    color: 'warning',
-    icon: 'pi pi-clock',
-    nextSteps: [
-      'wait_confirm',
-      'wait_payment',
-      'paid_complete',
-      'pack_and_ship',
-      'shipping',
-      'received',
-      'damaged',
-    ],
-    description: 'กำลังจัดหาสินค้าตามที่ลูกค้าต้องการ',
-    stepOrder: 1,
-  },
-  wait_confirm: {
-    label: 'รอยืนยัน',
-    color: 'info',
-    icon: 'pi pi-check-circle',
-    nextSteps: [
-      'wait_payment',
-      'paid_complete',
-      'pack_and_ship',
-      'shipping',
-      'received',
-      'damaged',
-      'wait_product',
-    ],
-    description: 'รอการยืนยันจากลูกค้า',
-    stepOrder: 2,
-  },
-  wait_payment: {
-    label: 'รอชำระเงิน',
-    color: 'warning',
-    icon: 'pi pi-credit-card',
-    nextSteps: [
-      'paid_complete',
-      'pack_and_ship',
-      'shipping',
-      'received',
-      'damaged',
-      'wait_confirm',
-    ],
-    description: 'รอการชำระเงินจากลูกค้า',
-    stepOrder: 3,
-  },
-  paid_complete: {
-    label: 'ชำระเงินเรียบร้อย',
-    color: 'success',
-    icon: 'pi pi-check',
-    nextSteps: ['pack_and_ship', 'shipping', 'received', 'damaged'],
-    description: 'การชำระเงินเสร็จสิ้นแล้ว',
-    stepOrder: 4,
-  },
-  pack_and_ship: {
-    label: 'แพ็คเตรียมสินค้ารอจัดส่ง',
-    color: 'info',
-    icon: 'pi pi-box',
-    nextSteps: ['shipping', 'received', 'damaged'],
-    description: 'กำลังแพ็คและเตรียมสินค้าสำหรับจัดส่ง',
-    stepOrder: 5,
-  },
-  shipping: {
-    label: 'อยู่ระหว่างขนส่ง',
-    color: 'info',
-    icon: 'pi pi-truck',
-    nextSteps: ['received', 'damaged'],
-    description: 'สินค้าอยู่ระหว่างการขนส่ง',
-    stepOrder: 6,
-  },
-  received: {
-    label: 'ได้รับสินค้าเรียบร้อย',
-    color: 'success',
-    icon: 'pi pi-check-circle',
-    nextSteps: [],
-    description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
-    stepOrder: 7,
-  },
-  damaged: {
-    label: 'สินค้าเสียหาย',
-    color: 'danger',
-    icon: 'pi pi-times-circle',
-    nextSteps: ['wait_product', 'wait_confirm', 'wait_payment'],
-    description: 'สินค้าเสียหายระหว่างการขนส่ง',
-    stepOrder: 8,
-  },
-}
+
 
 // Bank options for payment
 const bankOptions = computed(() => {
@@ -132,24 +44,24 @@ const bankOptions = computed(() => {
 
 // Computed
 const currentStatusInfo = computed(() => {
-  return statusWorkflow[props.currentStatus as keyof typeof statusWorkflow]
+  return salesStore.statusWorkflow[props.currentStatus as keyof StatusWorkflow]
 })
 
 const availableNextSteps = computed(() => {
   if (!currentStatusInfo.value) return []
   return currentStatusInfo.value.nextSteps.map((status) => ({
     value: status,
-    ...statusWorkflow[status as keyof typeof statusWorkflow],
+    ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
   }))
 })
 
 // Step indicator logic
 const allSteps = computed(() => {
-  return Object.entries(statusWorkflow)
-    .sort(([, a], [, b]) => a.stepOrder - b.stepOrder)
+  return Object.entries(salesStore.statusWorkflow)
+    .sort(([, a]: [string, StatusWorkflow[keyof StatusWorkflow]], [, b]: [string, StatusWorkflow[keyof StatusWorkflow]]) => a.stepOrder - b.stepOrder)
     .map(([key, status]) => ({
       key,
-      ...status,
+      ...(status as StatusWorkflow[keyof StatusWorkflow]),
     }))
 })
 
@@ -238,7 +150,7 @@ watch(
 
 // Get status color for Tag component
 const getStatusColor = (status: string) => {
-  const statusInfo = statusWorkflow[status as keyof typeof statusWorkflow]
+  const statusInfo = salesStore.statusWorkflow[status as keyof StatusWorkflow]
   return statusInfo?.color || 'secondary'
 }
 

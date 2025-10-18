@@ -38,6 +38,7 @@ const filteredSales = computed(() => {
   }
   return salesData.value?.filter((sale) => sale.status === activeTab.value) || []
 })
+console.log(filteredSales)
 
 // Tab counts
 const allCount = computed(() => salesData.value?.length || 0)
@@ -435,7 +436,7 @@ const handleStatusChange = (
     <!-- Filter Tabs -->
     <Card :pt="{ body: 'p-1.5' }">
       <template #content>
-        <Tabs v-model="activeTab" class="w-full" :value="activeTab">
+        <Tabs v-model:value="activeTab" class="w-full">
           <TabList class="flex border-b border-gray-200 overflow-x-auto bg-gray-50/50">
             <Tab value="all" class="flex-shrink-0">
               <div
@@ -811,14 +812,6 @@ const handleStatusChange = (
                   outlined
                   @click="openEditModal(slotProps.data)"
                   v-tooltip.top="'แก้ไขข้อมูล'"
-                />
-                <Button
-                  icon="pi pi-eye"
-                  severity="info"
-                  size="small"
-                  outlined
-                  @click="openDetailModal(slotProps.data)"
-                  v-tooltip.top="'ดูรายละเอียด'"
                 />
               </div>
             </template>
