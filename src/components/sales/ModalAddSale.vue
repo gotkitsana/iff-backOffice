@@ -348,8 +348,8 @@ const resetForm = () => {
               หมวดหมู่สินค้า
             </label>
             <Select
-              v-model="saleForm.productType"
-              :options="salesStore.productTypes"
+              v-model="saleForm.productCategory"
+              :options="salesStore.categoryTypes"
               optionLabel="label"
               optionValue="value"
               fluid

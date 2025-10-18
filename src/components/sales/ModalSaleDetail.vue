@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Tag, Button } from 'primevue'
-import { useSalesStore } from '@/stores/sales/sales';
+import { useSalesStore, type ISales } from '@/stores/sales/sales';
+import dayjs from 'dayjs';
 
 // Props
 const props = defineProps<{
   visible: boolean
-  saleData: any
+  saleData: ISales
 }>()
 
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'edit-sale': [sale: any]
 }>()
 
 const salesStore = useSalesStore()
@@ -38,7 +38,6 @@ const handleClose = () => {
 }
 
 const handleEdit = () => {
-  emit('edit-sale', props.saleData)
   handleClose()
 }
 </script>
@@ -64,7 +63,7 @@ const handleEdit = () => {
         </div>
         <div>
           <h3 class="text-lg font-semibold! text-gray-800">รายละเอียดการขาย</h3>
-          <p class="text-sm text-gray-600">{{ saleData?.orderNumber }}</p>
+          <p class="text-sm text-gray-600">{{ saleData?.item }}</p>
         </div>
       </div>
     </template>
@@ -73,8 +72,8 @@ const handleEdit = () => {
       <!-- Sale Header -->
       <div class="text-center border-b border-gray-200 pb-4">
         <h2 class="text-2xl font-bold text-gray-900">รายละเอียดการขาย</h2>
-        <p class="text-gray-600">เลขที่: {{ saleData.orderNumber }}</p>
-        <p class="text-gray-600">วันที่: {{ formatDate(saleData.saleDate) }}</p>
+        <p class="text-gray-600">เลขที่: {{ saleData.item }}</p>
+        <p class="text-gray-600">วันที่: {{ formatDate(dayjs(saleData.cat).toDate()) }}</p>
       </div>
 
       <!-- Customer and Product Info -->
@@ -84,14 +83,14 @@ const handleEdit = () => {
             <i class="pi pi-user text-green-600"></i>
             ข้อมูลลูกค้า
           </h4>
-          <div class="space-y-2 text-sm">
+          <!-- <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">รหัสลูกค้า:</span>
-              <span class="font-medium">{{ saleData.customerCode }}</span>
+              <span class="font-medium">{{ saleData.user }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">ชื่อ-สกุล:</span>
-              <span class="font-medium">{{ saleData.customerName }}</span>
+              <span class="font-medium">{{ saleData.user?.name }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">ชื่อเล่น:</span>
@@ -117,7 +116,7 @@ const handleEdit = () => {
               <span class="text-gray-600">ประเภทลูกค้า:</span>
               <Tag :value="saleData.customerType" severity="info" size="small" />
             </div>
-          </div>
+          </div> -->
         </div>
 
         <div class="bg-gray-50 rounded-lg p-4">
@@ -125,7 +124,7 @@ const handleEdit = () => {
             <i class="pi pi-fish text-blue-600"></i>
             ข้อมูลสินค้า
           </h4>
-          <div class="space-y-2 text-sm">
+          <!-- <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">หมวดหมู่:</span>
               <Tag :value="saleData.productCategory" severity="success" size="small" />
@@ -146,7 +145,7 @@ const handleEdit = () => {
               <span class="text-gray-600">ผู้ขาย:</span>
               <span class="font-medium">{{ saleData.seller }}</span>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 
@@ -168,15 +167,15 @@ const handleEdit = () => {
             </thead>
             <tbody>
               <tr class="border-t border-gray-200">
-                <td class="px-4 py-2 text-sm text-gray-900">{{ saleData.productName }}</td>
+                <td class="px-4 py-2 text-sm text-gray-900">{{ saleData.products[0].name }}</td>
                 <td class="px-4 py-2 text-center text-sm text-gray-900">
-                  {{ saleData.quantity }}
+                  {{ saleData.products[0].quantity }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
-                  {{ formatCurrency(saleData.unitPrice) }}
+                  {{ formatCurrency(saleData.products[0].price || 0) }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
-                  {{ formatCurrency(saleData.unitPrice * saleData.quantity) }}
+                  {{ formatCurrency(saleData.products[0].price || 0 * saleData.products[0].quantity) }}
                 </td>
               </tr>
             </tbody>
@@ -186,7 +185,7 @@ const handleEdit = () => {
                   ยอดรวมก่อนส่วนลด:
                 </td>
                 <td class="px-4 py-2 text-right text-sm font-medium text-gray-900">
-                  {{ formatCurrency(saleData.totalPrice) }}
+                  {{ formatCurrency(saleData.products[0].price || 0 * saleData.products[0].quantity) }}
                 </td>
               </tr>
               <tr>
@@ -210,7 +209,7 @@ const handleEdit = () => {
                   ยอดสุทธิหลังส่วนลด:
                 </td>
                 <td class="px-4 py-2 text-right text-lg font-bold text-green-600">
-                  {{ formatCurrency(saleData.netAmount) }}
+                  {{ formatCurrency(saleData.products[0].price || 0 * saleData.products[0].quantity - saleData.discount) }}
                 </td>
               </tr>
             </tfoot>
@@ -219,7 +218,7 @@ const handleEdit = () => {
       </div>
 
       <!-- Status and Payment Info -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-gray-50 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-2">วิธีการชำระเงิน</h4>
           <Tag
@@ -236,16 +235,16 @@ const handleEdit = () => {
             size="small"
           />
         </div>
-      </div>
+      </div> -->
 
       <!-- Notes -->
-      <div v-if="saleData.notes" class="bg-gray-50 rounded-lg p-4">
+      <!-- <div v-if="saleData.notes" class="bg-gray-50 rounded-lg p-4">
         <h4 class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <i class="pi pi-file-edit text-purple-600"></i>
           หมายเหตุ
         </h4>
         <p class="text-sm text-gray-700">{{ saleData.notes }}</p>
-      </div>
+      </div> -->
     </div>
 
     <template #footer>

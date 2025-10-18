@@ -8,12 +8,10 @@ import ModalEditSale from '@/components/sales/ModalEditSale.vue'
 import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
-import { useMemberStore } from '@/stores/member/member'
 import BankData from '@/config/BankData'
 import { useSalesStore, type ISales, type SellingStatus } from '@/stores/sales/sales'
 
 // Stores
-const memberStore = useMemberStore()
 const salesStore = useSalesStore()
 
 // Data
@@ -21,33 +19,7 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const showStatusManager = ref(false)
-const selectedSale = ref<{
-  id: number
-  orderNumber: string
-  customerCode: string
-  customerType: string
-  customerName: string
-  customerNickname: string
-  customerPhone: string
-  customerEmail: string
-  customerAddress: string
-  customerProvince: string
-  productCategory: string
-  productType: string
-  productName: string
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  deposit: number
-  discount: number
-  netAmount: number
-  paymentMethod: string
-  seller: string
-  shippingStatus: string
-  saleDate: Date
-  status: string
-  notes: string
-} | null>(null)
+const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
 const { data: salesData, isLoading: isLoadingSales } = useQuery<ISales[]>({
@@ -77,10 +49,18 @@ const waitPaymentCount = computed(
 const paidCompleteCount = computed(
   () => salesData.value?.filter((s) => s.status === 'paid_complete').length || 0
 )
-const preparingCount = computed(() => salesData.value?.filter((s) => s.status === 'preparing').length)
-const shippingCount = computed(() => salesData.value?.filter((s) => s.status === 'shipping').length)
-const deliveredCount = computed(() => salesData.value?.filter((s) => s.status === 'delivered').length)
-const damagedCount = computed(() => salesData.value?.filter((s) => s.status === 'damaged').length)
+const preparingCount = computed(
+  () => salesData.value?.filter((s) => s.status === 'preparing').length || 0
+)
+const shippingCount = computed(
+  () => salesData.value?.filter((s) => s.status === 'shipping').length || 0
+)
+const deliveredCount = computed(
+  () => salesData.value?.filter((s) => s.status === 'delivered').length || 0
+)
+const damagedCount = computed(
+  () => salesData.value?.filter((s) => s.status === 'damaged').length || 0
+)
 
 // Current filter display
 const currentFilterDisplay = computed(() => {
@@ -99,45 +79,120 @@ const currentFilterDisplay = computed(() => {
 })
 
 // Revenue calculations by category
-const totalRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete')
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const totalRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => s.status === 'paid_complete')
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const fishRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'fish'))
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const fishRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'fish'))
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const serviceRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'service'))
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const serviceRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter(
+        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'service')
+      )
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const constructionRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'construction'))
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const constructionRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter(
+        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'construction')
+      )
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const microorganismRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'จุลินทรีย์')
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const microorganismRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter(
+        (s) =>
+          s.status === 'paid_complete' && s.products.some((p) => p.category === 'microorganism')
+      )
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const foodRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'อาหาร')
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const foodRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'food'))
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const equipmentRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'อุปกรณ์')
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const equipmentRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter(
+        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'equipment')
+      )
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
-const medicineRevenue = computed(() =>
-  salesData.value?.filter((s) => s.status === 'paid_complete' && s.productType === 'ยา')
-    .reduce((sum, sale) => sum + sale.netAmount, 0)
-)
+const medicineRevenue = computed(() => {
+  return (
+    salesData.value
+      ?.filter(
+        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'medicine')
+      )
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + saleTotal - sale.discount + sale.deposit
+      }, 0) || 0
+  )
+})
 
 // Utility functions
 const formatDate = (date: Date) => {
@@ -148,44 +203,101 @@ const formatDate = (date: Date) => {
   })
 }
 
+// Helper functions for sales data
+const getSaleTotalAmount = (sale: ISales) => {
+  const productTotal = sale.products.reduce((sum, product) => {
+    return sum + (product.price || 0) * product.quantity
+  }, 0)
+  return productTotal - sale.discount + sale.deposit
+}
+
+const getSaleProductCount = (sale: ISales) => {
+  return sale.products.reduce((sum, product) => sum + product.quantity, 0)
+}
+
+const getSaleCategories = (sale: ISales) => {
+  const categories = [
+    ...new Set(sale.products.map((p) => p.category).filter((cat): cat is string => cat !== null)),
+  ]
+  return categories
+}
+
+const getCategoryIcon = (category: string | null) => {
+  const iconMap: Record<string, string> = {
+    fish: 'pi-fish',
+    equipment: 'pi-box',
+    service: 'pi-wrench',
+    construction: 'pi-building',
+    medicine: 'pi-plus-circle',
+    food: 'pi-heart',
+    microorganism: 'pi-circle',
+    water: 'pi-droplet',
+  }
+  return iconMap[category || ''] || 'pi-box'
+}
+
+const getCategoryColor = (category: string | null) => {
+  const colorMap: Record<string, string> = {
+    fish: 'text-gray-600',
+    equipment: 'text-green-600',
+    service: 'text-purple-600',
+    construction: 'text-orange-600',
+    medicine: 'text-red-600',
+    food: 'text-pink-600',
+    microorganism: 'text-teal-600',
+    water: 'text-blue-600',
+  }
+  return colorMap[category || ''] || 'text-gray-600'
+}
+
 // Modal functions
 const openAddModal = () => {
   showAddModal.value = true
 }
 
-const openEditModal = (sale: (typeof sales.value)[0]) => {
+const openEditModal = (sale: ISales) => {
   selectedSale.value = sale
   showEditModal.value = true
 }
 
-const openDetailModal = (sale: (typeof sales.value)[0]) => {
+const openDetailModal = (sale: ISales) => {
   selectedSale.value = sale
   showDetailModal.value = true
 }
 
-const openStatusManager = (sale: (typeof sales.value)[0]) => {
+const openStatusManager = (sale: ISales) => {
   selectedSale.value = sale
   showStatusManager.value = true
 }
 
-const handleSaleUpdated = (updatedSale: (typeof sales.value)[0]) => {
-  const index = sales.value.findIndex((s) => s.id === updatedSale.id)
-  if (index !== -1) {
-    sales.value[index] = updatedSale
+const handleSaleUpdated = (updatedSale: ISales) => {
+  const index = salesData.value?.findIndex((s) => s._id === updatedSale._id)
+  if (index !== -1 && salesData.value) {
+    salesData.value[index as number] = updatedSale
   }
   showEditModal.value = false
 }
 
-const handleCancelSale = (sale: (typeof sales.value)[0]) => {
-  if (confirm(`คุณต้องการยกเลิกการขาย ${sale.orderNumber} หรือไม่?`)) {
+const handleCancelSale = (sale: ISales) => {
+  if (confirm(`คุณต้องการยกเลิกการขาย ${sale.item} หรือไม่?`)) {
     sale.status = 'damaged'
     toast.success('ยกเลิกการขายสำเร็จ')
   }
 }
 
-const handleStatusChange = (newStatus: string) => {
+const handleStatusChange = (
+  newStatus: string,
+  bankInfo?: { bank: string; accountNumber?: string; amount?: number }
+) => {
   if (selectedSale.value) {
     selectedSale.value.status = newStatus
+
+    // Update bank information if provided
+    if (bankInfo) {
+      selectedSale.value.bankCode = bankInfo.bank
+      selectedSale.value.bankAccount = bankInfo.accountNumber || ''
+    }
+
     toast.success('เปลี่ยนสถานะสำเร็จ')
     showStatusManager.value = false
   }
@@ -508,27 +620,21 @@ const handleStatusChange = (newStatus: string) => {
           :rows="10"
           scrollHeight="600px"
         >
-          <Column
-            field="saleDate"
-            header="วันที่ขาย"
-            :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }"
-          >
+          <Column field="uat" header="วันที่ขาย" :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }">
             <template #body="slotProps">
-              <span class="text-sm text-gray-600">{{ formatDate(slotProps.data.saleDate) }}</span>
+              <span class="text-sm text-gray-600">{{
+                formatDate(new Date(slotProps.data.uat * 1000))
+              }}</span>
             </template>
           </Column>
 
-          <Column
-            field="orderNumber"
-            header="เลขรายการ"
-            :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }"
-          >
+          <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }">
             <template #body="slotProps">
               <span
                 class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm"
                 @click="openDetailModal(slotProps.data)"
               >
-                {{ slotProps.data.orderNumber }}
+                {{ slotProps.data.item }}
               </span>
             </template>
           </Column>
@@ -553,128 +659,132 @@ const handleStatusChange = (newStatus: string) => {
           </Column>
 
           <Column
-            field="customerCode"
-            header="รหัสลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
+            field="user"
+            header="ลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <span
-                class="font-medium text-sm "
-                :class="
-                  slotProps.data.customerType === 'css'
-                    ? 'text-yellow-600'
-                    : slotProps.data.customerType === 'cs'
-                    ? 'text-green-600'
-                    : 'text-gray-600'
-                "
-                >{{ slotProps.data.customerCode }}</span
-              >
+              <div class="flex flex-col items-center">
+                <span class="font-medium text-sm text-gray-900">
+                  {{ slotProps.data.user || 'ไม่ระบุ' }}
+                </span>
+                <span class="text-xs text-gray-500"> ID: {{ slotProps.data._id.slice(-6) }} </span>
+              </div>
             </template>
           </Column>
 
           <Column
-            field="customerType"
-            header="สถานะลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
+            field="products"
+            header="สินค้า"
+            :pt="{ columnHeaderContent: 'min-w-[12rem]', bodyCell: 'p-2' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="
-                  memberStore.memberStatusOptions.find(
-                    (option) => option.value === slotProps.data.customerType
-                  )?.label
-                "
-                :severity="
-                  memberStore.getStatusLabel(slotProps.data.customerType)
-                "
-                size="small"
-              />
+              <div class="space-y-2">
+                <!-- Product List -->
+                <div class="space-y-1">
+                  <div
+                    v-for="(product, index) in slotProps.data.products"
+                    :key="index"
+                    class="flex items-center justify-between bg-gray-50 rounded-lg p-2"
+                  >
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                      <i
+                        :class="`pi ${getCategoryIcon(product.category)} text-sm ${getCategoryColor(
+                          product.category
+                        )}`"
+                      ></i>
+                      <span class="text-sm text-gray-900 truncate">{{ product.name }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                      <span>{{ product.quantity }} ชิ้น</span>
+                      <span class="font-medium">
+                        {{ formatCurrency((product.price || 0) * product.quantity) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="flex items-center justify-between pt-1 border-t border-gray-200">
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-gray-500">รวม:</span>
+                    <span class="text-sm font-medium text-gray-900"
+                      >{{ getSaleProductCount(slotProps.data) }} ชิ้น</span
+                    >
+                  </div>
+                  <div class="text-sm font-semibold text-gray-900">
+                    {{
+                      formatCurrency(
+                        slotProps.data.products.reduce(
+                          (sum: number, p: { price: number | null; quantity: number }) => sum + (p.price || 0) * p.quantity,
+                          0
+                        )
+                      )
+                    }}
+                  </div>
+                </div>
+              </div>
             </template>
           </Column>
 
           <Column
-            field="productType"
-            header="หมวดหมู่สินค้า"
-            :pt="{ columnHeaderContent: 'min-w-[7.5rem] justify-center', bodyCell: 'text-center' }"
+            field="categories"
+            header="หมวดหมู่"
+            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <Tag :value="slotProps.data.productType" severity="secondary" size="small" />
-            </template>
-          </Column>
-
-          <Column field="productName" header="รายการ" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-            <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.productName }}</span>
-            </template>
-          </Column>
-
-          <Column
-            field="quantity"
-            header="จำนวน"
-            :pt="{ columnHeaderContent: 'min-w-[4rem] justify-center', bodyCell: 'text-center' }"
-          >
-            <template #body="slotProps">
-              <span class="text-center text-sm">{{ slotProps.data.quantity }}</span>
-            </template>
-          </Column>
-
-          <Column
-            field="unitPrice"
-            header="ราคาต่อหน่วย"
-            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
-          >
-            <template #body="slotProps">
-              <span class="font-medium text-gray-900 text-sm">
-                {{ formatCurrency(slotProps.data.unitPrice) }}
-              </span>
-            </template>
-          </Column>
-
-          <Column
-            field="totalPrice"
-            header="ราคารวม"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
-          >
-            <template #body="slotProps">
-              <span class="font-medium text-gray-900 text-sm">
-                {{ formatCurrency(slotProps.data.totalPrice) }}
-              </span>
+              <div class="flex flex-wrap gap-1 justify-center">
+                <Tag
+                  v-for="category in getSaleCategories(slotProps.data)"
+                  :key="category"
+                  :value="
+                    salesStore.categoryTypes.find((t) => t.value === category)?.label || category
+                  "
+                  severity="secondary"
+                  size="small"
+                  class="text-xs"
+                />
+              </div>
             </template>
           </Column>
 
           <Column
             field="deposit"
-            header="มัดจำ"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+            header="มัดจำ/ส่วนลด"
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
           >
             <template #body="slotProps">
-              <span class="text-gray-900 text-sm">
-                {{ formatCurrency(slotProps.data.deposit) }}
-              </span>
-            </template>
-          </Column>
-
-          <Column
-            field="discount"
-            header="ส่วนลด"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
-          >
-            <template #body="slotProps">
-              <span class="text-red-600 text-sm">
-                {{ formatCurrency(slotProps.data.discount) }}
-              </span>
+              <div class="text-end space-y-1">
+                <div v-if="slotProps.data.deposit > 0" class="text-gray-900 text-sm">
+                  มัดจำ: {{ formatCurrency(slotProps.data.deposit) }}
+                </div>
+                <div v-if="slotProps.data.discount > 0" class="text-red-600 text-sm">
+                  ส่วนลด: -{{ formatCurrency(slotProps.data.discount) }}
+                </div>
+                <div
+                  v-if="slotProps.data.deposit === 0 && slotProps.data.discount === 0"
+                  class="text-gray-400 text-xs"
+                >
+                  ไม่มี
+                </div>
+              </div>
             </template>
           </Column>
 
           <Column
             field="netAmount"
             header="ยอดสุทธิ"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
           >
             <template #body="slotProps">
-              <span class="font-semibold text-green-600 text-sm">
-                {{ formatCurrency(slotProps.data.netAmount) }}
-              </span>
+              <div class="text-end">
+                <div class="font-semibold text-green-600 text-sm">
+                  {{ formatCurrency(getSaleTotalAmount(slotProps.data)) }}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ slotProps.data.products.length }} รายการ
+                </div>
+              </div>
             </template>
           </Column>
 
@@ -684,13 +794,58 @@ const handleStatusChange = (newStatus: string) => {
             :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <img :src="BankData[slotProps.data.paymentMethod].icon" :alt="slotProps.data.paymentMethod" class="w-6 h-6 mx-auto" />
+              <div class="flex flex-col items-center gap-1">
+                <div v-if="slotProps.data.payment === 'transfer' && slotProps.data.bankCode">
+                  <img
+                    :src="BankData[slotProps.data.bankCode]?.icon"
+                    :alt="slotProps.data.bankCode"
+                    class="w-6 h-6 mx-auto"
+                  />
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ BankData[slotProps.data.bankCode]?.name || slotProps.data.bankCode }}
+                  </div>
+                </div>
+                <div v-else class="flex items-center gap-2">
+                  <i
+                    :class="[
+                      `pi ${
+                        slotProps.data.payment === 'cash'
+                          ? 'pi-money-bill'
+                          : slotProps.data.payment === 'credit'
+                          ? 'pi-credit-card'
+                          : slotProps.data.payment === 'promptpay'
+                          ? 'pi-qrcode'
+                          : 'pi-question-circle'
+                      } text-lg`,
+                      {
+                        'text-green-600': slotProps.data.payment === 'cash',
+                        'text-blue-600': slotProps.data.payment === 'credit',
+                        'text-purple-600': slotProps.data.payment === 'promptpay',
+                        'text-gray-600': slotProps.data.payment === 'other',
+                      },
+                    ]"
+                  ></i>
+                  <span class="text-xs text-gray-600">
+                    {{
+                      salesStore.paymentMethods.find((p) => p.value === slotProps.data.payment)
+                        ?.label || slotProps.data.payment
+                    }}
+                  </span>
+                </div>
+              </div>
             </template>
           </Column>
 
-          <Column field="seller" header="ผู้ขาย" :pt="{ columnHeaderContent: 'min-w-[4rem]' }">
+          <Column
+            field="seller"
+            header="ผู้ขาย"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
+          >
             <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.seller }}</span>
+              <div class="flex flex-col items-center">
+                <span class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</span>
+                <span class="text-xs text-gray-500">{{ slotProps.data.deliveryStatus }}</span>
+              </div>
             </template>
           </Column>
 
@@ -722,6 +877,14 @@ const handleStatusChange = (newStatus: string) => {
                   @click="openEditModal(slotProps.data)"
                   v-tooltip.top="'แก้ไขข้อมูล'"
                 />
+                <Button
+                  icon="pi pi-eye"
+                  severity="info"
+                  size="small"
+                  outlined
+                  @click="openDetailModal(slotProps.data)"
+                  v-tooltip.top="'ดูรายละเอียด'"
+                />
               </div>
             </template>
           </Column>
@@ -740,15 +903,15 @@ const handleStatusChange = (newStatus: string) => {
   />
 
   <ModalSaleDetail
+    v-if="selectedSale"
     v-model:visible="showDetailModal"
     :sale-data="selectedSale"
-    @edit-sale="openEditModal"
   />
 
   <StatusManager
     v-model:visible="showStatusManager"
     :current-status="selectedSale?.status || ''"
-    :order-number="selectedSale?.orderNumber || ''"
+    :order-number="selectedSale?.item || ''"
     @status-changed="handleStatusChange"
   />
 </template>

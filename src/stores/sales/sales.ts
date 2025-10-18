@@ -115,34 +115,32 @@ export const useSalesStore = defineStore('sales', () => {
 })
 
 export type ICreateSalesPayload = {
-  item: string
-  status: string
-  user: string
-  products: { id: string; quantity: number }[]
-  deposit: number
-  discount: number
-  payment: string
-  seller: string
-  deliveryStatus: string
-  note: string
+  item: string // เลขรายการ
+  status: string // สถานะรายการ
+  user: string // ผู้ซื้อ
+  products: { id: string; quantity: number }[] // สินค้า
+  deposit: number // มัดจำ
+  discount: number // ส่วนลด
+  seller: string // ผู้ขาย
+  note: string // หมายเหตุ
 }
 
 export type IUpdateSalesPayload = {
-  item: string
-  status: string
-  user: string
-  products: { id: string; quantity: number }[]
-  quantity: number
-  deposit: number
-  discount: number
-  payment: string
-  seller: string
-  deliveryStatus: string
-  note: string
-  cat: number
+  _id: string
+  item: string // เลขรายการ
+  status: string // สถานะรายการ
+  user: string // ผู้ซื้อ
+  products: { id: string; quantity: number }[] // สินค้า
+  deposit: number // มัดจำ
+  discount: number // ส่วนลด
+  seller: string // ผู้ขาย
+  note: string // หมายเหตุ
+
+  payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode: string
   bankAccount: string
-  _id: string
+
+  cat: number
 }
 
 export type ISales = {
