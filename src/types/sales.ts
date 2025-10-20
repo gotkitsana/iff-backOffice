@@ -20,9 +20,10 @@ export type IUpdateSalesPayload = {
   seller: string // ผู้ขาย
   note: string // หมายเหตุ
 
-  payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
-  bankCode: string
-  bankAccount: string
+  payment?: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
+  bankCode?: string
+  bankAccount?: string
+  slip?: string
 
   cat: number
 }
@@ -57,6 +58,7 @@ export type ISales = {
   payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode: string
   bankAccount: string
+  slip: string
 }
 
 export type StatusWorkflow = Record<

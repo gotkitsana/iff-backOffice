@@ -113,7 +113,8 @@ const totalAmount = computed(() => {
 })
 
 const netAmount = computed(() => {
-  return totalAmount.value - saleForm.value.discount
+  const netAmount = totalAmount.value - saleForm.value.discount
+  return netAmount < 0 ? 0 : netAmount
 })
 
 const memberOptions = computed(() => {
@@ -476,7 +477,7 @@ const resetForm = () => {
                 มัดจำ: {{ formatCurrency(saleForm.deposit) }}
               </div>
               <div class="font-[500]! text-green-600 border-t border-green-300 pt-1 mt-1">
-                ยอดสุทธิ: {{ formatCurrency(netAmount) }}
+                ยอดสุทธิ: {{ formatCurrency(netAmount)}}
               </div>
             </div>
           </div>

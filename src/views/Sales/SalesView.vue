@@ -242,14 +242,6 @@ const openProductDetailModal = (sale: ISales) => {
   showProductDetailModal.value = true
 }
 
-const handleSaleUpdated = (updatedSale: ISales) => {
-  const index = salesData.value?.findIndex((s) => s._id === updatedSale._id)
-  if (index !== -1 && salesData.value) {
-    salesData.value[index as number] = updatedSale
-  }
-  showEditModal.value = false
-}
-
 const handleCancelSale = (sale: ISales) => {
   if (confirm(`คุณต้องการยกเลิกการขาย ${sale.item} หรือไม่?`)) {
     sale.status = 'damaged'
@@ -277,6 +269,7 @@ const handleStatusChange = (
 </script>
 
 <template>
+  {{ selectedSale }}
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <div class="flex items-center justify-between flex-wrap gap-2">
@@ -826,9 +819,9 @@ const handleStatusChange = (
 
   <!-- แก้ไขรายการขาย -->
   <ModalEditSale
+    v-if="selectedSale"
     v-model:visible="showEditModal"
     :sale-data="selectedSale"
-    @sale-updated="handleSaleUpdated"
   />
 
   <!-- รายละเอียดรายการขาย -->
