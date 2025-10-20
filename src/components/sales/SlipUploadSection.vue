@@ -4,11 +4,13 @@ import { Button, FileUpload } from 'primevue'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
+import type { SellingStatus } from '@/types/sales'
 
 // Props
 const props = defineProps<{
   saleId: string
-  currentStatus: string
+  selectedStatus: string
+  isCurrentStatus: string
   isSubmitting: boolean
 }>()
 
@@ -26,8 +28,7 @@ const previewImage = ref<string>('')
 const showUploadSection = ref<boolean>(false)
 
 // Computed
-const requiresSlipUpload = computed(() => {
-  const statusSteps = [
+  const statusSteps: SellingStatus[] = [
     'wait_product',
     'wait_confirm',
     'wait_payment',
@@ -37,9 +38,16 @@ const requiresSlipUpload = computed(() => {
     'received',
     'damaged',
   ]
-  const currentStepIndex = statusSteps.indexOf(props.currentStatus)
-  const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
+const requiresSlipUpload = computed(() => {
+  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatus)
+  const waitPaymentStepIndex = statusSteps.indexOf('paid_complete')
   return currentStepIndex >= waitPaymentStepIndex
+})
+
+const closeEdit = computed(() => {
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const preparingStepIndex = statusSteps.indexOf('preparing')
+  return currentStepIndex >= preparingStepIndex
 })
 
 const hasSlip = ref(false)
@@ -106,26 +114,9 @@ onUnmounted(() => {
   isCheckingSlip.value = false
 })
 
-const shouldShowSlip = computed(() => {
-  const statusSteps = [
-    'wait_product',
-    'wait_confirm',
-    'wait_payment',
-    'paid_complete',
-    'preparing',
-    'shipping',
-    'received',
-    'damaged',
-  ]
-  const currentStepIndex = statusSteps.indexOf(props.currentStatus)
-  const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
-  return currentStepIndex >= waitPaymentStepIndex
-})
-
 // Helper function to get slip image URL
 const onGetSlipImg = (id: string) => {
   const data = `${import.meta.env.VITE_API_URL}/erp/download/slip?saleId=${id}`
-  console.log(data)
   return data
 }
 
@@ -164,10 +155,6 @@ const handleImageError = (event: Event) => {
   toast.error('ไม่สามารถโหลดรูปสลิปได้')
 }
 
-const handleImageLoad = () => {
-  console.log('Image loaded successfully')
-}
-
 const editSlip = () => {
   showUploadSection.value = true
 }
@@ -180,9 +167,8 @@ const cancelEdit = () => {
 
 // Mutations
 const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
-  mutationFn: (payload: { id: string; file: File }) =>
-    salesStore.onUploadSlip(payload.id, payload.file),
-  onSuccess: () => {
+  mutationFn: (payload: { id: string; file: File }) => salesStore.onUploadSlip(payload.id, payload.file),
+  onSuccess: (data: any) => {
     toast.success('อัปโหลดสลิปสำเร็จ')
     hasSlip.value = true
     emit('slip-status-changed', true)
@@ -190,8 +176,8 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
     uploadedFile.value = null
     showUploadSection.value = false
   },
-  onError: () => {
-    toast.error('อัปโหลดสลิปไม่สำเร็จ')
+  onError: (error: any) => {
+    toast.error(error.response.data.message || 'อัปโหลดสลิปไม่สำเร็จ')
     previewImage.value = ''
     uploadedFile.value = null
   },
@@ -199,7 +185,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
 </script>
 
 <template>
-  <div v-if="shouldShowSlip" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+  <div v-if="requiresSlipUpload" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
     <!-- Header -->
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -242,6 +228,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
               อัปโหลดแล้ว
             </span>
             <Button
+              v-if="!closeEdit"
               icon="pi pi-pencil"
               severity="info"
               size="small"
@@ -259,7 +246,6 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
             alt="slip"
             class="w-full max-h-50 object-contain rounded-lg border border-gray-200"
             @error="handleImageError"
-            @load="handleImageLoad"
           />
         </div>
       </div>

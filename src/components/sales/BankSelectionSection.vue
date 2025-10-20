@@ -7,7 +7,8 @@ import type { SellingStatus } from '@/types/sales';
 const props = defineProps<{
   selectedBankCode: string
   isSubmitting: boolean
-  currentStatus: string
+  isCurrentBank: string
+  isCurrentStatus: string
 }>()
 
 // Emits
@@ -28,34 +29,31 @@ const bankOptions = computed(() => {
   }))
 })
 
-// Check if bank selection is locked (after wait_payment step)
-const isBankSelectionLocked = computed(() => {
-  const statusSteps: SellingStatus[] = [
-    'wait_product',
-    'wait_confirm',
-    'wait_payment',
-    'paid_complete',
-    'preparing',
-    'shipping',
-    'received',
-    'damaged',
-  ]
-  const currentStepIndex = statusSteps.indexOf(props.currentStatus as SellingStatus)
-  const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
-  return currentStepIndex > waitPaymentStepIndex
-})
-
 // Get selected bank details
 const selectedBank = computed(() => {
-  if (!props.selectedBankCode) return null
-  return bankOptions.value.find((bank) => bank.value === props.selectedBankCode)
+  if (!props.isCurrentBank) return null
+  return bankOptions.value.find((bank) => bank.value === props.isCurrentBank)
 })
 
 const handleBankSelect = (bankCode: string) => {
-  if (!isBankSelectionLocked.value) {
-    emit('update:selectedBankCode', bankCode)
-  }
+  emit('update:selectedBankCode', bankCode)
 }
+
+const statusSteps: SellingStatus[] = [
+  'wait_product',
+  'wait_confirm',
+  'wait_payment',
+  'paid_complete',
+  'preparing',
+  'shipping',
+  'received',
+  'damaged',
+]
+const closeEditBank = computed(() => {
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const waitPaymentStepIndex = statusSteps.indexOf('paid_complete')
+  return currentStepIndex >= waitPaymentStepIndex
+})
 </script>
 
 <template>
@@ -67,18 +65,27 @@ const handleBankSelect = (bankCode: string) => {
       <div>
         <h4 class="font-semibold text-blue-900">ข้อมูลการชำระเงิน</h4>
         <p class="text-sm text-blue-700">
-          {{
-            isBankSelectionLocked
-              ? 'บัญชีธนาคารที่เลือก'
-              : 'เลือกบัญชีธนาคารที่จะให้ลูกค้าโอนเงินมา'
-          }}
+          {{ !!isCurrentBank ? 'บัญชีธนาคารที่เลือก' : 'เลือกบัญชีธนาคารที่จะให้ลูกค้าโอนเงินมา' }}
         </p>
       </div>
     </div>
 
-
     <!-- Bank Selection Grid -->
-    <div v-if="!selectedBankCode" class="grid grid-cols-2 md:grid-cols-3 md:gap-3 gap-2">
+    <div v-if="selectedBank && !!closeEditBank" class="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <img :src="selectedBank.icon" :alt="selectedBank.label" class="w-8 h-8 object-contain" />
+        </div>
+        <div class="flex-1">
+          <h5 class="text-sm md:text-base font-[500]! text-gray-900">
+            {{ selectedBank.fullname }}
+          </h5>
+          <p class="text-xs text-gray-600">เลขบัญชี: 1234567890</p>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="grid grid-cols-2 md:grid-cols-3 md:gap-3 gap-2">
       <div
         v-for="bank in bankOptions"
         :key="bank.value"
@@ -113,17 +120,6 @@ const handleBankSelect = (bankCode: string) => {
     </div>
 
     <!-- Selected Bank Display (when locked) -->
-    <div v-else-if="selectedBank" class="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-          <img :src="selectedBank.icon" :alt="selectedBank.label" class="w-8 h-8 object-contain" />
-        </div>
-        <div class="flex-1">
-          <h5 class="text-sm md:text-base font-[500]! text-gray-900">{{ selectedBank.fullname }}</h5>
-          <p class="text-xs text-gray-600">เลขบัญชี: 1234567890</p>
-        </div>
-      </div>
-    </div>
 
     <!-- Validation Message -->
     <div

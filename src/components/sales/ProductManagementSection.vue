@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Button, Select, InputNumber } from 'primevue'
-import { useProductStore } from '@/stores/product/product'
-import { useCategoryStore } from '@/stores/auction/category'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
-import type { IProduct, ICategory } from '@/types/sales'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 import CardProductList from './CardProductList.vue'
 import formatCurrency from '@/utils/formatCurrency'
 

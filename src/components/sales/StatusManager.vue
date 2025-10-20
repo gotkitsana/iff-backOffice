@@ -159,7 +159,6 @@ const salesStore = useSalesStore()
 const { mutate: updateSalesDetail } = useMutation({
   mutationFn: async (payload: IUpdateSalesPayload) => await salesStore.onUpdateSales(payload),
   onSuccess: (data: any) => {
-    console.log(data)
     toast.success('เปลี่ยนสถานะการขายสำเร็จ')
     emit('update:visible', false)
     resetForm()

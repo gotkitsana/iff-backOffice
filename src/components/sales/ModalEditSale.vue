@@ -71,7 +71,16 @@ const requiresBankSelection = computed(() => {
 const requiresSlipUpload = computed(() => {
   const currentStepIndex = getStatusStepIndex(saleForm.value.status)
   const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-  return currentStepIndex >= waitPaymentStepIndex
+  return currentStepIndex > waitPaymentStepIndex
+})
+
+// Disable selecting steps that are earlier than current persisted status
+const statusOptionsForSelect = computed(() => {
+  const baseIndex = getStatusStepIndex(props.saleData.status)
+  return salesStore.sellingStatusOptions.map((opt) => ({
+    ...opt,
+    disabled: getStatusStepIndex(opt.value) < baseIndex,
+  }))
 })
 
 // Product management functions
@@ -170,51 +179,13 @@ const handleSubmit = () => {
     return
   }
 
-  // Prepare form data for file upload
-  const formData = new FormData()
-
-  // Add all form fields (no need to handle slip file here since it's uploaded separately)
-  Object.keys(saleForm.value).forEach((key) => {
-    if (key === 'products') {
-      formData.append(key, JSON.stringify(saleForm.value[key]))
-    } else if (
-      saleForm.value[key as keyof typeof saleForm.value] !== null &&
-      saleForm.value[key as keyof typeof saleForm.value] !== undefined
-    ) {
-      formData.append(key, String(saleForm.value[key as keyof typeof saleForm.value]))
-    }
-  })
-
-  updateSale(formData)
+  updateSale(saleForm.value)
 }
 
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
-  mutationFn: (sale: FormData | IUpdateSalesPayload) => {
-    // For now, convert FormData back to object for existing API
-    if (sale instanceof FormData) {
-      const saleData: IUpdateSalesPayload = {
-        _id: sale.get('_id') as string,
-        item: sale.get('item') as string,
-        status: sale.get('status') as string,
-        user: sale.get('user') as string,
-        products: JSON.parse(sale.get('products') as string),
-        deposit: Number(sale.get('deposit')),
-        discount: Number(sale.get('discount')),
-        seller: sale.get('seller') as string,
-        note: sale.get('note') as string,
-        payment: sale.get('payment') as 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other',
-        bankCode: sale.get('bankCode') as string,
-        bankAccount: sale.get('bankAccount') as string,
-        cat: Number(sale.get('cat')),
-      }
-      return salesStore.onUpdateSales(saleData)
-    } else {
-      return salesStore.onUpdateSales(sale)
-    }
-  },
+  mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
   onSuccess: (data: unknown) => {
-    console.log(data)
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
@@ -323,9 +294,10 @@ const handleSlipStatusChanged = (status: boolean) => {
           <div>
             <Select
               v-model="saleForm.status"
-              :options="salesStore.sellingStatusOptions"
+              :options="statusOptionsForSelect"
               optionLabel="label"
               optionValue="value"
+              optionDisabled="disabled"
               fluid
               size="small"
               placeholder="เลือกสถานะรายการขาย"
@@ -356,16 +328,18 @@ const handleSlipStatusChanged = (status: boolean) => {
         <!-- Bank Selection (if required) -->
         <BankSelectionSection
           v-if="requiresBankSelection"
-          :selected-bank-code="props.saleData.bankCode || ''"
+          :selected-bank-code="saleForm.bankCode || ''"
           :is-submitting="isSubmitting"
-          :current-status="props.saleData.status"
+          :is-current-bank="props.saleData.bankCode"
+          :is-current-status="props.saleData.status"
           @update:selected-bank-code="updateBankCode"
         />
 
         <!-- Slip Upload Section -->
         <SlipUploadSection
           :sale-id="props.saleData._id || ''"
-          :current-status="props.saleData.status"
+          :selected-status="saleForm.status"
+          :is-current-status="props.saleData.status"
           :is-submitting="isSubmitting"
           @slip-status-changed="handleSlipStatusChanged"
         />
@@ -375,7 +349,7 @@ const handleSlipStatusChanged = (status: boolean) => {
       <ProductManagementSection
         :products="saleForm.products"
         :is-submitting="isSubmitting"
-        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')"
+        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')"
         @update:products="updateProducts"
         @add-product="addProduct"
         @remove-product="removeProduct"
