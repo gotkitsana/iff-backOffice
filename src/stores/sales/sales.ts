@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
-import type { ICreateSalesPayload, ISalesProduct, ISalesProductLabel, IUpdateSalesPayload, SellingLabel, SellingStatus, StatusWorkflow } from '@/types/sales'
+import type {
+  ICreateSalesPayload,
+  ISalesProduct,
+  ISalesProductLabel,
+  IUpdateSalesPayload,
+  SellingLabel,
+  SellingStatus,
+  StatusWorkflow,
+} from '@/types/sales'
 
 export const useSalesStore = defineStore('sales', () => {
   async function onGetSales() {
@@ -25,6 +33,18 @@ export const useSalesStore = defineStore('sales', () => {
 
   async function onDeleteSales(id: string) {
     const { data } = await api.delete(`/sale?id=${id}`)
+    return data
+  }
+
+  async function onUploadSlip(id: string, slip: File) {
+    const formData = new FormData()
+    formData.append('imageFile', slip)
+
+    const { data } = await api.post(`/sale/slip?saleId=${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return data
   }
 
@@ -147,7 +167,9 @@ export const useSalesStore = defineStore('sales', () => {
     },
   }
 
-  const getStatusTag = (status: SellingStatus): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warning' | 'danger' } => {
+  const getStatusTag = (
+    status: SellingStatus,
+  ): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warning' | 'danger' } => {
     switch (status) {
       case 'wait_product':
         return { label: 'ระหว่างจัดหา', severity: 'warning' }
@@ -271,5 +293,6 @@ export const useSalesStore = defineStore('sales', () => {
     getCategoryBgIcon,
     getCategoryBorderColor,
     getCategoryIcon,
+    onUploadSlip,
   }
 })

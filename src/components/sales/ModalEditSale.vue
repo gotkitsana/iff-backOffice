@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Textarea, Select, InputNumber, Button, FileUpload } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { Dialog, Textarea, Select, Button } from 'primevue'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 import type { ISales, IUpdateSalesPayload } from '@/types/sales'
-import CardProductList from './CardProductList.vue'
-import BankData from '@/config/BankData'
+import BankSelectionSection from './BankSelectionSection.vue'
+import SlipUploadSection from './SlipUploadSection.vue'
+import ProductManagementSection from './ProductManagementSection.vue'
+import PaymentCalculationSection from './PaymentCalculationSection.vue'
 
 // Props
 const props = defineProps<{
@@ -24,10 +23,8 @@ const emit = defineEmits<{
 }>()
 
 // Stores
-const productStore = useProductStore()
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
-const categoryStore = useCategoryStore()
 
 // Form data - ใช้โครงสร้างเดียวกับ ModalAddSale
 const saleForm = ref<IUpdateSalesPayload>({
@@ -35,7 +32,6 @@ const saleForm = ref<IUpdateSalesPayload>({
   payment: 'cash',
   bankCode: '',
   bankAccount: '',
-  slip: '',
   cat: 0,
   item: '',
   status: '',
@@ -48,105 +44,22 @@ const saleForm = ref<IUpdateSalesPayload>({
 })
 
 // Queries
-const { data: products } = useQuery<IProduct[]>({
-  queryKey: ['get_products'],
-  queryFn: () => productStore.onGetProducts(),
-})
-
 const { data: members } = useQuery<IMember[]>({
   queryKey: ['get_members'],
   queryFn: () => memberStore.onGetMembers(),
 })
 
-const { data: categories } = useQuery<ICategory[]>({
-  queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(),
-})
-
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
-}
-
 // Computed
-const availableProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => !p.sold && p.auctionOnly === 0)
-})
-
-const getProductOptionsForIndex = (currentIndex: number) => {
-  if (!availableProducts.value) return []
-
-  // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
-  const selectedProductIds = saleForm.value.products
-    .map((p, index) => (index !== currentIndex ? p.id : ''))
-    .filter((id) => id !== '')
-
-  // กรองสินค้าที่ยังไม่ได้เลือก
-  const unselectedProducts = availableProducts.value.filter(
-    (product) => !selectedProductIds.includes(product._id)
-  )
-
-  return unselectedProducts.map((product) => ({
-    label: `${product.name} (รหัส: ${product.sku})`,
-    value: product._id,
-  }))
-}
-
-const selectedProductDetails = computed(() => {
-  return saleForm.value.products.map((product: { id: string; quantity: number }) => {
-    if (!product.id || !availableProducts.value) return null
-    return {
-      ...availableProducts.value.find((p) => p._id === product.id),
-      quantity: product.quantity,
-    }
-  })
-})
-
-const totalAmount = computed(() => {
-  return saleForm.value.products.reduce((sum, product) => {
-    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
-    if (productDetail && productDetail.price) {
-      return sum + productDetail.price * product.quantity
-    }
-    return sum
-  }, 0)
-})
-
-const netAmount = computed(() => {
-  const netAmount = totalAmount.value - saleForm.value.discount
-  return netAmount < 0 ? 0 : netAmount
-})
+const totalAmount = ref(0)
 
 const selectedMemberDetails = computed(() => {
   if (!saleForm.value.user || !members.value) return null
   return members.value.find((m) => m._id === saleForm.value.user)
 })
 
-// Bank options for payment
-const bankOptions = computed(() => {
-  return Object.entries(BankData).map(([key, bank]) => ({
-    value: key,
-    label: (bank as { name: string; icon: string; color: string }).name,
-    icon: (bank as { name: string; icon: string; color: string }).icon,
-    color: (bank as { name: string; icon: string; color: string }).color,
-  }))
-})
-
 // Status step checking
-const statusSteps = [
-  'wait_product',
-  'wait_confirm',
-  'wait_payment',
-  'paid_complete',
-  'preparing',
-  'shipping',
-  'received',
-  'damaged',
-]
-
 const getStatusStepIndex = (status: string) => {
-  return statusSteps.indexOf(status)
+  return salesStore.sellingStatusOptions.findIndex((option) => option.value === status)
 }
 
 const requiresBankSelection = computed(() => {
@@ -157,8 +70,8 @@ const requiresBankSelection = computed(() => {
 
 const requiresSlipUpload = computed(() => {
   const currentStepIndex = getStatusStepIndex(saleForm.value.status)
-  const paidCompleteStepIndex = getStatusStepIndex('paid_complete')
-  return currentStepIndex >= paidCompleteStepIndex
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  return currentStepIndex >= waitPaymentStepIndex
 })
 
 // Product management functions
@@ -178,8 +91,24 @@ const removeProduct = (index: number) => {
   }
 }
 
-const isProductValid = (product: { id: string; quantity: number }) => {
-  return product.id && product.quantity > 0
+const updateProducts = (products: Array<{ id: string; quantity: number }>) => {
+  saleForm.value.products = products
+}
+
+const updateDeposit = (deposit: number) => {
+  saleForm.value.deposit = deposit
+}
+
+const updateDiscount = (discount: number) => {
+  saleForm.value.discount = discount
+}
+
+const updateBankCode = (bankCode: string) => {
+  saleForm.value.bankCode = bankCode
+}
+
+const updateTotalAmount = (amount: number) => {
+  totalAmount.value = amount
 }
 
 // Handlers
@@ -223,33 +152,67 @@ const handleSubmit = () => {
   isSubmitting.value = true
 
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products.filter((p) => !isProductValid(p))
+  const invalidProducts = saleForm.value.products.filter((p) => !(p.id && p.quantity > 0))
   if (invalidProducts.length > 0) {
     toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
-    isSubmitting.value = false
     return
   }
 
   // Check bank selection requirement
   if (requiresBankSelection.value && !saleForm.value.bankCode) {
     toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
-    isSubmitting.value = false
     return
   }
 
   // Check slip upload requirement
-  if (requiresSlipUpload.value && !saleForm.value.slip) {
+  if (requiresSlipUpload.value && !hasSlip.value) {
     toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
-    isSubmitting.value = false
     return
   }
 
-  updateSale(saleForm.value)
+  // Prepare form data for file upload
+  const formData = new FormData()
+
+  // Add all form fields (no need to handle slip file here since it's uploaded separately)
+  Object.keys(saleForm.value).forEach((key) => {
+    if (key === 'products') {
+      formData.append(key, JSON.stringify(saleForm.value[key]))
+    } else if (
+      saleForm.value[key as keyof typeof saleForm.value] !== null &&
+      saleForm.value[key as keyof typeof saleForm.value] !== undefined
+    ) {
+      formData.append(key, String(saleForm.value[key as keyof typeof saleForm.value]))
+    }
+  })
+
+  updateSale(formData)
 }
 
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
-  mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
+  mutationFn: (sale: FormData | IUpdateSalesPayload) => {
+    // For now, convert FormData back to object for existing API
+    if (sale instanceof FormData) {
+      const saleData: IUpdateSalesPayload = {
+        _id: sale.get('_id') as string,
+        item: sale.get('item') as string,
+        status: sale.get('status') as string,
+        user: sale.get('user') as string,
+        products: JSON.parse(sale.get('products') as string),
+        deposit: Number(sale.get('deposit')),
+        discount: Number(sale.get('discount')),
+        seller: sale.get('seller') as string,
+        note: sale.get('note') as string,
+        payment: sale.get('payment') as 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other',
+        bankCode: sale.get('bankCode') as string,
+        bankAccount: sale.get('bankAccount') as string,
+        cat: Number(sale.get('cat')),
+      }
+      return salesStore.onUpdateSales(saleData)
+    } else {
+      return salesStore.onUpdateSales(sale)
+    }
+  },
   onSuccess: (data: unknown) => {
     console.log(data)
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
@@ -274,7 +237,6 @@ const resetForm = () => {
     payment: 'cash',
     bankCode: '',
     bankAccount: '',
-    slip: '',
     cat: 0,
     item: '',
     status: '',
@@ -287,19 +249,10 @@ const resetForm = () => {
   }
 }
 
-// File upload handlers
-const onFileSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file) {
-    // Convert file to base64 or handle as needed
-    // const reader = new FileReader()
-    // reader.onload = (e) => {
-    //   saleForm.value.slip = e.target?.result as string
-    // }
-    // reader.readAsDataURL(file)
+const hasSlip = ref(false)
 
-    saleForm.value.slip = 'file'
-  }
+const handleSlipStatusChanged = (status: boolean) => {
+  hasSlip.value = status
 }
 </script>
 
@@ -308,8 +261,8 @@ const onFileSelect = (event: { files: File[] }) => {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    :style="{ width: '70rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
+    :style="{ width: '50rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '99vw' }"
     :pt="{
       header: 'p-4',
       footer: 'p-4',
@@ -332,7 +285,7 @@ const onFileSelect = (event: { files: File[] }) => {
     <div class="space-y-4">
       <!-- Customer Information -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <!-- Selected Member Details -->
+        <!-- Selected Member Details -->
         <div
           v-if="selectedMemberDetails"
           class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg"
@@ -401,218 +354,46 @@ const onFileSelect = (event: { files: File[] }) => {
         </div>
 
         <!-- Bank Selection (if required) -->
-        <div
+        <BankSelectionSection
           v-if="requiresBankSelection"
-          class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-credit-card text-blue-600 text-lg"></i>
-            </div>
-            <div>
-              <h4 class="font-semibold text-blue-900">ข้อมูลการชำระเงิน</h4>
-              <p class="text-sm text-blue-700">เลือกบัญชีธนาคารที่จะให้ลูกค้าโอนเงินมา</p>
-            </div>
-          </div>
+          :selected-bank-code="saleForm.bankCode || ''"
+          :is-submitting="isSubmitting"
+          :current-status="saleForm.status"
+          @update:selected-bank-code="updateBankCode"
+        />
 
-          <!-- Bank Selection -->
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <div
-              v-for="bank in bankOptions"
-              :key="bank.value"
-              :class="`p-3 rounded-lg border cursor-pointer transition-all ${
-                saleForm.bankCode === bank.value
-                  ? 'border-blue-400 bg-blue-500/90 text-white'
-                  : 'border-gray-200 hover:border-blue-400 hover:bg-blue-500/90 hover:text-white'
-              }`"
-              @click="saleForm.bankCode = bank.value"
-            >
-              <div class="flex items-center gap-2">
-                <img :src="bank.icon" :alt="bank.label" class="w-6 h-6" />
-                <span class="text-sm font-medium">{{ bank.label }}</span>
-              </div>
-            </div>
-          </div>
-          <small v-if="!saleForm.bankCode && isSubmitting" class="text-red-500 mt-2 block"
-            >กรุณาเลือกบัญชีธนาคาร</small
-          >
-        </div>
-
-        <!-- Slip Upload (if required) -->
-        <div
-          v-if="requiresSlipUpload"
-          class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-upload text-green-600 text-lg"></i>
-            </div>
-            <div>
-              <h4 class="font-semibold text-green-900">ยืนยันการโอนเงิน</h4>
-              <p class="text-sm text-green-700">อัปโหลดสลิปการโอนเงินเพื่อยืนยันการชำระเงิน</p>
-            </div>
-          </div>
-
-          <FileUpload
-            mode="basic"
-            name="slip"
-            accept="image/*"
-            :maxFileSize="2000000"
-            @select="onFileSelect"
-            chooseLabel="เลือกสลิป"
-            class="w-full"
-            :invalid="!saleForm.slip && isSubmitting"
-          />
-          <small v-if="!saleForm.slip && isSubmitting" class="text-red-500 mt-2 block"
-            >กรุณาอัปโหลดสลิปการโอนเงิน</small
-          >
-        </div>
-
-
+        <!-- Slip Upload Section -->
+        <SlipUploadSection
+          :sale-id="props.saleData._id || ''"
+          :current-status="props.saleData.status"
+          :is-submitting="isSubmitting"
+          @slip-status-changed="handleSlipStatusChanged"
+        />
       </div>
 
-      <!-- Product Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <i class="pi pi-box text-blue-600"></i>
-            รายการสินค้า
-          </h4>
-          <Button
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="addProduct"
-            :disabled="saleForm.products.length >= 10"
-          />
-        </div>
+      <!-- Product Management -->
+      <ProductManagementSection
+        :products="saleForm.products"
+        :is-submitting="isSubmitting"
+        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')"
+        @update:products="updateProducts"
+        @add-product="addProduct"
+        @remove-product="removeProduct"
+        @update:total-amount="updateTotalAmount"
+      />
 
-        <div class="space-y-4">
-          <div
-            v-for="(product, index) in saleForm.products"
-            :key="index"
-            class="p-3 bg-gray-50 border border-gray-200 rounded-xl"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
-              <Button
-                v-if="saleForm.products.length > 1"
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                text
-                rounded
-                @click="removeProduct(index)"
-                v-tooltip.top="'ลบสินค้านี้'"
-              />
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <Select
-                  v-model="product.id"
-                  :options="getProductOptionsForIndex(index)"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกสินค้าที่ต้องการขาย"
-                  fluid
-                  size="small"
-                  :invalid="!product.id && isSubmitting"
-                  showClear
-                />
-                <small v-if="!product.id && isSubmitting" class="text-red-500"
-                  >กรุณาเลือกสินค้า</small
-                >
-              </div>
-
-              <div>
-                <InputNumber
-                  v-model="product.quantity"
-                  :min="1"
-                  :max="100"
-                  fluid
-                  size="small"
-                  placeholder="ระบุจำนวนสินค้า"
-                  :invalid="!product.quantity && isSubmitting"
-                />
-                <small v-if="!product.quantity && isSubmitting" class="text-red-500"
-                  >กรุณากรอกจำนวนสินค้า</small
-                >
-              </div>
-            </div>
-
-            <CardProductList
-              v-if="selectedProductDetails[index]"
-              :name="selectedProductDetails[index]?.name || ''"
-              :quantity="selectedProductDetails[index]?.quantity || 0"
-              :price="selectedProductDetails[index]?.price || 0"
-              :detail="selectedProductDetails[index]?.detail || ''"
-              :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
-            />
-          </div>
-        </div>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
-        >
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              มัดจำ (บาท)
-            </label>
-            <InputNumber
-              v-model="saleForm.deposit"
-              :min="0"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-              placeholder="ระบุยอดมัดจำ"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              ส่วนลด (บาท)
-            </label>
-            <InputNumber
-              v-model="saleForm.discount"
-              :min="0"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-              placeholder="ระบุส่วนลด"
-            />
-          </div>
-        </div>
-
-        <!-- Summary -->
-        <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-calculator text-green-600"></i>
-              <span class="font-semibold text-gray-800">สรุปยอดเงิน</span>
-            </div>
-            <div class="text-right">
-              <div class="text-sm text-gray-600">
-                มูลค่าสินค้า: {{ formatCurrency(totalAmount) }}
-              </div>
-              <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-0.5">
-                ส่วนลด: {{ formatCurrency(saleForm.discount) }}
-              </div>
-              <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
-                มัดจำ: {{ formatCurrency(saleForm.deposit) }}
-              </div>
-              <div class="font-[500]! text-green-600 border-t border-green-300 pt-1 mt-1">
-                ยอดสุทธิ: {{ formatCurrency(netAmount) }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Payment Calculation -->
+      <PaymentCalculationSection
+        :total-amount="totalAmount"
+        :deposit="saleForm.deposit"
+        :discount="saleForm.discount"
+        :is-submitting="isSubmitting"
+        :read-only="
+          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
+        "
+        @update:deposit="updateDeposit"
+        @update:discount="updateDiscount"
+      />
 
       <!-- Notes -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">

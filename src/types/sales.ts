@@ -23,7 +23,6 @@ export type IUpdateSalesPayload = {
   payment?: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode?: string
   bankAccount?: string
-  slip?: string
 
   cat: number
 }
@@ -58,7 +57,6 @@ export type ISales = {
   payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode: string
   bankAccount: string
-  slip: string
 }
 
 export type StatusWorkflow = Record<

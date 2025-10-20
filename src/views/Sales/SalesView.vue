@@ -27,7 +27,7 @@ const showProductDetailModal = ref(false)
 const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
-const { data: salesData, isLoading: isLoadingSales } = useQuery<ISales[]>({
+const { data: salesData, isLoading: isLoadingSales, refetch } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
 })
@@ -269,7 +269,7 @@ const handleStatusChange = (
 </script>
 
 <template>
-  {{ selectedSale }}
+
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <div class="flex items-center justify-between flex-wrap gap-2">
@@ -545,7 +545,7 @@ const handleStatusChange = (
     <!-- Sales Table -->
     <Card :pt="{ body: 'p-4' }">
       <template #header>
-        <div class="flex items-center justify-between px-4 pt-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 px-4 pt-4">
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
               <i class="pi pi-filter text-gray-600"></i>
