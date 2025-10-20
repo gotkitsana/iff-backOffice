@@ -356,9 +356,9 @@ const handleSlipStatusChanged = (status: boolean) => {
         <!-- Bank Selection (if required) -->
         <BankSelectionSection
           v-if="requiresBankSelection"
-          :selected-bank-code="saleForm.bankCode || ''"
+          :selected-bank-code="props.saleData.bankCode || ''"
           :is-submitting="isSubmitting"
-          :current-status="saleForm.status"
+          :current-status="props.saleData.status"
           @update:selected-bank-code="updateBankCode"
         />
 

@@ -139,7 +139,7 @@ const isProductValid = (product: { id: string; quantity: number }) => {
     </div>
 
     <div class="space-y-4">
-      <div v-for="(product, index) in products" :key="index">
+      <div v-for="(product, index) in products" :key="index" class="space-y-4">
         <div v-if="!props.readOnly" class="p-3 bg-gray-50 border border-gray-200 rounded-xl">
           <div class="flex items-center justify-between mb-2">
             <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
@@ -190,16 +190,27 @@ const isProductValid = (product: { id: string; quantity: number }) => {
               >
             </div>
           </div>
+
+          <CardProductList
+            v-if="selectedProductDetails[index]"
+            :name="selectedProductDetails[index]?.name || ''"
+            :quantity="selectedProductDetails[index]?.quantity || 0"
+            :price="selectedProductDetails[index]?.price || 0"
+            :detail="selectedProductDetails[index]?.detail || ''"
+            :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+          />
         </div>
 
-        <CardProductList
-          v-if="selectedProductDetails[index]"
-          :name="selectedProductDetails[index]?.name || ''"
-          :quantity="selectedProductDetails[index]?.quantity || 0"
-          :price="selectedProductDetails[index]?.price || 0"
-          :detail="selectedProductDetails[index]?.detail || ''"
-          :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
-        />
+        <div v-else>
+          <CardProductList
+            v-if="selectedProductDetails[index]"
+            :name="selectedProductDetails[index]?.name || ''"
+            :quantity="selectedProductDetails[index]?.quantity || 0"
+            :price="selectedProductDetails[index]?.price || 0"
+            :detail="selectedProductDetails[index]?.detail || ''"
+            :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+          />
+        </div>
       </div>
     </div>
   </div>
