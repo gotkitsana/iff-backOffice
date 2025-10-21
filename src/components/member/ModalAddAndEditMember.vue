@@ -203,6 +203,8 @@ const handleAddMember = () => {
     mutateUpdate({
       ...payload,
       _id: props.data._id,
+      cat: props.data.cat,
+      uat: props.data.uat,
     })
   } else {
     mutate(payload)

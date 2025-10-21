@@ -11,11 +11,11 @@ export const useMemberStore = defineStore('member', () => {
 
   const getStatusTag = (status: string): 'secondary' | 'success' | 'warn' => {
     switch (status) {
-      case 'Ci':
+      case 'ci':
         return 'secondary'
-      case 'Cs':
+      case 'cs':
         return 'success'
-      case 'Css':
+      case 'css':
         return 'warn'
       default:
         return 'secondary'

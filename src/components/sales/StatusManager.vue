@@ -3,10 +3,11 @@ import { ref, computed, watch } from 'vue'
 import { Dialog, Button, Tag, Card } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { StatusWorkflow, SellingStatus, ISales, IUpdateSalesPayload } from '@/types/sales'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import SlipUploadSection from './SlipUploadSection.vue'
 import BankSelectionSection from './BankSelectionSection.vue'
+import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 
 // Props
 const props = defineProps<{
@@ -37,7 +38,7 @@ const currentStatusInfo = computed(() => {
 const availableNextSteps = computed(() => {
   if (!currentStatusInfo.value) return []
 
-  const currentStepIndex = allSteps.value.findIndex(step => step.key === props.currentStatus)
+  const currentStepIndex = allSteps.value.findIndex((step) => step.key === props.currentStatus)
 
   // ถ้าเป็น step สุดท้าย (damaged) ไม่แสดง step อื่น
   if (currentStepIndex === allSteps.value.length - 1) {
@@ -49,8 +50,8 @@ const availableNextSteps = computed(() => {
       value: status,
       ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
     }))
-    .filter(step => {
-      const stepIndex = allSteps.value.findIndex(s => s.key === step.value)
+    .filter((step) => {
+      const stepIndex = allSteps.value.findIndex((s) => s.key === step.value)
       return stepIndex > currentStepIndex
     })
 })
@@ -157,8 +158,6 @@ const handleSlipStatusChanged = (hasSlipStatus: boolean) => {
   statusForm.value.hasSlip = hasSlipStatus
 }
 
-
-
 const handleClose = () => {
   emit('update:visible', false)
   resetForm()
@@ -225,14 +224,43 @@ const handleSubmit = () => {
   })
 }
 // Mutation for updating sales status
+const { data: members } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
+})
 const queryClient = useQueryClient()
 const { mutate: updateSalesStatus } = useMutation({
   mutationFn: (payload: IUpdateSalesPayload) => salesStore.onUpdateSales(payload),
-  onSuccess: () => {
-    toast.success('เปลี่ยนสถานะการขายสำเร็จ')
-    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-    emit('update:visible', false)
-    resetForm()
+  onSuccess: (data: any, variables: IUpdateSalesPayload) => {
+    if (data.data.modifiedCount > 0) {
+      toast.success('เปลี่ยนสถานะการขายสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+      if (variables.status === 'paid_complete') {
+        const member = members.value?.find((m) => m._id === variables.user)
+        if (member && (member.status === 'ci' || member.code.startsWith('ci'))) {
+          mutateUpdate({
+            _id: member._id,
+            status: 'cs',
+            code: member.code.replace('ci', 'cs'),
+            contacts: member.contacts || [],
+            interests: member.interests || [],
+            displayName: member.displayName,
+            name: member.name,
+            address: member.address,
+            province: member.province,
+            phone: member.phone,
+            type: member.type,
+            username: member.username,
+            password: member.password,
+            bidder: member.bidder,
+            cat: member.cat,
+            uat: member.uat,
+          })
+        }
+      }
+      emit('update:visible', false)
+      resetForm()
+    }
   },
   onError: (error: unknown) => {
     console.log(error)
@@ -240,6 +268,14 @@ const { mutate: updateSalesStatus } = useMutation({
       (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
       'เปลี่ยนสถานะการขายไม่สำเร็จ'
     toast.error(errorMessage)
+  },
+})
+
+const memberStore = useMemberStore()
+const { mutate: mutateUpdate } = useMutation({
+  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
   },
 })
 </script>
