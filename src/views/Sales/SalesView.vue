@@ -777,8 +777,9 @@ const closeDeleteModal = () => {
 
   <!-- ลบรายการขาย -->
   <ModalDeleteSale
-    v-model:showDeleteModal="showDeleteModal"
-    :sale-data="selectedSaleForDelete"
-    @onCloseDeleteModal="closeDeleteModal"
-  />
+      v-if="!!selectedSaleForDelete"
+      :showDeleteModal="showDeleteModal"
+      @onCloseDeleteModal="closeDeleteModal"
+      :saleData="selectedSaleForDelete"
+    />
 </template>

@@ -8,7 +8,7 @@ import type { ISales } from '@/types/sales'
 
 const props = defineProps<{
   showDeleteModal: boolean
-  saleData: ISales | null
+  saleData: ISales
 }>()
 
 const emit = defineEmits<{
@@ -60,30 +60,30 @@ const { mutate, isPending } = useMutation({
       title: 'text-lg font-semibold!',
     }"
   >
-    <div class="flex items-start space-x-3">
-      <i class="pi pi-exclamation-triangle text-red-500 !text-3xl mt-1"></i>
-      <div class="flex-1">
-        <p class="font-[500]! text-gray-700 mb-2">
-          คุณต้องการลบรายการขายนี้หรือไม่?
-        </p>
-        <div v-if="saleData" class="bg-gray-50 rounded-lg p-3 space-y-1">
-          <div class="flex justify-between">
-            <span class="text-gray-600">เลขรายการ:</span>
-            <span class="font-medium text-gray-900">{{ saleData.item }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">ลูกค้า:</span>
-            <span class="font-medium text-gray-900">{{ saleData.user.name || saleData.user.displayName }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">จำนวนสินค้า:</span>
-            <span class="font-medium text-gray-900">{{ saleData.products.length }} รายการ</span>
-          </div>
-        </div>
-        <p class="text-sm text-red-600 mt-2">
-          ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้
-        </p>
+    <div class="flex items-center gap-x-3 mb-2">
+      <i class="pi pi-exclamation-circle text-red-500 !text-4xl mt-1"></i>
+      <div>
+        <p class="font-[500]! text-gray-700 text-lg">คุณต้องการลบรายการขายนี้หรือไม่?</p>
       </div>
+    </div>
+    <div>
+      <div v-if="saleData" class="bg-gray-50 rounded-lg p-3 space-y-1">
+        <div class="flex justify-between">
+          <span class="text-gray-600">เลขรายการ:</span>
+          <span class="font-medium text-gray-900">{{ saleData.item }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">ลูกค้า:</span>
+          <span class="font-medium text-gray-900">{{
+            saleData.user?.name || saleData.user?.displayName
+          }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">จำนวนสินค้า:</span>
+          <span class="font-medium text-gray-900">{{ saleData.products.length }} รายการ</span>
+        </div>
+      </div>
+      <p class="text-sm text-red-600 mt-2">⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
     </div>
 
     <template #footer>
@@ -98,9 +98,9 @@ const { mutate, isPending } = useMutation({
         <Button
           label="ลบรายการขาย"
           icon="pi pi-trash"
-          @click="mutate(saleData?._id || '')"
+          @click="mutate(saleData._id)"
           :loading="isPending"
-          :disabled="!saleData?._id"
+          :disabled="!saleData._id"
           severity="danger"
           size="small"
         />
