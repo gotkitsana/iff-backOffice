@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Dialog, Textarea, Select, Button } from 'primevue'
-import { useMemberStore, type IMember } from '@/stores/member/member'
+import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
@@ -185,14 +185,44 @@ const handleSubmit = () => {
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: (data: unknown) => {
+  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+      if (variables.status === 'paid_complete') {
+        const member = members.value?.find((m) => m._id === variables.user)
+        if (member && (member.status === 'ci' || member.code.startsWith('ci'))) {
+          mutateUpdate({
+            _id: member._id,
+            status: 'cs',
+            code: member.code.replace('ci', 'cs'),
+            contacts: member.contacts || [],
+            interests: member.interests || [],
+            displayName: member.displayName,
+            name: member.name,
+            address: member.address,
+            province: member.province,
+            phone: member.phone,
+            type: member.type,
+            username: member.username,
+            password: member.password,
+            bidder: member.bidder,
+            cat: member.cat,
+            uat: member.uat,
+          })
+        }
+      }
       handleClose()
     } else {
       toast.error('แก้ไขข้อมูลการขายไม่สำเร็จ')
     }
+  },
+})
+
+const { mutate: mutateUpdate } = useMutation({
+  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
   },
 })
 
@@ -349,7 +379,9 @@ const handleSlipStatusChanged = (status: boolean) => {
       <ProductManagementSection
         :products="saleForm.products"
         :is-submitting="isSubmitting"
-        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')"
+        :read-only="
+          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
+        "
         @update:products="updateProducts"
         @add-product="addProduct"
         @remove-product="removeProduct"

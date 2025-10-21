@@ -223,6 +223,8 @@ export interface CreateMemberPayload {
 
 export interface UpdateMemberPayload extends CreateMemberPayload {
   _id: string
+  cat: number
+  uat: number
 }
 
 export interface ResetPasswordPayload {
