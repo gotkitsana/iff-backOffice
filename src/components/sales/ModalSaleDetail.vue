@@ -4,7 +4,9 @@ import { Dialog, Tag, Button } from 'primevue'
 import { useSalesStore } from '../../stores/sales/sales'
 import type { ISales } from '../../types/sales'
 import dayjs from 'dayjs'
-import { useMemberStore } from '../../stores/member/member'
+import { useMemberStore, type IMember } from '../../stores/member/member'
+import { useQuery } from '@tanstack/vue-query'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 
 // Props
 const props = defineProps<{
@@ -75,10 +77,6 @@ const handleClose = () => {
   emit('update:visible', false)
 }
 
-const handleEdit = () => {
-  handleClose()
-}
-
 const handlePrintInvoice = () => {
   // สร้างหน้าต่างใหม่สำหรับพิมพ์
   const printWindow = window.open('', '_blank')
@@ -89,6 +87,16 @@ const handlePrintInvoice = () => {
   printWindow.document.close()
   printWindow.print()
 }
+
+const { data: members } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
+})
+const findMemberData = (id: string) => {
+  if (!members.value) return null
+  return members.value.find((member) => member._id === id)
+}
+console.log(members)
 
 const generateInvoiceHTML = () => {
   const currentDate = formatDateForInvoice(new Date())
@@ -160,6 +168,7 @@ const generateInvoiceHTML = () => {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
+          font-size: 14px;
         }
         .items-table {
           width: 100%;
@@ -171,6 +180,7 @@ const generateInvoiceHTML = () => {
           border: 1px solid #ddd;
           padding: 10px;
           text-align: left;
+          font-size: 14px;
         }
         .items-table th {
           background: #f8f9fa;
@@ -216,7 +226,7 @@ const generateInvoiceHTML = () => {
         }
         .signature-dots {
           border-bottom: 1px dotted #333;
-          width: 120px;
+          width: 150px;
           height: 15px;
           margin-bottom: 8px;
         }
@@ -263,14 +273,14 @@ const generateInvoiceHTML = () => {
         <div class="customer-section">
             <div class="customer-title">ข้อมูลลูกค้า</div>
             <div class="customer-details">
-              <div><strong>ชื่อลูกค้า:</strong> ${
+              <div>ชื่อลูกค้า: ${
                 props.saleData.user.name || props.saleData.user.displayName
               }</div>
-              <div><strong>รหัสลูกค้า:</strong> ${
+              <div>รหัสลูกค้า: ${
                 props.saleData.user.code.charAt(0).toUpperCase() + props.saleData.user.code.slice(1)
               }</div>
-              <div><strong>เบอร์โทร:</strong> -</div>
-              <div><strong>ประเภทลูกค้า:</strong> ${props.saleData.user.type}</div>
+              <div>ที่อยู่: ${findMemberData(props.saleData.user._id)?.address}, ${memberStore.provinceOptions.find((option) => option.value === findMemberData(props.saleData.user._id)?.province)?.label || '-'}</div>
+              <div>เบอร์โทร: ${findMemberData(props.saleData.user._id)?.phone}</div>
             </div>
         </div>
 
@@ -332,17 +342,17 @@ const generateInvoiceHTML = () => {
           <div class="signature-section">
             <div class="signature-box">
               <div class="signature-dots"></div>
-              <div class="signature-parentheses">(                     )</div>
+              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
               <div class="signature-label">ผู้รับสินค้า</div>
             </div>
             <div class="signature-box">
               <div class="signature-dots"></div>
-              <div class="signature-parentheses">(                     )</div>
+              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
               <div class="signature-label">ผู้ชำระเงิน</div>
             </div>
             <div class="signature-box">
               <div class="signature-dots"></div>
-              <div class="signature-parentheses">(                     )</div>
+              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
               <div class="signature-label">ผู้รับเงิน</div>
             </div>
           </div>
@@ -358,6 +368,15 @@ const findMemberStatusTag = (status: string) => {
 }
 const findMemberStatusSeverity = (status: string) => {
   return memberStore.getStatusTag(status)
+}
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
+const handleFindCategory = (id: string | null | undefined) => {
+  if (!id) return ''
+  return categories.value?.find((category) => category._id === id)?.name
 }
 </script>
 
@@ -397,7 +416,7 @@ const findMemberStatusSeverity = (status: string) => {
 
       <!-- Customer and Order Info -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-gray-50 rounded-lg p-4">
+        <div class="bg-gray-50/95 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <i class="pi pi-user text-green-600"></i>
             ข้อมูลลูกค้า
@@ -430,7 +449,7 @@ const findMemberStatusSeverity = (status: string) => {
           </div>
         </div>
 
-        <div class="bg-gray-50 rounded-lg p-4">
+        <div class="bg-gray-50/95 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <i class="pi pi-shopping-cart text-blue-600"></i>
             ข้อมูลการสั่งซื้อ
@@ -440,10 +459,10 @@ const findMemberStatusSeverity = (status: string) => {
               <span class="text-gray-600">ผู้ขาย:</span>
               <span class="font-medium">{{ saleData.seller }}</span>
             </div>
-            <div class="flex justify-between">
+            <!-- <div class="flex justify-between">
               <span class="text-gray-600">วิธีการชำระเงิน:</span>
               <Tag :value="paymentMethodLabel" severity="success" size="small" />
-            </div>
+            </div> -->
             <div class="flex justify-between">
               <span class="text-gray-600">สถานะการขาย:</span>
               <Tag
@@ -461,7 +480,7 @@ const findMemberStatusSeverity = (status: string) => {
       </div>
 
       <!-- Products Details -->
-      <div class="bg-gray-50 rounded-lg p-4">
+      <div class="bg-gray-50/95 rounded-lg p-4">
         <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <i class="pi pi-box text-purple-600"></i>
           รายการสินค้า
@@ -486,8 +505,8 @@ const findMemberStatusSeverity = (status: string) => {
                 <td class="px-4 py-2 text-sm text-gray-900">{{ index + 1 }}</td>
                 <td class="px-4 py-2 text-sm text-gray-900">
                   <div>
-                    <div class="font-medium">{{ product.name }}</div>
-                    <div class="text-xs text-gray-500">หมวดหมู่: {{ product.category || '-' }}</div>
+                    <div class="font-medium!">{{ product.name }}</div>
+                    <div class="text-xs text-gray-600">หมวดหมู่: {{ salesStore.categoryTypes.find((t) => t.value === handleFindCategory(product.category))?.label || '-' }}</div>
                   </div>
                 </td>
                 <td class="px-4 py-2 text-center text-sm text-gray-900">
@@ -506,7 +525,7 @@ const findMemberStatusSeverity = (status: string) => {
       </div>
 
       <!-- Pricing Summary -->
-      <div class="bg-gray-50 rounded-lg p-4">
+      <div class="bg-gray-50/95 rounded-lg p-4">
         <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <i class="pi pi-calculator text-yellow-600"></i>
           สรุปราคา
@@ -523,7 +542,7 @@ const findMemberStatusSeverity = (status: string) => {
             </div>
             <div class="flex justify-between items-center">
               <span class="text-gray-600">ส่วนลด:</span>
-              <span class="font-medium text-red-600">-{{ formatCurrency(saleData.discount) }}</span>
+              <span class="font-medium text-red-600">{{ formatCurrency(saleData.discount) }}</span>
             </div>
             <div class="border-t border-gray-300 pt-3">
               <div class="flex justify-between items-center">
@@ -595,13 +614,6 @@ const findMemberStatusSeverity = (status: string) => {
             icon="pi pi-times"
             severity="secondary"
             @click="handleClose"
-            size="small"
-          />
-          <Button
-            label="แก้ไข"
-            icon="pi pi-pencil"
-            @click="handleEdit"
-            severity="info"
             size="small"
           />
         </div>
