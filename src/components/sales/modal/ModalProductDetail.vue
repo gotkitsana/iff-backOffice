@@ -4,7 +4,7 @@ import { Dialog, Button, Card, Tag, Divider } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import formatCurrency from '@/utils/formatCurrency'
 import type { ISales } from '@/types/sales'
-import CardProductList from './CardProductList.vue'
+import CardProductList from '../CardProductList.vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 

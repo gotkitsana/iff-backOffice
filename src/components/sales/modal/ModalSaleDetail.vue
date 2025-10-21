@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Tag, Button } from 'primevue'
-import { useSalesStore } from '../../stores/sales/sales'
-import type { ISales } from '../../types/sales'
+import { useSalesStore } from '../../../stores/sales/sales'
+import type { ISales } from '../../../types/sales'
 import dayjs from 'dayjs'
-import { useMemberStore, type IMember } from '../../stores/member/member'
+import { useMemberStore, type IMember } from '../../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 

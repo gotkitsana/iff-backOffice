@@ -2,17 +2,17 @@
 import { ref, computed } from 'vue'
 import { Card, DataTable, Column, Tag, Button, Tabs, TabList, Tab } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
-import { toast } from 'vue3-toastify'
-import ModalAddSale from '@/components/sales/ModalAddSale.vue'
-import ModalEditSale from '@/components/sales/ModalEditSale.vue'
-import ModalSaleDetail from '@/components/sales/ModalSaleDetail.vue'
-import ModalProductDetail from '@/components/sales/ModalProductDetail.vue'
+import ModalAddSale from '@/components/sales/modal/ModalAddSale.vue'
+import ModalEditSale from '@/components/sales/modal/ModalEditSale.vue'
+import ModalSaleDetail from '@/components/sales/modal/ModalSaleDetail.vue'
+import ModalProductDetail from '@/components/sales/modal/ModalProductDetail.vue'
+import ModalDeleteSale from '@/components/sales/modal/ModalDeleteSale.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
-import type { ISales, ISalesProduct, SellingStatus } from '@/types/sales'
+import type { ISales, SellingStatus } from '@/types/sales'
 import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 
 // Stores
@@ -28,7 +28,10 @@ const showProductDetailModal = ref(false)
 const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
-const { data: salesData, isLoading: isLoadingSales, refetch } = useQuery<ISales[]>({
+const {
+  data: salesData,
+  isLoading: isLoadingSales,
+} = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
 })
@@ -85,14 +88,14 @@ const currentFilterDisplay = computed(() => {
 })
 const getStatusStepOrder = (status: string) => {
   const statusOrder: Record<SellingStatus, number> = {
-    'wait_product': 1,
-    'wait_confirm': 2,
-    'wait_payment': 3,
-    'paid_complete': 4,
-    'preparing': 5,
-    'shipping': 6,
-    'received': 7,
-    'damaged': 8,
+    wait_product: 1,
+    wait_confirm: 2,
+    wait_payment: 3,
+    paid_complete: 4,
+    preparing: 5,
+    shipping: 6,
+    received: 7,
+    damaged: 8,
   }
   return statusOrder[status as SellingStatus] || 0
 }
@@ -188,16 +191,21 @@ const openProductDetailModal = (sale: ISales) => {
   showProductDetailModal.value = true
 }
 
-const handleCancelSale = (sale: ISales) => {
-  if (confirm(`คุณต้องการยกเลิกการขาย ${sale.item} หรือไม่?`)) {
-    sale.status = 'damaged'
-    toast.success('ยกเลิกการขายสำเร็จ')
-  }
+const showDeleteModal = ref(false)
+const selectedSaleForDelete = ref<ISales | null>(null)
+
+const openDeleteModal = (sale: ISales) => {
+  selectedSaleForDelete.value = sale
+  showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false
+  selectedSaleForDelete.value = null
 }
 </script>
 
 <template>
-
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <div class="flex items-center justify-between flex-wrap gap-2">
@@ -702,7 +710,7 @@ const handleCancelSale = (sale: ISales) => {
             :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-                <p class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</p>
+              <p class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</p>
             </template>
           </Column>
 
@@ -715,16 +723,12 @@ const handleCancelSale = (sale: ISales) => {
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
                 <Button
-                  v-if="
-                    slotProps.data.status === 'wait_product' ||
-                    slotProps.data.status === 'wait_confirm'
-                  "
-                  icon="pi pi-times"
+                  icon="pi pi-trash"
                   severity="danger"
                   size="small"
                   outlined
-                  @click="handleCancelSale(slotProps.data)"
-                  v-tooltip.top="'ยกเลิกการขายนี้'"
+                  @click="openDeleteModal(slotProps.data)"
+                  v-tooltip.top="'ลบรายการขาย'"
                 />
                 <Button
                   icon="pi pi-pencil"
@@ -746,11 +750,7 @@ const handleCancelSale = (sale: ISales) => {
   <ModalAddSale v-model:visible="showAddModal" />
 
   <!-- แก้ไขรายการขาย -->
-  <ModalEditSale
-    v-if="selectedSale"
-    v-model:visible="showEditModal"
-    :sale-data="selectedSale"
-  />
+  <ModalEditSale v-if="selectedSale" v-model:visible="showEditModal" :sale-data="selectedSale" />
 
   <!-- รายละเอียดรายการขาย -->
   <ModalSaleDetail
@@ -773,5 +773,12 @@ const handleCancelSale = (sale: ISales) => {
     v-if="selectedSale"
     v-model:visible="showProductDetailModal"
     :sale-data="selectedSale"
+  />
+
+  <!-- ลบรายการขาย -->
+  <ModalDeleteSale
+    v-model:showDeleteModal="showDeleteModal"
+    :sale-data="selectedSaleForDelete"
+    @onCloseDeleteModal="closeDeleteModal"
   />
 </template>

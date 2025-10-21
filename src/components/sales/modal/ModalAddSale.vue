@@ -9,7 +9,7 @@ import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 import type { ICreateSalesPayload } from '@/types/sales'
-import CardProductList from './CardProductList.vue'
+import CardProductList from '../CardProductList.vue'
 
 // Props
 defineProps<{

@@ -6,10 +6,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales, IUpdateSalesPayload } from '@/types/sales'
-import BankSelectionSection from './BankSelectionSection.vue'
-import SlipUploadSection from './SlipUploadSection.vue'
-import ProductManagementSection from './ProductManagementSection.vue'
-import PaymentCalculationSection from './PaymentCalculationSection.vue'
+import BankSelectionSection from '../BankSelectionSection.vue'
+import SlipUploadSection from '../SlipUploadSection.vue'
+import ProductManagementSection from '../ProductManagementSection.vue'
+import PaymentCalculationSection from '../PaymentCalculationSection.vue'
 
 // Props
 const props = defineProps<{
