@@ -248,24 +248,6 @@ const handleCancelSale = (sale: ISales) => {
     toast.success('ยกเลิกการขายสำเร็จ')
   }
 }
-
-const handleStatusChange = (
-  newStatus: string,
-  bankInfo?: { bank: string; accountNumber?: string; amount?: number }
-) => {
-  if (selectedSale.value) {
-    selectedSale.value.status = newStatus as SellingStatus
-
-    // Update bank information if provided
-    if (bankInfo) {
-      selectedSale.value.bankCode = bankInfo.bank
-      selectedSale.value.bankAccount = bankInfo.accountNumber || ''
-    }
-
-    toast.success('เปลี่ยนสถานะสำเร็จ')
-    showStatusManager.value = false
-  }
-}
 </script>
 
 <template>
@@ -833,10 +815,11 @@ const handleStatusChange = (
 
   <!-- จัดการสถานะการขาย -->
   <StatusManager
+    v-if="selectedSale"
     v-model:visible="showStatusManager"
     :current-status="selectedSale?.status || ''"
     :order-number="selectedSale?.item || ''"
-    @status-changed="handleStatusChange"
+    :current-data="selectedSale"
   />
 
   <!-- รายละเอียดสินค้า -->

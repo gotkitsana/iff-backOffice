@@ -1,46 +1,32 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Button, Tag, Card, InputText, Textarea } from 'primevue'
-import BankData from '../../config/BankData'
+import { Dialog, Button, Tag, Card } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { StatusWorkflow, IUpdateSalesPayload, SellingStatus } from '@/types/sales'
-import { useMutation } from '@tanstack/vue-query'
+import type { StatusWorkflow, SellingStatus, ISales, IUpdateSalesPayload } from '@/types/sales'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
+import SlipUploadSection from './SlipUploadSection.vue'
+import BankSelectionSection from './BankSelectionSection.vue'
 
 // Props
 const props = defineProps<{
   visible: boolean
   currentStatus: string
   orderNumber: string
+  currentData: ISales
 }>()
 
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'status-changed': [
-    newStatus: string,
-    bankInfo?: { bank: string; accountNumber?: string; amount?: number }
-  ]
 }>()
 
-// Local state
-const selectedBank = ref('')
-const accountNumber = ref('')
-const paymentAmount = ref<string>('')
-const paymentNote = ref('')
-const showBankSelection = ref(false)
-
 // Status workflow configuration with step order
-
-
-// Bank options for payment
-const bankOptions = computed(() => {
-  return Object.entries(BankData).map(([key, bank]) => ({
-    value: key,
-    label: (bank as { name: string; icon: string; color: string }).name,
-    icon: (bank as { name: string; icon: string; color: string }).icon,
-    color: (bank as { name: string; icon: string; color: string }).color,
-  }))
+// Handlers
+const statusForm = ref({
+  status: '',
+  bankCode: '',
+  hasSlip: false,
 })
 
 // Computed
@@ -50,16 +36,34 @@ const currentStatusInfo = computed(() => {
 
 const availableNextSteps = computed(() => {
   if (!currentStatusInfo.value) return []
-  return currentStatusInfo.value.nextSteps.map((status: SellingStatus) => ({
-    value: status,
-    ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
-  }))
+
+  const currentStepIndex = allSteps.value.findIndex(step => step.key === props.currentStatus)
+
+  // ถ้าเป็น step สุดท้าย (damaged) ไม่แสดง step อื่น
+  if (currentStepIndex === allSteps.value.length - 1) {
+    return []
+  }
+
+  return currentStatusInfo.value.nextSteps
+    .map((status: SellingStatus) => ({
+      value: status,
+      ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
+    }))
+    .filter(step => {
+      const stepIndex = allSteps.value.findIndex(s => s.key === step.value)
+      return stepIndex > currentStepIndex
+    })
 })
 
 // Step indicator logic
 const allSteps = computed(() => {
   return Object.entries(salesStore.statusWorkflow)
-    .sort(([, a]: [string, StatusWorkflow[keyof StatusWorkflow]], [, b]: [string, StatusWorkflow[keyof StatusWorkflow]]) => a.stepOrder - b.stepOrder)
+    .sort(
+      (
+        [, a]: [string, StatusWorkflow[keyof StatusWorkflow]],
+        [, b]: [string, StatusWorkflow[keyof StatusWorkflow]]
+      ) => a.stepOrder - b.stepOrder
+    )
     .map(([key, status]) => ({
       key,
       ...(status as StatusWorkflow[keyof StatusWorkflow]),
@@ -80,50 +84,80 @@ const isStepCurrent = (stepIndex: number) => {
 
 // Check if bank selection is required
 const requiresBankSelection = (status: string) => {
-  // ต้องเลือกบัญชีธนาคารของบริษัทเมื่อจะผ่านขั้นตอน "รอชำระเงิน"
-  // หรือเมื่อเปลี่ยนไปยังสถานะที่เกี่ยวข้องกับการชำระเงิน
-  return status === 'wait_payment' || status === 'paid_complete'
+  const statusSteps: SellingStatus[] = [
+    'wait_product',
+    'wait_confirm',
+    'wait_payment',
+    'paid_complete',
+    'preparing',
+    'shipping',
+    'received',
+    'damaged',
+  ]
+  const newStepIndex = statusSteps.indexOf(status as SellingStatus)
+  const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
+
+  return newStepIndex >= waitPaymentStepIndex
 }
 
-// Check if the status change will pass through "wait_payment" step
-const willPassThroughWaitPayment = (newStatus: string) => {
-  const currentStep = currentStepIndex.value
-  const newStep = allSteps.value.findIndex((step) => step.key === newStatus)
+// Check if slip confirmation is required
+const requiresSlipConfirmation = (status: string) => {
+  const statusSteps: SellingStatus[] = [
+    'wait_product',
+    'wait_confirm',
+    'wait_payment',
+    'paid_complete',
+    'preparing',
+    'shipping',
+    'received',
+    'damaged',
+  ]
+  const newStepIndex = statusSteps.indexOf(status as SellingStatus)
+  const paidCompleteStepIndex = statusSteps.indexOf('paid_complete')
 
-  // ถ้าขั้นตอนใหม่อยู่หลังขั้นตอน "รอชำระเงิน" และขั้นตอนปัจจุบันอยู่ก่อนขั้นตอน "รอชำระเงิน"
-  const waitPaymentStepIndex = allSteps.value.findIndex((step) => step.key === 'wait_payment')
-
-  return currentStep < waitPaymentStepIndex && newStep > waitPaymentStepIndex
+  return newStepIndex >= paidCompleteStepIndex
 }
 
-// Handlers
-const targetStatus = ref('')
+// Computed properties for showing sections
+const showBankSelection = computed(() => {
+  // ถ้า currentStatus >= wait_payment และมี bankCode แล้ว = แสดงตลอด
+  if (requiresBankSelection(props.currentStatus) && !!props.currentData.bankCode) {
+    return true
+  }
+
+  // ถ้าเลือก statusForm.status >= wait_payment แต่ยังไม่มี bankCode = แสดงให้ยืนยัน
+  if (statusForm.value.status && requiresBankSelection(statusForm.value.status)) {
+    return true
+  }
+
+  return false
+})
+
+const showSlipConfirmation = computed(() => {
+  // ถ้า currentStatus >= paid_complete = แสดงตลอด
+  if (requiresSlipConfirmation(props.currentStatus)) {
+    return true
+  }
+
+  // ถ้าเลือก statusForm.status >= paid_complete = แสดงให้ยืนยัน
+  if (statusForm.value.status && requiresSlipConfirmation(statusForm.value.status)) {
+    return true
+  }
+
+  return false
+})
 
 const handleStatusChange = (newStatus: string) => {
-  const needsBankSelection =
-    requiresBankSelection(newStatus) || willPassThroughWaitPayment(newStatus)
-
-  if (needsBankSelection) {
-    showBankSelection.value = true
-    targetStatus.value = newStatus
-  } else {
-    emit('status-changed', newStatus)
-    emit('update:visible', false)
-  }
+  statusForm.value.status = newStatus
+}
+const updateBankCode = (bankCode: string) => {
+  statusForm.value.bankCode = bankCode
+}
+const handleSlipStatusChanged = (hasSlipStatus: boolean) => {
+  statusForm.value.hasSlip = hasSlipStatus
 }
 
-const handleBankSelection = () => {
-  if (selectedBank.value && targetStatus.value) {
-    const bankInfo = {
-      bank: selectedBank.value,
-      accountNumber: '1234567890',
-      amount: paymentAmount.value ? parseFloat(paymentAmount.value) : undefined,
-    }
-    emit('status-changed', targetStatus.value, bankInfo)
-    emit('update:visible', false)
-    resetForm()
-  }
-}
+
 
 const handleClose = () => {
   emit('update:visible', false)
@@ -131,12 +165,8 @@ const handleClose = () => {
 }
 
 const resetForm = () => {
-  selectedBank.value = ''
-  accountNumber.value = ''
-  paymentAmount.value = ''
-  paymentNote.value = ''
-  showBankSelection.value = false
-  targetStatus.value = ''
+  statusForm.value.status = ''
+  statusForm.value.bankCode = ''
 }
 
 // Watch for dialog visibility changes
@@ -156,12 +186,60 @@ const getStatusColor = (status: string) => {
 }
 
 const salesStore = useSalesStore()
-const { mutate: updateSalesDetail } = useMutation({
-  mutationFn: async (payload: IUpdateSalesPayload) => await salesStore.onUpdateSales(payload),
-  onSuccess: (data: any) => {
+
+const handleSubmit = () => {
+  if (!statusForm.value.status) {
+    toast.error('กรุณาเลือกสถานะที่ต้องการเปลี่ยน')
+    return
+  }
+
+  if (
+    requiresBankSelection(statusForm.value.status) &&
+    !statusForm.value.bankCode &&
+    !props.currentData.bankCode
+  ) {
+    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
+    return
+  }
+
+  // เช็คว่าต้องยืนยันสลิปหรือไม่
+  if (requiresSlipConfirmation(statusForm.value.status) && !statusForm.value.hasSlip) {
+    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
+    return
+  }
+
+  updateSalesStatus({
+    _id: props.currentData._id,
+    status: statusForm.value.status,
+    bankCode: statusForm.value.bankCode ? statusForm.value.bankCode : props.currentData.bankCode,
+    bankAccount: props.currentData.bankAccount,
+    item: props.currentData.item,
+    user: props.currentData.user._id,
+    products: props.currentData.products,
+    deposit: props.currentData.deposit,
+    discount: props.currentData.discount,
+    seller: props.currentData.seller,
+    note: props.currentData.note,
+    payment: props.currentData.payment,
+    cat: props.currentData.cat,
+  })
+}
+// Mutation for updating sales status
+const queryClient = useQueryClient()
+const { mutate: updateSalesStatus } = useMutation({
+  mutationFn: (payload: IUpdateSalesPayload) => salesStore.onUpdateSales(payload),
+  onSuccess: () => {
     toast.success('เปลี่ยนสถานะการขายสำเร็จ')
+    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
     emit('update:visible', false)
     resetForm()
+  },
+  onError: (error: unknown) => {
+    console.log(error)
+    const errorMessage =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      'เปลี่ยนสถานะการขายไม่สำเร็จ'
+    toast.error(errorMessage)
   },
 })
 </script>
@@ -264,21 +342,27 @@ const { mutate: updateSalesDetail } = useMutation({
       </Card>
 
       <!-- Available Next Steps -->
-      <div v-if="availableNextSteps.length > 0 && !showBankSelection">
-        <h4 class="font-semibold text-gray-900 mb-3">เปลี่ยนเป็นสถานะ:</h4>
+      <div v-if="availableNextSteps.length > 0">
+        <h4 class="font-semibold text-gray-900 mb-.15">เปลี่ยนเป็นสถานะ:</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card
             v-for="step in availableNextSteps"
             :key="step.value"
             :pt="{ body: 'p-4' }"
-            class="hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-200"
+            :class="`hover:shadow-md transition-shadow cursor-pointer border-2 ${
+              statusForm.status === step.value
+                ? 'border-blue-400 bg-blue-50' // สถานะที่เลือกแล้ว
+                : 'border-transparent hover:border-blue-200' // สถานะอื่นๆ
+            }`"
             @click="handleStatusChange(step.value)"
           >
             <template #content>
               <div class="flex items-center gap-3">
                 <div
                   :class="`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    step.color === 'success'
+                    statusForm.status === step.value
+                      ? 'bg-blue-200' // สถานะที่เลือกแล้ว
+                      : step.color === 'success'
                       ? 'bg-green-100'
                       : step.color === 'warning'
                       ? 'bg-yellow-100'
@@ -289,7 +373,9 @@ const { mutate: updateSalesDetail } = useMutation({
                 >
                   <i
                     :class="`${step.icon} ${
-                      step.color === 'success'
+                      statusForm.status === step.value
+                        ? 'text-blue-700' // สถานะที่เลือกแล้ว
+                        : step.color === 'success'
                         ? 'text-green-600'
                         : step.color === 'warning'
                         ? 'text-yellow-600'
@@ -300,87 +386,76 @@ const { mutate: updateSalesDetail } = useMutation({
                   ></i>
                 </div>
                 <div class="flex-1">
-                  <h5 class="font-medium text-gray-900">{{ step.label }}</h5>
+                  <h5 class="font-medium text-gray-900">
+                    {{ step.label }}
+                    <span
+                      v-if="statusForm.status === step.value"
+                      class="text-blue-600 text-sm ml-2"
+                    >
+                      (เลือกแล้ว)
+                    </span>
+                  </h5>
                   <p class="text-xs text-gray-600 mt-1">{{ step.description }}</p>
                 </div>
-                <i class="pi pi-arrow-right text-gray-400"></i>
+                <i
+                  :class="`pi ${
+                    statusForm.status === step.value
+                      ? 'pi-check text-blue-600' // สถานะที่เลือกแล้ว
+                      : 'pi-arrow-right text-gray-400' // สถานะอื่นๆ
+                  }`"
+                ></i>
               </div>
             </template>
           </Card>
         </div>
       </div>
 
-      <!-- Bank Selection Modal -->
+      <!-- Bank Selection Section -->
       <div v-if="showBankSelection" class="space-y-4">
-        <Card :pt="{ body: 'p-4' }" class="bg-blue-50 border-blue-200">
-          <template #content>
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-credit-card text-blue-600 text-lg"></i>
-              </div>
-              <div>
-                <h4 class="font-semibold text-blue-900">ข้อมูลการชำระเงิน</h4>
-                <p class="text-sm text-blue-700">เลือกบัญชีธนาคารที่จะให้ลูกค้าจะโอนเงินมา</p>
-              </div>
-            </div>
-
-            <!-- Bank Selection -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <div
-                v-for="bank in bankOptions"
-                :key="bank.value"
-                :class="`p-3 rounded-lg border cursor-pointer transition-all ${
-                  selectedBank === bank.value
-                    ? 'border-blue-400 bg-blue-500/90 text-white'
-                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-500/90 hover:text-white'
-                }`"
-                @click="selectedBank = bank.value"
-              >
-                <div class="flex items-center gap-2">
-                  <img :src="bank.icon" :alt="bank.label" class="w-6 h-6" />
-                  <span class="text-sm font-medium">{{ bank.label }}</span>
-                </div>
-              </div>
-            </div>
-          </template>
-        </Card>
+        <BankSelectionSection
+          :selected-bank-code="statusForm.bankCode || props.currentData.bankCode"
+          :is-submitting="false"
+          :is-current-bank="props.currentData.bankCode"
+          :is-current-status="props.currentData.status"
+          @update:selected-bank-code="updateBankCode"
+        />
       </div>
 
-      <!-- No Next Steps Available -->
-      <div v-else-if="!showBankSelection" class="text-center py-8">
-        <div
-          class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"
-        >
-          <i class="pi pi-check text-gray-400 text-2xl"></i>
-        </div>
-        <h4 class="font-medium text-gray-900 mb-2">สถานะสุดท้าย</h4>
-        <p class="text-sm text-gray-600">รายการนี้อยู่ในสถานะสุดท้ายแล้ว ไม่สามารถเปลี่ยนได้</p>
+      <!-- Slip Confirmation Section -->
+      <div v-if="showSlipConfirmation" class="space-y-4">
+        <SlipUploadSection
+          :sale-id="props.currentData._id"
+          :selected-status="statusForm.status || props.currentStatus"
+          :is-current-status="props.currentStatus"
+          :is-submitting="false"
+          @slip-status-changed="handleSlipStatusChanged"
+        />
       </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
         <Button
-          v-if="showBankSelection"
           label="ยกเลิก"
           icon="pi pi-times"
-          severity="secondary"
+          severity="danger"
           @click="resetForm"
           size="small"
+          :disabled="!statusForm.status"
         />
+
         <Button
-          v-if="showBankSelection"
           label="ยืนยันการเปลี่ยนสถานะ"
           icon="pi pi-check"
-          severity="primary"
-          @click="handleBankSelection"
-          :disabled="!selectedBank"
+          severity="success"
+          @click="handleSubmit"
           size="small"
+          :disabled="!statusForm.status"
         />
+
         <Button
-          v-else
           label="ปิด"
-          icon="pi pi-times"
+          icon="pi pi-times-circle"
           severity="secondary"
           @click="handleClose"
           size="small"
