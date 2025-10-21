@@ -96,7 +96,6 @@ const findMemberData = (id: string) => {
   if (!members.value) return null
   return members.value.find((member) => member._id === id)
 }
-console.log(members)
 
 const generateInvoiceHTML = () => {
   const currentDate = formatDateForInvoice(new Date())

@@ -13,6 +13,7 @@ import BankData from '@/config/BankData'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
 import type { ISales, ISalesProduct, SellingStatus } from '@/types/sales'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
 
 // Stores
 const salesStore = useSalesStore()
@@ -82,122 +83,67 @@ const currentFilterDisplay = computed(() => {
   }
   return statusMap[activeTab.value as SellingStatus | 'all'] || 'ทั้งหมด'
 })
+const getStatusStepOrder = (status: string) => {
+  const statusOrder: Record<SellingStatus, number> = {
+    'wait_product': 1,
+    'wait_confirm': 2,
+    'wait_payment': 3,
+    'paid_complete': 4,
+    'preparing': 5,
+    'shipping': 6,
+    'received': 7,
+    'damaged': 8,
+  }
+  return statusOrder[status as SellingStatus] || 0
+}
+
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
+const handleFindCategory = (id: string | null | undefined) => {
+  if (!id) return ''
+  return categories.value?.find((category) => category._id === id)?.name
+}
 
 // Revenue calculations by category
 const totalRevenue = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => s.status === 'paid_complete')
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
         const saleTotal = sale.products.reduce((productSum, product) => {
           return productSum + (product.price || 0) * product.quantity
         }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
+        return sum + saleTotal
       }, 0) || 0
   )
 })
 
-const fishRevenue = computed(() => {
+const calculateCategoryRevenue = (categoryName: string) => {
   return (
     salesData.value
-      ?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'fish'))
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
+        // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
+        const categoryProductsTotal = sale.products
+          .filter((product) => handleFindCategory(product.category) === categoryName)
+          .reduce((productSum, product) => {
+            return productSum + (product.price || 0) * product.quantity
+          }, 0)
 
-const serviceRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter(
-        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'service')
-      )
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
+        return sum + categoryProductsTotal
       }, 0) || 0
   )
-})
-
-const constructionRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter(
-        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'construction')
-      )
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
-
-const microorganismRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter(
-        (s) =>
-          s.status === 'paid_complete' && s.products.some((p) => p.category === 'microorganism')
-      )
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
-
-const foodRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter((s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'food'))
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
-
-const equipmentRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter(
-        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'equipment')
-      )
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
-
-const medicineRevenue = computed(() => {
-  return (
-    salesData.value
-      ?.filter(
-        (s) => s.status === 'paid_complete' && s.products.some((p) => p.category === 'medicine')
-      )
-      .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0)
-        return sum + saleTotal - sale.discount + sale.deposit
-      }, 0) || 0
-  )
-})
+}
+const serviceRevenue = computed(() => calculateCategoryRevenue('service'))
+const fishRevenue = computed(() => calculateCategoryRevenue('fish'))
+const equipmentRevenue = computed(() => calculateCategoryRevenue('equipment'))
+const medicineRevenue = computed(() => calculateCategoryRevenue('medicine'))
+const foodRevenue = computed(() => calculateCategoryRevenue('food'))
+const microorganismRevenue = computed(() => calculateCategoryRevenue('microorganism'))
+const constructionRevenue = computed(() => calculateCategoryRevenue('construction'))
 
 // Utility functions
 const formatDate = (date: Date) => {
