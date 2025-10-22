@@ -80,6 +80,12 @@ watch(
   { immediate: true }
 )
 
+watch(() => productForm.value.type, (newVal) => {
+  if (newVal === 0) {
+    productForm.value.certificate = null
+    certificateFile.value = null
+  }
+}, { immediate: true })
 // Validation
 const validateForm = () => {
   if (!productForm.value.name.trim()) {
@@ -519,6 +525,7 @@ const resetForm = () => {
               locale="th-TH"
               fluid
               size="small"
+              placeholder="ราคาสินค้า"
               :invalid="!productForm.price && isSubmitting"
             />
             <small
@@ -545,48 +552,9 @@ const resetForm = () => {
         </div>
       </div>
 
-      <!-- Auction Information -->
-      <div v-if="isAuctionProduct" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-gavel text-purple-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลประมูล</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-star mr-1.5 !text-sm"></i>
-              คะแนนคุณภาพ *
-            </label>
-            <InputNumber
-              v-model="productForm.rate"
-              :min="0"
-              :max="10"
-              :step="0.1"
-              fluid
-              size="small"
-              placeholder="0-10"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-certificate mr-1.5 !text-sm"></i>
-              ใบรับรอง
-            </label>
-            <InputText
-              v-model="productForm.certificate"
-              placeholder="กรอกข้อมูลใบรับรอง"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- Fish-specific Information for Regular Sale -->
       <div
-        v-if="isFish && !isAuctionProduct"
+        v-if="isFish"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center gap-2 mb-3">
@@ -610,23 +578,10 @@ const resetForm = () => {
               placeholder="0-10"
             />
           </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-certificate mr-1.5 !text-sm"></i>
-              ใบรับรอง
-            </label>
-            <InputText
-              v-model="productForm.certificate"
-              placeholder="กรอกข้อมูลใบรับรอง"
-              fluid
-              size="small"
-            />
-          </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-4">
         <!-- Product Images Upload -->
         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div class="flex items-center gap-2 mb-2">
@@ -636,12 +591,12 @@ const resetForm = () => {
 
           <!-- Display uploaded images -->
           <div v-if="productImages.length > 0" class="mb-4">
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div v-for="(image, index) in productImages" :key="index" class="relative group">
                 <img
                   :src="image.preview"
                   :alt="`Product image ${index + 1}`"
-                  class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                  class="w-full h-60 object-contain rounded-lg border border-gray-200"
                 />
                 <Button
                   icon="pi pi-times"
@@ -649,7 +604,7 @@ const resetForm = () => {
                   size="small"
                   text
                   rounded
-                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  class="absolute top-2 right-2 transition-opacity"
                   @click="removeProductImage(index)"
                   v-tooltip.top="'ลบรูปภาพ'"
                 />
@@ -666,7 +621,7 @@ const resetForm = () => {
               @select="onProductImageSelect"
               :chooseLabel="isUploadingImage ? 'กำลังอัปโหลด...' : 'เลือกรูปภาพ'"
               :disabled="isUploadingImage"
-              class="w-full"
+              size="small"
             />
             <p class="text-xs text-gray-500">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
           </div>
@@ -685,7 +640,7 @@ const resetForm = () => {
               <img
                 :src="certificateFile.preview"
                 alt="Certificate"
-                class="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                class="w-full h-80 object-contain rounded-lg border border-gray-200"
               />
               <Button
                 icon="pi pi-times"
@@ -700,7 +655,7 @@ const resetForm = () => {
             </div>
           </div>
 
-          <div class="space-y-2.5">
+          <div v-else class="space-y-2.5">
             <FileUpload
               mode="basic"
               name="certificate"
@@ -710,8 +665,6 @@ const resetForm = () => {
               :chooseLabel="isUploadingCertificate ? 'กำลังอัปโหลด...' : 'เลือกใบรับรอง'"
               :disabled="isUploadingCertificate"
               size="small"
-              fluid
-              class="w-full"
             />
             <p class="text-xs text-gray-500">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
           </div>
