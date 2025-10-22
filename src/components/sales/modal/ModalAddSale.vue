@@ -388,8 +388,8 @@ const resetForm = () => {
                   placeholder="เลือกสินค้าที่ต้องการขาย"
                   fluid
                   size="small"
+                  filter
                   :invalid="!product.id && isSubmitting"
-                  showClear
                 />
                 <small v-if="!product.id && isSubmitting" class="text-red-500"
                   >กรุณาเลือกสินค้า</small

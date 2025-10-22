@@ -166,7 +166,7 @@ const isProductValid = (product: { id: string; quantity: number }) => {
                 fluid
                 size="small"
                 :invalid="!product.id && isSubmitting"
-                showClear
+                filter
               />
               <small v-if="!product.id && isSubmitting" class="text-red-500"
                 >กรุณาเลือกสินค้า</small
