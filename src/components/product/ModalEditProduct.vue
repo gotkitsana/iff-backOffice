@@ -24,7 +24,9 @@ const emit = defineEmits<{
 const productStore = useProductStore()
 
 // Form data
-const productForm = ref({
+const productForm = ref<IUpdateProductPayload>({
+  _id: '',
+  category: null,
   type: 1,
   name: '',
   price: 0,
@@ -87,11 +89,11 @@ const validateForm = () => {
     toast.error('กรุณากรอกชื่อฟาร์ม')
     return false
   }
-  if (productForm.value.size <= 0) {
+  if (productForm.value.size && productForm.value.size <= 0) {
     toast.error('กรุณากรอกขนาดที่ถูกต้อง')
     return false
   }
-  if (!isAuctionProduct.value && productForm.value.price <= 0) {
+  if (!isAuctionProduct.value && productForm.value.price && productForm.value.price <= 0) {
     toast.error('กรุณากรอกราคาที่ถูกต้อง')
     return false
   }
@@ -107,14 +109,16 @@ const populateForm = (productData: IProduct) => {
   if (!productData) return
 
   productForm.value = {
+    _id: productData._id,
+    category: productData.category || null,
     type: productData.type,
     name: productData.name,
     price: productData.price || 0,
     detail: productData.detail,
     sku: productData.sku,
     farm: productData.farm,
-    size: productData.size,
-    gender: productData.gender,
+    size: productData.size || 0,
+    gender: productData.gender || 1,
     age: productData.age,
     sold: productData.sold,
     rate: productData.rate,
@@ -136,6 +140,7 @@ const handleSubmit = async () => {
       name: productForm.value.name,
       price: productForm.value.price,
       detail: productForm.value.detail,
+      category: productForm.value.category,
       sku: productForm.value.sku,
       farm: productForm.value.farm,
       size: productForm.value.size,

@@ -17,7 +17,9 @@ import {
   type IUploadImageResponse,
 } from '../../stores/product/product'
 import { toast } from 'vue3-toastify'
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useSalesStore } from '@/stores/sales/sales'
 
 // Props
 defineProps<{
@@ -274,6 +276,22 @@ const resetForm = () => {
   showImageUpload.value = false
   showCertificateUpload.value = false
 }
+
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
+
+const salesStore = useSalesStore()
+const categoryOptions = computed(() => {
+  if (!categories.value) return []
+  return categories.value.map((category) => ({
+    label: `${salesStore.categoryTypes.find((c) => c.value === category.name)?.label}`,
+    value: category._id,
+  })).filter((c) => c.label !== 'undefined')
+})
+
 </script>
 
 <template>
@@ -401,7 +419,7 @@ const resetForm = () => {
             </label>
             <Select
               v-model="productForm.category"
-              :options="[]"
+              :options="categoryOptions"
               optionLabel="label"
               optionValue="value"
               fluid

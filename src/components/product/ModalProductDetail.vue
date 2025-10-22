@@ -183,8 +183,8 @@ const handleClose = () => {
               <div>
                 <label class="text-sm font-medium text-gray-600">เพศ</label>
                 <Tag
-                  :value="getGenderTag(productData.gender).label"
-                  :severity="getGenderTag(productData.gender).severity"
+                  :value="getGenderTag(productData.gender || 1).label"
+                  :severity="getGenderTag(productData.gender || 1).severity"
                   size="small"
                 />
               </div>
@@ -272,10 +272,7 @@ const handleClose = () => {
             ข้อมูลระบบ
           </h5>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="text-sm font-medium text-gray-600">สร้างเมื่อ</label>
-              <p class="text-sm text-gray-900">{{ formatDate(productData.cat) }}</p>
-            </div>
+
             <div>
               <label class="text-sm font-medium text-gray-600">อัปเดตล่าสุด</label>
               <p class="text-sm text-gray-900">{{ formatDate(productData.uat) }}</p>
