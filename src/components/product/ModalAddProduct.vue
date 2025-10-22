@@ -1,8 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Dialog, InputText, Textarea, Select, InputNumber, Button, RadioButton } from 'primevue'
-import { useProductStore, type ICreateProductPayload } from '@/stores/product/product'
+import { ref, computed, watch } from 'vue'
+import {
+  Dialog,
+  InputText,
+  Textarea,
+  Select,
+  InputNumber,
+  Button,
+  RadioButton,
+  FileUpload,
+} from 'primevue'
+import {
+  useProductStore,
+  type ICreateProductPayload,
+  type IGender,
+  type IUploadImageResponse,
+} from '../../stores/product/product'
 import { toast } from 'vue3-toastify'
+import { useMutation } from '@tanstack/vue-query'
 
 // Props
 defineProps<{
@@ -21,31 +36,49 @@ const productStore = useProductStore()
 // Form data
 const productForm = ref<ICreateProductPayload>({
   images: [] as { filename: string; type: string }[],
-  type: 1,
+  type: 1, // 1 = ปลา, 0 = อื่นๆ
   name: '',
   price: 0,
   detail: '',
   sku: '',
   farm: '',
   size: 0,
-  gender: 1,
+  gender: 1, // 1 = ตัวผู้, 0 = ตัวเมีย
   age: '',
   sold: false,
   rate: 0,
   youtube: '',
-  certificate: '',
-  auctionOnly: 0,
+  certificate: null,
+  auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
+  category: null,
 })
 
+// File upload states
+const productImages = ref<{ filename: string; type: string; preview: string }[]>([])
+const certificateFile = ref<{ filename: string; preview: string } | null>(null)
+const uploadedProductImage = ref<File | null>(null)
+const uploadedCertificateFile = ref<File | null>(null)
+const showImageUpload = ref(false)
+const showCertificateUpload = ref(false)
 
-const genderOptions = [
+const genderOptions: { label: string; value: IGender }[] = [
   { label: 'ตัวผู้', value: 1 },
-  { label: 'ตัวเมีย', value: 2 },
+  { label: 'ตัวเมีย', value: 0 },
 ]
 
 // Computed
 const isAuctionProduct = computed(() => productForm.value.auctionOnly === 1)
-const isKoiFish = computed(() => productForm.value.type === 1)
+const isFish = computed(() => productForm.value.type === 1)
+
+watch(
+  isAuctionProduct,
+  (newVal) => {
+    if (newVal) {
+      productForm.value.type = 1
+    }
+  },
+  { immediate: true }
+)
 
 // Validation
 const validateForm = () => {
@@ -57,62 +90,149 @@ const validateForm = () => {
     toast.error('กรุณากรอก SKU')
     return false
   }
-  if (!productForm.value.farm.trim()) {
-    toast.error('กรุณากรอกชื่อฟาร์ม')
-    return false
+
+  // ตรวจสอบข้อมูลเฉพาะปลา
+  if (isFish.value) {
+    if (!productForm.value.farm.trim()) {
+      toast.error('กรุณากรอกชื่อฟาร์ม')
+      return false
+    }
+    if (productForm.value.size && productForm.value.size <= 0) {
+      toast.error('กรุณากรอกขนาดที่ถูกต้อง')
+      return false
+    }
   }
-  if (productForm.value.size <= 0) {
-    toast.error('กรุณากรอกขนาดที่ถูกต้อง')
-    return false
-  }
-  if (!isAuctionProduct.value && productForm.value.price <= 0) {
+
+  // ตรวจสอบราคาสำหรับสินค้าปกติ
+  if (!isAuctionProduct.value && productForm.value.price && productForm.value.price <= 0) {
     toast.error('กรุณากรอกราคาที่ถูกต้อง')
     return false
   }
-  if (isAuctionProduct.value && !isKoiFish.value) {
-    toast.error('สินค้าสำหรับประมูลต้องเป็นปลาคาร์ฟเท่านั้น')
+
+  // ตรวจสอบสินค้าสำหรับประมูลต้องเป็นปลาเท่านั้น
+  if (isAuctionProduct.value && !isFish.value) {
+    toast.error('สินค้าสำหรับประมูลต้องเป็นปลาเท่านั้น')
     return false
   }
+
   return true
 }
 
 // Handlers
 const handleSubmit = async () => {
+  isSubmitting.value = true
   if (!validateForm()) return
 
-  isSubmitting.value = true
-
-  try {
-    const payload: ICreateProductPayload = {
-      type: productForm.value.type,
-      name: productForm.value.name,
-      price: productForm.value.price,
-      detail: productForm.value.detail,
-      sku: productForm.value.sku,
-      farm: productForm.value.farm,
-      size: productForm.value.size,
-      gender: productForm.value.gender,
-      age: productForm.value.age,
-      sold: productForm.value.sold,
-      rate: productForm.value.rate,
-      youtube: productForm.value.youtube,
-      certificate: productForm.value.certificate || null,
-      images: [], // TODO: Implement image upload
-      auctionOnly: productForm.value.auctionOnly,
-    }
-
-    await productStore.onCreateProduct(payload)
-    emit('product-added')
-    handleClose()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า')
-    console.error(error)
-  } finally {
-    isSubmitting.value = false
+  const payload: ICreateProductPayload = {
+    type: productForm.value.type,
+    name: productForm.value.name,
+    price: productForm.value.price,
+    detail: productForm.value.detail,
+    category: productForm.value.category,
+    sku: productForm.value.sku,
+    farm: productForm.value.farm,
+    size: productForm.value.size,
+    gender: productForm.value.gender,
+    age: productForm.value.age,
+    sold: productForm.value.sold,
+    rate: productForm.value.rate,
+    youtube: productForm.value.youtube,
+    certificate: productForm.value.certificate,
+    images: productForm.value.images,
+    auctionOnly: productForm.value.auctionOnly,
   }
+
+  await productStore.onCreateProduct(payload)
+  toast.success('เพิ่มสินค้าสำเร็จ')
+  emit('product-added')
+  handleClose()
 }
 
 const isSubmitting = ref(false)
+
+// File upload mutations
+const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    console.log(data)
+    const filename = data.filename
+    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+
+    productImages.value.push({
+      filename,
+      type: 'image',
+      preview,
+    })
+
+    // Update productForm.images
+    productForm.value.images = productImages.value.map((img) => ({
+      filename: img.filename,
+      type: img.type,
+    }))
+
+    uploadedProductImage.value = null
+    showImageUpload.value = false
+    toast.success('อัปโหลดรูปภาพสำเร็จ')
+  },
+  onError: (error: { response?: { data?: { message?: string } } }) => {
+    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
+    uploadedProductImage.value = null
+  },
+})
+
+const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    console.log(data)
+    const filename = data.filename
+    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+
+    certificateFile.value = {
+      filename,
+      preview,
+    }
+
+    productForm.value.certificate = filename
+    uploadedCertificateFile.value = null
+    showCertificateUpload.value = false
+    toast.success('อัปโหลดใบรับรองสำเร็จ')
+  },
+  onError: (error: { response?: { data?: { message?: string } } }) => {
+    console.log(error)
+    toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
+    uploadedCertificateFile.value = null
+  },
+})
+
+// File upload handlers
+const onProductImageSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file) {
+    uploadedProductImage.value = file
+    uploadImage(file)
+  }
+}
+
+const onCertificateSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file) {
+    uploadedCertificateFile.value = file
+    uploadCertificate(file)
+  }
+}
+
+const removeProductImage = (index: number) => {
+  productImages.value.splice(index, 1)
+  productForm.value.images = productImages.value.map((img) => ({
+    filename: img.filename,
+    type: img.type,
+  }))
+}
+
+const removeCertificate = () => {
+  certificateFile.value = null
+  productForm.value.certificate = null
+}
 
 const handleClose = () => {
   resetForm()
@@ -123,21 +243,30 @@ const handleClose = () => {
 const resetForm = () => {
   productForm.value = {
     images: [] as { filename: string; type: string }[],
-    type: 1,
+    type: 1, // 1 = ปลา, 0 = อื่นๆ
     name: '',
-    price: 0,
+    price: null,
     detail: '',
+    category: null,
     sku: '',
     farm: '',
     size: 0,
-    gender: 1,
+    gender: 1, // 1 = ตัวผู้, 0 = ตัวเมีย
     age: '',
     sold: false,
     rate: 0,
     youtube: '',
-    certificate: '',
-    auctionOnly: 0,
+    certificate: null,
+    auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
   }
+
+  // Reset file states
+  productImages.value = []
+  certificateFile.value = null
+  uploadedProductImage.value = null
+  uploadedCertificateFile.value = null
+  showImageUpload.value = false
+  showCertificateUpload.value = false
 }
 </script>
 
@@ -175,18 +304,56 @@ const resetForm = () => {
           <h4 class="text-lg font-[500]! text-gray-800">ประเภทสินค้า</h4>
         </div>
 
-        <div>
-          <label class="text-sm font-[500]! text-gray-700 mb-2 block">ประเภทการขาย</label>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="flex items-center gap-2">
-              <RadioButton v-model="productForm.auctionOnly" :value="0" inputId="sale" />
-              <label for="sale" class="text-sm text-gray-700">สินค้าสำหรับขาย</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <!-- ประเภทการขาย -->
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-2 block">ประเภทการขาย *</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex items-center gap-2">
+                <RadioButton
+                  v-model="productForm.auctionOnly"
+                  :value="0"
+                  inputId="sale"
+                  size="small"
+                />
+                <label for="sale" class="text-sm text-gray-700">สินค้าสำหรับขาย</label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioButton
+                  v-model="productForm.auctionOnly"
+                  :value="1"
+                  inputId="auction"
+                  size="small"
+                />
+                <label for="auction" class="text-sm text-gray-700">สินค้าสำหรับประมูล</label>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <RadioButton v-model="productForm.auctionOnly" :value="1" inputId="auction" />
-              <label for="auction" class="text-sm text-gray-700"
-                >สินค้าสำหรับประมูล (ปลาคาร์ฟเท่านั้น)</label
-              >
+          </div>
+
+          <!-- ประเภทสินค้า -->
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-2 block">ประเภทสินค้า *</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex items-center gap-2">
+                <RadioButton
+                  v-model="productForm.type"
+                  :value="1"
+                  inputId="fish"
+                  size="small"
+                  :disabled="isAuctionProduct"
+                />
+                <label for="fish" class="text-sm text-gray-700">ปลา</label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioButton
+                  v-model="productForm.type"
+                  :value="0"
+                  inputId="other"
+                  size="small"
+                  :disabled="isAuctionProduct"
+                />
+                <label for="other" class="text-sm text-gray-700">อื่นๆ</label>
+              </div>
             </div>
           </div>
         </div>
@@ -205,7 +372,36 @@ const resetForm = () => {
               <i class="pi pi-tag mr-1.5 !text-sm"></i>
               ชื่อสินค้า *
             </label>
-            <InputText v-model="productForm.name" placeholder="กรอกชื่อสินค้า" fluid size="small" />
+            <InputText
+              v-model="productForm.name"
+              placeholder="กรอกชื่อสินค้า"
+              fluid
+              size="small"
+              :invalid="!productForm.name && isSubmitting"
+            />
+            <small
+              v-if="!productForm.name && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอกชื่อสินค้า
+            </small>
+          </div>
+
+          <!-- หมวดหมู่สินค้า -->
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-users mr-1.5 !text-sm"></i>
+              หมวดหมู่สินค้า
+            </label>
+            <Select
+              v-model="productForm.category"
+              :options="[]"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              placeholder="เลือกหมวดหมู่สินค้า"
+              size="small"
+            />
           </div>
 
           <div>
@@ -213,18 +409,44 @@ const resetForm = () => {
               <i class="pi pi-barcode mr-1.5 !text-sm"></i>
               SKU *
             </label>
-            <InputText v-model="productForm.sku" placeholder="กรอก SKU" fluid size="small" />
+            <InputText
+              v-model="productForm.sku"
+              placeholder="กรอก SKU"
+              fluid
+              size="small"
+              :invalid="!productForm.sku && isSubmitting"
+            />
+            <small
+              v-if="!productForm.sku && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอก SKU
+            </small>
           </div>
 
-          <div>
+          <!-- ฟาร์ม - แสดงเฉพาะเมื่อเป็นปลา -->
+          <div v-if="isFish">
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-building mr-1.5 !text-sm"></i>
               ฟาร์ม *
             </label>
-            <InputText v-model="productForm.farm" placeholder="กรอกชื่อฟาร์ม" fluid size="small" />
+            <InputText
+              v-model="productForm.farm"
+              placeholder="กรอกชื่อฟาร์ม"
+              fluid
+              size="small"
+              :invalid="!productForm.farm && isSubmitting"
+            />
+            <small
+              v-if="!productForm.farm && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอกชื่อฟาร์ม
+            </small>
           </div>
 
-          <div>
+          <!-- ขนาด - แสดงเฉพาะเมื่อเป็นปลา -->
+          <div v-if="isFish">
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-sort-numeric-up mr-1.5 !text-sm"></i>
               ขนาด (ซม.) *
@@ -236,10 +458,18 @@ const resetForm = () => {
               fluid
               size="small"
               placeholder="กรอกขนาด"
+              :invalid="!productForm.size && isSubmitting"
             />
+            <small
+              v-if="!productForm.size && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอกขนาด
+            </small>
           </div>
 
-          <div>
+          <!-- เพศ - แสดงเฉพาะเมื่อเป็นปลา -->
+          <div v-if="isFish">
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-users mr-1.5 !text-sm"></i>
               เพศ
@@ -254,12 +484,49 @@ const resetForm = () => {
             />
           </div>
 
-          <div>
+          <!-- อายุ - แสดงเฉพาะเมื่อเป็นปลา -->
+          <div v-if="isFish">
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-calendar mr-1.5 !text-sm"></i>
               อายุ
             </label>
-            <InputText v-model="productForm.age" placeholder="เช่น 2 ปี" fluid size="small" />
+            <InputText
+              v-model="productForm.age"
+              placeholder="เช่น 2 ปี"
+              fluid
+              size="small"
+              :invalid="!productForm.age && isSubmitting"
+            />
+            <small
+              v-if="!productForm.age && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอกอายุ
+            </small>
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
+              ราคา (บาท) *
+            </label>
+            <InputNumber
+              v-model="productForm.price"
+              :min="0"
+              :max="999999999"
+              mode="currency"
+              currency="THB"
+              locale="th-TH"
+              fluid
+              size="small"
+              :invalid="!productForm.price && isSubmitting"
+            />
+            <small
+              v-if="!productForm.price && isSubmitting"
+              class="text-red-500 flex items-center gap-1"
+            >
+              กรุณากรอกราคา
+            </small>
           </div>
         </div>
 
@@ -275,52 +542,6 @@ const resetForm = () => {
             fluid
             size="small"
           />
-        </div>
-      </div>
-
-      <!-- Pricing Information -->
-      <div
-        v-if="!isAuctionProduct"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-dollar text-yellow-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลราคา</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-              ราคา (บาท) *
-            </label>
-            <InputNumber
-              v-model="productForm.price"
-              :min="0"
-              :max="999999999"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-star mr-1.5 !text-sm"></i>
-              คะแนนคุณภาพ
-            </label>
-            <InputNumber
-              v-model="productForm.rate"
-              :min="0"
-              :max="10"
-              :step="0.1"
-              fluid
-              size="small"
-              placeholder="0-10"
-            />
-          </div>
         </div>
       </div>
 
@@ -359,6 +580,140 @@ const resetForm = () => {
               fluid
               size="small"
             />
+          </div>
+        </div>
+      </div>
+
+      <!-- Fish-specific Information for Regular Sale -->
+      <div
+        v-if="isFish && !isAuctionProduct"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <div class="flex items-center gap-2 mb-3">
+          <i class="pi pi-star text-yellow-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลคุณภาพปลา</h4>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-star mr-1.5 !text-sm"></i>
+              คะแนนคุณภาพ
+            </label>
+            <InputNumber
+              v-model="productForm.rate"
+              :min="0"
+              :max="10"
+              :step="0.1"
+              fluid
+              size="small"
+              placeholder="0-10"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              <i class="pi pi-certificate mr-1.5 !text-sm"></i>
+              ใบรับรอง
+            </label>
+            <InputText
+              v-model="productForm.certificate"
+              placeholder="กรอกข้อมูลใบรับรอง"
+              fluid
+              size="small"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Product Images Upload -->
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="pi pi-image text-blue-600"></i>
+            <h4 class="text-lg font-[500]! text-gray-800">รูปภาพสินค้า</h4>
+          </div>
+
+          <!-- Display uploaded images -->
+          <div v-if="productImages.length > 0" class="mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div v-for="(image, index) in productImages" :key="index" class="relative group">
+                <img
+                  :src="image.preview"
+                  :alt="`Product image ${index + 1}`"
+                  class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                />
+                <Button
+                  icon="pi pi-times"
+                  severity="danger"
+                  size="small"
+                  text
+                  rounded
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click="removeProductImage(index)"
+                  v-tooltip.top="'ลบรูปภาพ'"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2.5">
+            <FileUpload
+              mode="basic"
+              name="productImage"
+              accept="image/*"
+              :maxFileSize="2000000"
+              @select="onProductImageSelect"
+              :chooseLabel="isUploadingImage ? 'กำลังอัปโหลด...' : 'เลือกรูปภาพ'"
+              :disabled="isUploadingImage"
+              class="w-full"
+            />
+            <p class="text-xs text-gray-500">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
+          </div>
+        </div>
+
+        <!-- Certificate Upload (for fish only) -->
+        <div v-if="isFish" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="pi pi-file text-purple-600"></i>
+            <h4 class="text-lg font-[500]! text-gray-800">ใบรับรอง</h4>
+          </div>
+
+          <!-- Display uploaded certificate -->
+          <div v-if="certificateFile" class="mb-4">
+            <div class="relative group">
+              <img
+                :src="certificateFile.preview"
+                alt="Certificate"
+                class="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+              />
+              <Button
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                text
+                rounded
+                class="absolute top-2 right-2 opacity-100 transition-opacity"
+                @click="removeCertificate"
+                v-tooltip.top="'ลบใบรับรอง'"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2.5">
+            <FileUpload
+              mode="basic"
+              name="certificate"
+              accept="image/*"
+              :maxFileSize="2000000"
+              @select="onCertificateSelect"
+              :chooseLabel="isUploadingCertificate ? 'กำลังอัปโหลด...' : 'เลือกใบรับรอง'"
+              :disabled="isUploadingCertificate"
+              size="small"
+              fluid
+              class="w-full"
+            />
+            <p class="text-xs text-gray-500">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
           </div>
         </div>
       </div>
@@ -402,7 +757,6 @@ const resetForm = () => {
           @click="handleSubmit"
           severity="success"
           size="small"
-          :loading="isSubmitting"
         />
       </div>
     </template>
