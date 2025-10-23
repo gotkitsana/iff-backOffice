@@ -579,6 +579,12 @@ const closeDeleteModal = () => {
           </Column>
 
           <Column
+            field="user.displayName"
+            header="ชื่อเล่น"
+            :pt="{ columnHeaderContent: 'min-w-[4.5rem]', }"
+          />
+
+          <Column
             field="user.status"
             header="สถานะลูกค้า"
             :pt="{ columnHeaderContent: 'min-w-[5.75rem] justify-center', bodyCell: 'text-center' }"
@@ -713,6 +719,12 @@ const closeDeleteModal = () => {
               <p class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</p>
             </template>
           </Column>
+
+          <Column
+            field="note"
+            header="หมายเหตุ"
+            :pt="{ columnHeaderContent: 'min-w-[5rem]', }"
+          />
 
           <Column
             header="จัดการ"
