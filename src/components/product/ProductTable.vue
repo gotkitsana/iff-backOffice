@@ -2,21 +2,14 @@
 import { DataTable, Column, Tag, Button } from 'primevue'
 import type { IProduct } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
+import { computed } from 'vue';
+import type { ISalesProduct } from '@/types/sales'
 
 // Props
-defineProps<{
+const props = defineProps<{
   filteredProducts: IProduct[]
   isLoadingProducts: boolean
   selectedCategory: string | null
-  getSelectedCategoryLabel: () => string
-  getSelectedCategoryInfo: () => {
-    value: string
-    label: string
-    icon: string
-    color: string
-    bgColor: string
-    iconColor: string
-  } | null
 }>()
 
 // Emits
@@ -24,6 +17,77 @@ defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
 }>()
+
+const categoryOptions = [
+  {
+    value: 'fish',
+    label: 'ปลา',
+    icon: 'pi pi-star',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+  },
+  {
+    value: 'food',
+    label: 'อาหาร',
+    icon: 'pi pi-heart',
+    color: 'text-red-600',
+    bgColor: 'bg-red-100',
+    iconColor: 'text-red-600',
+  },
+  {
+    value: 'microorganism',
+    label: 'สารปรับสภาพน้ำ',
+    icon: 'pi pi-sparkles',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+  },
+  {
+    value: 'equipment',
+    label: 'อุปกรณ์',
+    icon: 'pi pi-wrench',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+  },
+  {
+    value: 'medicine',
+    label: 'เวชภัณฑ์',
+    icon: 'pi pi-plus-circle',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    iconColor: 'text-green-600',
+  },
+  {
+    value: 'construction',
+    label: 'คอนสทรัคชั่น',
+    icon: 'pi pi-building',
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-100',
+    iconColor: 'text-gray-600',
+  },
+  {
+    value: 'service',
+    label: 'บริการ',
+    icon: 'pi pi-cog',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+  },
+]
+
+const getSelectedCategoryLabel = () => {
+  if (props.selectedCategory === 'all') return 'สินค้าทั้งหมด'
+  const category = categoryOptions.find((c) => c.value === props.selectedCategory)
+  return category?.label || 'สินค้า'
+}
+
+const getSelectedCategoryInfo = () => {
+  if (props.selectedCategory === 'all') return null
+  return categoryOptions.find((c) => c.value === props.selectedCategory) || null
+}
+
 
 // Utility functions
 const getGenderTag = (gender: number) => {

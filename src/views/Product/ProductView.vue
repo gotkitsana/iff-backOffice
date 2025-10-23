@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useProductStore, type IProduct } from '../../stores/product/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
-import ModalEditProduct from '../../components/product/modal/ModalEditProduct.vue'
-import ModalProductDetail from '../../components/product/modal/ModalProductDetail.vue'
-import ProductHeader from '../../components/product/ProductHeader.vue'
-import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
-import CategoryFilter from '../../components/product/CategoryFilter.vue'
-import ProductTable from '../../components/product/ProductTable.vue'
-import type { ISalesProduct } from '../../types/sales'
+import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
+import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
+import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
+import ProductHeader from '@/components/product/ProductHeader.vue'
+import ProductStatsCards from '@/components/product/ProductStatsCards.vue'
+import CategoryFilter from '@/components/product/CategoryFilter.vue'
+import ProductTable from '@/components/product/ProductTable.vue'
 
 // Stores
 const productStore = useProductStore()
@@ -20,6 +19,8 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
+const selectedCategory = ref<string | null>(null)
+const selectedQualityGrade = ref<string | null>(null)
 
 // Queries
 const {
@@ -31,9 +32,40 @@ const {
   queryFn: () => productStore.onGetProducts(),
 })
 
-// Computed - removed unused computed properties
+// Filter products based on selected category
+const filteredProducts = computed(() => {
+  if (!products.value) return []
 
-// Utility functions - moved to components
+  let filtered = products.value.filter((product) => {
+    return product.category === selectedCategory.value
+  })
+
+  // Apply quality grade filter for fish
+  if (selectedCategory.value === 'fish' && selectedQualityGrade.value) {
+    filtered = filtered.filter(product => {
+      switch (selectedQualityGrade.value) {
+        case 'tategoi':
+          return product.rate && product.rate >= 8
+        case 'j_tosai':
+          return product.rate && product.rate >= 6 && product.rate < 8
+        case 'tosai':
+          return product.age?.includes('Tosai')
+        case 'nisai':
+          return product.age?.includes('Nisai')
+        case 'sansai':
+          return product.age?.includes('Sansai')
+        case 'yonsai':
+          return product.age?.includes('Yonsai')
+        case 'rokusai':
+          return product.age?.includes('Rokusai')
+        default:
+          return true
+      }
+    })
+  }
+
+  return filtered
+})
 
 // Handlers
 const openAddModal = () => {
@@ -67,111 +99,14 @@ const handleProductDeleted = () => {
   toast.success('ลบสินค้าสำเร็จ')
 }
 
-const selectedCategory = ref<string | null>(null)
-
-// Category options with icons and colors
-const categoryOptions = computed<
-  {
-    value: ISalesProduct
-    label: string
-    icon: string
-    color: string
-    bgColor: string
-    iconColor: string
-  }[]
->(() => [
-  {
-    value: 'fish',
-    label: 'ปลา',
-    icon: 'pi pi-star',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-  },
-  {
-    value: 'food',
-    label: 'อาหาร',
-    icon: 'pi pi-heart',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    iconColor: 'text-red-600',
-  },
-  {
-    value: 'microorganism',
-    label: 'สารปรับสภาพน้ำ',
-    icon: 'pi pi-sparkles',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-  },
-  {
-    value: 'equipment',
-    label: 'อุปกรณ์',
-    icon: 'pi pi-wrench',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-    iconColor: 'text-orange-600',
-  },
-  {
-    value: 'medicine',
-    label: 'เวชภัณฑ์',
-    icon: 'pi pi-plus-circle',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
-    iconColor: 'text-green-600',
-  },
-  {
-    value: 'construction',
-    label: 'คอนสทรัคชั่น',
-    icon: 'pi pi-building',
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
-    iconColor: 'text-gray-600',
-  },
-  {
-    value: 'service',
-    label: 'บริการ',
-    icon: 'pi pi-cog',
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100',
-    iconColor: 'text-indigo-600',
-  },
-])
-
-// Filter products based on selected category
-const filteredProducts = computed(() => {
-  if (!products.value) return []
-
-  return products.value.filter((product) => {
-    return product.category === selectedCategory.value
-  })
-})
-
-// Helper functions
 const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
-const getCategoryCount = (category: string) => {
-  if (!products.value) return 0
-  if (category === 'all') return products.value.length
-  return products.value.filter((product) => product.category === category).length
+const selectQualityGrade = (grade: string) => {
+  selectedQualityGrade.value = grade
 }
 
-const getSelectedCategoryLabel = () => {
-  if (selectedCategory.value === 'all') return 'สินค้าทั้งหมด'
-  const category = categoryOptions.value.find((c) => c.value === selectedCategory.value)
-  return category?.label || 'สินค้า'
-}
-
-const getSelectedCategoryInfo = () => {
-  if (selectedCategory.value === 'all') return null
-  return categoryOptions.value.find((c) => c.value === selectedCategory.value) || null
-}
-
-// Category type checks - moved to ProductTable component
-
-// Product counts - moved to ProductStatsCards component
 </script>
 
 <template>
@@ -188,20 +123,18 @@ const getSelectedCategoryInfo = () => {
     <!-- Category Filter -->
     <CategoryFilter
       :selected-category="selectedCategory"
-      :category-options="categoryOptions"
-      :get-category-count="getCategoryCount"
+      :selected-quality-grade="selectedQualityGrade"
       @select-category="selectCategory"
+      @select-quality-grade="selectQualityGrade"
       @open-add-modal="openAddModal"
     />
 
     <!-- Product Table -->
     <ProductTable
-      v-if="selectedCategory"
+       v-if="selectedCategory"
       :filtered-products="filteredProducts"
       :is-loading-products="isLoadingProducts"
       :selected-category="selectedCategory"
-      :get-selected-category-label="getSelectedCategoryLabel"
-      :get-selected-category-info="getSelectedCategoryInfo"
       @open-detail-modal="openDetailModal"
       @open-edit-modal="openEditModal"
     />
