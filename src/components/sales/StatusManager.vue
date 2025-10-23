@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Button, Tag, Card } from 'primevue'
+import { Dialog, Button, Tag, Card, Select } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { StatusWorkflow, SellingStatus, ISales, IUpdateSalesPayload } from '@/types/sales'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -35,26 +35,26 @@ const currentStatusInfo = computed(() => {
   return salesStore.statusWorkflow[props.currentStatus as keyof StatusWorkflow]
 })
 
-const availableNextSteps = computed(() => {
-  if (!currentStatusInfo.value) return []
+// const availableNextSteps = computed(() => {
+//   if (!currentStatusInfo.value) return []
 
-  const currentStepIndex = allSteps.value.findIndex((step) => step.key === props.currentStatus)
+//   const currentStepIndex = allSteps.value.findIndex((step) => step.key === props.currentStatus)
 
-  // ถ้าเป็น step สุดท้าย (damaged) ไม่แสดง step อื่น
-  if (currentStepIndex === allSteps.value.length - 1) {
-    return []
-  }
+//   // ถ้าเป็น step สุดท้าย (damaged) ไม่แสดง step อื่น
+//   if (currentStepIndex === allSteps.value.length - 1) {
+//     return []
+//   }
 
-  return currentStatusInfo.value.nextSteps
-    .map((status: SellingStatus) => ({
-      value: status,
-      ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
-    }))
-    .filter((step) => {
-      const stepIndex = allSteps.value.findIndex((s) => s.key === step.value)
-      return stepIndex > currentStepIndex
-    })
-})
+//   return currentStatusInfo.value.nextSteps
+//     .map((status: SellingStatus) => ({
+//       value: status,
+//       ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
+//     }))
+//     .filter((step) => {
+//       const stepIndex = allSteps.value.findIndex((s) => s.key === step.value)
+//       return stepIndex > currentStepIndex
+//     })
+// })
 
 // Step indicator logic
 const allSteps = computed(() => {
@@ -278,6 +278,64 @@ const { mutate: mutateUpdate } = useMutation({
     queryClient.invalidateQueries({ queryKey: ['get_sales'] })
   },
 })
+
+const getSelectedStepColor = (value: string) => {
+  const step = availableNextSteps.value.find((s) => s.value === value)
+  if (!step) return 'bg-gray-100'
+
+  return step.color === 'success'
+    ? 'bg-green-100'
+    : step.color === 'warning'
+    ? 'bg-yellow-100'
+    : step.color === 'danger'
+    ? 'bg-red-100'
+    : 'bg-blue-100'
+}
+
+const getSelectedStepIcon = (value: string) => {
+  const step = availableNextSteps.value.find((s) => s.value === value)
+  return step?.icon || 'pi pi-question'
+}
+
+const getSelectedStepIconColor = (value: string) => {
+  const step = availableNextSteps.value.find((s) => s.value === value)
+  if (!step) return 'text-gray-400'
+
+  return step.color === 'success'
+    ? 'text-green-600'
+    : step.color === 'warning'
+    ? 'text-yellow-600'
+    : step.color === 'danger'
+    ? 'text-red-600'
+    : 'text-blue-600'
+}
+
+const getSelectedStepLabel = (value: string) => {
+  const step = availableNextSteps.value.find((s) => s.value === value)
+  return step?.label || value
+}
+
+const availableNextSteps = computed(() => {
+  if (!currentStatusInfo.value) return []
+
+  const currentStepIndex = allSteps.value.findIndex((step) => step.key === props.currentStatus)
+
+  // ถ้าเป็น step สุดท้าย (damaged) ไม่แสดง step อื่น
+  if (currentStepIndex === allSteps.value.length - 1) {
+    return []
+  }
+
+  return currentStatusInfo.value.nextSteps
+    .map((status: SellingStatus) => ({
+      value: status,
+      ...salesStore.statusWorkflow[status as keyof StatusWorkflow],
+    }))
+    .filter((step) => {
+      const stepIndex = allSteps.value.findIndex((s) => s.key === step.value)
+      // ป้องกันการเลือก step ที่ผ่านมาแล้ว (stepIndex ต้องมากกว่า currentStepIndex)
+      return stepIndex > currentStepIndex
+    })
+})
 </script>
 
 <template>
@@ -309,7 +367,7 @@ const { mutate: mutateUpdate } = useMutation({
     <div class="space-y-4">
       <!-- Step Indicator -->
       <div class="bg-white rounded-lg p-4 border border-gray-200">
-        <h4 class="font-semibold text-gray-900 mb-4">ขั้นตอนการขาย</h4>
+        <h4 class="font-semibold text-gray-900 mb-3">ขั้นตอนการขาย</h4>
         <div class="flex flex-wrap gap-2">
           <div
             v-for="(step, index) in allSteps"
@@ -336,8 +394,72 @@ const { mutate: mutateUpdate } = useMutation({
         </div>
       </div>
 
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <h4 class="font-semibold text-gray-900 mb-3">เปลี่ยนเป็นสถานะ</h4>
+        <div v-if="availableNextSteps.length > 0" class="space-y-4">
+          <Select
+            v-model="statusForm.status"
+            :options="availableNextSteps"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="เลือกสถานะที่ต้องการเปลี่ยน"
+            fluid
+            size="small"
+            :invalid="!statusForm.status"
+          >
+            <template #option="{ option }">
+              <div class="flex items-center gap-3">
+                <div
+                  :class="`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    option.color === 'success'
+                      ? 'bg-green-100'
+                      : option.color === 'warning'
+                      ? 'bg-yellow-100'
+                      : option.color === 'danger'
+                      ? 'bg-red-100'
+                      : 'bg-blue-100'
+                  }`"
+                >
+                  <i
+                    :class="`${option.icon} ${
+                      option.color === 'success'
+                        ? 'text-green-600'
+                        : option.color === 'warning'
+                        ? 'text-yellow-600'
+                        : option.color === 'danger'
+                        ? 'text-red-600'
+                        : 'text-blue-600'
+                    }`"
+                  ></i>
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium text-sm text-gray-900">{{ option.label }}</div>
+                  <div class="text-xs text-gray-500">{{ option.description }}</div>
+                </div>
+              </div>
+            </template>
+
+            <template #value="{ value }">
+              <div v-if="value" class="flex items-center gap-2">
+                <div
+                  :class="`w-8 h-8 rounded-lg flex items-center justify-center ${getSelectedStepColor(
+                    value
+                  )}`"
+                >
+                  <i
+                    :class="`${getSelectedStepIcon(value)} ${getSelectedStepIconColor(value)}`"
+                  ></i>
+                </div>
+                <span class="font-medium">{{ getSelectedStepLabel(value) }}</span>
+              </div>
+              <span v-else class="text-gray-500">เลือกสถานะที่ต้องการเปลี่ยน</span>
+            </template>
+          </Select>
+        </div>
+      </div>
+
       <!-- Current Status -->
-      <Card :pt="{ body: 'p-4' }" class="bg-gray-50">
+      <!-- <Card :pt="{ body: 'p-4' }" class="bg-gray-50">
         <template #content>
           <div class="flex items-center gap-3">
             <div
@@ -368,17 +490,15 @@ const { mutate: mutateUpdate } = useMutation({
               <Tag
                 :value="currentStatusInfo?.label"
                 :severity="getStatusColor(currentStatus)"
-                size="large"
-                class="mt-1"
+                size="small"
               />
-              <p class="text-sm text-gray-600 mt-2">{{ currentStatusInfo?.description }}</p>
             </div>
           </div>
         </template>
-      </Card>
+      </Card> -->
 
       <!-- Available Next Steps -->
-      <div v-if="availableNextSteps.length > 0">
+      <!-- <div v-if="availableNextSteps.length > 0">
         <h4 class="font-semibold text-gray-900 mb-.15">เปลี่ยนเป็นสถานะ:</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card
@@ -444,7 +564,7 @@ const { mutate: mutateUpdate } = useMutation({
             </template>
           </Card>
         </div>
-      </div>
+      </div> -->
 
       <!-- Bank Selection Section -->
       <div v-if="showBankSelection" class="space-y-4">

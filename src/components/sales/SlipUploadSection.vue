@@ -145,6 +145,7 @@ const confirmUploadSlip = () => {
 }
 
 const removeSelectedFile = () => {
+  showUploadSection.value = false
   uploadedFile.value = null
   previewImage.value = ''
 }
@@ -159,11 +160,6 @@ const editSlip = () => {
   showUploadSection.value = true
 }
 
-const cancelEdit = () => {
-  showUploadSection.value = false
-  previewImage.value = ''
-  uploadedFile.value = null
-}
 
 // Mutations
 const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
@@ -349,13 +345,13 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
               :loading="isUploadingSlip"
             />
 
-            <Button
+            <!-- <Button
               label="ยกเลิก"
               icon="pi pi-times"
               severity="danger"
               size="small"
               @click="cancelEdit"
-            />
+            /> -->
           </div>
         </div>
       </div>

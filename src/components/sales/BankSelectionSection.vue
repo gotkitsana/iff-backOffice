@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import BankData from '@/config/BankData'
+import SalebankData from '@/config/Salebank_data'
 import type { SellingStatus } from '@/types/sales';
 
 // Props
@@ -19,13 +19,14 @@ const emit = defineEmits<{
 // Computed
 const bankOptions = computed(() => {
   return Object.entries(
-    BankData as Record<string, { name: string; icon: string; color: string; fullname: string }>
+    SalebankData as Record<string, { name: string; icon: string; color: string; fullname: string, account: string }>
   ).map(([key, bank]) => ({
     value: key,
     label: bank.name,
     icon: bank.icon,
     color: bank.color,
     fullname: bank.fullname,
+    account: bank.account,
   }))
 })
 
@@ -80,7 +81,7 @@ const closeEditBank = computed(() => {
           <h5 class="text-sm md:text-base font-[500]! text-gray-900">
             {{ selectedBank.fullname }}
           </h5>
-          <p class="text-xs text-gray-600">เลขบัญชี: 1234567890</p>
+          <p class="text-xs text-gray-600">เลขบัญชี: {{selectedBank.account}}</p>
         </div>
       </div>
     </div>
@@ -106,7 +107,7 @@ const closeEditBank = computed(() => {
               class="text-xs"
               :class="selectedBankCode === bank.value ? 'text-gray-200' : 'text-gray-500'"
             >
-              1234567890
+              {{ bank.account }}
             </p>
           </div>
           <div

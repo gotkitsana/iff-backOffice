@@ -1,30 +1,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import {
-  Card,
-  DataTable,
-  Column,
-  Tag,
-  Button,
-  Tabs,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tab,
-} from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import ModalAddProduct from '@/components/product/ModalAddProduct.vue'
-import ModalEditProduct from '@/components/product/ModalEditProduct.vue'
-import ModalProductDetail from '@/components/product/ModalProductDetail.vue'
-import formatCurrency from '@/utils/formatCurrency'
+import ModalAddProduct from '../../components/product/ModalAddProduct.vue'
+import ModalEditProduct from '../../components/product/ModalEditProduct.vue'
+import ModalProductDetail from '../../components/product/ModalProductDetail.vue'
+import ProductHeader from '../../components/product/ProductHeader.vue'
+import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
+import CategoryFilter from '../../components/product/CategoryFilter.vue'
+import ProductTable from '../../components/product/ProductTable.vue'
+import type { ISalesProduct } from '../../types/sales'
 
 // Stores
 const productStore = useProductStore()
 
 // Data
-const activeTab = ref('sale')
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
@@ -40,58 +31,9 @@ const {
   queryFn: () => productStore.onGetProducts(),
 })
 
-// Computed
-const saleProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => p.auctionOnly === 0)
-})
+// Computed - removed unused computed properties
 
-const auctionProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => p.auctionOnly === 1)
-})
-
-const currentProducts = computed(() => {
-  return products.value
-})
-
-// Stats
-const totalSaleProducts = computed(() => saleProducts.value.length)
-const totalAuctionProducts = computed(() => auctionProducts.value.length)
-const availableSaleProducts = computed(() => saleProducts.value.filter((p) => !p.sold).length)
-const availableAuctionProducts = computed(() => auctionProducts.value.filter((p) => !p.sold).length)
-
-// Utility functions
-
-const getProductTypeTag = (type: number) => {
-  switch (type) {
-    case 1:
-      return { label: 'ปลาคาร์ฟ', severity: 'info' }
-    case 2:
-      return { label: 'ปลาทอง', severity: 'warning' }
-    case 3:
-      return { label: 'ปลาอื่นๆ', severity: 'secondary' }
-    default:
-      return { label: 'ไม่ระบุ', severity: 'secondary' }
-  }
-}
-
-const getGenderTag = (gender: number) => {
-  switch (gender) {
-    case 1:
-      return { label: 'ตัวผู้', severity: 'info' }
-    case 2:
-      return { label: 'ตัวเมีย', severity: 'warning' }
-    default:
-      return { label: 'ไม่ระบุ', severity: 'secondary' }
-  }
-}
-
-const getStatusTag = (sold: boolean) => {
-  return sold
-    ? { label: 'ขายแล้ว', severity: 'danger' }
-    : { label: 'พร้อมขาย', severity: 'success' }
-}
+// Utility functions - moved to components
 
 // Handlers
 const openAddModal = () => {
@@ -124,240 +66,146 @@ const handleProductDeleted = () => {
   refetchProducts()
   toast.success('ลบสินค้าสำเร็จ')
 }
+
+const selectedCategory = ref<string | null>(null)
+
+// Category options with icons and colors
+const categoryOptions = computed<
+  {
+    value: ISalesProduct
+    label: string
+    icon: string
+    color: string
+    bgColor: string
+    iconColor: string
+  }[]
+>(() => [
+  {
+    value: 'fish',
+    label: 'ปลา',
+    icon: 'pi pi-star',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+  },
+  {
+    value: 'food',
+    label: 'อาหาร',
+    icon: 'pi pi-heart',
+    color: 'text-red-600',
+    bgColor: 'bg-red-100',
+    iconColor: 'text-red-600',
+  },
+  {
+    value: 'microorganism',
+    label: 'สารปรับสภาพน้ำ',
+    icon: 'pi pi-sparkles',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+  },
+  {
+    value: 'equipment',
+    label: 'อุปกรณ์',
+    icon: 'pi pi-wrench',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+  },
+  {
+    value: 'medicine',
+    label: 'เวชภัณฑ์',
+    icon: 'pi pi-plus-circle',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    iconColor: 'text-green-600',
+  },
+  {
+    value: 'construction',
+    label: 'คอนสทรัคชั่น',
+    icon: 'pi pi-building',
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-100',
+    iconColor: 'text-gray-600',
+  },
+  {
+    value: 'service',
+    label: 'บริการ',
+    icon: 'pi pi-cog',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+  },
+])
+
+// Filter products based on selected category
+const filteredProducts = computed(() => {
+  if (!products.value) return []
+
+  return products.value.filter((product) => {
+    return product.category === selectedCategory.value
+  })
+})
+
+// Helper functions
+const selectCategory = (category: string) => {
+  selectedCategory.value = category
+}
+
+const getCategoryCount = (category: string) => {
+  if (!products.value) return 0
+  if (category === 'all') return products.value.length
+  return products.value.filter((product) => product.category === category).length
+}
+
+const getSelectedCategoryLabel = () => {
+  if (selectedCategory.value === 'all') return 'สินค้าทั้งหมด'
+  const category = categoryOptions.value.find((c) => c.value === selectedCategory.value)
+  return category?.label || 'สินค้า'
+}
+
+const getSelectedCategoryInfo = () => {
+  if (selectedCategory.value === 'all') return null
+  return categoryOptions.value.find((c) => c.value === selectedCategory.value) || null
+}
+
+// Category type checks - moved to ProductTable component
+
+// Product counts - moved to ProductStatsCards component
 </script>
 
 <template>
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div>
-        <h1 class="text-xl font-semibold! text-gray-900">จัดการสินค้า</h1>
-        <p class="text-gray-600">จัดการสินค้าสำหรับขายและประมูล</p>
-      </div>
-      <div class="flex space-x-3">
-        <Button
-          label="เพิ่มสินค้า"
-          icon="pi pi-plus"
-          severity="success"
-          size="small"
-          @click="openAddModal"
-        />
-      </div>
-    </div>
+    <ProductHeader
+      title="จัดการสินค้า"
+      description="จัดการสินค้าสำหรับขายและประมูล"
+      @open-add-modal="openAddModal"
+    />
 
     <!-- Product Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับขาย</p>
-              <p class="text-xl md:text-2xl text-blue-600">{{ totalSaleProducts }}</p>
-              <p class="text-xs text-gray-500">รายการ</p>
-            </div>
-            <div
-              class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
-              <i class="pi pi-question-circle text-white text-2xl"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
+    <ProductStatsCards :filtered-products="filteredProducts" />
 
-      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-[600]! text-gray-600 mb-1">พร้อมขาย</p>
-              <p class="text-xl md:text-2xl text-green-600">{{ availableSaleProducts }}</p>
-              <p class="text-xs text-gray-500">รายการ</p>
-            </div>
-            <div
-              class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
-              <i class="pi pi-question-circle text-white text-2xl"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
+    <!-- Category Filter -->
+    <CategoryFilter
+      :selected-category="selectedCategory"
+      :category-options="categoryOptions"
+      :get-category-count="getCategoryCount"
+      @select-category="selectCategory"
+    />
 
-      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับประมูล</p>
-              <p class="text-xl md:text-2xl text-purple-600">{{ totalAuctionProducts }}</p>
-              <p class="text-xs text-gray-500">รายการ</p>
-            </div>
-            <div
-              class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
-              <i class="pi pi-question-circle text-white text-2xl"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
-
-      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
-        <template #content>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-[600]! text-gray-600 mb-1">พร้อมประมูล</p>
-              <p class="text-xl md:text-2xl text-orange-600">{{ availableAuctionProducts }}</p>
-              <p class="text-xs text-gray-500">รายการ</p>
-            </div>
-            <div
-              class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
-              <i class="pi pi-question-circle text-white text-2xl"></i>
-            </div>
-          </div>
-        </template>
-      </Card>
-    </div>
-
-    <!-- Product Tabs -->
-    <Card :pt="{ body: 'p-0' }">
-      <template #content>
-        <DataTable
-          :value="currentProducts"
-          :loading="isLoadingProducts"
-          :paginator="true"
-          :rows="10"
-          scrollHeight="600px"
-        >
-          <Column field="name" header="ชื่อสินค้า" :pt="{ columnHeaderContent: 'min-w-[8rem]' }">
-            <template #body="slotProps">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i class="pi pi-fish text-blue-600 text-lg"></i>
-                </div>
-                <div>
-                  <p class="font-medium text-gray-900 text-sm">{{ slotProps.data.name }}</p>
-                  <p class="text-xs text-gray-500">{{ slotProps.data.sku }}</p>
-                </div>
-              </div>
-            </template>
-          </Column>
-
-          <Column
-            field="type"
-            header="ประเภท"
-            :pt="{
-              columnHeaderContent: 'min-w-[6rem] justify-center',
-              bodyCell: 'text-center',
-            }"
-          >
-            <template #body="slotProps">
-              <Tag
-                :value="getProductTypeTag(slotProps.data.type).label"
-                :severity="getProductTypeTag(slotProps.data.type).severity"
-                size="small"
-              />
-            </template>
-          </Column>
-
-          <Column
-            field="size"
-            header="ขนาด (ซม.)"
-            :pt="{
-              columnHeaderContent: 'min-w-[5rem] justify-center',
-              bodyCell: 'text-center',
-            }"
-          >
-            <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.size }}</span>
-            </template>
-          </Column>
-
-          <Column
-            field="gender"
-            header="เพศ"
-            :pt="{
-              columnHeaderContent: 'min-w-[4rem] justify-center',
-              bodyCell: 'text-center',
-            }"
-          >
-            <template #body="slotProps">
-              <Tag
-                :value="getGenderTag(slotProps.data.gender).label"
-                :severity="getGenderTag(slotProps.data.gender).severity"
-                size="small"
-              />
-            </template>
-          </Column>
-
-          <Column
-            field="price"
-            header="ราคา"
-            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
-          >
-            <template #body="slotProps">
-              <span class="font-medium text-gray-900 text-sm">
-                {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
-              </span>
-            </template>
-          </Column>
-
-          <Column
-            field="sold"
-            header="สถานะ"
-            :pt="{
-              columnHeaderContent: 'min-w-[5rem] justify-center',
-              bodyCell: 'text-center',
-            }"
-          >
-            <template #body="slotProps">
-              <Tag
-                :value="getStatusTag(slotProps.data.sold).label"
-                :severity="getStatusTag(slotProps.data.sold).severity"
-                size="small"
-              />
-            </template>
-          </Column>
-
-          <Column field="category" header="หมวดหมู่" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-            <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.category || 'ไม่ระบุ' }}</span>
-            </template>
-          </Column>
-
-          <Column field="farm" header="ฟาร์ม" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-            <template #body="slotProps">
-              <span class="text-sm text-gray-900">{{ slotProps.data.farm }}</span>
-            </template>
-          </Column>
-
-          <Column
-            header="การจัดการ"
-            :exportable="false"
-            frozen
-            :pt="{ columnHeaderContent: 'justify-end' }"
-          >
-            <template #body="slotProps">
-              <div class="flex gap-2 justify-end">
-                <Button
-                  icon="pi pi-eye"
-                  severity="info"
-                  size="small"
-                  outlined
-                  @click="openDetailModal(slotProps.data)"
-                  v-tooltip.top="'ดูรายละเอียด'"
-                />
-                <Button
-                  icon="pi pi-pencil"
-                  severity="warning"
-                  size="small"
-                  outlined
-                  @click="openEditModal(slotProps.data)"
-                  v-tooltip.top="'แก้ไขข้อมูล'"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
-      </template>
-    </Card>
+    <!-- Product Table -->
+    <ProductTable
+      v-if="selectedCategory"
+      :filtered-products="filteredProducts"
+      :is-loading-products="isLoadingProducts"
+      :selected-category="selectedCategory"
+      :get-selected-category-label="getSelectedCategoryLabel"
+      :get-selected-category-info="getSelectedCategoryInfo"
+      @open-detail-modal="openDetailModal"
+      @open-edit-modal="openEditModal"
+      @open-add-modal="openAddModal"
+    />
   </div>
 
   <!-- Modal Components -->
