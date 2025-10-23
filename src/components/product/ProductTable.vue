@@ -75,6 +75,14 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
         </div>
         <div class="flex items-center gap-2">
           <Button
+            v-if="isFishCategory(selectedCategory)"
+            label="ตั้งค่าบ่อ"
+            icon="pi pi-cog"
+            severity="info"
+            size="small"
+          />
+
+          <Button
             label="เพิ่มสินค้า"
             icon="pi pi-plus"
             severity="success"
