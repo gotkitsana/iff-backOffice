@@ -1,13 +1,41 @@
-<!-- DynamicFormFields.vue -->
+<script setup lang="ts">
+import type { IFields, IFieldsKey } from '@/stores/product/product';
+import { InputText, InputNumber, Select, Textarea, DatePicker  } from 'primevue'
+
+defineProps<{
+  fields: IFields[]
+  formData: Record<IFieldsKey, string | number | Date | null>
+  isSubmitting: boolean
+}>()
+
+const emit = defineEmits<{
+  'update-field': [key: IFieldsKey, value: string | number | Date | null]
+}>()
+
+const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
+  emit('update-field', key, value)
+}
+
+const getSelectOptions = (fieldKey: IFieldsKey) => {
+  if (fieldKey === 'gender') {
+    return [
+      { label: 'ตัวผู้', value: 1 },
+      { label: 'ตัวเมีย', value: 0 },
+    ]
+  }
+  return []
+}
+</script>
+
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
         v-for="field in fields"
         :key="field.key"
         :class="field.type === 'textarea' ? 'md:col-span-2' : ''"
       >
-        <label class="text-sm font-medium text-gray-700 mb-2 block">
+        <label class="text-sm font-medium text-gray-700 mb-1 block">
           {{ field.label }}
           <span v-if="field.required" class="text-red-500 ml-1">*</span>
         </label>
@@ -15,24 +43,24 @@
         <!-- Text Input -->
         <InputText
           v-if="field.type === 'text'"
-          :model-value="formData[field.key]"
-          @update:model-value="updateField(field.key, $event)"
+          :model-value="(formData[field.key] as string | null)"
+          @update:model-value="updateField(field.key, $event as string | number | Date | null)"
           :placeholder="`กรอก${field.label}`"
           fluid
           size="small"
-          :invalid="field.required && !formData[field.key]"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
         />
 
         <!-- Number Input -->
         <InputNumber
           v-else-if="field.type === 'number'"
-          :model-value="formData[field.key]"
+          :model-value="(formData[field.key] as number | null)"
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`กรอก${field.label}`"
           :min="0"
           fluid
           size="small"
-          :invalid="field.required && !formData[field.key]"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
         />
 
         <!-- Select Input -->
@@ -46,59 +74,45 @@
           :placeholder="`เลือก${field.label}`"
           fluid
           size="small"
-          :invalid="field.required && !formData[field.key]"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
         />
 
         <!-- Textarea -->
         <Textarea
           v-else-if="field.type === 'textarea'"
-          :model-value="formData[field.key]"
+          :model-value="(formData[field.key] as string | null)"
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`กรอก${field.label}`"
           rows="3"
           fluid
           size="small"
-          :invalid="field.required && !formData[field.key]"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
         />
 
         <!-- Date Input -->
-        <InputText
+        <DatePicker
           v-else-if="field.type === 'date'"
-          :model-value="formData[field.key]"
-          @update:model-value="updateField(field.key, $event)"
-          type="date"
-          fluid
+          :model-value="(formData[field.key] as Date | null)"
+          @update:model-value="updateField(field.key, $event as string | number | Date | null)"
+          showIcon
+          iconDisplay="input"
+          placeholder="เลือกวันที่"
+          dateFormat="dd/mm/yy"
           size="small"
-          :invalid="field.required && !formData[field.key]"
+          fluid
+          :invalid="field.required && !formData[field.key] && isSubmitting"
         />
+
+        <small
+          v-if="field.required && !formData[field.key] && isSubmitting"
+          class="text-red-500 text-xs mt-1"
+        >
+          กรุณากรอก{{ field.label }}
+        </small>
+
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { InputText, InputNumber, Select, Textarea } from 'primevue'
 
-defineProps<{
-  fields: any[]
-  formData: Record<string, any>
-}>()
-
-const emit = defineEmits<{
-  'update-field': [key: string, value: any]
-}>()
-
-const updateField = (key: string, value: any) => {
-  emit('update-field', key, value)
-}
-
-const getSelectOptions = (fieldKey: string) => {
-  if (fieldKey === 'gender') {
-    return [
-      { label: 'ตัวผู้', value: 1 },
-      { label: 'ตัวเมีย', value: 0 },
-    ]
-  }
-  return []
-}
-</script>

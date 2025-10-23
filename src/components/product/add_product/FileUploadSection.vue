@@ -1,4 +1,23 @@
-<!-- FileUploadSection.vue -->
+<script setup lang="ts">
+import type { IProductImage } from '@/stores/product/product';
+import { Button, FileUpload } from 'primevue'
+
+defineProps<{
+  productImages: IProductImage[]
+  certificateFile: { filename: string; preview: string } | null
+  showCertificate: boolean
+  isUploadingImage: boolean
+  isUploadingCertificate: boolean
+}>()
+
+defineEmits<{
+  'product-image-select': [event: { files: File[] }]
+  'certificate-select': [event: { files: File[] }]
+  'remove-product-image': [index: number]
+  'remove-certificate': []
+}>()
+</script>
+
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <!-- Product Images -->
@@ -85,21 +104,4 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { Button, FileUpload } from 'primevue'
 
-defineProps<{
-  productImages: { filename: string; type: string; preview: string }[]
-  certificateFile: { filename: string; preview: string } | null
-  showCertificate: boolean
-  isUploadingImage: boolean
-  isUploadingCertificate: boolean
-}>()
-
-defineEmits<{
-  'product-image-select': [event: { files: File[] }]
-  'certificate-select': [event: { files: File[] }]
-  'remove-product-image': [index: number]
-  'remove-certificate': []
-}>()
-</script>

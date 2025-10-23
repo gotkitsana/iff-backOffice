@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button, Select } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useProductStore, type ICategoryOption, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
+import type { ISalesProduct, ISalesProductLabel } from '@/types/sales';
 
 // Props
 const props = defineProps<{
@@ -25,7 +26,7 @@ const { data: products } = useQuery<IProduct[]>({
   queryFn: () => productStore.onGetProducts(),
 })
 
-const categoryOptions = computed(() => [
+const categoryOptions: { value: ISalesProduct; label: ISalesProductLabel; icon: string; color: string; bgColor: string; iconColor: string }[] = [
   {
     value: 'fish',
     label: 'ปลา',
@@ -82,7 +83,7 @@ const categoryOptions = computed(() => [
     bgColor: 'bg-indigo-100',
     iconColor: 'text-indigo-600',
   },
-])
+]
 
 const qualityGradeOptions = [
   { label: 'Tategoi', value: 'tategoi' },
@@ -95,7 +96,7 @@ const isFishSelected = computed(() => {
 })
 
 const categorySelectOptions = computed(() => {
-  return categoryOptions.value.map((category) => ({
+  return categoryOptions.map((category) => ({
     label: `${category.label} (${getCategoryCount(category.value)} รายการ)`,
     value: category.value,
     icon: category.icon,
@@ -301,7 +302,6 @@ const getCategoryStats = (category: string) => {
               </div>
             </div>
           </div> -->
-
         </div>
 
         <div
@@ -327,7 +327,6 @@ const getCategoryStats = (category: string) => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>

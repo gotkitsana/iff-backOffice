@@ -62,7 +62,7 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'คอนสทรัคชั่น', value: 'construction' },
     { label: 'บริการ', value: 'service' },
     { label: 'อาหาร', value: 'food' },
-    { label: 'ยา', value: 'medicine' },
+    { label: 'เวชภัณฑ์', value: 'medicine' },
     { label: 'อุปกรณ์', value: 'equipment' },
   ]
 

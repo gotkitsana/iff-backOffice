@@ -1,4 +1,18 @@
-<!-- ModalFooter.vue -->
+<script setup lang="ts">
+import { Button } from 'primevue'
+
+defineProps<{
+  currentStep: number
+  isSubmitting: boolean
+}>()
+
+defineEmits<{
+  'go-back': []
+  close: []
+  submit: []
+}>()
+</script>
+
 <template>
   <div class="flex justify-between gap-3">
     <Button
@@ -20,17 +34,4 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { Button } from 'primevue'
 
-defineProps<{
-  currentStep: number
-  isSubmitting: boolean
-}>()
-
-defineEmits<{
-  'go-back': []
-  close: []
-  submit: []
-}>()
-</script>

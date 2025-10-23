@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
+import type { ISalesProduct, ISalesProductLabel } from '@/types/sales'
 
 export const useProductStore = defineStore('product', () => {
   async function onGetProducts() {
@@ -132,4 +133,38 @@ export type IUploadImageResponse = {
   filename: string
   path: string
   size: number
+}
+
+export type IFieldsKey = 'lotNumber' | 'pond' | 'fishId' | 'species' | 'breed' | 'birthDate' | 'age' | 'quality' | 'farm' | 'size' | 'weight' | 'gender' | 'price' | 'productName' | 'pelletType' | 'weightPerBag' | 'pelletSize' | 'remainingQuantity'
+export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
+export type IFieldsRequired = boolean
+export type IFieldsOptions = { label: string; value: string | number }[]
+
+export interface IFields {
+  key: IFieldsKey
+  label: string
+  type: IFieldsType
+  required: IFieldsRequired
+  options?: IFieldsOptions
+}
+
+export type ICategoryOption = {
+  value: ISalesProduct
+  label: ISalesProductLabel
+  icon: string
+  color: string
+  bgColor: string
+  iconColor: string
+  fields: IFields[]
+}
+
+export type IProductImage = {
+  filename: string
+  type: string
+  preview?: string
+}
+
+export type ICertificateFile = {
+  filename: string
+  preview: string
 }

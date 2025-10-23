@@ -3,7 +3,11 @@ import { ref, computed } from 'vue'
 import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
+  type ICategoryOption,
+  type ICertificateFile,
   type ICreateProductPayload,
+  type IFieldsKey,
+  type IProductImage,
   type IUploadImageResponse,
 } from '../../../stores/product/product'
 import { toast } from 'vue3-toastify'
@@ -40,7 +44,23 @@ const selectedCategory = ref<string | null>(null)
 const isSubmitting = ref(false)
 
 // Form data
-const productForm = ref<ICreateProductPayload>({
+const productForm = ref<
+  ICreateProductPayload & {
+    lotNumber: string
+    pond: string
+    fishId: string
+    species: string
+    breed: string
+    birthDate: Date
+    age: string
+    quality: number
+    farm: string
+    size: number
+    weight: number
+    gender: number
+    price: number
+  }
+>({
   images: [] as { filename: string; type: string }[],
   type: 1, // 1 = ปลา, 0 = อื่นๆ
   name: '',
@@ -57,11 +77,19 @@ const productForm = ref<ICreateProductPayload>({
   certificate: null,
   auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
   category: null,
+  lotNumber: '',
+  pond: '',
+  fishId: '',
+  species: '',
+  breed: '',
+  birthDate: new Date(),
+  quality: 0,
+  weight: 0,
 })
 
-const dynamicFormData = ref<Record<string, any>>({})
-const productImages = ref<{ filename: string; type: string; preview: string }[]>([])
-const certificateFile = ref<{ filename: string; preview: string } | null>(null)
+const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
+const productImages = ref<IProductImage[]>([])
+const certificateFile = ref<ICertificateFile | null>(null)
 
 // Queries
 const { data: categories } = useQuery<ICategory[]>({
@@ -76,7 +104,7 @@ const selectedCategoryInfo = computed(() => {
 
 const isFishCategory = computed(() => selectedCategory.value === 'fish')
 
-const categoryOptionsUI = computed(() => [
+const categoryOptionsUI = computed<ICategoryOption[]>(() => [
   {
     value: 'fish',
     label: 'ปลา',
@@ -86,9 +114,13 @@ const categoryOptionsUI = computed(() => [
     iconColor: 'text-blue-600',
     fields: [
       { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-      { key: 'breed', label: 'สายพันธุ์', type: 'text', required: true },
+      { key: 'pond', label: 'บ่อ', type: 'text', required: true },
       { key: 'fishId', label: 'รหัสปลา', type: 'text', required: true },
-      { key: 'age', label: 'อายุ', type: 'text', required: true },
+      { key: 'species', label: 'สายพันธุ์', type: 'text', required: true },
+      { key: 'breed', label: 'แม่พันธุ์', type: 'text', required: true },
+      { key: 'birthDate', label: 'วันเกิด', type: 'date', required: true },
+      { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
+      { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
       { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
       { key: 'size', label: 'ไซต์', type: 'number', required: true },
       { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
@@ -232,46 +264,48 @@ const initializeDynamicForm = () => {
 const goBackToCategorySelection = () => {
   currentStep.value = 1
   selectedCategory.value = null
-  dynamicFormData.value = {}
+  dynamicFormData.value = {} as Record<IFieldsKey, string | number | Date | null>
 }
 
-const updateDynamicField = (key: string, value: any) => {
-  dynamicFormData.value[key] = value
+const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
+  dynamicFormData.value![key] = value
 }
 
 const mapDynamicFormToProductForm = () => {
   if (!selectedCategoryInfo.value) return
 
   selectedCategoryInfo.value.fields.forEach((field) => {
-    const value = dynamicFormData.value[field.key]
+    const value = dynamicFormData.value![field.key]
 
     switch (field.key) {
-      case 'productName':
-      case 'name':
-        productForm.value.name = value
+      case 'lotNumber':
+        productForm.value.lotNumber = value as string
         break
-      case 'price':
-        productForm.value.price = value
+      case 'pond':
+        productForm.value.pond = value as string
         break
-      case 'farm':
-        productForm.value.farm = value
+      case 'fishId':
+        productForm.value.fishId = value as string
         break
-      case 'size':
-        productForm.value.size = value
+      case 'species':
+        productForm.value.species = value as string
         break
-      case 'gender':
-        productForm.value.gender = value
+      case 'breed':
+        productForm.value.breed = value as string
+        break
+      case 'birthDate':
+        productForm.value.birthDate = value as Date
         break
       case 'age':
-        productForm.value.age = value
+        productForm.value.age = value as string
+        break
+      case 'quality':
+        productForm.value.quality = value as number
         break
       case 'weight':
-        // Store in detail or custom field
-        productForm.value.detail += `น้ำหนัก: ${value} `
+        productForm.value.weight = value as number
         break
       default:
-        // Store other fields in detail
-        productForm.value.detail += `${field.label}: ${value} `
         break
     }
   })
@@ -285,7 +319,7 @@ const validateForm = () => {
 
   // Validate required fields
   for (const field of selectedCategoryInfo.value.fields) {
-    if (field.required && !dynamicFormData.value[field.key]) {
+    if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
       return false
     }
@@ -297,7 +331,6 @@ const validateForm = () => {
 const handleSubmit = async () => {
   isSubmitting.value = true
   if (!validateForm()) {
-    isSubmitting.value = false
     return
   }
 
@@ -322,17 +355,18 @@ const handleSubmit = async () => {
     auctionOnly: productForm.value.auctionOnly,
   }
 
-  try {
-    await productStore.onCreateProduct(payload)
-    emit('product-added')
-    toast.success('เพิ่มสินค้าสำเร็จ')
-    handleClose()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า')
-    console.error(error)
-  } finally {
-    isSubmitting.value = false
-  }
+  console.log(payload)
+  // try {
+  //   await productStore.onCreateProduct(payload)
+  //   emit('product-added')
+  //   toast.success('เพิ่มสินค้าสำเร็จ')
+  //   handleClose()
+  // } catch (error) {
+  //   toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า')
+  //   console.error(error)
+  // } finally {
+  //   isSubmitting.value = false
+  // }
 }
 
 const handleClose = () => {
@@ -350,7 +384,7 @@ const resetForm = () => {
     images: [] as { filename: string; type: string }[],
     type: 1, // 1 = ปลา, 0 = อื่นๆ
     name: '',
-    price: null,
+    price: 0,
     detail: '',
     category: null,
     sku: '',
@@ -363,9 +397,17 @@ const resetForm = () => {
     youtube: '',
     certificate: null,
     auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
+    lotNumber: '',
+    pond: '',
+    fishId: '',
+    species: '',
+    breed: '',
+    birthDate: new Date(),
+    quality: 0,
+    weight: 0,
   }
 
-  dynamicFormData.value = {}
+  dynamicFormData.value = null
   productImages.value = []
   certificateFile.value = null
 }
@@ -441,8 +483,10 @@ const removeCertificate = () => {
       <div v-if="currentStep === 2 && selectedCategoryInfo" class="space-y-4">
         <!-- Dynamic Form Fields -->
         <DynamicFormField
+          v-if="dynamicFormData"
           :fields="selectedCategoryInfo.fields"
           :form-data="dynamicFormData"
+          :is-submitting="isSubmitting"
           @update-field="updateDynamicField"
         />
 
@@ -464,7 +508,7 @@ const removeCertificate = () => {
     <template #footer>
       <ModalFooter
         :current-step="currentStep"
-        :is-submitting="isSubmitting"
+        :is-submitting="false"
         @go-back="goBackToCategorySelection"
         @close="handleClose"
         @submit="handleSubmit"
