@@ -23,7 +23,6 @@ defineProps<{
 defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
-  'open-add-modal': []
 }>()
 
 // Utility functions
@@ -73,23 +72,7 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
             <p class="text-sm text-gray-600">แสดง {{ filteredProducts.length }} รายการ</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <Button
-            v-if="isFishCategory(selectedCategory)"
-            label="ตั้งค่าบ่อ"
-            icon="pi pi-cog"
-            severity="info"
-            size="small"
-          />
 
-          <Button
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="$emit('open-add-modal')"
-          />
-        </div>
       </div>
     </div>
 

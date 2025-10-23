@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ISalesProduct } from '../../types/sales'
+import { Button } from 'primevue'
 
 // Props
 defineProps<{
@@ -18,14 +19,34 @@ defineProps<{
 // Emits
 defineEmits<{
   'select-category': [category: string]
+  'open-add-modal': []
 }>()
 </script>
 
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-    <div class="flex items-center gap-2 mb-3">
-      <i class="pi pi-filter text-blue-600"></i>
-      <h3 class="text-lg font-semibold text-gray-800">กรองสินค้าตามหมวดหมู่</h3>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-filter text-blue-600"></i>
+        <h3 class="text-lg font-semibold text-gray-800">กรองสินค้าตามหมวดหมู่</h3>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <Button
+          label="ตั้งค่าบ่อ"
+          icon="pi pi-cog"
+          severity="info"
+          size="small"
+        />
+
+        <Button
+          label="เพิ่มสินค้า"
+          icon="pi pi-plus"
+          severity="success"
+          size="small"
+          @click="$emit('open-add-modal')"
+        />
+      </div>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2.5">

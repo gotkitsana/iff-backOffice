@@ -192,6 +192,7 @@ const getSelectedCategoryInfo = () => {
       :category-options="categoryOptions"
       :get-category-count="getCategoryCount"
       @select-category="selectCategory"
+      @open-add-modal="openAddModal"
     />
 
     <!-- Product Table -->
@@ -204,7 +205,6 @@ const getSelectedCategoryInfo = () => {
       :get-selected-category-info="getSelectedCategoryInfo"
       @open-detail-modal="openDetailModal"
       @open-edit-modal="openEditModal"
-      @open-add-modal="openAddModal"
     />
   </div>
 
