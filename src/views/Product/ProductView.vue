@@ -3,9 +3,9 @@ import { ref, computed } from 'vue'
 import { useProductStore, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import ModalAddProduct from '../../components/product/ModalAddProduct.vue'
-import ModalEditProduct from '../../components/product/ModalEditProduct.vue'
-import ModalProductDetail from '../../components/product/ModalProductDetail.vue'
+import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
+import ModalEditProduct from '../../components/product/modal/ModalEditProduct.vue'
+import ModalProductDetail from '../../components/product/modal/ModalProductDetail.vue'
 import ProductHeader from '../../components/product/ProductHeader.vue'
 import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
 import CategoryFilter from '../../components/product/CategoryFilter.vue'
@@ -180,7 +180,6 @@ const getSelectedCategoryInfo = () => {
     <ProductHeader
       title="จัดการสินค้า"
       description="จัดการสินค้าสำหรับขายและประมูล"
-      @open-add-modal="openAddModal"
     />
 
     <!-- Product Stats -->
