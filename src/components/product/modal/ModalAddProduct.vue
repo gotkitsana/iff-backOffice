@@ -9,18 +9,18 @@ import {
   type IFieldsKey,
   type IProductImage,
   type IUploadImageResponse,
-} from '../../../stores/product/product'
+} from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '../../../stores/auction/category'
-import { useSalesStore } from '../../../stores/sales/sales'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { useSalesStore } from '@/stores/sales/sales'
 
 // Import components
-import CategorySelectionStep from '../add_product/CategorySelectionStep.vue'
-import DynamicFormField from '../add_product/DynamicFormField.vue'
-import FileUploadSection from '../add_product/FileUploadSection.vue'
-import ModalHeader from '../add_product/ModalHeader.vue'
-import ModalFooter from '../add_product/ModalFooter.vue'
+import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
+import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
+import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
+import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
+import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
 
 // Props
 defineProps<{
@@ -40,7 +40,7 @@ const salesStore = useSalesStore()
 
 // State
 const currentStep = ref(1) // 1 = เลือกหมวดหมู่, 2 = กรอกข้อมูล
-const selectedCategory = ref<string | null>(null)
+const selectedCategory = ref<ICategory | null>(null)
 const isSubmitting = ref(false)
 
 // Form data
@@ -97,96 +97,54 @@ const { data: categories } = useQuery<ICategory[]>({
   queryFn: () => categoryStore.onGetCategory(),
 })
 
+const isFishCategory = computed(() => selectedCategory.value?.value === 'fish')
 // Computed
 const selectedCategoryInfo = computed(() => {
-  return categoryOptionsUI.value.find((cat) => cat.value === selectedCategory.value)
+  return categoryOptionsUI.value.find((cat) => cat._id === selectedCategory.value?._id)
 })
 
-const isFishCategory = computed(() => selectedCategory.value === 'fish')
+const categoryOptionsUI = computed(() => {
+  if (!categories.value) return []
+  const fieldsData = [
+    {
+      value: 'fish',
+      fields: [
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'pond', label: 'บ่อ', type: 'text', required: true },
+        { key: 'fishId', label: 'รหัสปลา', type: 'text', required: true },
+        { key: 'species', label: 'สายพันธุ์', type: 'text', required: true },
+        { key: 'breed', label: 'แม่พันธุ์', type: 'text', required: true },
+        { key: 'birthDate', label: 'วันเกิด', type: 'date', required: true },
+        { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
+        { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
+        { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
+        { key: 'size', label: 'ไซต์', type: 'number', required: true },
+        { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
+        { key: 'gender', label: 'เพศ', type: 'select', required: true },
+        { key: 'price', label: 'ราคา', type: 'number', required: true },
+      ],
+    },
+    {
+      value: 'food',
+      fields: [
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'productName', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
+        { key: 'pelletType', label: 'ชนิดเม็ด', type: 'text', required: true },
+        { key: 'weightPerBag', label: 'น้ำหนัก ต่อกระสอบ', type: 'number', required: true },
+        { key: 'pelletSize', label: 'ขนาดเม็ด', type: 'text', required: true },
+        { key: 'remainingQuantity', label: 'คงเหลือ', type: 'number', required: true },
+        { key: 'price', label: 'ราคา', type: 'number', required: true },
+      ],
+    },
+  ]
 
-const categoryOptionsUI = computed<ICategoryOption[]>(() => [
-  {
-    value: 'fish',
-    label: 'ปลา',
-    icon: 'pi pi-star',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    fields: [
-      { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-      { key: 'pond', label: 'บ่อ', type: 'text', required: true },
-      { key: 'fishId', label: 'รหัสปลา', type: 'text', required: true },
-      { key: 'species', label: 'สายพันธุ์', type: 'text', required: true },
-      { key: 'breed', label: 'แม่พันธุ์', type: 'text', required: true },
-      { key: 'birthDate', label: 'วันเกิด', type: 'date', required: true },
-      { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
-      { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
-      { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
-      { key: 'size', label: 'ไซต์', type: 'number', required: true },
-      { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
-      { key: 'gender', label: 'เพศ', type: 'select', required: true },
-      { key: 'price', label: 'ราคา', type: 'number', required: true },
-    ],
-  },
-  {
-    value: 'food',
-    label: 'อาหาร',
-    icon: 'pi pi-heart',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    iconColor: 'text-red-600',
-    fields: [
-      { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-      { key: 'productName', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
-      { key: 'pelletType', label: 'ชนิดเม็ด', type: 'text', required: true },
-      { key: 'weightPerBag', label: 'น้ำหนัก ต่อกระสอบ', type: 'number', required: true },
-      { key: 'pelletSize', label: 'ขนาดเม็ด', type: 'text', required: true },
-      { key: 'remainingQuantity', label: 'คงเหลือ', type: 'number', required: true },
-      { key: 'price', label: 'ราคา', type: 'number', required: true },
-    ],
-  },
-  // {
-  //   value: 'microorganism',
-  //   label: 'สารปรับสภาพน้ำ',
-  //   icon: 'pi pi-sparkles',
-  //   color: 'text-purple-600',
-  //   bgColor: 'bg-purple-100',
-  //   iconColor: 'text-purple-600',
-  //   fields: [
-  //     { key: 'productName', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
-  //     { key: 'volume', label: 'ปริมาณ', type: 'text', required: true },
-  //     { key: 'price', label: 'ราคา', type: 'number', required: true },
-  //   ],
-  // },
-  // {
-  //   value: 'equipment',
-  //   label: 'อุปกรณ์',
-  //   icon: 'pi pi-wrench',
-  //   color: 'text-orange-600',
-  //   bgColor: 'bg-orange-100',
-  //   iconColor: 'text-orange-600',
-  //   fields: [
-  //     { key: 'productName', label: 'ชื่ออุปกรณ์', type: 'text', required: true },
-  //     { key: 'model', label: 'รุ่น', type: 'text', required: false },
-  //     { key: 'specification', label: 'รายละเอียด', type: 'textarea', required: false },
-  //     { key: 'price', label: 'ราคา', type: 'number', required: true },
-  //   ],
-  // },
-  // {
-  //   value: 'medicine',
-  //   label: 'เวชภัณฑ์',
-  //   icon: 'pi pi-plus-circle',
-  //   color: 'text-green-600',
-  //   bgColor: 'bg-green-100',
-  //   iconColor: 'text-green-600',
-  //   fields: [
-  //     { key: 'productName', label: 'ชื่อยา', type: 'text', required: true },
-  //     { key: 'dosage', label: 'ขนาด', type: 'text', required: true },
-  //     { key: 'expiryDate', label: 'วันหมดอายุ', type: 'date', required: true },
-  //     { key: 'price', label: 'ราคา', type: 'number', required: true },
-  //   ],
-  // },
-])
+  const categoryFields = categories.value?.map((category) => ({
+    ...category,
+    fields: fieldsData.find((field) => field.value === category.value)?.fields || [],
+  }))
+
+  return categoryFields as ICategoryOption[]
+})
 
 // File upload mutations
 const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
@@ -236,29 +194,20 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
 })
 
 // Methods
-const selectCategory = (categoryValue: string) => {
-  selectedCategory.value = categoryValue
-
-  // หา _id ของ category ที่เลือกจาก categories API
-  const selectedCategoryData = categories.value?.find((cat) => {
-    const categoryType = salesStore.categoryTypes.find((c) => c.value === cat.name)
-    const uiCategory = categoryOptionsUI.value.find((ui) => ui.value === categoryValue)
-    return categoryType?.label === uiCategory?.label
-  })
-
-  productForm.value.category = selectedCategoryData?._id || null
+const selectCategory = (category: ICategory) => {
+  selectedCategory.value = category
+  productForm.value.category = category._id
   currentStep.value = 2
   initializeDynamicForm()
 }
 
 const initializeDynamicForm = () => {
-  if (selectedCategoryInfo.value) {
-    const formData: Record<string, any> = {}
-    selectedCategoryInfo.value.fields.forEach((field) => {
-      formData[field.key] = field.type === 'number' ? 0 : ''
-    })
-    dynamicFormData.value = formData
-  }
+  if (!selectedCategoryInfo.value) return
+  const formData: Record<string, any> = {}
+  selectedCategoryInfo.value.fields.forEach((field) => {
+    formData[field.key] = field.type === 'number' ? 0 : ''
+  })
+  dynamicFormData.value = formData
 }
 
 const goBackToCategorySelection = () => {

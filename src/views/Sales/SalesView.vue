@@ -13,7 +13,7 @@ import BankData from '@/config/BankData'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
 import type { ISales, SellingStatus } from '@/types/sales'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/product/category'
 
 // Stores
 const salesStore = useSalesStore()
@@ -28,10 +28,7 @@ const showProductDetailModal = ref(false)
 const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
-const {
-  data: salesData,
-  isLoading: isLoadingSales,
-} = useQuery<ISales[]>({
+const { data: salesData, isLoading: isLoadingSales } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
 })
@@ -105,11 +102,6 @@ const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
   queryFn: () => categoryStore.onGetCategory(),
 })
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
-}
-
 // Revenue calculations by category
 const totalRevenue = computed(() => {
   return (
@@ -124,22 +116,22 @@ const totalRevenue = computed(() => {
   )
 })
 
-const calculateCategoryRevenue = (categoryName: string) => {
+const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
   return (
     salesData.value
       ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
         const categoryProductsTotal = sale.products
-          .filter((product) => handleFindCategory(product.category) === categoryName)
+          .filter((product) => categories.value?.find((c) => c._id === product.category)?.value === categoryName)
           .reduce((productSum, product) => {
             return productSum + (product.price || 0) * product.quantity
           }, 0)
-
         return sum + categoryProductsTotal
       }, 0) || 0
   )
 }
+
 const serviceRevenue = computed(() => calculateCategoryRevenue('service'))
 const fishRevenue = computed(() => calculateCategoryRevenue('fish'))
 const equipmentRevenue = computed(() => calculateCategoryRevenue('equipment'))
@@ -581,7 +573,7 @@ const closeDeleteModal = () => {
           <Column
             field="user.displayName"
             header="ชื่อเล่น"
-            :pt="{ columnHeaderContent: 'min-w-[4.5rem]', }"
+            :pt="{ columnHeaderContent: 'min-w-[4.5rem]' }"
           />
 
           <Column
@@ -720,11 +712,7 @@ const closeDeleteModal = () => {
             </template>
           </Column>
 
-          <Column
-            field="note"
-            header="หมายเหตุ"
-            :pt="{ columnHeaderContent: 'min-w-[5rem]', }"
-          />
+          <Column field="note" header="หมายเหตุ" :pt="{ columnHeaderContent: 'min-w-[5rem]' }" />
 
           <Column
             header="จัดการ"
@@ -789,9 +777,9 @@ const closeDeleteModal = () => {
 
   <!-- ลบรายการขาย -->
   <ModalDeleteSale
-      v-if="!!selectedSaleForDelete"
-      :showDeleteModal="showDeleteModal"
-      @onCloseDeleteModal="closeDeleteModal"
-      :saleData="selectedSaleForDelete"
-    />
+    v-if="!!selectedSaleForDelete"
+    :showDeleteModal="showDeleteModal"
+    @onCloseDeleteModal="closeDeleteModal"
+    :saleData="selectedSaleForDelete"
+  />
 </template>

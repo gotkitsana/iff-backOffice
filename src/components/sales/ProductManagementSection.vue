@@ -3,7 +3,7 @@ import { computed, watch } from 'vue'
 import { Button, Select, InputNumber } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import CardProductList from './CardProductList.vue'
 import formatCurrency from '@/utils/formatCurrency'
 
@@ -91,9 +91,9 @@ watch(
   { immediate: true }
 )
 
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
+const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
+  if (!id) return undefined
+  return categories.value?.find((category) => category._id === id)
 }
 
 const updateProduct = (index: number, field: 'id' | 'quantity', value: string | number) => {
@@ -191,23 +191,23 @@ const isProductValid = (product: { id: string; quantity: number }) => {
           </div>
 
           <CardProductList
-            v-if="selectedProductDetails[index]"
+            v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
             :name="selectedProductDetails[index]?.name || ''"
             :quantity="selectedProductDetails[index]?.quantity || 0"
             :price="selectedProductDetails[index]?.price || 0"
             :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+            :category="handleFindCategory(selectedProductDetails[index]?.category)"
           />
         </div>
 
         <div v-else>
           <CardProductList
-            v-if="selectedProductDetails[index]"
+            v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
             :name="selectedProductDetails[index]?.name || ''"
             :quantity="selectedProductDetails[index]?.quantity || 0"
             :price="selectedProductDetails[index]?.price || 0"
             :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+            :category="handleFindCategory(selectedProductDetails[index]?.category)"
           />
         </div>
       </div>

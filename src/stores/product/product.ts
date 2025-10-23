@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
-import type { ISalesProduct, ISalesProductLabel } from '@/types/sales'
+import type { ICategory, ICategoryLabel, ICategoryValue } from './category'
 
 export const useProductStore = defineStore('product', () => {
   async function onGetProducts() {
@@ -148,13 +148,7 @@ export interface IFields {
   options?: IFieldsOptions
 }
 
-export type ICategoryOption = {
-  value: ISalesProduct
-  label: ISalesProductLabel
-  icon: string
-  color: string
-  bgColor: string
-  iconColor: string
+export interface ICategoryOption extends ICategory {
   fields: IFields[]
 }
 

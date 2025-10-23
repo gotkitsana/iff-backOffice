@@ -6,7 +6,7 @@ import formatCurrency from '@/utils/formatCurrency'
 import type { ISales } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
 
 // Props
 const props = defineProps<{
@@ -18,7 +18,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
-
 
 // Stores
 const salesStore = useSalesStore()
@@ -50,9 +49,9 @@ const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
   queryFn: () => categoryStore.onGetCategory(),
 })
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
+const handleFindCategory = (id: string): ICategory | undefined => {
+  if (!id) return undefined
+  return categories.value?.find((category) => category._id === id)
 }
 </script>
 
@@ -126,15 +125,16 @@ const handleFindCategory = (id: string | null | undefined) => {
         </h4>
 
         <div class="space-y-2">
-          <CardProductList
-            v-for="(product, index) in products"
-            :key="index"
-            :name="product.name || ''"
-            :quantity="product.quantity || 0"
-            :price="product.price || 0"
-            :detail="''"
-            :category="handleFindCategory(product.category) || ''"
-          />
+          <template v-for="(product, index) in products" :key="index">
+            <CardProductList
+              v-if="product.category"
+              :name="product.name || ''"
+              :quantity="product.quantity || 0"
+              :price="product.price || 0"
+              :detail="''"
+              :category="handleFindCategory(product.category)"
+            />
+          </template>
         </div>
       </div>
 
@@ -156,9 +156,9 @@ const handleFindCategory = (id: string | null | undefined) => {
               class="flex justify-between items-center"
             >
               <span class="text-sm text-gray-600">ส่วนลด:</span>
-              <span class="text-sm font-semibold text-red-600"
-                >{{ formatCurrency(saleData.discount) }}</span
-              >
+              <span class="text-sm font-semibold text-red-600">{{
+                formatCurrency(saleData.discount)
+              }}</span>
             </div>
 
             <div
@@ -166,9 +166,9 @@ const handleFindCategory = (id: string | null | undefined) => {
               class="flex justify-between items-center"
             >
               <span class="text-sm text-gray-600">มัดจำ:</span>
-              <span class="text-sm font-semibold text-blue-600"
-                >{{ formatCurrency(saleData.deposit) }}</span
-              >
+              <span class="text-sm font-semibold text-blue-600">{{
+                formatCurrency(saleData.deposit)
+              }}</span>
             </div>
 
             <Divider class="my-2" />

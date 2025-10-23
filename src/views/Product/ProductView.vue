@@ -10,6 +10,7 @@ import ProductHeader from '@/components/product/ProductHeader.vue'
 import ProductStatsCards from '@/components/product/ProductStatsCards.vue'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
+import type { ICategory } from '@/stores/product/category'
 
 // Stores
 const productStore = useProductStore()
@@ -19,7 +20,7 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
-const selectedCategory = ref<string | null>(null)
+const selectedCategory = ref<ICategory | null>(null)
 const selectedQualityGrade = ref<string | null>(null)
 
 // Queries
@@ -41,7 +42,7 @@ const filteredProducts = computed(() => {
   })
 
   // Apply quality grade filter for fish
-  if (selectedCategory.value === 'fish' && selectedQualityGrade.value) {
+  if (selectedCategory.value?.value === 'fish' && selectedQualityGrade.value) {
     filtered = filtered.filter(product => {
       switch (selectedQualityGrade.value) {
         case 'tategoi':
@@ -99,7 +100,7 @@ const handleProductDeleted = () => {
   toast.success('ลบสินค้าสำเร็จ')
 }
 
-const selectCategory = (category: string) => {
+const selectCategory = (category: ICategory) => {
   selectedCategory.value = category
 }
 

@@ -6,7 +6,7 @@ import type { ISales } from '../../../types/sales'
 import dayjs from 'dayjs'
 import { useMemberStore, type IMember } from '../../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
 
 // Props
 const props = defineProps<{
@@ -272,13 +272,15 @@ const generateInvoiceHTML = () => {
         <div class="customer-section">
             <div class="customer-title">ข้อมูลลูกค้า</div>
             <div class="customer-details">
-              <div>ชื่อลูกค้า: ${
-                props.saleData.user.name || props.saleData.user.displayName
-              }</div>
+              <div>ชื่อลูกค้า: ${props.saleData.user.name || props.saleData.user.displayName}</div>
               <div>รหัสลูกค้า: ${
                 props.saleData.user.code.charAt(0).toUpperCase() + props.saleData.user.code.slice(1)
               }</div>
-              <div>ที่อยู่: ${findMemberData(props.saleData.user._id)?.address}, ${memberStore.provinceOptions.find((option) => option.value === findMemberData(props.saleData.user._id)?.province)?.label || '-'}</div>
+              <div>ที่อยู่: ${findMemberData(props.saleData.user._id)?.address}, ${
+    memberStore.provinceOptions.find(
+      (option) => option.value === findMemberData(props.saleData.user._id)?.province
+    )?.label || '-'
+  }</div>
               <div>เบอร์โทร: ${findMemberData(props.saleData.user._id)?.phone}</div>
             </div>
         </div>
@@ -373,9 +375,9 @@ const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
   queryFn: () => categoryStore.onGetCategory(),
 })
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
+const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
+  if (!id) return undefined
+  return categories.value?.find((category) => category._id === id)
 }
 </script>
 
@@ -505,7 +507,12 @@ const handleFindCategory = (id: string | null | undefined) => {
                 <td class="px-4 py-2 text-sm text-gray-900">
                   <div>
                     <div class="font-medium!">{{ product.name }}</div>
-                    <div class="text-xs text-gray-600">หมวดหมู่: {{ salesStore.categoryTypes.find((t) => t.value === handleFindCategory(product.category))?.label || '-' }}</div>
+                    <div class="text-xs text-gray-600">
+                      หมวดหมู่:
+                      {{
+                        handleFindCategory(product?.category)?.name || '-'
+                      }}
+                    </div>
                   </div>
                 </td>
                 <td class="px-4 py-2 text-center text-sm text-gray-900">

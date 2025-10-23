@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
-import { useSalesStore } from '@/stores/sales/sales'
 import formatCurrency from '@/utils/formatCurrency'
+import { type ICategory } from '@/stores/product/category'
 
 interface Props {
-  category: string
+  category: ICategory | undefined
   name: string
   quantity: number
   price: number
@@ -13,16 +13,13 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const salesStore = useSalesStore()
 </script>
 
 <template>
   <Card
+    v-if="props.category"
     :pt="{ body: 'p-3' }"
-    :class="`${salesStore.getCategoryBgColor(
-      props.category
-    )} border ${salesStore.getCategoryBorderColor(props.category)}`"
+    :class="`${props.category.bgColor.replace('-100', '-50')} ${props.category.bgColor}`"
   >
     <template #content>
       <div class="flex items-center justify-between">
@@ -30,12 +27,10 @@ const salesStore = useSalesStore()
         <div class="flex items-center gap-3 flex-1">
           <div
             class="w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-xl"
-            :class="salesStore.getCategoryBgIcon(props.category)"
+            :class="props.category.bgColor"
           >
             <i
-              :class="`pi ${salesStore.getCategoryIcon(
-                props.category
-              )} text-lg ${salesStore.getCategoryColor(props.category)}`"
+              :class="`pi ${props.category.icon} text-lg ${props.category.iconColor}`"
             ></i>
           </div>
 
@@ -46,7 +41,7 @@ const salesStore = useSalesStore()
               </h5>
               <Tag v-if="props.detail"
                 :value="
-                  salesStore.categoryTypes.find((t) => t.value === props.category)?.label ||
+                  props.category.name ||
                   'ไม่ระบุ'
                 "
                 severity="info"
@@ -59,7 +54,7 @@ const salesStore = useSalesStore()
             >
             <Tag v-else
                 :value="
-                  salesStore.categoryTypes.find((t) => t.value === props.category)?.label ||
+                  props.category.name ||
                   'ไม่ระบุ'
                 "
                 severity="info"

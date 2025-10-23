@@ -2,14 +2,13 @@
 import { DataTable, Column, Tag, Button } from 'primevue'
 import type { IProduct } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
-import { computed } from 'vue';
-import type { ISalesProduct } from '@/types/sales'
+import type { ICategory } from '@/stores/product/category';
 
 // Props
 const props = defineProps<{
   filteredProducts: IProduct[]
   isLoadingProducts: boolean
-  selectedCategory: string | null
+  selectedCategory: ICategory | null
 }>()
 
 // Emits
@@ -17,77 +16,6 @@ defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
 }>()
-
-const categoryOptions = [
-  {
-    value: 'fish',
-    label: 'ปลา',
-    icon: 'pi pi-star',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-  },
-  {
-    value: 'food',
-    label: 'อาหาร',
-    icon: 'pi pi-heart',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    iconColor: 'text-red-600',
-  },
-  {
-    value: 'microorganism',
-    label: 'สารปรับสภาพน้ำ',
-    icon: 'pi pi-sparkles',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-  },
-  {
-    value: 'equipment',
-    label: 'อุปกรณ์',
-    icon: 'pi pi-wrench',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-    iconColor: 'text-orange-600',
-  },
-  {
-    value: 'medicine',
-    label: 'เวชภัณฑ์',
-    icon: 'pi pi-plus-circle',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
-    iconColor: 'text-green-600',
-  },
-  {
-    value: 'construction',
-    label: 'คอนสทรัคชั่น',
-    icon: 'pi pi-building',
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
-    iconColor: 'text-gray-600',
-  },
-  {
-    value: 'service',
-    label: 'บริการ',
-    icon: 'pi pi-cog',
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100',
-    iconColor: 'text-indigo-600',
-  },
-]
-
-const getSelectedCategoryLabel = () => {
-  if (props.selectedCategory === 'all') return 'สินค้าทั้งหมด'
-  const category = categoryOptions.find((c) => c.value === props.selectedCategory)
-  return category?.label || 'สินค้า'
-}
-
-const getSelectedCategoryInfo = () => {
-  if (props.selectedCategory === 'all') return null
-  return categoryOptions.find((c) => c.value === props.selectedCategory) || null
-}
-
 
 // Utility functions
 const getGenderTag = (gender: number) => {
@@ -107,11 +35,6 @@ const getStatusTag = (sold: boolean) => {
     : { label: 'พร้อมขาย', severity: 'success' }
 }
 
-// Category type checks
-const isFishCategory = (category: string | null) => category === 'fish'
-const isServiceCategory = (category: string | null) => category === 'service'
-const isEquipmentCategory = (category: string | null) => category === 'equipment'
-const isMedicineCategory = (category: string | null) => category === 'medicine'
 </script>
 
 <template>
@@ -120,18 +43,18 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div
-            v-if="getSelectedCategoryInfo()"
+            v-if="props.selectedCategory"
             :class="`w-10 h-10 rounded-lg flex items-center justify-center ${
-              getSelectedCategoryInfo()?.bgColor
+              props.selectedCategory?.bgColor
             }`"
           >
             <i
-              :class="`${getSelectedCategoryInfo()?.icon} ${getSelectedCategoryInfo()?.iconColor}`"
+              :class="`${props.selectedCategory?.icon} ${props.selectedCategory?.iconColor}`"
             ></i>
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-800">
-              {{ getSelectedCategoryLabel() }}
+              {{ props.selectedCategory?.name || 'ไม่ระบุหมวดหมู่' }}
             </h3>
             <p class="text-sm text-gray-600">แสดง {{ filteredProducts.length }} รายการ</p>
           </div>
@@ -163,7 +86,7 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
       </Column>
 
       <!-- Fish-specific Columns -->
-      <template v-if="isFishCategory(selectedCategory)">
+      <template v-if="props.selectedCategory?.value === 'fish'">
         <Column
           field="size"
           header="ขนาด (ซม.)"
@@ -224,7 +147,7 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
       </template>
 
       <!-- Service-specific Columns -->
-      <template v-else-if="isServiceCategory(selectedCategory)">
+      <template v-else-if="props.selectedCategory?.value === 'service'">
         <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
           <template #body="slotProps">
             <div class="max-w-xs">
@@ -245,7 +168,7 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
       </template>
 
       <!-- Equipment-specific Columns -->
-      <template v-else-if="isEquipmentCategory(selectedCategory)">
+      <template v-else-if="props.selectedCategory?.value === 'equipment'">
         <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
           <template #body="slotProps">
             <div class="max-w-xs">
@@ -265,7 +188,7 @@ const isMedicineCategory = (category: string | null) => category === 'medicine'
       </template>
 
       <!-- Medicine-specific Columns -->
-      <template v-else-if="isMedicineCategory(selectedCategory)">
+      <template v-else-if="props.selectedCategory?.value === 'medicine'">
         <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
           <template #body="slotProps">
             <div class="max-w-xs">

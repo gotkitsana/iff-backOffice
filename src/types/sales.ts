@@ -92,19 +92,5 @@ export type SellingLabel =
   | 'ได้รับสินค้าแล้ว'
   | 'สินค้าเสียหาย'
 
-export type ISalesProduct =
-  | 'fish'
-  | 'equipment'
-  | 'service'
-  | 'construction'
-  | 'medicine'
-  | 'food'
-  | 'microorganism'
-export type ISalesProductLabel =
-  | 'ปลา'
-  | 'อุปกรณ์'
-  | 'บริการ'
-  | 'คอนสทรัคชั่น'
-  | 'อาหาร'
-  | 'เวชภัณฑ์'
-  | 'สารปรับสภาพน้ำ'
+
+

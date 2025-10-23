@@ -2,13 +2,12 @@ import { defineStore } from 'pinia'
 import api from '@/utils/axios'
 import type {
   ICreateSalesPayload,
-  ISalesProduct,
-  ISalesProductLabel,
   IUpdateSalesPayload,
   SellingLabel,
   SellingStatus,
   StatusWorkflow,
 } from '@/types/sales'
+import type { ICategoryLabel } from '../product/category'
 
 export const useSalesStore = defineStore('sales', () => {
   async function onGetSales() {
@@ -54,16 +53,6 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'บัตรเครดิต', value: 'credit' },
     { label: 'QR PromptPay', value: 'promptpay' },
     { label: 'อื่นๆ', value: 'other' },
-  ]
-
-  const categoryTypes: { label: ISalesProductLabel; value: ISalesProduct }[] = [
-    { label: 'ปลา', value: 'fish' },
-    { label: 'สารปรับสภาพน้ำ', value: 'microorganism' },
-    { label: 'คอนสทรัคชั่น', value: 'construction' },
-    { label: 'บริการ', value: 'service' },
-    { label: 'อาหาร', value: 'food' },
-    { label: 'เวชภัณฑ์', value: 'medicine' },
-    { label: 'อุปกรณ์', value: 'equipment' },
   ]
 
   const sellers = [
@@ -192,88 +181,69 @@ export const useSalesStore = defineStore('sales', () => {
     }
   }
 
-  const getPaymentMethodTag = (method: string) => {
-    switch (method) {
-      case 'SCBA':
-        return { label: 'SCB', severity: 'info' }
-      case 'KBANK':
-        return { label: 'KBANK', severity: 'info' }
-      case 'BBL':
-        return { label: 'BBL', severity: 'info' }
-      case 'cash':
-        return { label: 'เงินสด', severity: 'success' }
-      case 'transfer':
-        return { label: 'โอนเงิน', severity: 'info' }
-      case 'credit':
-        return { label: 'เครดิต', severity: 'warning' }
-      default:
-        return { label: method, severity: 'secondary' }
-    }
-  }
-
   const getCategoryColor = (category: string | null) => {
-    const colorMap: Record<ISalesProduct, string> = {
-      fish: 'text-gray-600',
-      equipment: 'text-green-600',
-      service: 'text-purple-600',
-      construction: 'text-orange-600',
-      medicine: 'text-red-600',
-      food: 'text-pink-600',
-      microorganism: 'text-teal-600',
-    }
-    return colorMap[category as ISalesProduct] || 'text-gray-600'
+    const colorMap: { label: ICategoryLabel; value: string }[] = [
+      { label: 'ปลา', value: 'text-gray-600' },
+      { label: 'สารปรับสภาพน้ำ', value: 'text-green-600' },
+      { label: 'คอนสทรัคชั่น', value: 'text-purple-600' },
+      { label: 'บริการ', value: 'text-orange-600' },
+      { label: 'อาหาร', value: 'text-pink-600' },
+      { label: 'เวชภัณฑ์', value: 'text-red-600' },
+      { label: 'อุปกรณ์', value: 'text-teal-600' },
+    ]
+    return colorMap.find((c) => c.label === category)?.value || 'text-gray-600'
   }
 
   const getCategoryBgColor = (category: string | null) => {
-    const bgColorMap: Record<ISalesProduct, string> = {
-      fish: 'bg-gray-50',
-      equipment: 'bg-green-50',
-      service: 'bg-purple-50',
-      construction: 'bg-orange-50',
-      medicine: 'bg-red-50',
-      food: 'bg-pink-50',
-      microorganism: 'bg-teal-50',
-    }
-    return bgColorMap[category as ISalesProduct] || 'bg-gray-50'
+    const bgColorMap: { label: ICategoryLabel; value: string }[] = [
+      { label: 'ปลา', value: 'bg-gray-50' },
+      { label: 'อุปกรณ์', value: 'bg-green-50' },
+      { label: 'บริการ', value: 'bg-purple-50' },
+      { label: 'คอนสทรัคชั่น', value: 'bg-orange-50' },
+      { label: 'อาหาร', value: 'bg-pink-50' },
+      { label: 'เวชภัณฑ์', value: 'bg-red-50' },
+      { label: 'สารปรับสภาพน้ำ', value: 'bg-teal-50' },
+    ]
+    return bgColorMap.find((c) => c.label === category)?.value || 'bg-gray-50'
   }
 
   const getCategoryBgIcon = (category: string | null) => {
-    const bgColorMap: Record<ISalesProduct, string> = {
-      fish: 'bg-gray-100',
-      equipment: 'bg-green-100',
-      service: 'bg-purple-100',
-      construction: 'bg-orange-100',
-      medicine: 'bg-red-100',
-      food: 'bg-pink-100',
-      microorganism: 'bg-teal-100',
-    }
-    return bgColorMap[category as ISalesProduct] || 'bg-gray-100'
+    const bgColorMap: { label: ICategoryLabel; value: string }[] = [
+      { label: 'ปลา', value: 'bg-gray-100' },
+      { label: 'อุปกรณ์', value: 'bg-green-100' },
+      { label: 'บริการ', value: 'bg-purple-100' },
+      { label: 'คอนสทรัคชั่น', value: 'bg-orange-100' },
+      { label: 'อาหาร', value: 'bg-pink-100' },
+      { label: 'เวชภัณฑ์', value: 'bg-red-100' },
+      { label: 'สารปรับสภาพน้ำ', value: 'bg-teal-100' },
+    ]
+    return bgColorMap.find((c) => c.label === category)?.value || 'bg-gray-100'
   }
 
   const getCategoryBorderColor = (category: string | null) => {
-    const borderColorMap: Record<ISalesProduct, string> = {
-      fish: 'border-gray-200',
-      equipment: 'border-green-200',
-      service: 'border-purple-200',
-      construction: 'border-orange-200',
-      medicine: 'border-red-200',
-      food: 'border-pink-200',
-      microorganism: 'border-teal-200',
-    }
-    return borderColorMap[category as ISalesProduct] || 'border-gray-200'
+    const borderColorMap: { label: ICategoryLabel; value: string }[] = [
+      { label: 'ปลา', value: 'border-gray-200' },
+      { label: 'อุปกรณ์', value: 'border-green-200' },
+      { label: 'บริการ', value: 'border-purple-200' },
+      { label: 'คอนสทรัคชั่น', value: 'border-orange-200' },
+      { label: 'อาหาร', value: 'border-pink-200' },
+      { label: 'เวชภัณฑ์', value: 'border-red-200' },
+      { label: 'สารปรับสภาพน้ำ', value: 'border-teal-200' },
+    ]
+    return borderColorMap.find((c) => c.label === category)?.value || 'border-gray-200'
   }
 
   const getCategoryIcon = (category: string | null) => {
-    const iconMap: Record<ISalesProduct, string> = {
-      fish: 'pi-fish',
-      equipment: 'pi-box',
-      service: 'pi-wrench',
-      construction: 'pi-building',
-      medicine: 'pi-plus-circle',
-      food: 'pi-heart',
-      microorganism: 'pi-circle',
-    }
-    return iconMap[category as ISalesProduct] || 'pi-box'
+    const iconMap: { label: ICategoryLabel; value: string }[] = [
+      { label: 'ปลา', value: 'pi-fish' },
+      { label: 'อุปกรณ์', value: 'pi-box' },
+      { label: 'บริการ', value: 'pi-wrench' },
+      { label: 'คอนสทรัคชั่น', value: 'pi-building' },
+      { label: 'อาหาร', value: 'pi-heart' },
+      { label: 'เวชภัณฑ์', value: 'pi-plus-circle' },
+      { label: 'สารปรับสภาพน้ำ', value: 'pi-circle' },
+    ]
+    return iconMap.find((c) => c.label === category)?.value || 'pi-box'
   }
 
   return {
@@ -282,7 +252,6 @@ export const useSalesStore = defineStore('sales', () => {
     onCreateSales,
     onUpdateSales,
     onDeleteSales,
-    categoryTypes,
     sellers,
     sellingStatusOptions,
     getStatusTag,

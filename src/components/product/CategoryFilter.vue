@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button, Select } from 'primevue'
-import { useProductStore, type ICategoryOption, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
-import type { ISalesProduct, ISalesProductLabel } from '@/types/sales';
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
 
 // Props
 const props = defineProps<{
-  selectedCategory: string | null
+  selectedCategory: ICategory | null
   selectedQualityGrade: string | null
 }>()
 
 // Emits
 defineEmits<{
-  'select-category': [category: string]
+  'select-category': [category: ICategory]
   'select-quality-grade': [grade: string]
   'open-add-modal': []
 }>()
 
 const productStore = useProductStore()
+const categoryStore = useCategoryStore()
 
 // Query
 const { data: products } = useQuery<IProduct[]>({
@@ -26,64 +27,10 @@ const { data: products } = useQuery<IProduct[]>({
   queryFn: () => productStore.onGetProducts(),
 })
 
-const categoryOptions: { value: ISalesProduct; label: ISalesProductLabel; icon: string; color: string; bgColor: string; iconColor: string }[] = [
-  {
-    value: 'fish',
-    label: 'ปลา',
-    icon: 'pi pi-star',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-  },
-  {
-    value: 'food',
-    label: 'อาหาร',
-    icon: 'pi pi-heart',
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    iconColor: 'text-red-600',
-  },
-  {
-    value: 'microorganism',
-    label: 'สารปรับสภาพน้ำ',
-    icon: 'pi pi-sparkles',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-  },
-  {
-    value: 'equipment',
-    label: 'อุปกรณ์',
-    icon: 'pi pi-wrench',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-    iconColor: 'text-orange-600',
-  },
-  {
-    value: 'medicine',
-    label: 'เวชภัณฑ์',
-    icon: 'pi pi-plus-circle',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
-    iconColor: 'text-green-600',
-  },
-  {
-    value: 'construction',
-    label: 'คอนสทรัคชั่น',
-    icon: 'pi pi-building',
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
-    iconColor: 'text-gray-600',
-  },
-  {
-    value: 'service',
-    label: 'บริการ',
-    icon: 'pi pi-cog',
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100',
-    iconColor: 'text-indigo-600',
-  },
-]
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['categories'],
+  queryFn: () => categoryStore.onGetCategory(),
+})
 
 const qualityGradeOptions = [
   { label: 'Tategoi', value: 'tategoi' },
@@ -92,25 +39,22 @@ const qualityGradeOptions = [
 
 // Computed
 const isFishSelected = computed(() => {
-  return props.selectedCategory === 'fish'
+  return props.selectedCategory?.value === 'fish'
 })
 
 const categorySelectOptions = computed(() => {
-  return categoryOptions.map((category) => ({
-    label: `${category.label} (${getCategoryCount(category.value)} รายการ)`,
-    value: category.value,
-    icon: category.icon,
-    iconColor: category.iconColor,
+  return categories.value?.map((category) => ({
+    ...category,
+    count: `(${getCategoryCount(category._id)} รายการ)`,
   }))
 })
 
-const getCategoryCount = (category: string) => {
+const getCategoryCount = (categoryId: string) => {
   if (!products.value) return 0
-  if (category === 'all') return products.value.length
-  return products.value.filter((product) => product.category === category).length
+  return products.value.filter((product) => product.category === categoryId).length
 }
 
-const getCategoryStats = (category: string) => {
+const getCategoryStats = (category: ICategory) => {
   if (!products.value) {
     return {
       quantity: 0,
@@ -120,7 +64,7 @@ const getCategoryStats = (category: string) => {
     }
   }
 
-  const categoryProducts = products.value.filter((p) => p.category === category)
+  const categoryProducts = products.value.filter((p) => p.category === category._id)
 
   const quantity = categoryProducts.length
   const value = categoryProducts.reduce((sum, p) => sum + (p.price || 0), 0)
@@ -128,7 +72,7 @@ const getCategoryStats = (category: string) => {
   let ageStats: Record<string, number> = {}
   let qualityStats: Record<string, number> = {}
 
-  if (category === 'fish') {
+  if (category.value === 'fish') {
     // Age statistics
     ageStats = {
       'Tosai (6เดือน-1ปี)': categoryProducts.filter((p) => p.age?.includes('Tosai')).length,
@@ -143,11 +87,11 @@ const getCategoryStats = (category: string) => {
       Tategoi: categoryProducts.filter((p) => p.rate && p.rate >= 8).length,
       'J.Tosai': categoryProducts.filter((p) => p.rate && p.rate >= 6 && p.rate < 8).length,
     }
-  } else if (category === 'food') {
+  } else if (category.value === 'food') {
     // Food type statistics
     ageStats = {
-      เม็ดเล็ก: categoryProducts.filter((p) => p.detail?.includes('เม็ดเล็ก')).length,
-      เม็ดใหญ่: categoryProducts.filter((p) => p.detail?.includes('เม็ดใหญ่')).length,
+      'เม็ดเล็ก': categoryProducts.filter((p) => p.detail?.includes('เม็ดเล็ก')).length,
+      'เม็ดใหญ่': categoryProducts.filter((p) => p.detail?.includes('เม็ดใหญ่')).length,
     }
   }
 
@@ -158,6 +102,7 @@ const getCategoryStats = (category: string) => {
     qualityStats,
   }
 }
+
 </script>
 
 <template>
@@ -191,8 +136,6 @@ const getCategoryStats = (category: string) => {
             :model-value="selectedCategory"
             @update:model-value="$emit('select-category', $event)"
             :options="categorySelectOptions"
-            optionLabel="label"
-            optionValue="value"
             placeholder="เลือกหมวดหมู่สินค้า"
             class="w-full"
             :pt="{
@@ -203,13 +146,12 @@ const getCategoryStats = (category: string) => {
             <template #option="{ option }">
               <div class="flex items-center gap-3">
                 <div
-                  :class="`w-8 h-8 rounded-lg flex items-center justify-center ${option.iconColor
-                    .replace('text-', 'bg-')
-                    .replace('-600', '-100')}`"
+                  :class="`w-8 h-8 rounded-lg flex items-center justify-center
+                  ${option.bgColor}`"
                 >
                   <i :class="`${option.icon} ${option.iconColor}`"></i>
                 </div>
-                <span>{{ option.label }}</span>
+                <span>{{ option.name }} {{ option.count }}</span>
               </div>
             </template>
           </Select>
@@ -237,7 +179,7 @@ const getCategoryStats = (category: string) => {
         </div>
 
         <div
-          v-if="selectedCategory === 'fish'"
+          v-if="selectedCategory.value === 'fish'"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <!-- Quantity -->
@@ -305,7 +247,7 @@ const getCategoryStats = (category: string) => {
         </div>
 
         <div
-          v-if="selectedCategory === 'food'"
+          v-if="selectedCategory.value === 'food'"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <!-- Food specific stats -->

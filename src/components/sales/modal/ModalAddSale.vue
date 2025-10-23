@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
-import { useCategoryStore, type ICategory } from '@/stores/auction/category'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import type { ICreateSalesPayload } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
 
@@ -55,9 +55,9 @@ const { data: categories } = useQuery<ICategory[]>({
   queryFn: () => categoryStore.onGetCategory(),
 })
 
-const handleFindCategory = (id: string | null | undefined) => {
-  if (!id) return ''
-  return categories.value?.find((category) => category._id === id)?.name
+const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
+  if (!id) return undefined
+  return categories.value?.find((category) => category._id === id)
 }
 
 // Computed
@@ -78,12 +78,12 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 
   // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
   const selectedProductIds = saleForm.value.products
-    .map((p, index) => index !== currentIndex ? p.id : '')
-    .filter(id => id !== '')
+    .map((p, index) => (index !== currentIndex ? p.id : ''))
+    .filter((id) => id !== '')
 
   // กรองสินค้าที่ยังไม่ได้เลือก
   const unselectedProducts = availableProducts.value.filter(
-    product => !selectedProductIds.includes(product._id)
+    (product) => !selectedProductIds.includes(product._id)
   )
 
   return unselectedProducts.map((product) => ({
@@ -98,6 +98,7 @@ const selectedProductDetails = computed(() => {
     return {
       ...availableProducts.value.find((p) => p._id === product.id),
       quantity: product.quantity,
+      category: handleFindCategory(availableProducts.value?.find((p) => p._id === product.id)?.category),
     }
   })
 })
@@ -191,7 +192,7 @@ const queryClient = useQueryClient()
 const { mutate: createSale, isPending: isCreatingSale } = useMutation({
   mutationFn: (sale: ICreateSalesPayload) => salesStore.onCreateSales(sale),
   onSuccess: (data: any) => {
-    if(data.data) {
+    if (data.data) {
       toast.success('เพิ่มข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
       handleClose()
@@ -413,12 +414,12 @@ const resetForm = () => {
             </div>
 
             <CardProductList
-              v-if="selectedProductDetails[index]"
+              v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
               :name="selectedProductDetails[index]?.name || ''"
               :quantity="selectedProductDetails[index]?.quantity || 0"
               :price="selectedProductDetails[index]?.price || 0"
               :detail="selectedProductDetails[index]?.detail || ''"
-              :category="handleFindCategory(selectedProductDetails[index]?.category) || ''"
+              :category="selectedProductDetails[index]?.category"
             />
           </div>
         </div>
@@ -477,7 +478,7 @@ const resetForm = () => {
                 มัดจำ: {{ formatCurrency(saleForm.deposit) }}
               </div>
               <div class="font-[500]! text-green-600 border-t border-green-300 pt-1 mt-1">
-                ยอดสุทธิ: {{ formatCurrency(netAmount)}}
+                ยอดสุทธิ: {{ formatCurrency(netAmount) }}
               </div>
             </div>
           </div>
