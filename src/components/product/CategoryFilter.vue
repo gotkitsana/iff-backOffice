@@ -45,7 +45,7 @@ const isFishSelected = computed(() => {
 const categorySelectOptions = computed(() => {
   return categories.value?.map((category) => ({
     ...category,
-    count: `(${getCategoryCount(category._id)} รายการ)`,
+    label: `${category.name} (${getCategoryCount(category._id)} รายการ)`,
   }))
 })
 
@@ -136,6 +136,7 @@ const getCategoryStats = (category: ICategory) => {
             :model-value="selectedCategory"
             @update:model-value="$emit('select-category', $event)"
             :options="categorySelectOptions"
+            option-label="label"
             placeholder="เลือกหมวดหมู่สินค้า"
             class="w-full"
             :pt="{
@@ -151,7 +152,7 @@ const getCategoryStats = (category: ICategory) => {
                 >
                   <i :class="`${option.icon} ${option.iconColor}`"></i>
                 </div>
-                <span>{{ option.name }} {{ option.count }}</span>
+                <span>{{ option.label }}</span>
               </div>
             </template>
           </Select>
