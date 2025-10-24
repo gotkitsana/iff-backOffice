@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { DataTable, Column, Tag, Button } from 'primevue'
-import type { IProduct } from '../../stores/product/product'
+import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
-import type { ICategory } from '@/stores/product/category';
+import type { ICategory } from '@/stores/product/category'
 
 // Props
 const props = defineProps<{
@@ -35,6 +35,9 @@ const getStatusTag = (sold: boolean) => {
     : { label: 'พร้อมขาย', severity: 'success' }
 }
 
+const getImageUrl = (image: IProductImage) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image.filename}`
+}
 </script>
 
 <template>
@@ -44,13 +47,9 @@ const getStatusTag = (sold: boolean) => {
         <div class="flex items-center gap-3">
           <div
             v-if="props.selectedCategory"
-            :class="`w-10 h-10 rounded-lg flex items-center justify-center ${
-              props.selectedCategory?.bgColor
-            }`"
+            :class="`w-10 h-10 rounded-lg flex items-center justify-center ${props.selectedCategory?.bgColor}`"
           >
-            <i
-              :class="`${props.selectedCategory?.icon} ${props.selectedCategory?.iconColor}`"
-            ></i>
+            <i :class="`${props.selectedCategory?.icon} ${props.selectedCategory?.iconColor}`"></i>
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-800">
@@ -59,7 +58,6 @@ const getStatusTag = (sold: boolean) => {
             <p class="text-sm text-gray-600">แสดง {{ filteredProducts.length }} รายการ</p>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -73,10 +71,12 @@ const getStatusTag = (sold: boolean) => {
       <!-- Common Columns -->
       <Column field="name" header="ชื่อสินค้า" :pt="{ columnHeaderContent: 'min-w-[8rem]' }">
         <template #body="slotProps">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-fish text-blue-600 text-lg"></i>
-            </div>
+          <div class="flex items-center gap-2">
+            <img
+              :src="getImageUrl(slotProps.data.images[0])"
+              alt="product image"
+              class="w-auto h-12 object-contain rounded-lg"
+            />
             <div>
               <p class="font-medium text-gray-900 text-sm">{{ slotProps.data.name }}</p>
               <p class="text-xs text-gray-500">{{ slotProps.data.sku }}</p>

@@ -10,6 +10,7 @@ import { orderBy } from 'lodash-es'
 const props = defineProps<{
   selectedCategory: ICategory | null
   selectedQualityGrade: string | null
+  productsCategory: IProduct[]
 }>()
 
 // Emits
@@ -17,21 +18,20 @@ defineEmits<{
   'select-category': [category: ICategory]
   'select-quality-grade': [grade: string]
   'open-add-modal': []
-  'open-pond-settings': []
+  'on-pond-settings': []
 }>()
 
-const productStore = useProductStore()
 const categoryStore = useCategoryStore()
-
-// Query
-const { data: products } = useQuery<IProduct[]>({
-  queryKey: ['products'],
-  queryFn: () => productStore.onGetProducts(),
-})
+const productStore = useProductStore()
 
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['categories'],
   queryFn: () => categoryStore.onGetCategory(0),
+})
+
+const { data: products } = useQuery<IProduct[]>({
+  queryKey: ['products'],
+  queryFn: () => productStore.onGetProducts(),
 })
 
 const qualityGradeOptions = [
@@ -57,43 +57,38 @@ const getCategoryCount = (categoryId: string) => {
 }
 
 const getCategoryStats = (category: ICategory) => {
-  if (!products.value) {
-    return {
-      quantity: 0,
-      value: 0,
-      ageStats: {} as Record<string, number>,
-      qualityStats: {} as Record<string, number>,
-    }
-  }
-
-  const categoryProducts = products.value.filter((p) => p?.category?._id === category._id)
-
-  const quantity = categoryProducts.length
-  const value = categoryProducts.reduce((sum, p) => sum + (p.price || 0), 0)
+  const productsCategory = props.productsCategory
+  const quantity = productsCategory.length
+  const value = productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)
 
   let ageStats: Record<string, number> = {}
   let qualityStats: Record<string, number> = {}
+  let seedSizeStats: Record<string, number> = {}
 
   if (category.value === 'fish') {
     // Age statistics
     ageStats = {
-      'Tosai (6เดือน-1ปี)': categoryProducts.filter((p) => p.age?.includes('Tosai')).length,
-      'Nisai (1-2ปี)': categoryProducts.filter((p) => p.age?.includes('Nisai')).length,
-      'Sansai (2-3ปี)': categoryProducts.filter((p) => p.age?.includes('Sansai')).length,
-      'Yonsai (3-4ปี)': categoryProducts.filter((p) => p.age?.includes('Yonsai')).length,
-      'Rokusai (4-5ปี)': categoryProducts.filter((p) => p.age?.includes('Rokusai')).length,
+      'Tosai (6เดือน-1ปี)': productsCategory.filter((p) => p.age?.includes('tosai')).length,
+      'Nisai (1-2ปี)': productsCategory.filter((p) => p.age?.includes('nisai')).length,
+      'Sansai (2-3ปี)': productsCategory.filter((p) => p.age?.includes('sansai')).length,
+      'Yonsai (3-4ปี)': productsCategory.filter((p) => p.age?.includes('yonsai')).length,
+      'Rokusai (4-5ปี)': productsCategory.filter((p) => p.age?.includes('rokusai')).length,
     }
 
     // Quality statistics
     qualityStats = {
-      Tategoi: categoryProducts.filter((p) => p.rate && p.rate >= 8).length,
-      'J.Tosai': categoryProducts.filter((p) => p.rate && p.rate >= 6 && p.rate < 8).length,
+      Tategoi: productsCategory.filter((p) => p.rate && p.rate >= 8).length,
+      'J.Tosai': productsCategory.filter((p) => p.rate && p.rate >= 6 && p.rate < 8).length,
     }
-  } else if (category.value === 'food') {
+  }
+  if (category.value === 'food') {
     // Food type statistics
-    ageStats = {
-      เม็ดเล็ก: categoryProducts.filter((p) => p.detail?.includes('เม็ดเล็ก')).length,
-      เม็ดใหญ่: categoryProducts.filter((p) => p.detail?.includes('เม็ดใหญ่')).length,
+    seedSizeStats = {
+      ss: productsCategory.filter((p) => p.seedSize === 0).length,
+      s: productsCategory.filter((p) => p.seedSize === 1).length,
+      m: productsCategory.filter((p) => p.seedSize === 2).length,
+      l: productsCategory.filter((p) => p.seedSize === 3).length,
+      xl: productsCategory.filter((p) => p.seedSize === 4).length,
     }
   }
 
@@ -101,6 +96,7 @@ const getCategoryStats = (category: ICategory) => {
     quantity,
     value,
     ageStats,
+    seedSizeStats,
     qualityStats,
   }
 }
@@ -126,7 +122,7 @@ const getCategoryStats = (category: ICategory) => {
             icon="pi pi-cog"
             severity="info"
             size="small"
-            @click="$emit('open-pond-settings')"
+            @click="$emit('on-pond-settings')"
           />
 
           <Button
@@ -270,11 +266,15 @@ const getCategoryStats = (category: ICategory) => {
                 <div class="text-xs text-gray-500 space-y-1">
                   <div>
                     เม็ดเล็ก:
-                    {{ getCategoryStats(selectedCategory).ageStats['เม็ดเล็ก'] || 0 }} รายการ
+                    {{ getCategoryStats(selectedCategory).seedSizeStats.ss || 0 }} รายการ
+                  </div>
+                  <div>
+                    เม็ดกลาง:
+                    {{ getCategoryStats(selectedCategory).seedSizeStats.m || 0 }} รายการ
                   </div>
                   <div>
                     เม็ดใหญ่:
-                    {{ getCategoryStats(selectedCategory).ageStats['เม็ดใหญ่'] || 0 }} รายการ
+                    {{ getCategoryStats(selectedCategory).seedSizeStats.l || 0 }} รายการ
                   </div>
                 </div>
               </div>

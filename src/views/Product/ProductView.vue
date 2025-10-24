@@ -63,7 +63,7 @@ const selectQualityGrade = (grade: string) => {
   selectedQualityGrade.value = grade
 }
 
-const openPondSettings = () => {
+const onPondSettings = () => {
   router.push('/product/pond-settings')
 }
 </script>
@@ -81,14 +81,16 @@ const openPondSettings = () => {
     <CategoryFilter
       :selected-category="selectedCategory"
       :selected-quality-grade="selectedQualityGrade"
+      :products-category="productsByCategory || []"
       @select-category="selectCategory"
       @select-quality-grade="selectQualityGrade"
       @open-add-modal="openAddModal"
-      @open-pond-settings="openPondSettings"
+      @on-pond-settings="onPondSettings"
     />
 
     <!-- Product Table -->
     <ProductTable
+      v-if="productsByCategory"
       :filtered-products="productsByCategory || []"
       :is-loading-products="isLoadingProductsByCategory"
       :selected-category="selectedCategory"
