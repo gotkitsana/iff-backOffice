@@ -116,6 +116,10 @@ const getCategoryStats = (category: ICategory) => {
         </div>
 
         <div class="flex items-center gap-2">
+          <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small" />
+
+          <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small" />
+
           <Button label="ตั้งค่าบ่อ" icon="pi pi-cog" severity="info" size="small" />
 
           <Button
