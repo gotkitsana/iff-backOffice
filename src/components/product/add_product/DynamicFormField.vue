@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IFields, IFieldsKey } from '@/stores/product/product';
+import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product';
 import { InputText, InputNumber, Select, Textarea, DatePicker  } from 'primevue'
 
 const props = defineProps<{
@@ -18,37 +18,22 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
   emit('update-field', key, value)
 }
 
+const productStore = useProductStore()
 const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
-    return [
-      { label: 'ตัวผู้', value: 'ตัวผู้' },
-      { label: 'ตัวเมีย', value: 'ตัวเมีย' },
-      { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
-    ]
+    return productStore.genderOptions
   }
 
   if (fieldKey === 'seedType') {
-    return [
-      { label: 'ลอย', value: 'ลอย' },
-      { label: 'จม', value: 'จม' },
-    ]
+    return productStore.seedTypeOptions
   }
 
   if (fieldKey === 'seedSize') {
-    return [
-      {
-        label: 'SS', value: 'ss' },
-      { label: 'S', value: 's' },
-      { label: 'M', value: 'm' },
-      { label: 'L', value: 'l' },
-      { label: 'XL', value: 'xl' },
-    ]
+    return productStore.seedSizeOptions
   }
 
   return []
 }
-
-
 </script>
 
 <template>

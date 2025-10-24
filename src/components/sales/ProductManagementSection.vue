@@ -196,7 +196,7 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :quantity="selectedProductDetails[index]?.quantity || 0"
             :price="selectedProductDetails[index]?.price || 0"
             :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category)"
+            :category="handleFindCategory(selectedProductDetails[index]?.category._id)"
           />
         </div>
 
@@ -207,7 +207,7 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :quantity="selectedProductDetails[index]?.quantity || 0"
             :price="selectedProductDetails[index]?.price || 0"
             :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category)"
+            :category="handleFindCategory(selectedProductDetails[index]?.category._id)"
           />
         </div>
       </div>

@@ -25,49 +25,10 @@ const selectedProduct = ref<IProduct | null>(null)
 const selectedCategory = ref<ICategory | null>(null)
 const selectedQualityGrade = ref<string | null>(null)
 
-// Queries
-const {
-  data: products,
-  isLoading: isLoadingProducts,
-  refetch,
-} = useQuery<IProduct[]>({
-  queryKey: ['products'],
-  queryFn: () => productStore.onGetProducts(),
-})
-
-// Filter products based on selected category
-const filteredProducts = computed(() => {
-  if (!products.value) return []
-
-  let filtered = products.value.filter((product) => {
-    return product.category === selectedCategory.value?._id
-  })
-
-  // Apply quality grade filter for fish
-  if (selectedCategory.value?.value === 'fish' && selectedQualityGrade.value) {
-    filtered = filtered.filter((product) => {
-      switch (selectedQualityGrade.value) {
-        case 'tategoi':
-          return product.rate && product.rate >= 8
-        case 'j_tosai':
-          return product.rate && product.rate >= 6 && product.rate < 8
-        case 'tosai':
-          return product.age?.includes('Tosai')
-        case 'nisai':
-          return product.age?.includes('Nisai')
-        case 'sansai':
-          return product.age?.includes('Sansai')
-        case 'yonsai':
-          return product.age?.includes('Yonsai')
-        case 'rokusai':
-          return product.age?.includes('Rokusai')
-        default:
-          return true
-      }
-    })
-  }
-
-  return filtered
+const { data: productsByCategory, isLoading: isLoadingProductsByCategory } = useQuery<IProduct[]>({
+  queryKey: ['get_products_by_category', selectedCategory],
+  queryFn: () => productStore.onGetProductsByCategory(selectedCategory.value?._id as string),
+  enabled: computed(() => !!selectedCategory.value?._id),
 })
 
 // Handlers
@@ -108,12 +69,13 @@ const openPondSettings = () => {
 </script>
 
 <template>
+  {{ productsByCategory }} - {{ selectedCategory }}
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
 
     <!-- Product Stats -->
-    <ProductStatsCards :filtered-products="filteredProducts" />
+    <ProductStatsCards/>
 
     <!-- Category Filter -->
     <CategoryFilter
@@ -127,9 +89,8 @@ const openPondSettings = () => {
 
     <!-- Product Table -->
     <ProductTable
-      v-if="selectedCategory"
-      :filtered-products="filteredProducts"
-      :is-loading-products="isLoadingProducts"
+      :filtered-products="productsByCategory || []"
+      :is-loading-products="isLoadingProductsByCategory"
       :selected-category="selectedCategory"
       @open-detail-modal="openDetailModal"
       @open-edit-modal="openEditModal"

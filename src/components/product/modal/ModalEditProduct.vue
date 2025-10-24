@@ -40,7 +40,7 @@ const productForm = ref<IUpdateProductPayload>({
 
   // ปลา fields
   sku: '',
-  size: 0,
+  size: undefined,
   farm: '',
   birth: '',
   age: '',
@@ -53,7 +53,7 @@ const productForm = ref<IUpdateProductPayload>({
 
   // สินค้าอื่น fields
   seedType: '',
-  seedSize: '',
+  seedSize: undefined,
   balance: 0,
 })
 
@@ -67,11 +67,6 @@ const productTypes = [
 const genderOptions = [
   { label: 'ตัวผู้', value: 1 },
   { label: 'ตัวเมีย', value: 2 },
-]
-
-const auctionOptions = [
-  { label: 'สินค้าสำหรับขาย', value: 0 },
-  { label: 'สินค้าสำหรับประมูล', value: 1 },
 ]
 
 // Computed
@@ -129,7 +124,7 @@ const populateForm = (productData: IProduct) => {
     lotNumber: productData.lotNumber,
     price: productData.price,
     detail: productData.detail,
-    category: productData.category,
+    category: productData.category._id,
     sold: productData.sold,
     youtube: productData.youtube,
     images: productData.images,
@@ -169,7 +164,7 @@ const handleSubmit = async () => {
       lotNumber: props.productData.lotNumber,
       price: props.productData.price,
       detail: props.productData.detail,
-      category: props.productData.category,
+      category: props.productData.category._id,
       sold: props.productData.sold,
       youtube: props.productData.youtube,
       images: props.productData.images,

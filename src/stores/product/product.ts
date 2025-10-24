@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
-import type { ICategory, ICategoryLabel, ICategoryValue } from './category'
+import type { ICategory } from './category'
 
 export const useProductStore = defineStore('product', () => {
   async function onGetProducts() {
@@ -10,6 +10,11 @@ export const useProductStore = defineStore('product', () => {
 
   async function onGetProductsByID(id: string) {
     const { data } = await api.get(`/product?id=${id}`)
+    return data.data
+  }
+
+  async function onGetProductsByCategory(categoryId: string) {
+    const { data } = await api.get(`/product?cateId=${categoryId}`)
     return data.data
   }
 
@@ -40,40 +45,80 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
+  const seedSizeOptions: ISeedSizeOptions[] = [
+    {
+      label: 'SS',
+      value: 0,
+    },
+    { label: 'S', value: 1 },
+    { label: 'M', value: 2 },
+    { label: 'L', value: 3 },
+    { label: 'XL', value: 4 },
+  ]
+
+  const seedTypeOptions = [
+    {
+      label: 'ลอย',
+      value: 'ลอย',
+    },
+    { label: 'จม', value: 'จม' },
+  ]
+
+  const genderOptions = [
+    {
+      label: 'ตัวผู้',
+      value: 'ตัวผู้',
+    },
+    { label: 'ตัวเมีย', value: 'ตัวเมีย' },
+    { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
+  ]
+
   return {
     onGetProducts,
     onGetProductsByID,
+    onGetProductsByCategory,
 
     onCreateProduct,
     onUpdateProduct,
     onDeleteProduct,
     onUploadImage,
+    seedSizeOptions,
+    seedTypeOptions,
+    genderOptions,
   }
 })
 
 export interface IProduct {
-  birth: string
-  weight: number
-  breeders: string
+  birth?: string
+  weight?: number
+  breeders?: string
   lotNumber: string
-  quality: string
-  pond: string
-  seedType: string
-  seedSize: string
-  balance: number
+  quality?: string
+  pond?: string
+  seedType?: string
+  seedSize?: ISeedSizeValue
+  balance?: number
   _id: string
   type: IType
   name: string
   price: number
-  detail: string
-  category: string
+  detail?: string
+  category: {
+    _id: string
+    name: string
+  }
+  species: {
+    _id: string
+    name: string
+    detail?: string
+  }
   sku: string
-  farm: string
-  size: number
-  gender: string
-  age: string
-  sold: false
-  rate: number
+  farm?: string
+  size?: number
+  gender?: string
+  age?: string
+  sold: boolean
+  rate?: number
   youtube: string
   certificate?: string
   images: IProductImage[]
@@ -86,14 +131,14 @@ export interface ICreateProductPayload {
   name: string // ชื่อสินค้า หรือ ชื่อสายพันธุ์ปลา
   lotNumber: string // หมายเลขล็อต
   price: number | null // ราคาสินค้า
-  detail: string // รายละเอียดสินค้า
+  detail?: string // รายละเอียดสินค้า
   category: string // หมวดหมู่ของสินค้า
   sold: boolean // สถานะขายสินค้า true = ขายแล้ว, false = ยังไม่ขาย
   youtube: string // url ของวิดีโอ ไม่บังคับ
   images?: { filename: string; type: string }[] // รูปภาพของสินค้า ไม่บังคับ
   certificate?: string // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
   auctionOnly: IAuctionOnly // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
-  weight: number // น้ำหนักปลา น้ำหนักต่อกระสอบ (กก.)
+  weight?: number // น้ำหนักปลา น้ำหนักต่อกระสอบ (กก.)
 
   sku?: string // รหัสปลา ถ้า type = 1 ไม่ต้องระบุ
   size?: number // ขนาดปลา ถ้า type = 1 ไม่ต้องระบุ
@@ -107,7 +152,7 @@ export interface ICreateProductPayload {
   rate?: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 1 ไม่ต้องระบุ
 
   seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
-  seedSize?: string // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
+  seedSize?: ISeedSizeValue // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
 }
 
@@ -115,7 +160,7 @@ export interface IUpdateProductPayload extends ICreateProductPayload {
   _id: string
 }
 
-export type IType =  0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
+export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
 export type IAuctionOnly = 0 | 1 // 0 = สินค้าสำหรับขาย 1 = สินค้าสำหรับประมูล
 
 export type IUploadImageResponse = {
@@ -181,4 +226,11 @@ export type IProductImage = {
 export type ICertificateFile = {
   filename: string
   preview: string
+}
+
+export type ISeedSizeLabel = 'SS' | 'S' | 'M' | 'L' | 'XL'
+export type ISeedSizeValue = 0 | 1 | 2 | 3 | 4
+export interface ISeedSizeOptions {
+  label: ISeedSizeLabel
+  value: ISeedSizeValue
 }

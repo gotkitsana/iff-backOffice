@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Card } from 'primevue'
-import type { IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useQuery } from '@tanstack/vue-query';
 
-// Props
-defineProps<{
-  filteredProducts: IProduct[]
-}>()
+
+const productStore = useProductStore()
+const { data: products } = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
 
 // Computed
 const getSaleProductsCount = (products: IProduct[]) =>
@@ -14,24 +17,30 @@ const getSaleProductsCount = (products: IProduct[]) =>
 const getAuctionProductsCount = (products: IProduct[]) =>
   products.filter((p) => p.auctionOnly === 1).length
 
-const getAvailableProductsCount = (products: IProduct[]) =>
-  products.filter((p) => !p.sold).length
+const getAvailableProductsCount = (products: IProduct[]) => products.filter((p) => !p.sold).length
 
-const getSoldProductsCount = (products: IProduct[]) =>
-  products.filter((p) => p.sold).length
+const getSoldProductsCount = (products: IProduct[]) => products.filter((p) => p.sold).length
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+  }).format(value)
+}
 </script>
 
 <template>
+
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-    <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+    <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200 justify-center">
       <template #content>
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับขาย</p>
+            <p class="text-sm font-[600]! text-gray-600 mb-1">มูลค่าคลังทั้งหมด</p>
             <p class="text-xl md:text-2xl text-blue-600">
-             0
+              {{ formatCurrency(products?.reduce((sum, p) => sum + (p.price || 0), 0) || 0) }}
             </p>
-            <p class="text-xs text-gray-500">รายการ</p>
+            <!-- <p class="text-xs text-gray-500">บาท</p> -->
           </div>
           <div
             class="hidden md:flex w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl items-center justify-center shadow-lg"
@@ -47,9 +56,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">พร้อมขาย</p>
-            <p class="text-xl md:text-2xl text-green-600">
-              0
-            </p>
+            <p class="text-xl md:text-2xl text-green-600">0</p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
           <div
@@ -66,9 +73,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับประมูล</p>
-            <p class="text-xl md:text-2xl text-purple-600">
-              0
-            </p>
+            <p class="text-xl md:text-2xl text-purple-600">0</p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
           <div
@@ -85,9 +90,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">ขายแล้ว</p>
-            <p class="text-xl md:text-2xl text-orange-600">
-              0
-            </p>
+            <p class="text-xl md:text-2xl text-orange-600">0</p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
           <div

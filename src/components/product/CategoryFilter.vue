@@ -53,7 +53,7 @@ const categorySelectOptions = computed(() => {
 
 const getCategoryCount = (categoryId: string) => {
   if (!products.value) return 0
-  return products.value.filter((product) => product.category === categoryId).length
+  return products.value.filter((product) => product?.category?._id === categoryId).length
 }
 
 const getCategoryStats = (category: ICategory) => {
@@ -66,7 +66,7 @@ const getCategoryStats = (category: ICategory) => {
     }
   }
 
-  const categoryProducts = products.value.filter((p) => p.category === category._id)
+  const categoryProducts = products.value.filter((p) => p?.category?._id === category._id)
 
   const quantity = categoryProducts.length
   const value = categoryProducts.reduce((sum, p) => sum + (p.price || 0), 0)

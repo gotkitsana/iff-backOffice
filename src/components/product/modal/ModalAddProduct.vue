@@ -8,10 +8,11 @@ import {
   type ICreateProductPayload,
   type IFieldsKey,
   type IProductImage,
+  type ISeedSizeValue,
   type IUploadImageResponse,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useSalesStore } from '@/stores/sales/sales'
 
@@ -58,7 +59,7 @@ const productForm = ref<ICreateProductPayload>({
 
   // ปลา fields
   sku: '',
-  size: 0,
+  size: undefined,
   farm: '',
   birth: '',
   age: '',
@@ -71,7 +72,7 @@ const productForm = ref<ICreateProductPayload>({
 
   // สินค้าอื่น fields
   seedType: '',
-  seedSize: '',
+  seedSize: undefined,
   balance: 0,
 })
 
@@ -278,7 +279,7 @@ const mapDynamicFormToProductForm = () => {
         productForm.value.seedType = value as string
         break
       case 'seedSize':
-        productForm.value.seedSize = value as string
+        productForm.value.seedSize = Number(value) as ISeedSizeValue
         break
       case 'balance':
         productForm.value.balance = value as number
@@ -310,21 +311,46 @@ const handleSubmit = async () => {
     return
   }
 
+  if (!selectedCategory.value) {
+    toast.error('กรุณาเลือกหมวดหมู่สินค้า')
+    return
+  }
+
   mapDynamicFormToProductForm()
 
   const payload: ICreateProductPayload = {
     ...productForm.value,
     type: productType.value,
-    category: selectedCategory.value?._id || '',
+    category: selectedCategory.value._id,
   }
 
   console.log(payload)
-  toast.success('เพิ่มสินค้าสำเร็จ')
+
+  createProduct(payload)
 }
 
-const handleClose = () => {
-  if (isSubmitting.value) return // ป้องกันการปิดขณะกำลัง submit
+const queryClient = useQueryClient()
+const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
+  mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
+  onSuccess: (data: any) => {
+    console.log(data)
+    if (data.data) {
+      toast.success('เพิ่มสินค้าสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_products'] })
+      handleClose()
+    } else {
+      toast.error(data.error.message || 'เพิ่มสินค้าไม่สำเร็จ')
+      isSubmitting.value = false
+    }
+  },
+  onError: (error: any) => {
+    console.log(error)
+    toast.error(error.response?.data?.message || 'เพิ่มสินค้าไม่สำเร็จ')
+    isSubmitting.value = false
+  },
+})
 
+const handleClose = () => {
   resetForm()
   isSubmitting.value = false
   currentStep.value = 1
@@ -348,7 +374,7 @@ const resetForm = () => {
 
     // ปลา fields
     sku: '',
-    size: 0,
+    size: undefined,
     farm: '',
     birth: '',
     age: '',
@@ -361,7 +387,7 @@ const resetForm = () => {
 
     // สินค้าอื่น fields
     seedType: '',
-    seedSize: '',
+    seedSize: undefined,
     balance: 0,
   }
 
@@ -475,7 +501,7 @@ const speciesOptions = computed(() => {
     <template #footer>
       <ModalFooter
         :current-step="currentStep"
-        :is-submitting="false"
+        :is-submitting="isCreatingProduct"
         @go-back="goBackToCategorySelection"
         @close="handleClose"
         @submit="handleSubmit"
