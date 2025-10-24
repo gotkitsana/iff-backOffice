@@ -117,6 +117,7 @@ const removeProduct = (index: number) => {
 const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
+
 </script>
 
 <template>

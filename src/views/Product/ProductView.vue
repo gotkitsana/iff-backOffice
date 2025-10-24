@@ -69,7 +69,7 @@ const openPondSettings = () => {
 </script>
 
 <template>
-  {{ productsByCategory }} - {{ selectedCategory }}
+
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
