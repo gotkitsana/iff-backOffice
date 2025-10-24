@@ -29,7 +29,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับขาย</p>
             <p class="text-xl md:text-2xl text-blue-600">
-              {{ getSaleProductsCount(filteredProducts) }}
+             0
             </p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
@@ -48,7 +48,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">พร้อมขาย</p>
             <p class="text-xl md:text-2xl text-green-600">
-              {{ getAvailableProductsCount(filteredProducts) }}
+              0
             </p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
@@ -67,7 +67,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">สินค้าสำหรับประมูล</p>
             <p class="text-xl md:text-2xl text-purple-600">
-              {{ getAuctionProductsCount(filteredProducts) }}
+              0
             </p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>
@@ -86,7 +86,7 @@ const getSoldProductsCount = (products: IProduct[]) =>
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">ขายแล้ว</p>
             <p class="text-xl md:text-2xl text-orange-600">
-              {{ getSoldProductsCount(filteredProducts) }}
+              0
             </p>
             <p class="text-xs text-gray-500">รายการ</p>
           </div>

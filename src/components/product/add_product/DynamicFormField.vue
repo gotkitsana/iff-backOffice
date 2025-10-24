@@ -2,11 +2,13 @@
 import type { IFields, IFieldsKey } from '@/stores/product/product';
 import { InputText, InputNumber, Select, Textarea, DatePicker  } from 'primevue'
 
-defineProps<{
+const props = defineProps<{
   fields: IFields[]
   formData: Record<IFieldsKey, string | number | Date | null>
   isSubmitting: boolean
+  speciesOptions?: { label: string; value: string }[]
 }>()
+
 
 const emit = defineEmits<{
   'update-field': [key: IFieldsKey, value: string | number | Date | null]
@@ -16,15 +18,22 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
   emit('update-field', key, value)
 }
 
-const getSelectOptions = (fieldKey: IFieldsKey) => {
+const getSelectOptions = (fieldKey: IFieldsKey, speciesOptions?: { label: string; value: string }[]) => {
   if (fieldKey === 'gender') {
     return [
       { label: 'ตัวผู้', value: 1 },
       { label: 'ตัวเมีย', value: 0 },
     ]
   }
+
+  if (fieldKey === 'species' && speciesOptions) {
+    return speciesOptions
+  }
+
   return []
 }
+
+
 </script>
 
 <template>
@@ -68,7 +77,7 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
           v-else-if="field.type === 'select'"
           :model-value="formData[field.key]"
           @update:model-value="updateField(field.key, $event)"
-          :options="getSelectOptions(field.key)"
+          :options="getSelectOptions(field.key, speciesOptions)"
           optionLabel="label"
           optionValue="value"
           :placeholder="`เลือก${field.label}`"

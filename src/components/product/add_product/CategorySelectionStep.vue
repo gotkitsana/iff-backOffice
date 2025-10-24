@@ -2,6 +2,7 @@
 import type { ICategory } from '@/stores/product/category';
 import type { ICategoryOption } from '@/stores/product/product';
 import { Card } from 'primevue'
+import { orderBy } from 'lodash-es'
 
 defineProps<{
   categoryOptions: ICategoryOption[]
@@ -16,13 +17,13 @@ defineEmits<{
 <template>
   <div>
     <div class="mb-3">
-      <h2 class="text-xl font-semibold! text-gray-800 mb-1">1. เลือกหมวดหมู่</h2>
+      <h2 class="text-xl font-semibold! text-gray-800 mb-1">เลือกหมวดหมู่</h2>
       <p class="text-gray-600">เลือกหมวดหมู่สินค้าที่ต้องการเพิ่ม</p>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
       <Card
-        v-for="category in categoryOptions"
+        v-for="category in orderBy(categoryOptions, 'cat')"
         :key="category._id"
         :pt="{ body: 'p-2.5' }"
         :class="`cursor-pointer transition-all duration-200 border ${

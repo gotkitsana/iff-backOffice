@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useRouter } from 'vue-router'
+import { useProductStore, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
-import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
-import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
-import ProductHeader from '@/components/product/ProductHeader.vue'
-import ProductStatsCards from '@/components/product/ProductStatsCards.vue'
-import CategoryFilter from '@/components/product/CategoryFilter.vue'
-import ProductTable from '@/components/product/ProductTable.vue'
-import type { ICategory } from '@/stores/product/category'
+import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
+import ModalEditProduct from '../../components/product/modal/ModalEditProduct.vue'
+import ModalProductDetail from '../../components/product/modal/ModalProductDetail.vue'
+import ProductHeader from '../../components/product/ProductHeader.vue'
+import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
+import CategoryFilter from '../../components/product/CategoryFilter.vue'
+import ProductTable from '../../components/product/ProductTable.vue'
+import type { ICategory } from '../../stores/product/category'
 
-// Stores
+// Router & Stores
+const router = useRouter()
 const productStore = useProductStore()
 
 // Data
@@ -43,7 +45,7 @@ const filteredProducts = computed(() => {
 
   // Apply quality grade filter for fish
   if (selectedCategory.value?.value === 'fish' && selectedQualityGrade.value) {
-    filtered = filtered.filter(product => {
+    filtered = filtered.filter((product) => {
       switch (selectedQualityGrade.value) {
         case 'tategoi':
           return product.rate && product.rate >= 8
@@ -108,15 +110,15 @@ const selectQualityGrade = (grade: string) => {
   selectedQualityGrade.value = grade
 }
 
+const openPondSettings = () => {
+  router.push('/product/pond-settings')
+}
 </script>
 
 <template>
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
-    <ProductHeader
-      title="จัดการสินค้า"
-      description="จัดการสินค้าสำหรับขายและประมูล"
-    />
+    <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
 
     <!-- Product Stats -->
     <ProductStatsCards :filtered-products="filteredProducts" />
@@ -128,11 +130,12 @@ const selectQualityGrade = (grade: string) => {
       @select-category="selectCategory"
       @select-quality-grade="selectQualityGrade"
       @open-add-modal="openAddModal"
+      @open-pond-settings="openPondSettings"
     />
 
     <!-- Product Table -->
     <ProductTable
-       v-if="selectedCategory"
+      v-if="selectedCategory"
       :filtered-products="filteredProducts"
       :is-loading-products="isLoadingProducts"
       :selected-category="selectedCategory"

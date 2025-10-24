@@ -34,7 +34,7 @@ const { data: getProducts } = useQuery<IProduct[]>({
 
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(),
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 
 // Computed

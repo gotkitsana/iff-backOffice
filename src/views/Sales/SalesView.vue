@@ -100,7 +100,7 @@ const getStatusStepOrder = (status: string) => {
 const categoryStore = useCategoryStore()
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(),
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 // Revenue calculations by category
 const totalRevenue = computed(() => {

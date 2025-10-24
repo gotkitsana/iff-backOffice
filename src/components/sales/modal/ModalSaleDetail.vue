@@ -373,7 +373,7 @@ const findMemberStatusSeverity = (status: string) => {
 const categoryStore = useCategoryStore()
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(),
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
   if (!id) return undefined

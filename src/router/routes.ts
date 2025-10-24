@@ -11,6 +11,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout.vue'
 import Employee from '@/views/Employee/EmployeeView.vue'
 import Production from '@/views/Production/ProductionView.vue'
 import Product from '@/views/Product/ProductView.vue'
+import PondSettings from '@/views/Product/PondSettingsView.vue'
 import Marketing from '@/views/Marketing/MarketingView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
@@ -189,6 +190,20 @@ export default [
           title: 'จัดการสินค้า',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบ POS' }, { label: 'จัดการสินค้า' }],
+        },
+      },
+      {
+        path: '/product/pond-settings',
+        name: 'pond-settings',
+        component: PondSettings,
+        meta: {
+          title: 'ตั้งค่าบ่อปลาคาร์ฟ',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบ POS' },
+            { label: 'จัดการสินค้า' },
+            { label: 'ตั้งค่าบ่อปลาคาร์ฟ' },
+          ],
         },
       },
 

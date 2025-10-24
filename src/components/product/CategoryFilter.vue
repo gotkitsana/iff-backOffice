@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button, Select } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { useCategoryStore, type ICategory } from '../../stores/product/category'
 
 // Props
 const props = defineProps<{
@@ -16,6 +16,7 @@ defineEmits<{
   'select-category': [category: ICategory]
   'select-quality-grade': [grade: string]
   'open-add-modal': []
+  'open-pond-settings': []
 }>()
 
 const productStore = useProductStore()
@@ -29,7 +30,7 @@ const { data: products } = useQuery<IProduct[]>({
 
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['categories'],
-  queryFn: () => categoryStore.onGetCategory(),
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 
 const qualityGradeOptions = [
@@ -90,8 +91,8 @@ const getCategoryStats = (category: ICategory) => {
   } else if (category.value === 'food') {
     // Food type statistics
     ageStats = {
-      'เม็ดเล็ก': categoryProducts.filter((p) => p.detail?.includes('เม็ดเล็ก')).length,
-      'เม็ดใหญ่': categoryProducts.filter((p) => p.detail?.includes('เม็ดใหญ่')).length,
+      เม็ดเล็ก: categoryProducts.filter((p) => p.detail?.includes('เม็ดเล็ก')).length,
+      เม็ดใหญ่: categoryProducts.filter((p) => p.detail?.includes('เม็ดใหญ่')).length,
     }
   }
 
@@ -102,7 +103,6 @@ const getCategoryStats = (category: ICategory) => {
     qualityStats,
   }
 }
-
 </script>
 
 <template>
@@ -120,7 +120,13 @@ const getCategoryStats = (category: ICategory) => {
 
           <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small" />
 
-          <Button label="ตั้งค่าบ่อ" icon="pi pi-cog" severity="info" size="small" />
+          <Button
+            label="ตั้งค่าบ่อ"
+            icon="pi pi-cog"
+            severity="info"
+            size="small"
+            @click="$emit('open-pond-settings')"
+          />
 
           <Button
             label="เพิ่มสินค้า"

@@ -94,7 +94,7 @@ const certificateFile = ref<ICertificateFile | null>(null)
 // Queries
 const { data: categories } = useQuery<ICategory[]>({
   queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(),
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 
 const isFishCategory = computed(() => selectedCategory.value?.value === 'fish')
@@ -130,8 +130,8 @@ const categoryOptionsUI = computed(() => {
         { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
         { key: 'productName', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
         { key: 'pelletType', label: 'ชนิดเม็ด', type: 'text', required: true },
-        { key: 'weightPerBag', label: 'น้ำหนัก ต่อกระสอบ', type: 'number', required: true },
-        { key: 'pelletSize', label: 'ขนาดเม็ด', type: 'text', required: true },
+        { key: 'weightPerBag', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
+        { key: 'pelletSize', label: 'ขนาดเม็ด (มม.)', type: 'text', required: true },
         { key: 'remainingQuantity', label: 'คงเหลือ', type: 'number', required: true },
         { key: 'price', label: 'ราคา', type: 'number', required: true },
       ],
@@ -402,6 +402,15 @@ const removeCertificate = () => {
   certificateFile.value = null
   productForm.value.certificate = null
 }
+
+
+// const { data: species } = useQuery<ISpecies[]>({
+//   queryKey: ['get_species'],
+//   queryFn: () => productStore.onGetSpecies(),
+// })
+const speciesOptions = computed(() => {
+  return []
+})
 </script>
 
 <template>
@@ -436,6 +445,7 @@ const removeCertificate = () => {
           :fields="selectedCategoryInfo.fields"
           :form-data="dynamicFormData"
           :is-submitting="isSubmitting"
+          :species-options="speciesOptions"
           @update-field="updateDynamicField"
         />
 
