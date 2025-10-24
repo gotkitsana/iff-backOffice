@@ -87,7 +87,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
   )
 
   return unselectedProducts.map((product) => ({
-    label: `${product.name} (รหัส: ${product.sku})`,
+    label: `${product.name} (รหัส: ${product.lotNumber})`,
     value: product._id,
   }))
 }
