@@ -51,6 +51,7 @@ const router = useRouter()
 // Data
 const showAddPond = ref(false)
 const showEditPond = ref(false)
+const showDeleteModal = ref(false)
 const selectedPond = ref<IPond | null>(null)
 const isSubmitting = ref(false)
 
@@ -182,9 +183,15 @@ const openEditPond = (pond: IPond) => {
   showEditPond.value = true
 }
 
+const openDeleteModal = (pond: IPond) => {
+  selectedPond.value = pond
+  showDeleteModal.value = true
+}
+
 const closeModals = () => {
   showAddPond.value = false
   showEditPond.value = false
+  showDeleteModal.value = false
   selectedPond.value = null
   resetForm()
 }
@@ -249,11 +256,14 @@ const handleSubmit = async () => {
   }
 }
 
-const handleDeletePond = (pond: IPond) => {
-  const index = ponds.value.findIndex((p) => p._id === pond._id)
+const handleDeletePond = () => {
+  if (!selectedPond.value) return
+
+  const index = ponds.value.findIndex((p) => p._id === selectedPond.value!._id)
   if (index !== -1) {
     ponds.value.splice(index, 1)
     toast.success('ลบบ่อสำเร็จ')
+    closeModals()
   }
 }
 
@@ -470,7 +480,7 @@ const getPondHealthStatus = (pond: IPond) => {
                 severity="danger"
                 text
                 rounded
-                @click="handleDeletePond(data)"
+                @click="openDeleteModal(data)"
               />
             </div>
           </template>
@@ -667,6 +677,68 @@ const getPondHealthStatus = (pond: IPond) => {
           :label="showAddPond ? 'เพิ่มบ่อ' : 'บันทึก'"
           :loading="isSubmitting"
           @click="handleSubmit"
+        />
+      </div>
+    </template>
+  </Dialog>
+
+  <!-- Delete Confirmation Modal -->
+  <Dialog
+    :visible="showDeleteModal"
+    @update:visible="closeModals"
+    modal
+    header="ยืนยันการลบบ่อ"
+    :style="{ width: '32rem' }"
+    :pt="{
+      header: 'p-4',
+      title: 'text-lg font-semibold!',
+    }"
+  >
+    <div class="flex items-center gap-x-3 mb-2">
+      <i class="pi pi-exclamation-circle text-red-500 !text-4xl mt-1"></i>
+      <div>
+        <p class="font-[500]! text-gray-700 text-lg">คุณต้องการลบบ่อนี้หรือไม่?</p>
+      </div>
+    </div>
+    <div>
+      <div v-if="selectedPond" class="bg-gray-50 rounded-lg p-3 space-y-1">
+        <div class="flex justify-between">
+          <span class="text-gray-600">ชื่อบ่อ:</span>
+          <span class="font-medium text-gray-900">{{ selectedPond.name }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">ขนาด:</span>
+          <span class="font-medium text-gray-900">{{ selectedPond.size }} ตร.ม.</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">ความจุ:</span>
+          <span class="font-medium text-gray-900">{{ selectedPond.capacity }} ตัว</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">สถานะ:</span>
+          <span class="font-medium text-gray-900">{{
+            getStatusTag(selectedPond.status).label
+          }}</span>
+        </div>
+      </div>
+      <p class="text-sm text-red-600 mt-2">⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end space-x-2">
+        <Button
+          label="ยกเลิก"
+          icon="pi pi-times"
+          @click="closeModals"
+          severity="secondary"
+          size="small"
+        />
+        <Button
+          label="ลบบ่อ"
+          icon="pi pi-trash"
+          @click="handleDeletePond"
+          severity="danger"
+          size="small"
         />
       </div>
     </template>

@@ -18,16 +18,31 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
   emit('update-field', key, value)
 }
 
-const getSelectOptions = (fieldKey: IFieldsKey, speciesOptions?: { label: string; value: string }[]) => {
+const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
     return [
-      { label: 'ตัวผู้', value: 1 },
-      { label: 'ตัวเมีย', value: 0 },
+      { label: 'ตัวผู้', value: 'ตัวผู้' },
+      { label: 'ตัวเมีย', value: 'ตัวเมีย' },
+      { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
     ]
   }
 
-  if (fieldKey === 'species' && speciesOptions) {
-    return speciesOptions
+  if (fieldKey === 'seedType') {
+    return [
+      { label: 'ลอย', value: 'ลอย' },
+      { label: 'จม', value: 'จม' },
+    ]
+  }
+
+  if (fieldKey === 'seedSize') {
+    return [
+      {
+        label: 'SS', value: 'ss' },
+      { label: 'S', value: 's' },
+      { label: 'M', value: 'm' },
+      { label: 'L', value: 'l' },
+      { label: 'XL', value: 'xl' },
+    ]
   }
 
   return []
@@ -77,7 +92,7 @@ const getSelectOptions = (fieldKey: IFieldsKey, speciesOptions?: { label: string
           v-else-if="field.type === 'select'"
           :model-value="formData[field.key]"
           @update:model-value="updateField(field.key, $event)"
-          :options="getSelectOptions(field.key, speciesOptions)"
+          :options="getSelectOptions(field.key)"
           optionLabel="label"
           optionValue="value"
           :placeholder="`เลือก${field.label}`"

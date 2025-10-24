@@ -29,7 +29,7 @@ const selectedQualityGrade = ref<string | null>(null)
 const {
   data: products,
   isLoading: isLoadingProducts,
-  refetch: refetchProducts,
+  refetch,
 } = useQuery<IProduct[]>({
   queryKey: ['products'],
   queryFn: () => productStore.onGetProducts(),
@@ -40,7 +40,7 @@ const filteredProducts = computed(() => {
   if (!products.value) return []
 
   let filtered = products.value.filter((product) => {
-    return product.category === selectedCategory.value
+    return product.category === selectedCategory.value?._id
   })
 
   // Apply quality grade filter for fish
@@ -85,20 +85,12 @@ const openDetailModal = (product: IProduct) => {
   showDetailModal.value = true
 }
 
-const handleProductAdded = () => {
-  refetchProducts()
-  showAddModal.value = false
-  toast.success('เพิ่มสินค้าสำเร็จ')
-}
-
 const handleProductUpdated = () => {
-  refetchProducts()
   showEditModal.value = false
   toast.success('อัปเดตสินค้าสำเร็จ')
 }
 
 const handleProductDeleted = () => {
-  refetchProducts()
   toast.success('ลบสินค้าสำเร็จ')
 }
 
@@ -145,7 +137,7 @@ const openPondSettings = () => {
   </div>
 
   <!-- Modal Components -->
-  <ModalAddProduct v-model:visible="showAddModal" @product-added="handleProductAdded" />
+  <ModalAddProduct v-model:visible="showAddModal" />
 
   <ModalEditProduct
     v-model:visible="showEditModal"

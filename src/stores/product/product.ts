@@ -51,78 +51,72 @@ export const useProductStore = defineStore('product', () => {
   }
 })
 
-export type IProduct = {
+export interface IProduct {
+  birth: string
+  weight: number
+  breeders: string
+  lotNumber: string
+  quality: string
+  pond: string
+  seedType: string
+  seedSize: string
+  balance: number
   _id: string
   type: IType
   name: string
-  price: number | null
+  price: number
   detail: string
-  category: string | null
+  category: string
   sku: string
   farm: string
-  size: number | null
-  gender: IGender | null
+  size: number
+  gender: string
   age: string
-  sold: boolean
+  sold: false
   rate: number
   youtube: string
-  images: { filename: string; type: string }[]
-  certificate: string | null
-  auctionOnly: IAuctionOnly
-  uat: number
-}
-
-export type IProductDetail = {
-  _id: string
-  type: IType
-  name: string
-  price: number | null
-  detail: string
-  category: {
-    _id: string
-    name: string
-  } | null
-  sku: string
-  farm: string
-  size: number | null
-  gender: IGender | null
-  age: string
-  sold: boolean
-  rate: number
-  youtube: string
-  certificate: string | null
-  images: { filename: string; type: string }[]
+  certificate?: string
+  images: IProductImage[]
   auctionOnly: IAuctionOnly
   uat: number
 }
 
 export interface ICreateProductPayload {
-  type: IType // 1 = ปลา 0 = อื่นๆ
-  name: string // ชื่อสินค้า หรือ ชื่อปลา
-  price: number | null // ราคาสินค้า ถ้า auctionOnly = 1 ไม่ต้องระบุ
+  type: IType // 0 = ปลา, 1 = สินค้าอื่นๆ
+  name: string // ชื่อสินค้า หรือ ชื่อสายพันธุ์ปลา
+  lotNumber: string // หมายเลขล็อต
+  price: number | null // ราคาสินค้า
   detail: string // รายละเอียดสินค้า
-  category: string | null // หมวดหมู่ของสินค้า
-  sku: string // sku ของสินค้า
-  farm: string // ชื่อฟาร์มปลา ถ้า auctionOnly = 0 ไม่ต้องระบุ
-  size: number | null // ขนาดปลา ถ้า type = 0 ไม่ต้องระบุ
-  gender: IGender // 1 = ตัวผู้ 0 = ตัวเมีย ถ้า auctionOnly = 0 ไม่ต้องระบุ
-  age: string // อายุปลา ถ้า type = 0 ไม่ต้องระบุ
+  category: string // หมวดหมู่ของสินค้า
   sold: boolean // สถานะขายสินค้า true = ขายแล้ว, false = ยังไม่ขาย
-  rate: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 0 ไม่ต้องระบุ
   youtube: string // url ของวิดีโอ ไม่บังคับ
   images?: { filename: string; type: string }[] // รูปภาพของสินค้า ไม่บังคับ
-  certificate: string | null // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
+  certificate?: string // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
   auctionOnly: IAuctionOnly // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
+  weight: number // น้ำหนักปลา น้ำหนักต่อกระสอบ (กก.)
+
+  sku?: string // รหัสปลา ถ้า type = 1 ไม่ต้องระบุ
+  size?: number // ขนาดปลา ถ้า type = 1 ไม่ต้องระบุ
+  farm?: string // ชื่อฟาร์มปลา ถ้า type = 1 ไม่ต้องระบุ
+  birth?: string // วันเกิดปลา ถ้า type = 1 ไม่ต้องระบุ
+  age?: string // อายุปลา ถ้า type = 1 ไม่ต้องระบุ
+  gender?: string // เพศผู้, เพศเมีย, ไม่ระบุ  ถ้า type = 1 ไม่ต้องระบุ
+  breeders?: string // แม่พันธุ์ปลา ถ้า type = 1 ไม่ต้องระบุ
+  quality?: string // คุณภาพปลา ถ้า type = 1 ไม่ต้องระบุ
+  pond?: string // บ่อปลา ถ้า type = 1 ไม่ต้องระบุ
+  rate?: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 1 ไม่ต้องระบุ
+
+  seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
+  seedSize?: string // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
+  balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
 }
 
 export interface IUpdateProductPayload extends ICreateProductPayload {
   _id: string
 }
 
-export type IGender = 1 | 0 // 1 = ตัวผู้ 0 = ตัวเมีย
-export type IType = 1 | 0 // 1 = ปลา 0 = อื่นๆ
+export type IType =  0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
 export type IAuctionOnly = 0 | 1 // 0 = สินค้าสำหรับขาย 1 = สินค้าสำหรับประมูล
-
 
 export type IUploadImageResponse = {
   fieldname: string
@@ -135,7 +129,33 @@ export type IUploadImageResponse = {
   size: number
 }
 
-export type IFieldsKey = 'lotNumber' | 'pond' | 'fishId' | 'species' | 'breed' | 'birthDate' | 'age' | 'quality' | 'farm' | 'size' | 'weight' | 'gender' | 'price' | 'productName' | 'pelletType' | 'weightPerBag' | 'pelletSize' | 'remainingQuantity'
+export type IFieldsKey =
+  | 'name'
+  | 'lotNumber'
+  | 'price'
+  | 'weight'
+  | 'sku'
+  | 'size'
+  | 'farm'
+  | 'birth'
+  | 'age'
+  | 'gender'
+  | 'breeders'
+  | 'quality'
+  | 'pond'
+  | 'rate'
+  | 'seedType'
+  | 'seedSize'
+  | 'balance'
+  | 'detail'
+  | 'type'
+  | 'category'
+  | 'youtube'
+  | 'images'
+  | 'certificate'
+  | 'auctionOnly'
+  | 'sold'
+
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
 export type IFieldsRequired = boolean
 export type IFieldsOptions = { label: string; value: string | number }[]

@@ -4,6 +4,7 @@ import { Button, Select } from 'primevue'
 import { useProductStore, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '../../stores/product/category'
+import { orderBy } from 'lodash-es'
 
 // Props
 const props = defineProps<{
@@ -145,7 +146,7 @@ const getCategoryStats = (category: ICategory) => {
           <Select
             :model-value="selectedCategory"
             @update:model-value="$emit('select-category', $event)"
-            :options="categorySelectOptions"
+            :options="orderBy(categorySelectOptions, 'cat')"
             option-label="label"
             placeholder="เลือกหมวดหมู่สินค้า"
             class="w-full"

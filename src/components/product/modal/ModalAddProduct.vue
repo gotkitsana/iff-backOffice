@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
@@ -30,7 +30,6 @@ defineProps<{
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'product-added': []
 }>()
 
 // Stores
@@ -44,47 +43,36 @@ const selectedCategory = ref<ICategory | null>(null)
 const isSubmitting = ref(false)
 
 // Form data
-const productForm = ref<
-  ICreateProductPayload & {
-    lotNumber: string
-    pond: string
-    fishId: string
-    species: string
-    breed: string
-    birthDate: Date
-    age: string
-    quality: number
-    farm: string
-    size: number
-    weight: number
-    gender: number
-    price: number
-  }
->({
-  images: [] as { filename: string; type: string }[],
-  type: 1, // 1 = ปลา, 0 = อื่นๆ
+const productForm = ref<ICreateProductPayload>({
+  type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
   name: '',
-  price: 0,
-  detail: '',
-  sku: '',
-  farm: '',
-  size: 0,
-  gender: 1, // 1 = ตัวผู้, 0 = ตัวเมีย
-  age: '',
-  sold: false,
-  rate: 0,
-  youtube: '',
-  certificate: null,
-  auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
-  category: null,
   lotNumber: '',
-  pond: '',
-  fishId: '',
-  species: '',
-  breed: '',
-  birthDate: new Date(),
-  quality: 0,
+  price: null,
+  detail: '',
+  category: '',
+  sold: false,
+  youtube: '',
+  images: [],
+  certificate: '',
+  auctionOnly: 0,
+
+  // ปลา fields
+  sku: '',
+  size: 0,
+  farm: '',
+  birth: '',
+  age: '',
+  gender: '',
   weight: 0,
+  breeders: '',
+  quality: '',
+  pond: '',
+  rate: 0,
+
+  // สินค้าอื่น fields
+  seedType: '',
+  seedSize: '',
+  balance: 0,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -98,6 +86,23 @@ const { data: categories } = useQuery<ICategory[]>({
 })
 
 const isFishCategory = computed(() => selectedCategory.value?.value === 'fish')
+
+// เพิ่ม computed สำหรับ type
+const productType = computed(() => {
+  if (selectedCategory.value?.value === 'fish') {
+    return 0 // ปลา (species)
+  }
+  return 1 // สินค้าอื่นๆ (product)
+})
+
+// อัปเดต productForm เมื่อเปลี่ยน category
+watch(selectedCategory, (newCategory) => {
+  if (newCategory) {
+    productForm.value.type = productType.value
+    productForm.value.category = newCategory._id
+  }
+})
+
 // Computed
 const selectedCategoryInfo = computed(() => {
   return categoryOptionsUI.value.find((cat) => cat._id === selectedCategory.value?._id)
@@ -111,10 +116,10 @@ const categoryOptionsUI = computed(() => {
       fields: [
         { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
         { key: 'pond', label: 'บ่อ', type: 'text', required: true },
-        { key: 'fishId', label: 'รหัสปลา', type: 'text', required: true },
-        { key: 'species', label: 'สายพันธุ์', type: 'text', required: true },
-        { key: 'breed', label: 'แม่พันธุ์', type: 'text', required: true },
-        { key: 'birthDate', label: 'วันเกิด', type: 'date', required: true },
+        { key: 'sku', label: 'รหัสปลา', type: 'text', required: true },
+        { key: 'name', label: 'สายพันธุ์', type: 'select', required: true },
+        { key: 'breeders', label: 'แม่พันธุ์', type: 'text', required: true },
+        { key: 'birth', label: 'วันเกิด', type: 'date', required: true },
         { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
         { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
         { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
@@ -128,11 +133,11 @@ const categoryOptionsUI = computed(() => {
       value: 'food',
       fields: [
         { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-        { key: 'productName', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
-        { key: 'pelletType', label: 'ชนิดเม็ด', type: 'text', required: true },
-        { key: 'weightPerBag', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
-        { key: 'pelletSize', label: 'ขนาดเม็ด (มม.)', type: 'text', required: true },
-        { key: 'remainingQuantity', label: 'คงเหลือ', type: 'number', required: true },
+        { key: 'name', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
+        { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
+        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
+        { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
+        { key: 'balance', label: 'คงเหลือ', type: 'number', required: true },
         { key: 'price', label: 'ราคา', type: 'number', required: true },
       ],
     },
@@ -227,34 +232,56 @@ const mapDynamicFormToProductForm = () => {
     const value = dynamicFormData.value![field.key]
 
     switch (field.key) {
+      case 'name':
+        productForm.value.name = value as string
+        break
       case 'lotNumber':
         productForm.value.lotNumber = value as string
         break
-      case 'pond':
-        productForm.value.pond = value as string
-        break
-      case 'fishId':
-        productForm.value.fishId = value as string
-        break
-      case 'species':
-        productForm.value.species = value as string
-        break
-      case 'breed':
-        productForm.value.breed = value as string
-        break
-      case 'birthDate':
-        productForm.value.birthDate = value as Date
-        break
-      case 'age':
-        productForm.value.age = value as string
-        break
-      case 'quality':
-        productForm.value.quality = value as number
+      case 'price':
+        productForm.value.price = value as number
         break
       case 'weight':
         productForm.value.weight = value as number
         break
-      default:
+      case 'sku':
+        productForm.value.sku = value as string
+        break
+      case 'size':
+        productForm.value.size = value as number
+        break
+      case 'farm':
+        productForm.value.farm = value as string
+        break
+      case 'birth':
+        productForm.value.birth = value as string
+        break
+      case 'age':
+        productForm.value.age = value as string
+        break
+      case 'gender':
+        productForm.value.gender = value as string
+        break
+      case 'breeders':
+        productForm.value.breeders = value as string
+        break
+      case 'quality':
+        productForm.value.quality = value as string
+        break
+      case 'pond':
+        productForm.value.pond = value as string
+        break
+      case 'rate':
+        productForm.value.rate = value as number
+        break
+      case 'seedType':
+        productForm.value.seedType = value as string
+        break
+      case 'seedSize':
+        productForm.value.seedSize = value as string
+        break
+      case 'balance':
+        productForm.value.balance = value as number
         break
     }
   })
@@ -286,36 +313,13 @@ const handleSubmit = async () => {
   mapDynamicFormToProductForm()
 
   const payload: ICreateProductPayload = {
-    type: productForm.value.type,
-    name: productForm.value.name,
-    price: productForm.value.price,
-    detail: productForm.value.detail,
-    category: productForm.value.category,
-    sku: productForm.value.sku,
-    farm: productForm.value.farm,
-    size: productForm.value.size,
-    gender: productForm.value.gender,
-    age: productForm.value.age,
-    sold: productForm.value.sold,
-    rate: productForm.value.rate,
-    youtube: productForm.value.youtube,
-    certificate: productForm.value.certificate,
-    images: productForm.value.images,
-    auctionOnly: productForm.value.auctionOnly,
+    ...productForm.value,
+    type: productType.value,
+    category: selectedCategory.value?._id || '',
   }
 
   console.log(payload)
-  // try {
-  //   await productStore.onCreateProduct(payload)
-  //   emit('product-added')
-  //   toast.success('เพิ่มสินค้าสำเร็จ')
-  //   handleClose()
-  // } catch (error) {
-  //   toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า')
-  //   console.error(error)
-  // } finally {
-  //   isSubmitting.value = false
-  // }
+  toast.success('เพิ่มสินค้าสำเร็จ')
 }
 
 const handleClose = () => {
@@ -330,30 +334,35 @@ const handleClose = () => {
 
 const resetForm = () => {
   productForm.value = {
-    images: [] as { filename: string; type: string }[],
-    type: 1, // 1 = ปลา, 0 = อื่นๆ
+    type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
     name: '',
-    price: 0,
-    detail: '',
-    category: null,
-    sku: '',
-    farm: '',
-    size: 0,
-    gender: 1, // 1 = ตัวผู้, 0 = ตัวเมีย
-    age: '',
-    sold: false,
-    rate: 0,
-    youtube: '',
-    certificate: null,
-    auctionOnly: 0, // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
     lotNumber: '',
-    pond: '',
-    fishId: '',
-    species: '',
-    breed: '',
-    birthDate: new Date(),
-    quality: 0,
+    price: null,
+    detail: '',
+    category: '',
+    sold: false,
+    youtube: '',
+    images: [],
+    certificate: '',
+    auctionOnly: 0,
+
+    // ปลา fields
+    sku: '',
+    size: 0,
+    farm: '',
+    birth: '',
+    age: '',
+    gender: '',
     weight: 0,
+    breeders: '',
+    quality: '',
+    pond: '',
+    rate: 0,
+
+    // สินค้าอื่น fields
+    seedType: '',
+    seedSize: '',
+    balance: 0,
   }
 
   dynamicFormData.value = null
@@ -400,9 +409,8 @@ const removeProductImage = (index: number) => {
 
 const removeCertificate = () => {
   certificateFile.value = null
-  productForm.value.certificate = null
+  productForm.value.certificate = ''
 }
-
 
 // const { data: species } = useQuery<ISpecies[]>({
 //   queryKey: ['get_species'],

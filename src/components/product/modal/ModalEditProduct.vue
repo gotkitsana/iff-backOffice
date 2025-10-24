@@ -26,21 +26,35 @@ const productStore = useProductStore()
 // Form data
 const productForm = ref<IUpdateProductPayload>({
   _id: '',
-  category: null,
-  type: 1,
+  type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
   name: '',
-  price: 0,
+  lotNumber: '',
+  price: null,
   detail: '',
-  sku: '',
-  farm: '',
-  size: 0,
-  gender: 1,
-  age: '',
+  category: '',
   sold: false,
-  rate: 0,
   youtube: '',
+  images: [],
   certificate: '',
   auctionOnly: 0,
+
+  // ปลา fields
+  sku: '',
+  size: 0,
+  farm: '',
+  birth: '',
+  age: '',
+  gender: '',
+  weight: 0,
+  breeders: '',
+  quality: '',
+  pond: '',
+  rate: 0,
+
+  // สินค้าอื่น fields
+  seedType: '',
+  seedSize: '',
+  balance: 0,
 })
 
 // Options
@@ -81,11 +95,11 @@ const validateForm = () => {
     toast.error('กรุณากรอกชื่อสินค้า')
     return false
   }
-  if (!productForm.value.sku.trim()) {
+  if (!productForm.value.sku?.trim()) {
     toast.error('กรุณากรอก SKU')
     return false
   }
-  if (!productForm.value.farm.trim()) {
+  if (!productForm.value.farm?.trim()) {
     toast.error('กรุณากรอกชื่อฟาร์ม')
     return false
   }
@@ -110,21 +124,35 @@ const populateForm = (productData: IProduct) => {
 
   productForm.value = {
     _id: productData._id,
-    category: productData.category || null,
     type: productData.type,
     name: productData.name,
-    price: productData.price || 0,
+    lotNumber: productData.lotNumber,
+    price: productData.price,
     detail: productData.detail,
-    sku: productData.sku,
-    farm: productData.farm,
-    size: productData.size || 0,
-    gender: productData.gender || 1,
-    age: productData.age,
+    category: productData.category,
     sold: productData.sold,
-    rate: productData.rate,
     youtube: productData.youtube,
-    certificate: productData.certificate || '',
+    images: productData.images,
+    certificate: productData.certificate,
     auctionOnly: productData.auctionOnly,
+
+    // ปลา fields
+    sku: productData.sku,
+    size: productData.size,
+    farm: productData.farm,
+    birth: productData.birth,
+    age: productData.age,
+    gender: productData.gender,
+    weight: productData.weight,
+    breeders: productData.breeders,
+    quality: productData.quality,
+    pond: productData.pond,
+    rate: productData.rate,
+
+    // สินค้าอื่น fields
+    seedType: productData.seedType,
+    seedSize: productData.seedSize,
+    balance: productData.balance,
   }
 }
 
@@ -136,21 +164,35 @@ const handleSubmit = async () => {
   try {
     const payload: IUpdateProductPayload = {
       _id: props.productData._id,
-      type: productForm.value.type,
-      name: productForm.value.name,
-      price: productForm.value.price,
-      detail: productForm.value.detail,
-      category: productForm.value.category,
-      sku: productForm.value.sku,
-      farm: productForm.value.farm,
-      size: productForm.value.size,
-      gender: productForm.value.gender,
-      age: productForm.value.age,
-      sold: productForm.value.sold,
-      rate: productForm.value.rate,
-      youtube: productForm.value.youtube,
-      certificate: productForm.value.certificate || null,
-      auctionOnly: productForm.value.auctionOnly,
+      type: props.productData.type,
+      name: props.productData.name,
+      lotNumber: props.productData.lotNumber,
+      price: props.productData.price,
+      detail: props.productData.detail,
+      category: props.productData.category,
+      sold: props.productData.sold,
+      youtube: props.productData.youtube,
+      images: props.productData.images,
+      certificate: props.productData.certificate,
+      auctionOnly: props.productData.auctionOnly,
+
+      // ปลา fields
+      sku: props.productData.sku,
+      size: props.productData.size,
+      farm: props.productData.farm,
+      birth: props.productData.birth,
+      age: props.productData.age,
+      gender: props.productData.gender,
+      weight: props.productData.weight,
+      breeders: props.productData.breeders,
+      quality: props.productData.quality,
+      pond: props.productData.pond,
+      rate: props.productData.rate,
+
+      // สินค้าอื่น fields
+      seedType: props.productData.seedType,
+      seedSize: props.productData.seedSize,
+      balance: props.productData.balance,
     }
 
     await productStore.onUpdateProduct(payload)

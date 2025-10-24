@@ -183,8 +183,8 @@ const handleClose = () => {
               <div>
                 <label class="text-sm font-medium text-gray-600">เพศ</label>
                 <Tag
-                  :value="getGenderTag(productData.gender || 1).label"
-                  :severity="getGenderTag(productData.gender || 1).severity"
+                  :value="getGenderTag(productData.gender ? parseInt(productData.gender) : 1).label"
+                  :severity="getGenderTag(productData.gender ? parseInt(productData.gender) : 1).severity"
                   size="small"
                 />
               </div>
