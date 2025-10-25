@@ -133,13 +133,22 @@ const categoryOptionsUI = computed(() => {
     {
       value: 'food',
       fields: [
+        { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
         { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-        { key: 'name', label: 'ชื่อผลิตภัณฑ์', type: 'text', required: true },
+        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
+        { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
         { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
-        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
         { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
-        { key: 'balance', label: 'คงเหลือ', type: 'number', required: true },
-        { key: 'price', label: 'ราคา', type: 'number', required: true },
+        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
+        { key: 'productionDate', label: 'วันที่ผลิต', type: 'date', required: true },
+        { key: 'expiryDate', label: 'วันหมดอายุ', type: 'date', required: true },
+
+        { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
+        { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
+        { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
+        { key: 'merchantPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
+
+        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
       ],
     },
   ]
@@ -239,9 +248,6 @@ const mapDynamicFormToProductForm = () => {
       case 'lotNumber':
         productForm.value.lotNumber = value as string
         break
-      case 'price':
-        productForm.value.price = value as number
-        break
       case 'weight':
         productForm.value.weight = value as number
         break
@@ -284,6 +290,28 @@ const mapDynamicFormToProductForm = () => {
       case 'balance':
         productForm.value.balance = value as number
         break
+      case 'productionDate':
+        productForm.value.productionDate = value as string
+        break
+      case 'expiryDate':
+        productForm.value.expiryDate = value as string
+        break
+      case 'marketPrice':
+        productForm.value.marketPrice = value as number
+        break
+      case 'costPrice':
+        productForm.value.costPrice = value as number
+        break
+      case 'customerPrice':
+        productForm.value.customerPrice = value as number
+        break
+      case 'merchantPrice':
+        productForm.value.merchantPrice = value as number
+        break
+      case 'foodType':
+        productForm.value.foodType = value as string
+        break
+      
     }
   })
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, h, computed } from 'vue'
 import { DataTable, Column, Tag, Button } from 'primevue'
 import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
@@ -38,11 +39,380 @@ const getStatusTag = (sold: boolean) => {
 const getImageUrl = (image: IProductImage) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image.filename}`
 }
+
+const getSeedSizeLabel = (seedSize: number) => {
+  const sizeMap = {
+    0: 'SS',
+    1: 'S',
+    2: 'M',
+    3: 'L',
+    4: 'XL',
+  }
+  return sizeMap[seedSize as keyof typeof sizeMap] || '-'
+}
+
+const getSeedTypeLabel = (seedType: string) => {
+  return seedType || '-'
+}
+
+const foodColumns = ref([
+  {
+    field: 'sku',
+    header: 'รหัสอาหาร',
+    render: (slotProps: any) =>
+      slotProps.data.sku
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'lotNumber',
+    header: 'รหัสล็อต',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber),
+        ]
+      ),
+  },
+  {
+    field: 'name',
+    header: 'ชื่อแบรนด์',
+    headCell: '!min-w-[8rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          h('img', {
+            src: getImageUrl(slotProps.data.images[0]),
+            alt: 'product image',
+            class: 'w-auto h-8 object-contain rounded-lg',
+          }),
+          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.name),
+        ]
+      ),
+  },
+  {
+    field: 'foodType',
+    header: 'ประเภทอาหาร',
+    headCell: '!min-w-[5.5rem]',
+    render: (slotProps: any) =>
+      slotProps.data.foodType
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-shopping-bag text-green-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.foodType),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'seedType',
+    header: 'ชนิดเม็ด',
+    headCell: ' justify-center',
+    bodyCell: ' text-center',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: getSeedTypeLabel(slotProps.data.seedType),
+        severity: 'info',
+        size: 'small',
+        class:'text-xs'
+      }),
+  },
+  {
+    field: 'seedSize',
+    header: 'ขนาดเม็ด',
+    headCell: ' justify-center',
+    bodyCell: ' text-center',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: getSeedSizeLabel(slotProps.data.seedSize),
+        severity: 'success',
+        size: 'small',
+        class:'text-xs'
+      }),
+  },
+  {
+    field: 'weight',
+    header: 'น้ำหนักต่อกระสอบ',
+    headCell: '!min-w-[7rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.weight
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
+        : h('span', '-'),
+  },
+  {
+    field: 'productionDate',
+    header: 'วันผลิต',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.productionDate ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.productionDate),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'expiryDate',
+    header: 'วันหมดอายุ',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.expiryDate ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.expiryDate),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'marketPrice',
+    header: 'ราคาท้องตลาด',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.marketPrice ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5 justify-end'],
+        },
+        [
+          h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
+          h(
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data.marketPrice)
+          ),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'costPrice',
+    header: 'ราคาทุน',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.costPrice ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5 justify-end'],
+        },
+        [
+          h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
+          h(
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data.costPrice)
+          ),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'customerPrice',
+    header: 'ราคาลูกค้า',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.customerPrice ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5 justify-end'],
+        },
+        [
+          h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
+          h(
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data.customerPrice)
+          ),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'merchantPrice',
+    header: 'ราคาพ่อค้า',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.merchantPrice ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5 justify-end'],
+        },
+        [
+          h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
+          h(
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data.merchantPrice)
+          ),
+        ]
+      ) : h('span', '-'),
+  },
+  {
+    field: 'balance',
+    header: 'สินค้าคงเหลือ',
+    headCell: '!min-w-[6rem] justify-end',
+    render: (slotProps: any) =>
+      slotProps.data.balance ? h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5 justify-end'],
+        },
+        [
+          h('i', { class: 'pi pi-box text-green-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
+        ]
+      ) : h('span', '-'),
+  },
+])
+
+const fishColumns = ref([
+  {
+    field: 'name',
+    header: 'ชื่อสินค้า',
+    headCell: '!min-w-[8rem]',
+    bodyCell: ' ',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-2'],
+        },
+        [
+          h('img', {
+            src: getImageUrl(slotProps.data.images[0]),
+            alt: 'product image',
+            class: 'w-auto h-12 object-contain rounded-lg',
+          }),
+          h('div', {}, [
+            h('p', { class: 'font-medium text-gray-900 text-sm' }, slotProps.data.name),
+            h('p', { class: 'text-xs text-gray-500' }, slotProps.data.sku),
+          ]),
+        ]
+      ),
+  },
+  {
+    field: 'size',
+    header: 'ขนาด (ซม.)',
+    headCell: '!min-w-[5rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center justify-center gap-1'],
+        },
+        [
+          h('i', { class: 'pi pi-ruler text-blue-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size),
+        ]
+      ),
+  },
+  {
+    field: 'gender',
+    header: 'เพศ',
+    headCell: '!min-w-[4rem]',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: getGenderTag(slotProps.data.gender).label,
+        severity: getGenderTag(slotProps.data.gender).severity,
+        size: 'small',
+      }),
+  },
+  {
+    field: 'farm',
+    header: 'ฟาร์ม',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-2'],
+        },
+        [
+          h('i', { class: 'pi pi-building text-green-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.farm),
+        ]
+      ),
+  },
+  {
+    field: 'age',
+    header: 'อายุ',
+    headCell: '!min-w-[4rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-1'],
+        },
+        [
+          h('i', { class: 'pi pi-calendar text-purple-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.age || '-'),
+        ]
+      ),
+  },
+  {
+    field: 'rate',
+    header: 'คะแนน',
+    headCell: '!min-w-[4rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center justify-center gap-1'],
+        },
+        [
+          h('i', { class: 'pi pi-star-fill text-yellow-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.rate || '-'),
+        ]
+      ),
+  },
+])
+
+const displayColumns = computed(() => {
+  if (props.selectedCategory?.value === 'food') {
+    return foodColumns.value
+  } else if (props.selectedCategory?.value === 'fish') {
+    return fishColumns.value
+  }
+  return []
+})
 </script>
 
 <template>
-  <div class="bg-white border border-gray-200 rounded-xl p-0 shadow-sm">
-    <div class="p-4 border-b border-gray-200">
+  <div class="bg-white border border-gray-200 rounded-xl px-4 shadow-sm">
+    <div class="py-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div
@@ -65,227 +435,34 @@ const getImageUrl = (image: IProductImage) => {
       :value="filteredProducts"
       :loading="isLoadingProducts"
       :paginator="true"
-      :rows="10"
+      :rows="50"
+      :rowsPerPageOptions="[20, 50, 100]"
       scrollHeight="600px"
+      :pt="{
+        table: 'text-sm',
+        header: 'py-2',
+        body: 'py-1',
+        row: 'py-1',
+        cell: 'py-1 px-2',
+        columnHeader: 'py-2 px-2',
+      }"
     >
-      <!-- Common Columns -->
-      <Column field="name" header="ชื่อสินค้า" :pt="{ columnHeaderContent: 'min-w-[8rem]' }">
-        <template #body="slotProps">
-          <div class="flex items-center gap-2">
-            <img
-              :src="getImageUrl(slotProps.data.images[0])"
-              alt="product image"
-              class="w-auto h-12 object-contain rounded-lg"
-            />
-            <div>
-              <p class="font-medium text-gray-900 text-sm">{{ slotProps.data.name }}</p>
-              <p class="text-xs text-gray-500">{{ slotProps.data.sku }}</p>
-            </div>
-          </div>
-        </template>
-      </Column>
-
-      <!-- Fish-specific Columns -->
-      <template v-if="props.selectedCategory?.value === 'fish'">
-        <Column
-          field="size"
-          header="ขนาด (ซม.)"
-          :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
-        >
-          <template #body="slotProps">
-            <div class="flex items-center justify-center gap-1">
-              <i class="pi pi-ruler text-blue-500 text-xs"></i>
-              <span class="text-sm text-gray-900">{{ slotProps.data.size }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column
-          field="gender"
-          header="เพศ"
-          :pt="{ columnHeaderContent: 'min-w-[4rem] justify-center', bodyCell: 'text-center' }"
-        >
-          <template #body="slotProps">
-            <Tag
-              :value="getGenderTag(slotProps.data.gender).label"
-              :severity="getGenderTag(slotProps.data.gender).severity"
-              size="small"
-            />
-          </template>
-        </Column>
-
-        <Column field="farm" header="ฟาร์ม" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-          <template #body="slotProps">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-building text-green-500 text-xs"></i>
-              <span class="text-sm text-gray-900">{{ slotProps.data.farm }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="age" header="อายุ" :pt="{ columnHeaderContent: 'min-w-[4rem]' }">
-          <template #body="slotProps">
-            <div class="flex items-center gap-1">
-              <i class="pi pi-calendar text-purple-500 text-xs"></i>
-              <span class="text-sm text-gray-900">{{ slotProps.data.age || '-' }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column
-          field="rate"
-          header="คะแนน"
-          :pt="{ columnHeaderContent: 'min-w-[4rem] justify-center', bodyCell: 'text-center' }"
-        >
-          <template #body="slotProps">
-            <div class="flex items-center justify-center gap-1">
-              <i class="pi pi-star-fill text-yellow-500 text-xs"></i>
-              <span class="text-sm text-gray-900">{{ slotProps.data.rate || '-' }}</span>
-            </div>
-          </template>
-        </Column>
-      </template>
-
-      <!-- Service-specific Columns -->
-      <template v-else-if="props.selectedCategory?.value === 'service'">
-        <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
-          <template #body="slotProps">
-            <div class="max-w-xs">
-              <p class="text-sm text-gray-900 truncate">{{ slotProps.data.detail || '-' }}</p>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="youtube" header="วิดีโอ" :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-          <template #body="slotProps">
-            <div v-if="slotProps.data.youtube" class="flex items-center gap-2">
-              <i class="pi pi-youtube text-red-500"></i>
-              <span class="text-xs text-blue-600 hover:underline cursor-pointer">ดูวิดีโอ</span>
-            </div>
-            <span v-else class="text-sm text-gray-500">-</span>
-          </template>
-        </Column>
-      </template>
-
-      <!-- Equipment-specific Columns -->
-      <template v-else-if="props.selectedCategory?.value === 'equipment'">
-        <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
-          <template #body="slotProps">
-            <div class="max-w-xs">
-              <p class="text-sm text-gray-900 truncate">{{ slotProps.data.detail || '-' }}</p>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="sku" header="รหัสสินค้า" :pt="{ columnHeaderContent: 'min-w-[8rem]' }">
-          <template #body="slotProps">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-qrcode text-orange-500 text-xs"></i>
-              <span class="text-sm text-gray-900 font-mono">{{ slotProps.data.sku }}</span>
-            </div>
-          </template>
-        </Column>
-      </template>
-
-      <!-- Medicine-specific Columns -->
-      <template v-else-if="props.selectedCategory?.value === 'medicine'">
-        <Column field="detail" header="รายละเอียด" :pt="{ columnHeaderContent: 'min-w-[12rem]' }">
-          <template #body="slotProps">
-            <div class="max-w-xs">
-              <p class="text-sm text-gray-900 truncate">{{ slotProps.data.detail || '-' }}</p>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="certificate" header="ใบรับรอง" :pt="{ columnHeaderContent: 'min-w-[8rem]' }">
-          <template #body="slotProps">
-            <div v-if="slotProps.data.certificate" class="flex items-center gap-2">
-              <i class="pi pi-certificate text-green-500 text-xs"></i>
-              <span class="text-xs text-green-600">มีใบรับรอง</span>
-            </div>
-            <span v-else class="text-sm text-gray-500">-</span>
-          </template>
-        </Column>
-      </template>
-
-      <!-- Common Columns for All Categories -->
       <Column
-        field="price"
-        header="ราคา"
-        :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
+        v-for="(item, index) in displayColumns"
+        :key="index"
+        :field="item.field"
+        :header="item.header"
+        :frozen="index === 0"
+        :pt="{
+          columnHeaderContent: { class: ['!min-w-[4.5rem]', item.headCell] },
+          bodyCell: { class: [item?.bodyCell || ''] },
+        }"
       >
         <template #body="slotProps">
-          <div class="flex items-center justify-end gap-1">
-            <i class="pi pi-money-bill text-green-500 text-xs"></i>
-            <span class="font-medium text-gray-900 text-sm">
-              {{ slotProps.data.price ? formatCurrency(slotProps.data.price) : 'ไม่ระบุ' }}
-            </span>
-          </div>
-        </template>
-      </Column>
-
-      <Column
-        field="sold"
-        header="สถานะ"
-        :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
-      >
-        <template #body="slotProps">
-          <Tag
-            :value="getStatusTag(slotProps.data.sold).label"
-            :severity="getStatusTag(slotProps.data.sold).severity"
-            size="small"
-          />
-        </template>
-      </Column>
-
-      <Column
-        field="auctionOnly"
-        header="ประเภท"
-        :pt="{ columnHeaderContent: 'min-w-[6rem] justify-center', bodyCell: 'text-center' }"
-      >
-        <template #body="slotProps">
-          <div class="flex items-center justify-center gap-1">
-            <i
-              :class="`pi ${
-                slotProps.data.auctionOnly === 1
-                  ? 'pi-gavel text-orange-500'
-                  : 'pi-shopping-cart text-blue-500'
-              } text-xs`"
-            ></i>
-            <Tag
-              :value="slotProps.data.auctionOnly === 1 ? 'ประมูล' : 'ขาย'"
-              :severity="slotProps.data.auctionOnly === 1 ? 'warning' : 'info'"
-              size="small"
-            />
-          </div>
-        </template>
-      </Column>
-
-      <Column
-        header="การจัดการ"
-        :exportable="false"
-        frozen
-        :pt="{ columnHeaderContent: 'justify-end' }"
-      >
-        <template #body="slotProps">
-          <div class="flex gap-2 justify-end">
-            <Button
-              icon="pi pi-eye"
-              severity="info"
-              size="small"
-              outlined
-              @click="$emit('open-detail-modal', slotProps.data)"
-              v-tooltip.top="'ดูรายละเอียด'"
-            />
-            <Button
-              icon="pi pi-pencil"
-              severity="warning"
-              size="small"
-              outlined
-              @click="$emit('open-edit-modal', slotProps.data)"
-              v-tooltip.top="'แก้ไขข้อมูล'"
-            />
-          </div>
+          <component :is="item.render?.(slotProps)" v-if="item.render" />
+          <span v-else>
+            {{ slotProps.data[item.field] }}
+          </span>
         </template>
       </Column>
     </DataTable>

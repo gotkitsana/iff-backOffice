@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Button, Select } from 'primevue'
-import { useProductStore, type IProduct } from '../../stores/product/product'
+import { computed, ref } from 'vue'
+import { Button, Select, InputText } from 'primevue'
+import { useProductStore, type IFoodFilters, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '../../stores/product/category'
 import { orderBy } from 'lodash-es'
@@ -9,54 +9,52 @@ import { orderBy } from 'lodash-es'
 // Props
 const props = defineProps<{
   selectedCategory: ICategory | null
-  selectedQualityGrade: string | null
   productsCategory: IProduct[]
+
+  foodFilters?: IFoodFilters
 }>()
 
 // Emits
-defineEmits<{
+const emit = defineEmits<{
   'select-category': [category: ICategory]
-  'select-quality-grade': [grade: string]
   'open-add-modal': []
   'on-pond-settings': []
   'open-search-modal': []
   'open-export-modal': []
+
+  'update-food-filters': [
+    filters: IFoodFilters
+  ]
 }>()
 
-// const categoryStore = useCategoryStore()
-// const productStore = useProductStore()
-
-// const { data: categories } = useQuery<ICategory[]>({
-//   queryKey: ['categories'],
-//   queryFn: () => categoryStore.onGetCategory(0),
-// })
-
-// const { data: products } = useQuery<IProduct[]>({
-//   queryKey: ['products'],
-//   queryFn: () => productStore.onGetProducts(),
-// })
-
-const qualityGradeOptions = [
-  { label: 'Tategoi', value: 'tategoi' },
-  { label: 'J.Tosai', value: 'j_tosai' },
+const foodSeedTypeOptions = [
+  { label: 'ลอย', value: 'ลอย' },
+  { label: 'จม', value: 'จม' },
 ]
+
+const foodSeedSizeOptions = [
+  { label: 'SS', value: 0 },
+  { label: 'S', value: 1 },
+  { label: 'M', value: 2 },
+  { label: 'L', value: 3 },
+  { label: 'XL', value: 4 },
+]
+
+const localFoodFilters = ref<IFoodFilters>({
+  sku: props.foodFilters?.sku || '',
+  brandName: props.foodFilters?.brandName || '',
+  foodType: props.foodFilters?.foodType || '',
+  seedType: props.foodFilters?.seedType || '',
+  seedSize: props.foodFilters?.seedSize || null,
+})
 
 // Computed
 const isFishSelected = computed(() => {
   return props.selectedCategory?.value === 'fish'
 })
-
-// const categorySelectOptions = computed(() => {
-//   return categories.value?.map((category) => ({
-//     ...category,
-//     label: `${category.name} (${getCategoryCount(category._id)} รายการ)`,
-//   }))
-// })
-
-// const getCategoryCount = (categoryId: string) => {
-//   if (!products.value) return 0
-//   return products.value.filter((product) => product?.category?._id === categoryId).length
-// }
+const isFoodSelected = computed(() => {
+  return props.selectedCategory?.value === 'food'
+})
 
 const getCategoryStats = (category: ICategory) => {
   const productsCategory = props.productsCategory
@@ -101,6 +99,23 @@ const getCategoryStats = (category: ICategory) => {
     seedSizeStats,
     qualityStats,
   }
+}
+
+const updateFoodFilter = (key: string, value: any) => {
+  localFoodFilters.value[key as keyof typeof localFoodFilters.value] = value as never
+  emit('update-food-filters', { ...localFoodFilters.value })
+}
+
+const clearFilters = () => {
+  localFoodFilters.value = {
+    sku: '',
+    brandName: '',
+    foodType: '',
+    seedType: '',
+    seedSize: null,
+  }
+
+  emit('update-food-filters', { ...localFoodFilters.value })
 }
 </script>
 
@@ -149,64 +164,94 @@ const getCategoryStats = (category: ICategory) => {
         </div>
       </div>
 
-      <!-- Category Select -->
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-        <!-- <div>
-          <label class="text-sm font-medium text-gray-700 mb-1 block">เลือกหมวดหมู่สินค้า</label>
-          <Select
-            :model-value="selectedCategory"
-            @update:model-value="$emit('select-category', $event)"
-            :options="orderBy(categorySelectOptions, 'cat')"
-            option-label="label"
-            placeholder="เลือกหมวดหมู่สินค้า"
-            class="w-full"
-            :pt="{
-              root: 'w-full',
-              input: 'w-full',
-            }"
-          >
-            <template #option="{ option }">
-              <div class="flex items-center gap-3">
-                <div
-                  :class="`w-8 h-8 rounded-lg flex items-center justify-center
-                  ${option.bgColor}`"
-                >
-                  <i :class="`${option.icon} ${option.iconColor}`"></i>
-                </div>
-                <span>{{ option.label }}</span>
-              </div>
-            </template>
-          </Select>
-        </div> -->
+      <div class="mb-4 space-y-3">
+        <div v-if="isFishSelected" class="flex items-center gap-3">
 
-        <!-- Quality Grade Filter (for Fish only) -->
-        <div v-if="isFishSelected" class="flex items-center gap-2">
+        </div>
+
+        <div
+          v-if="isFoodSelected"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+        >
+          <!-- รหัสอาหาร -->
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">เกรดคุณภาพ</label>
-            <Select
-              :model-value="selectedQualityGrade"
-              @update:model-value="$emit('select-quality-grade', $event)"
-              :options="qualityGradeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเกรดคุณภาพ"
-              class="w-full"
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสอาหาร</label>
+            <InputText
+              :model-value="localFoodFilters.sku"
+              @update:model-value="updateFoodFilter('sku', $event)"
+              placeholder="ระบุรหัสอาหาร"
+              size="small"
+              fluid
+              showClear
             />
           </div>
 
+          <!-- ชื่อแบรนด์ -->
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">เกรดคุณภาพ</label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
+            <InputText
+              :model-value="localFoodFilters.brandName"
+              @update:model-value="updateFoodFilter('brandName', $event)"
+              placeholder="ระบุชื่อแบรนด์"
+              size="small"
+              fluid
+            />
+          </div>
+
+          <!-- ประเภทอาหาร -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทอาหาร</label>
+            <InputText
+              :model-value="localFoodFilters.foodType"
+              @update:model-value="updateFoodFilter('foodType', $event)"
+              placeholder="ระบุประเภทอาหาร"
+              size="small"
+              fluid
+            />
+          </div>
+
+          <!-- ชนิดเม็ด -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชนิดเม็ด</label>
             <Select
-              :model-value="selectedQualityGrade"
-              @update:model-value="$emit('select-quality-grade', $event)"
-              :options="qualityGradeOptions"
+              :model-value="localFoodFilters.seedType"
+              @update:model-value="updateFoodFilter('seedType', $event)"
+              :options="foodSeedTypeOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="เลือกเกรดคุณภาพ"
-              class="w-full"
+              placeholder="เลือกชนิดเม็ด"
+              size="small"
+              fluid
+              showClear
+            />
+          </div>
+
+          <!-- ขนาดเม็ด -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ขนาดเม็ด</label>
+            <Select
+              :model-value="localFoodFilters.seedSize"
+              @update:model-value="updateFoodFilter('seedSize', $event)"
+              :options="foodSeedSizeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกขนาดเม็ด"
+              size="small"
+              fluid
+              showClear
             />
           </div>
         </div>
+
+        <Button
+          v-if="selectedCategory"
+          label="ล้างกรอง"
+          icon="pi pi-times"
+          variant="text"
+          severity="danger"
+          size="small"
+          @click="clearFilters"
+        />
       </div>
 
       <div v-if="selectedCategory">
@@ -219,7 +264,6 @@ const getCategoryStats = (category: ICategory) => {
           v-if="selectedCategory.value === 'fish'"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <!-- Quantity -->
           <div class="bg-blue-50 rounded-lg p-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -233,8 +277,6 @@ const getCategoryStats = (category: ICategory) => {
               </div>
             </div>
           </div>
-
-          <!-- Value -->
           <div class="bg-green-50 rounded-lg p-4">
             <div class="flex gap-3">
               <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
@@ -248,8 +290,6 @@ const getCategoryStats = (category: ICategory) => {
               </div>
             </div>
           </div>
-
-          <!-- Age Stats (for Fish) -->
           <div class="md:col-span-2 bg-purple-50 rounded-lg p-4">
             <div class="grid grid-cols-3 gap-2">
               <div
@@ -283,11 +323,10 @@ const getCategoryStats = (category: ICategory) => {
           </div> -->
         </div>
 
-        <div
+        <!-- <div
           v-if="selectedCategory.value === 'food'"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <!-- Food specific stats -->
           <div class="bg-red-50 rounded-lg p-4">
             <div class="flex gap-3">
               <div>
@@ -309,7 +348,7 @@ const getCategoryStats = (category: ICategory) => {
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

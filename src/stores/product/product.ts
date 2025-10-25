@@ -95,6 +95,7 @@ export interface IProduct {
   lotNumber: string
   quality?: string
   pond?: string
+  foodType?: string
   seedType?: string
   seedSize?: ISeedSizeValue
   balance?: number
@@ -124,6 +125,13 @@ export interface IProduct {
   images: IProductImage[]
   auctionOnly: IAuctionOnly
   uat: number
+
+  productionDate?: string
+  expiryDate?: string
+  marketPrice?: number
+  costPrice?: number
+  customerPrice?: number
+  merchantPrice?: number
 }
 
 export interface ICreateProductPayload {
@@ -154,6 +162,14 @@ export interface ICreateProductPayload {
   seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   seedSize?: ISeedSizeValue // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
+
+  foodType?: string // ประเภทอาหาร ถ้า type = 0 ไม่ต้องระบุ
+  productionDate?: string // วันที่ผลิต ถ้า type = 0 ไม่ต้องระบุ
+  expiryDate?: string // วันหมดอายุ ถ้า type = 0 ไม่ต้องระบุ
+  marketPrice?: number // ราคาท้องตลาด ถ้า type = 0 ไม่ต้องระบุ
+  costPrice?: number // ราคาทุน ถ้า type = 0 ไม่ต้องระบุ
+  customerPrice?: number // ราคาลูกค้า ถ้า type = 0 ไม่ต้องระบุ
+  merchantPrice?: number // ราคาพ่อค้า ถ้า type = 0 ไม่ต้องระบุ
 }
 
 export interface IUpdateProductPayload extends ICreateProductPayload {
@@ -200,6 +216,13 @@ export type IFieldsKey =
   | 'certificate'
   | 'auctionOnly'
   | 'sold'
+  | 'foodType'
+  | 'productionDate'
+  | 'expiryDate'
+  | 'marketPrice'
+  | 'costPrice'
+  | 'customerPrice'
+  | 'merchantPrice'
 
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
 export type IFieldsRequired = boolean
@@ -233,4 +256,13 @@ export type ISeedSizeValue = 0 | 1 | 2 | 3 | 4
 export interface ISeedSizeOptions {
   label: ISeedSizeLabel
   value: ISeedSizeValue
+}
+
+
+export interface IFoodFilters {
+  sku: string
+  brandName: string
+  foodType: string
+  seedType: string
+  seedSize: number | null
 }

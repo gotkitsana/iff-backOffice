@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProductStore, type IProduct } from '../../stores/product/product'
+import { useProductStore, type IFoodFilters, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
@@ -15,6 +15,8 @@ import type { ICategory } from '../../stores/product/category'
 import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
 import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
 
+
+
 // Router & Stores
 const router = useRouter()
 const productStore = useProductStore()
@@ -25,14 +27,67 @@ const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
 const selectedCategory = ref<ICategory | null>(null)
-const selectedQualityGrade = ref<string | null>(null)
 const showSearchModal = ref(false)
 const showExportModal = ref(false)
+
+const foodFilters = ref<IFoodFilters>({
+  sku: '',
+  brandName: '',
+  foodType: '',
+  seedType: '',
+  seedSize: null,
+})
 
 const { data: productsByCategory, isLoading: isLoadingProductsByCategory } = useQuery<IProduct[]>({
   queryKey: ['get_products_by_category', selectedCategory],
   queryFn: () => productStore.onGetProductsByCategory(selectedCategory.value?._id as string),
   enabled: computed(() => !!selectedCategory.value?._id),
+})
+
+const filteredProducts = computed(() => {
+  if (!productsByCategory.value) return []
+
+  let filtered = [...productsByCategory.value]
+
+  // Apply food filters if category is food
+  if (selectedCategory.value?.value === 'food') {
+    if (foodFilters.value.sku) {
+      filtered = filtered.filter(product =>
+        product.sku?.toLowerCase().includes(foodFilters.value.sku.toLowerCase())
+      )
+    }
+
+    if (foodFilters.value.brandName) {
+      filtered = filtered.filter(product =>
+        product.name?.toLowerCase().includes(foodFilters.value.brandName.toLowerCase())
+      )
+    }
+
+    if (foodFilters.value.foodType) {
+      filtered = filtered.filter(product =>
+        product.foodType?.toLowerCase().includes(foodFilters.value.foodType.toLowerCase())
+      )
+    }
+
+    if (foodFilters.value.seedType) {
+      filtered = filtered.filter(product =>
+        product.seedType === foodFilters.value.seedType
+      )
+    }
+
+    if (foodFilters.value.seedSize !== null) {
+      filtered = filtered.filter(product =>
+        product.seedSize === foodFilters.value.seedSize
+      )
+    }
+  }
+
+  // Apply quality grade filter for fish
+  if (selectedCategory.value?.value === 'fish') {
+
+  }
+
+  return filtered
 })
 
 // Handlers
@@ -69,10 +124,17 @@ const handleProductDeleted = () => {
 
 const selectCategory = (category: ICategory) => {
   selectedCategory.value = category
+  foodFilters.value = {
+    sku: '',
+    brandName: '',
+    foodType: '',
+    seedType: '',
+    seedSize: null,
+  }
 }
 
-const selectQualityGrade = (grade: string) => {
-  selectedQualityGrade.value = grade
+const updateFoodFilters = (filters: IFoodFilters) => {
+  foodFilters.value = { ...filters }
 }
 
 const onPondSettings = () => {
@@ -91,14 +153,14 @@ const onPondSettings = () => {
     <!-- Category Filter -->
     <CategoryFilter
       :selected-category="selectedCategory"
-      :selected-quality-grade="selectedQualityGrade"
-      :products-category="productsByCategory || []"
+      :products-category="filteredProducts"
+      :food-filters="foodFilters"
       @select-category="selectCategory"
-      @select-quality-grade="selectQualityGrade"
       @open-add-modal="openAddModal"
       @on-pond-settings="onPondSettings"
       @open-search-modal="openSearchModal"
       @open-export-modal="openExportModal"
+      @update-food-filters="updateFoodFilters"
     />
 
     <!-- Product Table -->
@@ -115,7 +177,7 @@ const onPondSettings = () => {
   <!-- Modal Components -->
   <ModalAddProduct v-model:visible="showAddModal" />
 
-   <!-- Export Modal -->
+  <!-- Export Modal -->
   <ModalExportProduct v-model:visible="showExportModal" />
 
   <ModalEditProduct
