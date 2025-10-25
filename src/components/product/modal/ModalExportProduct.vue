@@ -42,13 +42,6 @@ const selectCategory = (category: ICategory) => {
   selectedCategory.value = category
 }
 
-const handleExport = () => {
-  if (selectedCategory.value) {
-    emit('export-products', selectedCategory.value)
-    handleClose()
-  }
-}
-
 const handleClose = () => {
   selectedCategory.value = null
   emit('update:visible', false)
@@ -95,7 +88,7 @@ const handleClose = () => {
           icon="pi pi-file-export"
           severity="success"
           :disabled="!selectedCategory"
-          @click="handleExport"
+
         />
       </div>
     </template>
