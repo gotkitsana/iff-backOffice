@@ -113,7 +113,7 @@ const getCategoryStats = (category: ICategory) => {
         </div>
 
         <div class="flex items-center gap-2">
-          <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small" />
+          <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small" @click="$emit('open-add-modal')" />
 
           <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small" />
 
@@ -125,13 +125,6 @@ const getCategoryStats = (category: ICategory) => {
             @click="$emit('on-pond-settings')"
           />
 
-          <Button
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="$emit('open-add-modal')"
-          />
         </div>
       </div>
 
