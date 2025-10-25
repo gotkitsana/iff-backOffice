@@ -12,6 +12,8 @@ import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
 import CategoryFilter from '../../components/product/CategoryFilter.vue'
 import ProductTable from '../../components/product/ProductTable.vue'
 import type { ICategory } from '../../stores/product/category'
+import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
+import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
 
 // Router & Stores
 const router = useRouter()
@@ -24,6 +26,8 @@ const showDetailModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
 const selectedCategory = ref<ICategory | null>(null)
 const selectedQualityGrade = ref<string | null>(null)
+const showSearchModal = ref(false)
+const showExportModal = ref(false)
 
 const { data: productsByCategory, isLoading: isLoadingProductsByCategory } = useQuery<IProduct[]>({
   queryKey: ['get_products_by_category', selectedCategory],
@@ -34,6 +38,14 @@ const { data: productsByCategory, isLoading: isLoadingProductsByCategory } = use
 // Handlers
 const openAddModal = () => {
   showAddModal.value = true
+}
+
+const openSearchModal = () => {
+  showSearchModal.value = true
+}
+
+const openExportModal = () => {
+  showExportModal.value = true
 }
 
 const openEditModal = (product: IProduct) => {
@@ -69,13 +81,12 @@ const onPondSettings = () => {
 </script>
 
 <template>
-
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
 
     <!-- Product Stats -->
-    <ProductStatsCards/>
+    <ProductStatsCards />
 
     <!-- Category Filter -->
     <CategoryFilter
@@ -86,11 +97,13 @@ const onPondSettings = () => {
       @select-quality-grade="selectQualityGrade"
       @open-add-modal="openAddModal"
       @on-pond-settings="onPondSettings"
+      @open-search-modal="openSearchModal"
+      @open-export-modal="openExportModal"
     />
 
     <!-- Product Table -->
     <ProductTable
-      v-if="productsByCategory"
+      v-if="selectedCategory"
       :filtered-products="productsByCategory || []"
       :is-loading-products="isLoadingProductsByCategory"
       :selected-category="selectedCategory"
@@ -101,6 +114,9 @@ const onPondSettings = () => {
 
   <!-- Modal Components -->
   <ModalAddProduct v-model:visible="showAddModal" />
+
+   <!-- Export Modal -->
+  <ModalExportProduct v-model:visible="showExportModal" />
 
   <ModalEditProduct
     v-model:visible="showEditModal"
@@ -113,5 +129,12 @@ const onPondSettings = () => {
     :product-data="selectedProduct"
     @edit-product="openEditModal"
     @product-deleted="handleProductDeleted"
+  />
+
+  <!-- Search Modal -->
+  <ModalSearchProduct
+    v-model:visible="showSearchModal"
+    :selected-category="selectedCategory"
+    @select-category="selectCategory"
   />
 </template>

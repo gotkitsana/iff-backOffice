@@ -1,26 +1,33 @@
 <script setup lang="ts">
 import type { ICategory } from '@/stores/product/category';
-import type { ICategoryOption } from '@/stores/product/product';
+import { useProductStore, type ICategoryOption, type IProduct } from '@/stores/product/product';
 import { Card } from 'primevue'
 import { orderBy } from 'lodash-es'
+import { useQuery } from '@tanstack/vue-query';
 
 defineProps<{
   categoryOptions: ICategoryOption[]
   selectedCategory: ICategory | null
+  showCount?: boolean
 }>()
 
 defineEmits<{
   'select-category': [value: ICategory]
 }>()
+
+const productStore = useProductStore()
+const { data: products } = useQuery<IProduct[]>({
+  queryKey: ['products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
+const getCategoryCount = (categoryId: string) => {
+  if (!products.value) return 0
+  return products.value.filter((product) => product?.category?._id === categoryId).length
+}
 </script>
 
 <template>
-  <div>
-    <div class="mb-3">
-      <h2 class="text-xl font-semibold! text-gray-800 mb-1">เลือกหมวดหมู่</h2>
-      <p class="text-gray-600">เลือกหมวดหมู่สินค้าที่ต้องการเพิ่ม</p>
-    </div>
-
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
       <Card
         v-for="category in orderBy(categoryOptions, 'cat')"
@@ -41,22 +48,22 @@ defineEmits<{
               }`"
             >
               <i
-                :class="`${category.icon} text-xl ${
+                :class="`${category.icon} text-lg ${
                   selectedCategory?._id === category._id ? 'text-blue-700' : 'text-gray-500'
                 }`"
               ></i>
             </div>
             <h3
-              :class="`font-[500]! text-base ${
+              :class="`font-[500]! text-sm ${
                 selectedCategory?._id === category._id ? 'text-blue-700' : 'text-gray-700'
               }`"
             >
               {{ category.name }}
             </h3>
+            <p v-if="showCount" class="text-xs text-gray-600">({{ getCategoryCount(category._id) }} รายการ)</p>
           </div>
         </template>
       </Card>
     </div>
-  </div>
 </template>
 

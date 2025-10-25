@@ -97,7 +97,7 @@ const handleClose = () => {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    :style="{ width: '50rem' }"
+    :style="{ width: '65rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
     :pt="{
       header: 'p-4',

@@ -19,20 +19,22 @@ defineEmits<{
   'select-quality-grade': [grade: string]
   'open-add-modal': []
   'on-pond-settings': []
+  'open-search-modal': []
+  'open-export-modal': []
 }>()
 
-const categoryStore = useCategoryStore()
-const productStore = useProductStore()
+// const categoryStore = useCategoryStore()
+// const productStore = useProductStore()
 
-const { data: categories } = useQuery<ICategory[]>({
-  queryKey: ['categories'],
-  queryFn: () => categoryStore.onGetCategory(0),
-})
+// const { data: categories } = useQuery<ICategory[]>({
+//   queryKey: ['categories'],
+//   queryFn: () => categoryStore.onGetCategory(0),
+// })
 
-const { data: products } = useQuery<IProduct[]>({
-  queryKey: ['products'],
-  queryFn: () => productStore.onGetProducts(),
-})
+// const { data: products } = useQuery<IProduct[]>({
+//   queryKey: ['products'],
+//   queryFn: () => productStore.onGetProducts(),
+// })
 
 const qualityGradeOptions = [
   { label: 'Tategoi', value: 'tategoi' },
@@ -44,17 +46,17 @@ const isFishSelected = computed(() => {
   return props.selectedCategory?.value === 'fish'
 })
 
-const categorySelectOptions = computed(() => {
-  return categories.value?.map((category) => ({
-    ...category,
-    label: `${category.name} (${getCategoryCount(category._id)} รายการ)`,
-  }))
-})
+// const categorySelectOptions = computed(() => {
+//   return categories.value?.map((category) => ({
+//     ...category,
+//     label: `${category.name} (${getCategoryCount(category._id)} รายการ)`,
+//   }))
+// })
 
-const getCategoryCount = (categoryId: string) => {
-  if (!products.value) return 0
-  return products.value.filter((product) => product?.category?._id === categoryId).length
-}
+// const getCategoryCount = (categoryId: string) => {
+//   if (!products.value) return 0
+//   return products.value.filter((product) => product?.category?._id === categoryId).length
+// }
 
 const getCategoryStats = (category: ICategory) => {
   const productsCategory = props.productsCategory
@@ -106,16 +108,36 @@ const getCategoryStats = (category: ICategory) => {
   <div class="space-y-4">
     <!-- Main Filter Section -->
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <div class="flex items-center flex-wrap justify-between gap-2 mb-2">
+      <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
           <i class="pi pi-filter text-blue-600"></i>
-          <h3 class="text-lg font-semibold text-gray-800">กรองสินค้าตามหมวดหมู่</h3>
+          <h3 class="text-base font-[500]! text-gray-800">กรองสินค้าตามหมวดหมู่</h3>
         </div>
 
         <div class="flex items-center gap-2">
-          <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small" @click="$emit('open-add-modal')" />
+          <Button
+            label="ค้นหา"
+            icon="pi pi-search"
+            severity="info"
+            size="small"
+            @click="$emit('open-search-modal')"
+          />
 
-          <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small" />
+          <Button
+            label="นำเข้า"
+            icon="pi pi-file-import"
+            severity="success"
+            size="small"
+            @click="$emit('open-add-modal')"
+          />
+
+          <Button
+            label="เบิกออก"
+            icon="pi pi-file-export"
+            severity="success"
+            size="small"
+            @click="$emit('open-export-modal')"
+          />
 
           <Button
             label="ตั้งค่าบ่อ"
@@ -124,13 +146,12 @@ const getCategoryStats = (category: ICategory) => {
             size="small"
             @click="$emit('on-pond-settings')"
           />
-
         </div>
       </div>
 
       <!-- Category Select -->
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-        <div>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+        <!-- <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">เลือกหมวดหมู่สินค้า</label>
           <Select
             :model-value="selectedCategory"
@@ -156,20 +177,35 @@ const getCategoryStats = (category: ICategory) => {
               </div>
             </template>
           </Select>
-        </div>
+        </div> -->
 
         <!-- Quality Grade Filter (for Fish only) -->
-        <div v-if="isFishSelected">
-          <label class="text-sm font-medium text-gray-700 mb-1 block">เกรดคุณภาพ</label>
-          <Select
-            :model-value="selectedQualityGrade"
-            @update:model-value="$emit('select-quality-grade', $event)"
-            :options="qualityGradeOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="เลือกเกรดคุณภาพ"
-            class="w-full"
-          />
+        <div v-if="isFishSelected" class="flex items-center gap-2">
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เกรดคุณภาพ</label>
+            <Select
+              :model-value="selectedQualityGrade"
+              @update:model-value="$emit('select-quality-grade', $event)"
+              :options="qualityGradeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเกรดคุณภาพ"
+              class="w-full"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เกรดคุณภาพ</label>
+            <Select
+              :model-value="selectedQualityGrade"
+              @update:model-value="$emit('select-quality-grade', $event)"
+              :options="qualityGradeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเกรดคุณภาพ"
+              class="w-full"
+            />
+          </div>
         </div>
       </div>
 
