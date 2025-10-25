@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore, type IFoodFilters, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
@@ -14,8 +14,6 @@ import ProductTable from '../../components/product/ProductTable.vue'
 import type { ICategory } from '../../stores/product/category'
 import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
 import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
-
-
 
 // Router & Stores
 const router = useRouter()
@@ -38,10 +36,11 @@ const foodFilters = ref<IFoodFilters>({
   seedSize: null,
 })
 
+const selectedCategoryId = computed(() => selectedCategory.value?._id)
 const { data: productsByCategory, isLoading: isLoadingProductsByCategory } = useQuery<IProduct[]>({
-  queryKey: ['get_products_by_category', selectedCategory],
-  queryFn: () => productStore.onGetProductsByCategory(selectedCategory.value?._id as string),
-  enabled: computed(() => !!selectedCategory.value?._id),
+  queryKey: ['get_products_by_category', selectedCategoryId],
+  queryFn: () => productStore.onGetProductsByCategory(selectedCategoryId.value as string),
+  enabled: computed(() => !!selectedCategoryId.value),
 })
 
 const filteredProducts = computed(() => {

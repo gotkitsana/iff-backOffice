@@ -21,12 +21,14 @@ const getAvailableProductsCount = (products: IProduct[]) => products.filter((p) 
 
 const getSoldProductsCount = (products: IProduct[]) => products.filter((p) => p.sold).length
 
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
     currency: 'THB',
   }).format(value)
 }
+
 </script>
 
 <template>

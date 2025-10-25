@@ -311,7 +311,7 @@ const mapDynamicFormToProductForm = () => {
       case 'foodType':
         productForm.value.foodType = value as string
         break
-      
+
     }
   })
 }
@@ -352,11 +352,10 @@ const handleSubmit = async () => {
     category: selectedCategory.value._id,
   }
 
-  console.log(payload)
-
   createProduct(payload)
 }
 
+const selectedCategoryId = computed(() => selectedCategory.value?._id)
 const queryClient = useQueryClient()
 const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
   mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
@@ -365,6 +364,7 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
     if (data.data) {
       toast.success('เพิ่มสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
+      queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
       handleClose()
     } else {
       toast.error(data.error.message || 'เพิ่มสินค้าไม่สำเร็จ')

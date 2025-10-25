@@ -36,8 +36,9 @@ const getStatusTag = (sold: boolean) => {
     : { label: 'พร้อมขาย', severity: 'success' }
 }
 
-const getImageUrl = (image: IProductImage) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image.filename}`
+const getImageUrl = (image: IProductImage | undefined) => {
+  if (!image) return ''
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image?.filename}`
 }
 
 const getSeedSizeLabel = (seedSize: number) => {
@@ -99,11 +100,13 @@ const foodColumns = ref([
           class: ['flex items-center gap-1.5'],
         },
         [
-          h('img', {
-            src: getImageUrl(slotProps.data.images[0]),
-            alt: 'product image',
-            class: 'w-auto h-8 object-contain rounded-lg',
-          }),
+          slotProps.data.images && slotProps.data.images.length > 0
+            ? h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'product image',
+                class: 'w-auto h-8 object-contain rounded-lg',
+              })
+            : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.name),
         ]
       ),
@@ -136,7 +139,7 @@ const foodColumns = ref([
         value: getSeedTypeLabel(slotProps.data.seedType),
         severity: 'info',
         size: 'small',
-        class:'text-xs'
+        class: 'text-xs',
       }),
   },
   {
@@ -149,7 +152,7 @@ const foodColumns = ref([
         value: getSeedSizeLabel(slotProps.data.seedSize),
         severity: 'success',
         size: 'small',
-        class:'text-xs'
+        class: 'text-xs',
       }),
   },
   {
@@ -168,16 +171,18 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.productionDate ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.productionDate),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.productionDate
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.productionDate),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'expiryDate',
@@ -185,16 +190,18 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.expiryDate ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.expiryDate),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.expiryDate
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.expiryDate),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'marketPrice',
@@ -202,20 +209,22 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.marketPrice ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5 justify-end'],
-        },
-        [
-          h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
-          h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data.marketPrice)
-          ),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.marketPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data.marketPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'costPrice',
@@ -223,20 +232,22 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.costPrice ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5 justify-end'],
-        },
-        [
-          h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
-          h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data.costPrice)
-          ),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.costPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data.costPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'customerPrice',
@@ -244,20 +255,22 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.customerPrice ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5 justify-end'],
-        },
-        [
-          h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
-          h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data.customerPrice)
-          ),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.customerPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data.customerPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'merchantPrice',
@@ -265,36 +278,40 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.merchantPrice ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5 justify-end'],
-        },
-        [
-          h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
-          h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data.merchantPrice)
-          ),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.merchantPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data.merchantPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'balance',
     header: 'สินค้าคงเหลือ',
     headCell: '!min-w-[6rem] justify-end',
     render: (slotProps: any) =>
-      slotProps.data.balance ? h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5 justify-end'],
-        },
-        [
-          h('i', { class: 'pi pi-box text-green-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
-        ]
-      ) : h('span', '-'),
+      slotProps.data.balance
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-box text-green-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
+            ]
+          )
+        : h('span', '-'),
   },
 ])
 
