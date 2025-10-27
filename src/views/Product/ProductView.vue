@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, toRef } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProductStore, type ICategoryOption, type IFields, type IFishFilters, type IFoodFilters, type IProduct } from '../../stores/product/product'
+import {
+  useProductStore,
+  type ICategoryOption,
+  type IFields,
+  type IFishFilters,
+  type IFoodFilters,
+  type IProduct,
+} from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
-import { toast } from 'vue3-toastify'
 import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
 import ModalEditProduct from '../../components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '../../components/product/modal/ModalProductDetail.vue'
@@ -14,6 +20,7 @@ import ProductTable from '../../components/product/ProductTable.vue'
 import { useCategoryStore, type ICategory } from '../../stores/product/category'
 import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
 import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
+import ModalDeleteProduct from '../../components/product/modal/ModalDeleteProduct.vue'
 
 // Router & Stores
 const router = useRouter()
@@ -62,74 +69,62 @@ const filteredProducts = computed(() => {
   // Apply food filters if category is food
   if (selectedCategory.value?.value === 'food') {
     if (foodFilters.value.sku) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.sku?.toLowerCase().includes(foodFilters.value.sku.toLowerCase())
       )
     }
 
     if (foodFilters.value.brandName) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.name?.toLowerCase().includes(foodFilters.value.brandName.toLowerCase())
       )
     }
 
     if (foodFilters.value.foodType) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.foodType?.toLowerCase().includes(foodFilters.value.foodType.toLowerCase())
       )
     }
 
     if (foodFilters.value.seedType) {
-      filtered = filtered.filter(product =>
-        product.seedType === foodFilters.value.seedType
-      )
+      filtered = filtered.filter((product) => product.seedType === foodFilters.value.seedType)
     }
 
     if (foodFilters.value.seedSize !== null) {
-      filtered = filtered.filter(product =>
-        product.seedSize === foodFilters.value.seedSize
-      )
+      filtered = filtered.filter((product) => product.seedSize === foodFilters.value.seedSize)
     }
   }
 
   // Apply quality grade filter for fish
   if (selectedCategory.value?.value === 'fish') {
     if (fishFilters.value.sku) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.sku?.toLowerCase().includes(fishFilters.value.sku.toLowerCase())
       )
     }
     if (fishFilters.value.species) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.species?.name?.toLowerCase().includes(fishFilters.value.species.toLowerCase())
       )
     }
     if (fishFilters.value.age) {
-      filtered = filtered.filter(product =>
-        product.age?.includes(fishFilters.value.age)
-      )
+      filtered = filtered.filter((product) => product.age?.includes(fishFilters.value.age))
     }
     if (fishFilters.value.farm) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.farm?.toLowerCase().includes(fishFilters.value.farm.toLowerCase())
       )
     }
     if (fishFilters.value.gender) {
-      filtered = filtered.filter(product =>
-        product.gender === fishFilters.value.gender
-      )
+      filtered = filtered.filter((product) => product.gender === fishFilters.value.gender)
     }
 
     if (fishFilters.value.size !== null) {
-      filtered = filtered.filter(product =>
-        product.size === fishFilters.value.size
-      )
+      filtered = filtered.filter((product) => product.size === fishFilters.value.size)
     }
 
     if (fishFilters.value.price !== null) {
-      filtered = filtered.filter(product =>
-        product.price >= fishFilters.value.price!
-      )
+      filtered = filtered.filter((product) => product.price >= fishFilters.value.price!)
     }
   }
 
@@ -220,10 +215,6 @@ const openDeleteModal = (product: IProduct) => {
   showDeleteModal.value = true
 }
 
-const handleProductDeleted = () => {
-  toast.success('ลบสินค้าสำเร็จ')
-}
-
 const selectCategory = (category: ICategory) => {
   selectedCategory.value = category
   if (category.value === 'food') {
@@ -261,7 +252,6 @@ const onPondSettings = () => {
 </script>
 
 <template>
-
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
@@ -315,12 +305,11 @@ const onPondSettings = () => {
     @edit-product="openEditModal"
   />
 
-  <!-- <ModalDeleteProduct
+  <ModalDeleteProduct
     v-if="selectedProduct"
     v-model:visible="showDeleteModal"
     :product-data="selectedProduct"
-    @product-deleted="handleProductDeleted"
-  /> -->
+  />
 
   <!-- Search Modal -->
   <ModalSearchProduct
