@@ -98,7 +98,7 @@ const selectedProductDetails = computed(() => {
     return {
       ...availableProducts.value.find((p) => p._id === product.id),
       quantity: product.quantity,
-      category: handleFindCategory(availableProducts.value?.find((p) => p._id === product.id)?.category._id),
+      category: handleFindCategory(availableProducts.value?.find((p) => p._id === product.id)?.category?._id),
     }
   })
 })

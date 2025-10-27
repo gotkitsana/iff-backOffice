@@ -1,27 +1,41 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, InputText, Textarea, Select, InputNumber, Button, RadioButton } from 'primevue'
+import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
   type IUpdateProductPayload,
   type IProduct,
+  type ICategoryOption,
+  type IFieldsKey,
+  type IProductImage,
+  type ICertificateFile,
+  type ISeedSizeValue,
+  type IUploadImageResponse,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
+import type { ICategory } from '@/stores/product/category'
+import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
+import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import dayjs from 'dayjs'
 
 // Props
 const props = defineProps<{
   visible: boolean
   productData: IProduct | null
+  categoryOptionsUI: ICategoryOption[]
+  selectedCategory: ICategory | null
 }>()
 
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'product-updated': []
 }>()
 
-// Stores
-const productStore = useProductStore()
+const selectedCategoryId = computed(() => props.selectedCategory)
+const selectedCategoryInfo = computed(() => {
+  return props.categoryOptionsUI.find((cat) => cat._id === selectedCategoryId.value?._id)
+})
 
 // Form data
 const productForm = ref<IUpdateProductPayload>({
@@ -29,9 +43,17 @@ const productForm = ref<IUpdateProductPayload>({
   type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
   name: '',
   lotNumber: '',
-  price: null,
+  code: '',
+  price: 0,
+  species: {
+    _id: '',
+    name: '',
+  },
   detail: '',
-  category: '',
+  category: {
+    _id: '',
+    name: '',
+  },
   sold: false,
   youtube: '',
   images: [],
@@ -55,158 +77,373 @@ const productForm = ref<IUpdateProductPayload>({
   seedType: '',
   seedSize: undefined,
   balance: 0,
+  food: {
+    type: '',
+    produceDate: 0,
+    expireDate: 0,
+    marketPrice: 0,
+    costPrice: 0,
+    customerPrice: 0,
+    dealerPrice: 0,
+  },
+  cat: 0,
+  uat: 0,
 })
 
-// Options
-const productTypes = [
-  { label: 'ปลาคาร์ฟ', value: 1 },
-  { label: 'ปลาทอง', value: 2 },
-  { label: 'ปลาอื่นๆ', value: 3 },
-]
-
-const genderOptions = [
-  { label: 'ตัวผู้', value: 1 },
-  { label: 'ตัวเมีย', value: 2 },
-]
-
-// Computed
-const isAuctionProduct = computed(() => productForm.value.auctionOnly === 1)
-const isKoiFish = computed(() => productForm.value.type === 1)
+const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
+const productImages = ref<IProductImage[]>([])
+const certificateFile = ref<ICertificateFile | null>(null)
 
 // Watch for props changes to populate form
 watch(
   () => props.productData,
   (newProductData) => {
     if (newProductData) {
-      populateForm(newProductData)
+      initializeDynamicForm(newProductData)
     }
   },
   { immediate: true }
 )
 
+const initializeDynamicForm = (newProductData: IProduct) => {
+  if (!selectedCategoryInfo.value || !newProductData) return
+
+  const formData: Record<string, any> = {}
+
+  selectedCategoryInfo.value.fields.forEach((field) => {
+    const fieldValue = newProductData[field.key as keyof IProduct]
+
+    // Handle special cases for nested fields
+    // if (field.key === 'species' && fieldValue && typeof fieldValue === 'object') {
+    //   formData[field.key] = (fieldValue as any)?._id || ''
+    // } else
+    if (field.key === 'foodType' && newProductData.food) {
+      // Handle knocknested food.type
+      formData[field.key] = newProductData.food.type || ''
+    } else if (field.key === 'produceDate' && newProductData.food) {
+      formData[field.key] = dayjs(newProductData.food.produceDate).toDate() || ''
+    } else if (field.key === 'expireDate' && newProductData.food) {
+      formData[field.key] = dayjs(newProductData.food.expireDate).toDate() || ''
+    } else if (field.key === 'marketPrice' && newProductData.food) {
+      formData[field.key] = newProductData.food.marketPrice || 0
+    } else if (field.key === 'costPrice' && newProductData.food) {
+      formData[field.key] = newProductData.food.costPrice || 0
+    } else if (field.key === 'customerPrice' && newProductData.food) {
+      formData[field.key] = newProductData.food.customerPrice || 0
+    } else if (field.key === 'dealerPrice' && newProductData.food) {
+      formData[field.key] = newProductData.food.dealerPrice || 0
+    } else {
+      formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
+    }
+  })
+
+  dynamicFormData.value = formData
+
+  productForm.value = {
+    ...newProductData,
+    _id: newProductData._id,
+    category: newProductData.category || { _id: '', name: '' },
+    species: newProductData.species || null,
+    food: newProductData.food || null,
+  }
+
+  productImages.value = newProductData.images.map((img) => ({
+    filename: img.filename,
+    type: img.type,
+    preview: `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${img.filename}`,
+  }))
+
+  // Set certificate
+  if (newProductData.certificate) {
+    certificateFile.value = {
+      filename: newProductData.certificate,
+      preview: `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
+        newProductData.certificate
+      }`,
+    }
+  }
+}
+
 // Validation
 const validateForm = () => {
-  if (!productForm.value.name.trim()) {
-    toast.error('กรุณากรอกชื่อสินค้า')
+  if (!selectedCategoryInfo.value) {
+    toast.error('กรุณาเลือกหมวดหมู่สินค้า')
     return false
   }
-  if (!productForm.value.sku?.trim()) {
-    toast.error('กรุณากรอก SKU')
-    return false
+
+  // Validate required fields
+  for (const field of selectedCategoryInfo.value.fields) {
+    if (field.required && !dynamicFormData.value![field.key]) {
+      toast.error(`กรุณากรอก${field.label}`)
+      return false
+    }
   }
-  if (!productForm.value.farm?.trim()) {
-    toast.error('กรุณากรอกชื่อฟาร์ม')
-    return false
-  }
-  if (productForm.value.size && productForm.value.size <= 0) {
-    toast.error('กรุณากรอกขนาดที่ถูกต้อง')
-    return false
-  }
-  if (!isAuctionProduct.value && productForm.value.price && productForm.value.price <= 0) {
-    toast.error('กรุณากรอกราคาที่ถูกต้อง')
-    return false
-  }
-  if (isAuctionProduct.value && !isKoiFish.value) {
-    toast.error('สินค้าสำหรับประมูลต้องเป็นปลาคาร์ฟเท่านั้น')
-    return false
-  }
+
   return true
 }
 
-// Handlers
-const populateForm = (productData: IProduct) => {
-  if (!productData) return
+const editableFields = computed(() => {
+  if (!selectedCategoryInfo.value) return []
+  return selectedCategoryInfo.value.fields.filter((field) => field.key !== 'category')
+})
+const mapDynamicFormToProductForm = () => {
+  if (!editableFields.value) return
 
-  productForm.value = {
-    _id: productData._id,
-    type: productData.type,
-    name: productData.name,
-    lotNumber: productData.lotNumber,
-    price: productData.price,
-    detail: productData.detail,
-    category: productData.category._id,
-    sold: productData.sold,
-    youtube: productData.youtube,
-    images: productData.images,
-    certificate: productData.certificate,
-    auctionOnly: productData.auctionOnly,
+  editableFields.value.forEach((field) => {
+    const value = dynamicFormData.value![field.key]
 
-    // ปลา fields
-    sku: productData.sku,
-    size: productData.size,
-    farm: productData.farm,
-    birth: productData.birth,
-    age: productData.age,
-    gender: productData.gender,
-    weight: productData.weight,
-    breeders: productData.breeders,
-    quality: productData.quality,
-    pond: productData.pond,
-    rate: productData.rate,
+    switch (field.key) {
+      case 'name':
+        productForm.value.name = value as string
+        break
+      case 'lotNumber':
+        productForm.value.lotNumber = value as string
+        break
+      case 'code':
+        productForm.value.code = value as string
+        break
+      case 'price':
+        productForm.value.price = value as number
+        break
+      case 'detail':
+        productForm.value.detail = value as string
+        break
+      case 'youtube':
+        productForm.value.youtube = value as string
+        break
+      case 'weight':
+        productForm.value.weight = value as number
+        break
+      case 'sku':
+        productForm.value.sku = value as string
+        break
+      case 'size':
+        productForm.value.size = value as number
+        break
+      case 'farm':
+        productForm.value.farm = value as string
+        break
+      case 'birth':
+        productForm.value.birth = value as string
+        break
+      case 'age':
+        productForm.value.age = value as string
+        break
+      case 'gender':
+        productForm.value.gender = value as string
+        break
+      case 'breeders':
+        productForm.value.breeders = value as string
+        break
+      case 'quality':
+        productForm.value.quality = value as string
+        break
+      case 'pond':
+        productForm.value.pond = value as string
+        break
+      case 'rate':
+        productForm.value.rate = value as number
+        break
+      case 'seedType':
+        productForm.value.seedType = value as string
+        break
+      case 'seedSize':
+        productForm.value.seedSize = Number(value) as ISeedSizeValue
+        break
+      case 'balance':
+        productForm.value.balance = value as number
+        break
+      case 'produceDate':
+        productForm.value.food!.produceDate = dayjs(value as Date).valueOf()
+        break
+      case 'expireDate':
+        productForm.value.food!.expireDate = dayjs(value as Date).valueOf()
+        break
+      case 'marketPrice':
+        productForm.value.food!.marketPrice = value as number
+        break
+      case 'costPrice':
+        productForm.value.food!.costPrice = value as number
+        break
+      case 'customerPrice':
+        productForm.value.food!.customerPrice = value as number
+        break
+      case 'dealerPrice':
+        productForm.value.food!.dealerPrice = value as number
+        break
+      case 'foodType':
+        productForm.value.food!.type = value as string
+        break
 
-    // สินค้าอื่น fields
-    seedType: productData.seedType,
-    seedSize: productData.seedSize,
-    balance: productData.balance,
-  }
-}
 
-const handleSubmit = async () => {
-  if (!props.productData || !validateForm()) return
-
-  isSubmitting.value = true
-
-  try {
-    const payload: IUpdateProductPayload = {
-      _id: props.productData._id,
-      type: props.productData.type,
-      name: props.productData.name,
-      lotNumber: props.productData.lotNumber,
-      price: props.productData.price,
-      detail: props.productData.detail,
-      category: props.productData.category._id,
-      sold: props.productData.sold,
-      youtube: props.productData.youtube,
-      images: props.productData.images,
-      certificate: props.productData.certificate,
-      auctionOnly: props.productData.auctionOnly,
-
-      // ปลา fields
-      sku: props.productData.sku,
-      size: props.productData.size,
-      farm: props.productData.farm,
-      birth: props.productData.birth,
-      age: props.productData.age,
-      gender: props.productData.gender,
-      weight: props.productData.weight,
-      breeders: props.productData.breeders,
-      quality: props.productData.quality,
-      pond: props.productData.pond,
-      rate: props.productData.rate,
-
-      // สินค้าอื่น fields
-      seedType: props.productData.seedType,
-      seedSize: props.productData.seedSize,
-      balance: props.productData.balance,
+      // case 'species':
+      //   const selectedSpecies = speciesOptions.value.find((s: any) => s.value === value)
+      //   productForm.value.species = selectedSpecies ? {
+      //     _id: value as string,
+      //     name: '',
+      //   } : null
+      //   break
     }
-
-    await productStore.onUpdateProduct(payload)
-    emit('product-updated')
-    handleClose()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการอัปเดตสินค้า')
-    console.error(error)
-  } finally {
-    isSubmitting.value = false
-  }
+  })
 }
 
 const isSubmitting = ref(false)
+const handleSubmit = async () => {
+  isSubmitting.value = true
+  if (!props.productData) {
+    toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า')
+    return
+  }
+
+  if (!validateForm()) {
+    isSubmitting.value = false
+    return
+  }
+
+  mapDynamicFormToProductForm()
+
+  const payload: IUpdateProductPayload = {
+    ...productForm.value,
+    _id: props.productData._id,
+    type: props.productData.type,
+    category: props.productData.category,
+    images: productImages.value.map((img) => ({
+      filename: img.filename,
+      type: img.type,
+    })),
+    certificate: certificateFile.value?.filename || '',
+  }
+
+  updateProduct(payload)
+
+  // handleClose()
+}
+
+const queryClient = useQueryClient()
+const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+  onSuccess: (data: any) => {
+    if (data.data.modifiedCount > 0) {
+      toast.success('อัปเดตสินค้าสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_products'] })
+      queryClient.invalidateQueries({ queryKey: ['get_products_by_category'] })
+      handleClose()
+      isSubmitting.value = false
+    } else {
+      toast.error(data.error?.message || 'อัปเดตสินค้าไม่สำเร็จ')
+      isSubmitting.value = false
+    }
+  },
+  onError: (error: any) => {
+    console.error('Update error:', error)
+    toast.error(error.response?.data?.message || 'อัปเดตสินค้าไม่สำเร็จ')
+    isSubmitting.value = false
+  },
+})
 
 const handleClose = () => {
   isSubmitting.value = false
   emit('update:visible', false)
 }
+
+const speciesOptions = computed(() => {
+  return []
+})
+
+const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
+  dynamicFormData.value![key] = value
+}
+
+const isFishCategory = computed(() => selectedCategoryId.value?.value === 'fish')
+
+const validateFileUpload = (file: File, maxSize: number = 2000000) => {
+  if (file.size > maxSize) {
+    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 2MB)')
+    return false
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
+    return false
+  }
+
+  return true
+}
+
+const onProductImageSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file && validateFileUpload(file)) {
+    uploadImage(file)
+  }
+}
+
+const onCertificateSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file && validateFileUpload(file)) {
+    uploadCertificate(file)
+  }
+}
+
+const removeProductImage = (index: number) => {
+  productImages.value.splice(index, 1)
+  productForm.value.images = productImages.value.map((img) => ({
+    filename: img.filename,
+    type: img.type,
+  }))
+}
+
+const removeCertificate = () => {
+  certificateFile.value = null
+  productForm.value.certificate = ''
+}
+
+const productStore = useProductStore()
+const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+
+    productImages.value.push({
+      filename,
+      type: 'image',
+      preview,
+    })
+
+    // Update productForm.images
+    productForm.value.images = productImages.value.map((img) => ({
+      filename: img.filename,
+      type: img.type,
+    }))
+
+    toast.success('อัปโหลดรูปภาพสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
+  },
+})
+
+const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+
+    certificateFile.value = {
+      filename,
+      preview,
+    }
+
+    productForm.value.certificate = filename
+    toast.success('อัปโหลดใบรับรองสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
+  },
+})
+
 </script>
 
 <template>
@@ -224,274 +461,40 @@ const handleClose = () => {
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
         >
           <i class="pi pi-pencil text-white text-lg"></i>
         </div>
         <div>
           <h3 class="text-lg font-semibold! text-gray-800">แก้ไขข้อมูลสินค้า</h3>
-          <p class="text-sm text-gray-600">แก้ไขข้อมูลสินค้า</p>
         </div>
       </div>
     </template>
 
-    <div class="space-y-6">
-      <!-- Product Type Selection -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-tags text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ประเภทสินค้า</h4>
-        </div>
+    <div v-if="selectedCategoryInfo" class="space-y-4">
+      <!-- Dynamic Form Fields -->
+       {{ dynamicFormData }}
+      <DynamicFormField
+        v-if="dynamicFormData"
+        :fields="editableFields"
+        :form-data="dynamicFormData"
+        :is-submitting="isSubmitting"
+        :species-options="speciesOptions"
+        @update-field="updateDynamicField"
+      />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-2 block">ประเภทการขาย</label>
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <RadioButton v-model="productForm.auctionOnly" :value="0" inputId="sale" />
-                <label for="sale" class="text-sm text-gray-700">สินค้าสำหรับขาย</label>
-              </div>
-              <div class="flex items-center gap-2">
-                <RadioButton v-model="productForm.auctionOnly" :value="1" inputId="auction" />
-                <label for="auction" class="text-sm text-gray-700"
-                  >สินค้าสำหรับประมูล (ปลาคาร์ฟเท่านั้น)</label
-                >
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-fish mr-1.5 !text-sm"></i>
-              ประเภทปลา
-            </label>
-            <Select
-              v-model="productForm.type"
-              :options="productTypes"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              :disabled="isAuctionProduct"
-            />
-            <small v-if="isAuctionProduct" class="text-orange-600 text-xs">
-              สินค้าสำหรับประมูลจะถูกตั้งเป็นปลาคาร์ฟอัตโนมัติ
-            </small>
-          </div>
-        </div>
-      </div>
-
-      <!-- Basic Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-info-circle text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลพื้นฐาน</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-tag mr-1.5 !text-sm"></i>
-              ชื่อสินค้า *
-            </label>
-            <InputText v-model="productForm.name" placeholder="กรอกชื่อสินค้า" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-barcode mr-1.5 !text-sm"></i>
-              SKU *
-            </label>
-            <InputText v-model="productForm.sku" placeholder="กรอก SKU" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-building mr-1.5 !text-sm"></i>
-              ฟาร์ม *
-            </label>
-            <InputText v-model="productForm.farm" placeholder="กรอกชื่อฟาร์ม" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-sort-numeric-up mr-1.5 !text-sm"></i>
-              ขนาด (ซม.) *
-            </label>
-            <InputNumber
-              v-model="productForm.size"
-              :min="0"
-              :max="200"
-              fluid
-              size="small"
-              placeholder="กรอกขนาด"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-users mr-1.5 !text-sm"></i>
-              เพศ
-            </label>
-            <Select
-              v-model="productForm.gender"
-              :options="genderOptions"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-calendar mr-1.5 !text-sm"></i>
-              อายุ
-            </label>
-            <InputText v-model="productForm.age" placeholder="เช่น 2 ปี" fluid size="small" />
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-            <i class="pi pi-file-edit mr-1.5 !text-sm"></i>
-            รายละเอียด
-          </label>
-          <Textarea
-            v-model="productForm.detail"
-            placeholder="กรอกรายละเอียดสินค้า"
-            rows="3"
-            fluid
-            size="small"
-          />
-        </div>
-      </div>
-
-      <!-- Pricing Information -->
-      <div
-        v-if="!isAuctionProduct"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-dollar text-yellow-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลราคา</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-              ราคา (บาท) *
-            </label>
-            <InputNumber
-              v-model="productForm.price"
-              :min="0"
-              :max="999999999"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-star mr-1.5 !text-sm"></i>
-              คะแนนคุณภาพ
-            </label>
-            <InputNumber
-              v-model="productForm.rate"
-              :min="0"
-              :max="10"
-              :step="0.1"
-              fluid
-              size="small"
-              placeholder="0-10"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Auction Information -->
-      <div v-if="isAuctionProduct" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-gavel text-purple-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลประมูล</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-star mr-1.5 !text-sm"></i>
-              คะแนนคุณภาพ *
-            </label>
-            <InputNumber
-              v-model="productForm.rate"
-              :min="0"
-              :max="10"
-              :step="0.1"
-              fluid
-              size="small"
-              placeholder="0-10"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-certificate mr-1.5 !text-sm"></i>
-              ใบรับรอง
-            </label>
-            <InputText
-              v-model="productForm.certificate"
-              placeholder="กรอกข้อมูลใบรับรอง"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Additional Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-link text-gray-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลเพิ่มเติม</h4>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-youtube mr-1.5 !text-sm"></i>
-              ลิงก์ YouTube
-            </label>
-            <InputText
-              v-model="productForm.youtube"
-              placeholder="https://youtube.com/watch?v=..."
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Status Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-cog text-gray-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">สถานะสินค้า</h4>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <input
-            v-model="productForm.sold"
-            type="checkbox"
-            id="sold"
-            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-          />
-          <label for="sold" class="text-sm text-gray-700">ขายแล้ว</label>
-        </div>
-      </div>
+      <!-- File Upload Section -->
+      <FileUploadSection
+        :product-images="productImages"
+        :certificate-file="certificateFile"
+        :show-certificate="isFishCategory"
+        :is-uploading-image="isUploadingImage"
+        :is-uploading-certificate="isUploadingCertificate"
+        @product-image-select="onProductImageSelect"
+        @certificate-select="onCertificateSelect"
+        @remove-product-image="removeProductImage"
+        @remove-certificate="removeCertificate"
+      />
     </div>
 
     <template #footer>
@@ -504,12 +507,12 @@ const handleClose = () => {
           size="small"
         />
         <Button
-          label="อัปเดตข้อมูล"
+          label="ยืนยัน"
           icon="pi pi-check"
           @click="handleSubmit"
           severity="success"
           size="small"
-          :loading="isSubmitting"
+          :loading="isUpdatingProduct"
         />
       </div>
     </template>

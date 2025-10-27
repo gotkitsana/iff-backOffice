@@ -6,6 +6,7 @@ import {
   type ICategoryOption,
   type ICertificateFile,
   type ICreateProductPayload,
+  type IFields,
   type IFieldsKey,
   type IProductImage,
   type ISeedSizeValue,
@@ -22,10 +23,12 @@ import DynamicFormField from '@/components/product/add_product/DynamicFormField.
 import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
 import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
 import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
+import dayjs from 'dayjs'
 
 // Props
-defineProps<{
+const props = defineProps<{
   visible: boolean
+  categoryOptionsUI: ICategoryOption[]
 }>()
 
 // Emits
@@ -35,9 +38,6 @@ const emit = defineEmits<{
 
 // Stores
 const productStore = useProductStore()
-const categoryStore = useCategoryStore()
-const salesStore = useSalesStore()
-
 // State
 const currentStep = ref(1) // 1 = เลือกหมวดหมู่, 2 = กรอกข้อมูล
 const selectedCategory = ref<ICategory | null>(null)
@@ -47,6 +47,7 @@ const isSubmitting = ref(false)
 const productForm = ref<ICreateProductPayload>({
   type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
   name: '',
+  code: '',
   lotNumber: '',
   price: null,
   detail: '',
@@ -69,11 +70,22 @@ const productForm = ref<ICreateProductPayload>({
   quality: '',
   pond: '',
   rate: 0,
+  species: undefined,
 
   // สินค้าอื่น fields
   seedType: '',
   seedSize: undefined,
   balance: 0,
+
+  food: {
+    type: '',
+    produceDate: 0,
+    expireDate: 0,
+    marketPrice: 0,
+    costPrice: 0,
+    customerPrice: 0,
+    dealerPrice: 0,
+  },
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -81,11 +93,6 @@ const productImages = ref<IProductImage[]>([])
 const certificateFile = ref<ICertificateFile | null>(null)
 
 // Queries
-const { data: categories } = useQuery<ICategory[]>({
-  queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(0),
-})
-
 const isFishCategory = computed(() => selectedCategory.value?.value === 'fish')
 
 // เพิ่ม computed สำหรับ type
@@ -106,59 +113,7 @@ watch(selectedCategory, (newCategory) => {
 
 // Computed
 const selectedCategoryInfo = computed(() => {
-  return categoryOptionsUI.value.find((cat) => cat._id === selectedCategory.value?._id)
-})
-
-const categoryOptionsUI = computed(() => {
-  if (!categories.value) return []
-  const fieldsData = [
-    {
-      value: 'fish',
-      fields: [
-        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-        { key: 'pond', label: 'บ่อ', type: 'text', required: true },
-        { key: 'sku', label: 'รหัสปลา', type: 'text', required: true },
-        { key: 'name', label: 'สายพันธุ์', type: 'select', required: true },
-        { key: 'breeders', label: 'แม่พันธุ์', type: 'text', required: true },
-        { key: 'birth', label: 'วันเกิด', type: 'date', required: true },
-        { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
-        { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
-        { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
-        { key: 'size', label: 'ไซต์', type: 'number', required: true },
-        { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
-        { key: 'gender', label: 'เพศ', type: 'select', required: true },
-        { key: 'price', label: 'ราคา', type: 'number', required: true },
-      ],
-    },
-    {
-      value: 'food',
-      fields: [
-        { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
-        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
-        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
-        { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
-        { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
-        { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
-        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
-        { key: 'productionDate', label: 'วันที่ผลิต', type: 'date', required: true },
-        { key: 'expiryDate', label: 'วันหมดอายุ', type: 'date', required: true },
-
-        { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
-        { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
-        { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
-        { key: 'merchantPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
-
-        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
-      ],
-    },
-  ]
-
-  const categoryFields = categories.value?.map((category) => ({
-    ...category,
-    fields: fieldsData.find((field) => field.value === category.value)?.fields || [],
-  }))
-
-  return categoryFields as ICategoryOption[]
+  return props.categoryOptionsUI.find((cat) => cat._id === selectedCategory.value?._id)
 })
 
 // File upload mutations
@@ -290,28 +245,30 @@ const mapDynamicFormToProductForm = () => {
       case 'balance':
         productForm.value.balance = value as number
         break
-      case 'productionDate':
-        productForm.value.productionDate = value as string
+      case 'produceDate':
+        productForm.value.food.produceDate = dayjs(value as Date).valueOf() || 0
         break
-      case 'expiryDate':
-        productForm.value.expiryDate = value as string
+      case 'expireDate':
+        productForm.value.food.expireDate = dayjs(value as Date).valueOf() || 0
         break
       case 'marketPrice':
-        productForm.value.marketPrice = value as number
+        productForm.value.food.marketPrice = value as number
         break
       case 'costPrice':
-        productForm.value.costPrice = value as number
+        productForm.value.food.costPrice = value as number
         break
       case 'customerPrice':
-        productForm.value.customerPrice = value as number
+        productForm.value.food.customerPrice = value as number
         break
-      case 'merchantPrice':
-        productForm.value.merchantPrice = value as number
+      case 'dealerPrice':
+        productForm.value.food.dealerPrice = value as number
         break
       case 'foodType':
-        productForm.value.foodType = value as string
+        productForm.value.food.type = value as string
         break
-
+      case 'species':
+        productForm.value.species = value as string
+        break
     }
   })
 }
@@ -360,7 +317,6 @@ const queryClient = useQueryClient()
 const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
   mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
   onSuccess: (data: any) => {
-    console.log(data)
     if (data.data) {
       toast.success('เพิ่มสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
@@ -390,6 +346,7 @@ const resetForm = () => {
   productForm.value = {
     type: 1, // เริ่มต้นเป็นสินค้าอื่นๆ
     name: '',
+    code: '',
     lotNumber: '',
     price: null,
     detail: '',
@@ -417,6 +374,16 @@ const resetForm = () => {
     seedType: '',
     seedSize: undefined,
     balance: 0,
+    food: {
+      type: '',
+      produceDate: 0,
+      expireDate: 0,
+      marketPrice: 0,
+      costPrice: 0,
+      customerPrice: 0,
+      dealerPrice: 0,
+    },
+    species: undefined,
   }
 
   dynamicFormData.value = null
@@ -466,10 +433,6 @@ const removeCertificate = () => {
   productForm.value.certificate = ''
 }
 
-// const { data: species } = useQuery<ISpecies[]>({
-//   queryKey: ['get_species'],
-//   queryFn: () => productStore.onGetSpecies(),
-// })
 const speciesOptions = computed(() => {
   return []
 })

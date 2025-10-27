@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
 import { DataTable, Column, Tag, Button } from 'primevue'
-import type { IProduct, IProductImage } from '../../stores/product/product'
+import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
+import dayjs from 'dayjs'
 
 // Props
 const props = defineProps<{
@@ -16,6 +17,7 @@ const props = defineProps<{
 defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
+  'open-delete-modal': [product: IProduct]
 }>()
 
 // Utility functions
@@ -30,24 +32,18 @@ const getGenderTag = (gender: number) => {
   }
 }
 
-const getStatusTag = (sold: boolean) => {
-  return sold
-    ? { label: 'ขายแล้ว', severity: 'danger' }
-    : { label: 'พร้อมขาย', severity: 'success' }
-}
-
 const getImageUrl = (image: IProductImage | undefined) => {
   if (!image) return ''
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image?.filename}`
 }
 
-const getSeedSizeLabel = (seedSize: number) => {
+const getSeedSizeLabel = (seedSize: ISeedSizeValue) => {
   const sizeMap = {
-    0: 'SS',
-    1: 'S',
-    2: 'M',
-    3: 'L',
-    4: 'XL',
+    1: 'SS',
+    2: 'S',
+    3: 'M',
+    4: 'L',
+    5: 'XL',
   }
   return sizeMap[seedSize as keyof typeof sizeMap] || '-'
 }
@@ -112,11 +108,11 @@ const foodColumns = ref([
       ),
   },
   {
-    field: 'foodType',
+    field: 'food.type',
     header: 'ประเภทอาหาร',
     headCell: '!min-w-[5.5rem]',
     render: (slotProps: any) =>
-      slotProps.data.foodType
+      slotProps.data?.food?.type
         ? h(
             'div',
             {
@@ -124,7 +120,7 @@ const foodColumns = ref([
             },
             [
               h('i', { class: 'pi pi-shopping-bag text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.foodType),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.food.type),
             ]
           )
         : h('span', '-'),
@@ -166,12 +162,11 @@ const foodColumns = ref([
         : h('span', '-'),
   },
   {
-    field: 'productionDate',
+    field: 'food.produceDate',
     header: 'วันผลิต',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
-      slotProps.data.productionDate
+      slotProps.data?.food?.produceDate
         ? h(
             'div',
             {
@@ -179,18 +174,21 @@ const foodColumns = ref([
             },
             [
               h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.productionDate),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
+              ),
             ]
           )
         : h('span', '-'),
   },
   {
-    field: 'expiryDate',
+    field: 'food.expireDate',
     header: 'วันหมดอายุ',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
-      slotProps.data.expiryDate
+      slotProps.data?.food?.expireDate
         ? h(
             'div',
             {
@@ -198,18 +196,22 @@ const foodColumns = ref([
             },
             [
               h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.expiryDate),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
+              ),
             ]
           )
         : h('span', '-'),
   },
   {
-    field: 'marketPrice',
+    field: 'food.marketPrice',
     header: 'ราคาท้องตลาด',
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.marketPrice
+      slotProps.data?.food?.marketPrice
         ? h(
             'div',
             {
@@ -220,19 +222,19 @@ const foodColumns = ref([
               h(
                 'span',
                 { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data.marketPrice)
+                formatCurrency(slotProps.data?.food?.marketPrice)
               ),
             ]
           )
         : h('span', '-'),
   },
   {
-    field: 'costPrice',
+    field: 'food.costPrice',
     header: 'ราคาทุน',
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.costPrice
+      slotProps.data?.food?.costPrice
         ? h(
             'div',
             {
@@ -243,19 +245,19 @@ const foodColumns = ref([
               h(
                 'span',
                 { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data.costPrice)
+                formatCurrency(slotProps.data?.food?.costPrice)
               ),
             ]
           )
         : h('span', '-'),
   },
   {
-    field: 'customerPrice',
+    field: 'food.customerPrice',
     header: 'ราคาลูกค้า',
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.customerPrice
+      slotProps.data?.food?.customerPrice
         ? h(
             'div',
             {
@@ -266,19 +268,19 @@ const foodColumns = ref([
               h(
                 'span',
                 { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data.customerPrice)
+                formatCurrency(slotProps.data?.food?.customerPrice)
               ),
             ]
           )
         : h('span', '-'),
   },
   {
-    field: 'merchantPrice',
+    field: 'food.dealerPrice',
     header: 'ราคาพ่อค้า',
     headCell: '!min-w-[6rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
-      slotProps.data.merchantPrice
+      slotProps.data?.food?.dealerPrice
         ? h(
             'div',
             {
@@ -289,7 +291,7 @@ const foodColumns = ref([
               h(
                 'span',
                 { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data.merchantPrice)
+                formatCurrency(slotProps.data?.food?.dealerPrice)
               ),
             ]
           )
@@ -480,6 +482,39 @@ const displayColumns = computed(() => {
           <span v-else>
             {{ slotProps.data[item.field] }}
           </span>
+        </template>
+      </Column>
+
+      <Column
+        field="action"
+        header="จัดการ"
+        headCell="!min-w-[6rem]"
+        :pt="{ columnHeaderContent: 'justify-end' }"
+      >
+        <template #body="{ data }">
+          <div class="flex items-center gap-2 justify-end">
+            <Button
+              v-tooltip.top="'ดูรายละเอียด'"
+              icon="pi pi-eye"
+              severity="info"
+              size="small"
+              @click="$emit('open-detail-modal', data)"
+            />
+            <Button
+              v-tooltip.top="'แก้ไขข้อมูล'"
+              icon="pi pi-pencil"
+              severity="success"
+              size="small"
+              @click="$emit('open-edit-modal', data)"
+            />
+            <Button
+              v-tooltip.top="'ลบข้อมูล'"
+              icon="pi pi-trash"
+              severity="danger"
+              size="small"
+              @click="$emit('open-delete-modal', data)"
+            />
+          </div>
         </template>
       </Column>
     </DataTable>

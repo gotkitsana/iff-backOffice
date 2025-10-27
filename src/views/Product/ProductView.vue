@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProductStore, type IFishFilters, type IFoodFilters, type IProduct } from '../../stores/product/product'
+import { useProductStore, type ICategoryOption, type IFields, type IFishFilters, type IFoodFilters, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
@@ -11,7 +11,7 @@ import ProductHeader from '../../components/product/ProductHeader.vue'
 import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
 import CategoryFilter from '../../components/product/CategoryFilter.vue'
 import ProductTable from '../../components/product/ProductTable.vue'
-import type { ICategory } from '../../stores/product/category'
+import { useCategoryStore, type ICategory } from '../../stores/product/category'
 import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
 import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
 
@@ -27,6 +27,7 @@ const selectedProduct = ref<IProduct | null>(null)
 const selectedCategory = ref<ICategory | null>(null)
 const showSearchModal = ref(false)
 const showExportModal = ref(false)
+const showDeleteModal = ref(false)
 
 const foodFilters = ref<IFoodFilters>({
   sku: '',
@@ -135,6 +136,62 @@ const filteredProducts = computed(() => {
   return filtered
 })
 
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(0),
+})
+const categoryOptionsUI = computed(() => {
+  if (!categories.value) return []
+  const fieldsData: { value: string; fields: IFields[] }[] = [
+    {
+      value: 'fish',
+      fields: [
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'pond', label: 'บ่อ', type: 'text', required: true },
+        { key: 'sku', label: 'รหัสปลา', type: 'text', required: true },
+        { key: 'species', label: 'สายพันธุ์', type: 'select', required: true },
+        { key: 'breeders', label: 'แม่พันธุ์', type: 'text', required: true },
+        { key: 'birth', label: 'วันเกิด', type: 'date', required: true },
+        { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'text', required: true },
+        { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
+        { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
+        { key: 'size', label: 'ไซต์', type: 'number', required: true },
+        { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
+        { key: 'gender', label: 'เพศ', type: 'select', required: true },
+        { key: 'price', label: 'ราคา', type: 'number', required: true },
+      ],
+    },
+    {
+      value: 'food',
+      fields: [
+        { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
+        { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
+        { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
+        { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
+        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
+        { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },
+        { key: 'expireDate', label: 'วันหมดอายุ', type: 'date', required: true },
+
+        { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
+        { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
+        { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
+        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
+
+        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
+      ],
+    },
+  ]
+
+  const categoryFields = categories.value?.map((category) => ({
+    ...category,
+    fields: fieldsData.find((field) => field.value === category.value)?.fields || [],
+  }))
+
+  return categoryFields as ICategoryOption[]
+})
 // Handlers
 const openAddModal = () => {
   showAddModal.value = true
@@ -158,9 +215,9 @@ const openDetailModal = (product: IProduct) => {
   showDetailModal.value = true
 }
 
-const handleProductUpdated = () => {
-  showEditModal.value = false
-  toast.success('อัปเดตสินค้าสำเร็จ')
+const openDeleteModal = (product: IProduct) => {
+  selectedProduct.value = product
+  showDeleteModal.value = true
 }
 
 const handleProductDeleted = () => {
@@ -235,11 +292,12 @@ const onPondSettings = () => {
       :selected-category="selectedCategory"
       @open-detail-modal="openDetailModal"
       @open-edit-modal="openEditModal"
+      @open-delete-modal="openDeleteModal"
     />
   </div>
 
   <!-- Modal Components -->
-  <ModalAddProduct v-model:visible="showAddModal" />
+  <ModalAddProduct v-model:visible="showAddModal" :categoryOptionsUI="categoryOptionsUI" />
 
   <!-- Export Modal -->
   <ModalExportProduct v-model:visible="showExportModal" />
@@ -247,15 +305,22 @@ const onPondSettings = () => {
   <ModalEditProduct
     v-model:visible="showEditModal"
     :product-data="selectedProduct"
-    @product-updated="handleProductUpdated"
+    :categoryOptionsUI="categoryOptionsUI"
+    :selected-category="selectedCategory"
   />
 
   <ModalProductDetail
     v-model:visible="showDetailModal"
     :product-data="selectedProduct"
     @edit-product="openEditModal"
-    @product-deleted="handleProductDeleted"
   />
+
+  <!-- <ModalDeleteProduct
+    v-if="selectedProduct"
+    v-model:visible="showDeleteModal"
+    :product-data="selectedProduct"
+    @product-deleted="handleProductDeleted"
+  /> -->
 
   <!-- Search Modal -->
   <ModalSearchProduct

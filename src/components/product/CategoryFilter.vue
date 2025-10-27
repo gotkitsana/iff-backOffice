@@ -112,11 +112,11 @@ const getCategoryStats = (category: ICategory) => {
   if (category.value === 'food') {
     // Food type statistics
     seedSizeStats = {
-      ss: productsCategory.filter((p) => p.seedSize === 0).length,
-      s: productsCategory.filter((p) => p.seedSize === 1).length,
-      m: productsCategory.filter((p) => p.seedSize === 2).length,
-      l: productsCategory.filter((p) => p.seedSize === 3).length,
-      xl: productsCategory.filter((p) => p.seedSize === 4).length,
+      ss: productsCategory.filter((p) => p.seedSize === 1).length,
+      s: productsCategory.filter((p) => p.seedSize === 2).length,
+      m: productsCategory.filter((p) => p.seedSize === 3).length,
+      l: productsCategory.filter((p) => p.seedSize === 4).length,
+      xl: productsCategory.filter((p) => p.seedSize === 5).length,
     }
   }
 

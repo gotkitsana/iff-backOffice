@@ -48,12 +48,12 @@ export const useProductStore = defineStore('product', () => {
   const seedSizeOptions: ISeedSizeOptions[] = [
     {
       label: 'SS',
-      value: 0,
+      value: 1,
     },
-    { label: 'S', value: 1 },
-    { label: 'M', value: 2 },
-    { label: 'L', value: 3 },
-    { label: 'XL', value: 4 },
+    { label: 'S', value: 2 },
+    { label: 'M', value: 3 },
+    { label: 'L', value: 4 },
+    { label: 'XL', value: 5 },
   ]
 
   const seedTypeOptions = [
@@ -89,6 +89,7 @@ export const useProductStore = defineStore('product', () => {
 })
 
 export interface IProduct {
+  code: string
   birth?: string
   weight?: number
   breeders?: string
@@ -107,12 +108,21 @@ export interface IProduct {
   category: {
     _id: string
     name: string
-  }
+  } | null
   species: {
     _id: string
     name: string
     detail?: string
-  }
+  } | null
+  food: {
+    type: string
+    produceDate: number
+    expireDate: number
+    marketPrice: number
+    costPrice: number
+    customerPrice: number
+    dealerPrice: number
+  } | null
   sku: string
   farm?: string
   size?: number
@@ -124,19 +134,14 @@ export interface IProduct {
   certificate?: string
   images: IProductImage[]
   auctionOnly: IAuctionOnly
+  cat: number
   uat: number
-
-  productionDate?: string
-  expiryDate?: string
-  marketPrice?: number
-  costPrice?: number
-  customerPrice?: number
-  merchantPrice?: number
 }
 
 export interface ICreateProductPayload {
   type: IType // 0 = ปลา, 1 = สินค้าอื่นๆ
-  name: string // ชื่อสินค้า หรือ ชื่อสายพันธุ์ปลา
+  name: string // ชื่อสินค้า
+  code: string // รหัสสินค้า
   lotNumber: string // หมายเลขล็อต
   price: number | null // ราคาสินค้า
   detail?: string // รายละเอียดสินค้า
@@ -146,9 +151,9 @@ export interface ICreateProductPayload {
   images?: { filename: string; type: string }[] // รูปภาพของสินค้า ไม่บังคับ
   certificate?: string // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
   auctionOnly: IAuctionOnly // 0 = สินค้าสำหรับขาย, 1 = สินค้าสำหรับประมูล
-  weight?: number // น้ำหนักปลา น้ำหนักต่อกระสอบ (กก.)
+  weight?: number // น้ำหนักปลา, น้ำหนักต่อกระสอบ (กก.)
 
-  sku?: string // รหัสปลา ถ้า type = 1 ไม่ต้องระบุ
+  sku?: string // รหัสปลา
   size?: number // ขนาดปลา ถ้า type = 1 ไม่ต้องระบุ
   farm?: string // ชื่อฟาร์มปลา ถ้า type = 1 ไม่ต้องระบุ
   birth?: string // วันเกิดปลา ถ้า type = 1 ไม่ต้องระบุ
@@ -158,21 +163,24 @@ export interface ICreateProductPayload {
   quality?: string // คุณภาพปลา ถ้า type = 1 ไม่ต้องระบุ
   pond?: string // บ่อปลา ถ้า type = 1 ไม่ต้องระบุ
   rate?: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 1 ไม่ต้องระบุ
+  species?: string // ชื่อสายพันธุ์ปลา ถ้า type = 1 ไม่ต้องระบุ
 
-  seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   seedSize?: ISeedSizeValue // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
+  seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
 
-  foodType?: string // ประเภทอาหาร ถ้า type = 0 ไม่ต้องระบุ
-  productionDate?: string // วันที่ผลิต ถ้า type = 0 ไม่ต้องระบุ
-  expiryDate?: string // วันหมดอายุ ถ้า type = 0 ไม่ต้องระบุ
-  marketPrice?: number // ราคาท้องตลาด ถ้า type = 0 ไม่ต้องระบุ
-  costPrice?: number // ราคาทุน ถ้า type = 0 ไม่ต้องระบุ
-  customerPrice?: number // ราคาลูกค้า ถ้า type = 0 ไม่ต้องระบุ
-  merchantPrice?: number // ราคาพ่อค้า ถ้า type = 0 ไม่ต้องระบุ
+  food: {
+    type: string // ประเภทอาหาร ถ้า type = 0 ไม่ต้องระบุ
+    produceDate: number // วันที่ผลิต ถ้า type = 0 ไม่ต้องระบุ
+    expireDate: number // วันหมดอายุ ถ้า type = 0 ไม่ต้องระบุ
+    marketPrice: number // ราคาท้องตลาด ถ้า type = 0 ไม่ต้องระบุ
+    costPrice: number // ราคาทุน ถ้า type = 0 ไม่ต้องระบุ
+    customerPrice: number // ราคาลูกค้า ถ้า type = 0 ไม่ต้องระบุ
+    dealerPrice: number // ราคาพ่อค้า ถ้า type = 0 ไม่ต้องระบุ
+  }
 }
 
-export interface IUpdateProductPayload extends ICreateProductPayload {
+export interface IUpdateProductPayload extends IProduct {
   _id: string
 }
 
@@ -217,12 +225,14 @@ export type IFieldsKey =
   | 'auctionOnly'
   | 'sold'
   | 'foodType'
-  | 'productionDate'
-  | 'expiryDate'
+  | 'produceDate'
+  | 'expireDate'
   | 'marketPrice'
   | 'costPrice'
   | 'customerPrice'
-  | 'merchantPrice'
+  | 'dealerPrice'
+  | 'species'
+  | 'code'
 
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
 export type IFieldsRequired = boolean
@@ -252,7 +262,7 @@ export type ICertificateFile = {
 }
 
 export type ISeedSizeLabel = 'SS' | 'S' | 'M' | 'L' | 'XL'
-export type ISeedSizeValue = 0 | 1 | 2 | 3 | 4
+export type ISeedSizeValue = 1 | 2 | 3 | 4 | 5
 export interface ISeedSizeOptions {
   label: ISeedSizeLabel
   value: ISeedSizeValue
