@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Button, Select, InputText } from 'primevue'
-import { useProductStore, type IFoodFilters, type IProduct } from '../../stores/product/product'
+import { Button, Select, InputText, InputNumber } from 'primevue'
+import {
+  useProductStore,
+  type IFishFilters,
+  type IFoodFilters,
+  type IProduct,
+} from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '../../stores/product/category'
 import { orderBy } from 'lodash-es'
@@ -12,6 +17,7 @@ const props = defineProps<{
   productsCategory: IProduct[]
 
   foodFilters?: IFoodFilters
+  fishFilters?: IFishFilters
 }>()
 
 // Emits
@@ -22,14 +28,26 @@ const emit = defineEmits<{
   'open-search-modal': []
   'open-export-modal': []
 
-  'update-food-filters': [
-    filters: IFoodFilters
-  ]
+  'update-food-filters': [filters: IFoodFilters]
+  'update-fish-filters': [filters: IFishFilters]
 }>()
 
 const foodSeedTypeOptions = [
   { label: 'ลอย', value: 'ลอย' },
   { label: 'จม', value: 'จม' },
+]
+
+const genderOptions = [
+  { label: 'ตัวผู้', value: 1 },
+  { label: 'ตัวเมีย', value: 2 },
+]
+
+const ageOptions = [
+  { label: 'Tosai (6เดือน-1ปี)', value: 'tosai' },
+  { label: 'Nisai (1-2ปี)', value: 'nisai' },
+  { label: 'Sansai (2-3ปี)', value: 'sansai' },
+  { label: 'Yonsai (3-4ปี)', value: 'yonsai' },
+  { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
 
 const foodSeedSizeOptions = [
@@ -46,6 +64,16 @@ const localFoodFilters = ref<IFoodFilters>({
   foodType: props.foodFilters?.foodType || '',
   seedType: props.foodFilters?.seedType || '',
   seedSize: props.foodFilters?.seedSize || null,
+})
+
+const localFishFilters = ref<IFishFilters>({
+  sku: props.fishFilters?.sku || '',
+  species: props.fishFilters?.species || '',
+  age: props.fishFilters?.age || '',
+  farm: props.fishFilters?.farm || '',
+  gender: props.fishFilters?.gender || '',
+  size: props.fishFilters?.size || null,
+  price: props.fishFilters?.price || null,
 })
 
 // Computed
@@ -106,16 +134,33 @@ const updateFoodFilter = (key: string, value: any) => {
   emit('update-food-filters', { ...localFoodFilters.value })
 }
 
-const clearFilters = () => {
-  localFoodFilters.value = {
-    sku: '',
-    brandName: '',
-    foodType: '',
-    seedType: '',
-    seedSize: null,
-  }
+const updateFishFilter = (key: string, value: any) => {
+  localFishFilters.value[key as keyof typeof localFishFilters.value] = value as never
+  emit('update-fish-filters', { ...localFishFilters.value })
+}
 
-  emit('update-food-filters', { ...localFoodFilters.value })
+const clearFilters = () => {
+  if (props.selectedCategory?.value === 'food') {
+    localFoodFilters.value = {
+      sku: '',
+      brandName: '',
+      foodType: '',
+      seedType: '',
+      seedSize: null,
+    }
+    emit('update-food-filters', { ...localFoodFilters.value })
+  } else if (props.selectedCategory?.value === 'fish') {
+    localFishFilters.value = {
+      sku: '',
+      species: '',
+      age: '',
+      farm: '',
+      gender: '',
+      size: null,
+      price: null,
+    }
+    emit('update-fish-filters', { ...localFishFilters.value })
+  }
 }
 </script>
 
@@ -165,8 +210,96 @@ const clearFilters = () => {
       </div>
 
       <div class="mb-4 space-y-3">
-        <div v-if="isFishSelected" class="flex items-center gap-3">
+        <div
+          v-if="isFishSelected"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+        >
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
+            <InputText
+              :model-value="localFishFilters.sku"
+              @update:model-value="updateFishFilter('sku', $event)"
+              placeholder="ระบุรหัสปลา"
+              size="small"
+              fluid
+            />
+          </div>
 
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
+            <InputText
+              :model-value="localFishFilters.species"
+              @update:model-value="updateFishFilter('species', $event)"
+              placeholder="ระบุสายพันธุ์"
+              size="small"
+              fluid
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
+            <Select
+              :model-value="localFishFilters.age"
+              @update:model-value="updateFishFilter('age', $event)"
+              :options="ageOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกอายุ"
+              size="small"
+              fluid
+              showClear
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ฟาร์ม</label>
+            <InputText
+              :model-value="localFishFilters.farm"
+              @update:model-value="updateFishFilter('farm', $event)"
+              placeholder="ระบุชื่อฟาร์ม"
+              size="small"
+              fluid
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เพศ</label>
+            <Select
+              :model-value="localFishFilters.gender"
+              @update:model-value="updateFishFilter('gender', $event)"
+              :options="genderOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเพศ"
+              size="small"
+              fluid
+              showClear
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ขนาด (ซม.)</label>
+            <InputNumber
+              :model-value="localFishFilters.size"
+              @update:model-value="updateFishFilter('size', $event)"
+              placeholder="ระบุขนาด"
+              size="small"
+              fluid
+              :min="0"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ราคา</label>
+            <InputNumber
+              :model-value="localFishFilters.price"
+              @update:model-value="updateFishFilter('price', $event)"
+              placeholder="ระบุราคา"
+              size="small"
+              fluid
+              :min="0"
+            />
+          </div>
         </div>
 
         <div

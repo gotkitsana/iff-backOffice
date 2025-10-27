@@ -266,3 +266,13 @@ export interface IFoodFilters {
   seedType: string
   seedSize: number | null
 }
+
+export interface IFishFilters {
+  sku: string
+  species: string
+  age: string
+  farm: string
+  gender: string
+  size: number | null
+  price: number | null
+}

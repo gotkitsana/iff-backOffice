@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProductStore, type IFoodFilters, type IProduct } from '../../stores/product/product'
+import { useProductStore, type IFishFilters, type IFoodFilters, type IProduct } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import ModalAddProduct from '../../components/product/modal/ModalAddProduct.vue'
@@ -34,6 +34,16 @@ const foodFilters = ref<IFoodFilters>({
   foodType: '',
   seedType: '',
   seedSize: null,
+})
+
+const fishFilters = ref<IFishFilters>({
+  sku: '',
+  species: '',
+  age: '',
+  farm: '',
+  gender: '',
+  size: null,
+  price: null,
 })
 
 const selectedCategoryId = computed(() => selectedCategory.value?._id)
@@ -83,7 +93,43 @@ const filteredProducts = computed(() => {
 
   // Apply quality grade filter for fish
   if (selectedCategory.value?.value === 'fish') {
+    if (fishFilters.value.sku) {
+      filtered = filtered.filter(product =>
+        product.sku?.toLowerCase().includes(fishFilters.value.sku.toLowerCase())
+      )
+    }
+    if (fishFilters.value.species) {
+      filtered = filtered.filter(product =>
+        product.species?.name?.toLowerCase().includes(fishFilters.value.species.toLowerCase())
+      )
+    }
+    if (fishFilters.value.age) {
+      filtered = filtered.filter(product =>
+        product.age?.includes(fishFilters.value.age)
+      )
+    }
+    if (fishFilters.value.farm) {
+      filtered = filtered.filter(product =>
+        product.farm?.toLowerCase().includes(fishFilters.value.farm.toLowerCase())
+      )
+    }
+    if (fishFilters.value.gender) {
+      filtered = filtered.filter(product =>
+        product.gender === fishFilters.value.gender
+      )
+    }
 
+    if (fishFilters.value.size !== null) {
+      filtered = filtered.filter(product =>
+        product.size === fishFilters.value.size
+      )
+    }
+
+    if (fishFilters.value.price !== null) {
+      filtered = filtered.filter(product =>
+        product.price >= fishFilters.value.price!
+      )
+    }
   }
 
   return filtered
@@ -123,17 +169,33 @@ const handleProductDeleted = () => {
 
 const selectCategory = (category: ICategory) => {
   selectedCategory.value = category
-  foodFilters.value = {
-    sku: '',
-    brandName: '',
-    foodType: '',
-    seedType: '',
-    seedSize: null,
+  if (category.value === 'food') {
+    foodFilters.value = {
+      sku: '',
+      brandName: '',
+      foodType: '',
+      seedType: '',
+      seedSize: null,
+    }
+  } else if (category.value === 'fish') {
+    fishFilters.value = {
+      sku: '',
+      species: '',
+      age: '',
+      farm: '',
+      gender: '',
+      size: null,
+      price: null,
+    }
   }
 }
 
 const updateFoodFilters = (filters: IFoodFilters) => {
   foodFilters.value = { ...filters }
+}
+
+const updateFishFilter = (filters: IFishFilters) => {
+  fishFilters.value = { ...filters }
 }
 
 const onPondSettings = () => {
@@ -142,6 +204,7 @@ const onPondSettings = () => {
 </script>
 
 <template>
+
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
     <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
@@ -154,18 +217,20 @@ const onPondSettings = () => {
       :selected-category="selectedCategory"
       :products-category="filteredProducts"
       :food-filters="foodFilters"
+      :fish-filters="fishFilters"
       @select-category="selectCategory"
       @open-add-modal="openAddModal"
       @on-pond-settings="onPondSettings"
       @open-search-modal="openSearchModal"
       @open-export-modal="openExportModal"
       @update-food-filters="updateFoodFilters"
+      @update-fish-filters="updateFishFilter"
     />
 
     <!-- Product Table -->
     <ProductTable
       v-if="selectedCategory"
-      :filtered-products="productsByCategory || []"
+      :filtered-products="filteredProducts || []"
       :is-loading-products="isLoadingProductsByCategory"
       :selected-category="selectedCategory"
       @open-detail-modal="openDetailModal"
