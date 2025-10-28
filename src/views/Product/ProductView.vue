@@ -104,7 +104,7 @@ const filteredProducts = computed(() => {
     }
     if (fishFilters.value.species) {
       filtered = filtered.filter((product) =>
-        product.species?.name?.toLowerCase().includes(fishFilters.value.species.toLowerCase())
+        product.species?._id === fishFilters.value.species
       )
     }
     if (fishFilters.value.age) {

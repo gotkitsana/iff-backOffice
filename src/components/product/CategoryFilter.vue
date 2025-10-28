@@ -237,13 +237,14 @@ const speciesOptions = computed(() => {
             <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
             <Select
               :model-value="localFishFilters.species"
+              @update:model-value="updateFishFilter('species', $event)"
               :options="speciesOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกสายพันธุ์"
               size="small"
               fluid
-              showClear
+
             />
           </div>
           <div>
@@ -257,7 +258,7 @@ const speciesOptions = computed(() => {
               placeholder="เลือกอายุ"
               size="small"
               fluid
-              showClear
+
             />
           </div>
 
@@ -283,7 +284,7 @@ const speciesOptions = computed(() => {
               placeholder="เลือกเพศ"
               size="small"
               fluid
-              showClear
+
             />
           </div>
 
@@ -365,7 +366,7 @@ const speciesOptions = computed(() => {
               placeholder="เลือกชนิดเม็ด"
               size="small"
               fluid
-              showClear
+
             />
           </div>
 
@@ -381,7 +382,7 @@ const speciesOptions = computed(() => {
               placeholder="เลือกขนาดเม็ด"
               size="small"
               fluid
-              showClear
+
             />
           </div>
         </div>
