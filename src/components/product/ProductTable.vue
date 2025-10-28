@@ -5,9 +5,6 @@ import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/produ
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
-import { useQuery } from '@tanstack/vue-query'
-import type { IPond } from '@/stores/product/pond'
-import { usePondStore } from '../../stores/product/pond'
 
 // Props
 const props = defineProps<{

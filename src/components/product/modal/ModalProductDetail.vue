@@ -1,90 +1,122 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Tag, Card } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
-import { toast } from 'vue3-toastify'
-import formatCurrency from '@/utils/formatCurrency'
+import { Dialog, Button, Tag } from 'primevue'
+import { type IProduct, type ICategoryOption } from '../../../stores/product/product'
+import formatCurrency from '../../../utils/formatCurrency'
+import dayjs from 'dayjs'
+import type { ICategory } from '../../../stores/product/category'
 
 // Props
 const props = defineProps<{
   visible: boolean
   productData: IProduct | null
+  selectedCategory: ICategory | null
+  categoryOptionsUI: ICategoryOption[]
 }>()
 
 // Emits
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'edit-product': [product: IProduct]
-  'product-deleted': []
 }>()
 
 // Stores
-const productStore = useProductStore()
 
 // Computed
-const isAuctionProduct = computed(() => props.productData?.auctionOnly === 1)
+const selectedCategoryInfo = computed(() => {
+  return props.categoryOptionsUI.find((cat) => cat._id === props.selectedCategory?._id)
+})
 
-const getProductTypeTag = (type: number) => {
-  switch (type) {
-    case 1:
-      return { label: 'ปลาคาร์ฟ', severity: 'info' }
-    case 2:
-      return { label: 'ปลาทอง', severity: 'warning' }
-    case 3:
-      return { label: 'ปลาอื่นๆ', severity: 'secondary' }
-    default:
-      return { label: 'ไม่ระบุ', severity: 'secondary' }
-  }
-}
-
-const getGenderTag = (gender: number) => {
+const getGenderTag = (gender: string) => {
   switch (gender) {
-    case 1:
+    case 'male':
       return { label: 'ตัวผู้', severity: 'info' }
-    case 2:
+    case 'female':
       return { label: 'ตัวเมีย', severity: 'warning' }
     default:
       return { label: 'ไม่ระบุ', severity: 'secondary' }
   }
 }
 
-const getStatusTag = (sold: boolean) => {
-  return sold
-    ? { label: 'ขายแล้ว', severity: 'danger' }
-    : { label: 'พร้อมขาย', severity: 'success' }
+const formatBirthDate = (birth: string | number) => {
+  if (!birth) return '-'
+  return dayjs(birth).format('DD/MM/YYYY')
 }
 
-const formatDate = (timestamp: number) => {
-  return new Date(timestamp * 1000).toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+// Helper function to get field value from productData
+const getFieldValue = (fieldKey: string) => {
+  if (!props.productData) return null
 
-// Handlers
-const handleEdit = () => {
-  if (props.productData) {
-    emit('edit-product', props.productData)
-    emit('update:visible', false)
+  // Handle nested fields
+  if (fieldKey === 'species' && props.productData.species) {
+    return props.productData.species.name || props.productData.species
   }
+  if (fieldKey === 'fishpond' && props.productData.fishpond) {
+    return props.productData.fishpond.name || props.productData.fishpond
+  }
+  if (fieldKey === 'category' && props.productData.category) {
+    return props.productData.category.name || props.productData.category
+  }
+
+  // Handle food fields
+  if (fieldKey === 'foodType' && props.productData.food) {
+    return props.productData.food.type
+  }
+  if (fieldKey === 'produceDate' && props.productData.food) {
+    return props.productData.food.produceDate
+  }
+  if (fieldKey === 'expireDate' && props.productData.food) {
+    return props.productData.food.expireDate
+  }
+  if (fieldKey === 'marketPrice' && props.productData.food) {
+    return props.productData.food.marketPrice
+  }
+  if (fieldKey === 'costPrice' && props.productData.food) {
+    return props.productData.food.costPrice
+  }
+  if (fieldKey === 'customerPrice' && props.productData.food) {
+    return props.productData.food.customerPrice
+  }
+  if (fieldKey === 'dealerPrice' && props.productData.food) {
+    return props.productData.food.dealerPrice
+  }
+
+  // Handle direct fields
+  const value = props.productData[fieldKey as keyof IProduct]
+
+  // Add units for specific fields
+  if (fieldKey === 'size' && value) {
+    return `${value} ซม.`
+  }
+  if (fieldKey === 'weight' && value) {
+    return `${value} กรัม`
+  }
+
+  return value || null
 }
 
-const handleDelete = async () => {
-  if (!props.productData) return
-
-  if (confirm(`คุณต้องการลบสินค้า "${props.productData.name}" หรือไม่?`)) {
-    try {
-      await productStore.onDeleteProduct(props.productData._id)
-      emit('product-deleted')
-      emit('update:visible', false)
-    } catch (error) {
-      toast.error('เกิดข้อผิดพลาดในการลบสินค้า')
-      console.error(error)
-    }
+const formatFieldValue = (fieldKey: string) => {
+  const value = getFieldValue(fieldKey)
+  if (fieldKey === 'birth' || fieldKey === 'produceDate' || fieldKey === 'expireDate') {
+    return formatBirthDate((value as string | number) || '')
   }
+  if (
+    fieldKey === 'marketPrice' ||
+    fieldKey === 'costPrice' ||
+    fieldKey === 'customerPrice' ||
+    fieldKey === 'dealerPrice' ||
+    fieldKey === 'price'
+  ) {
+    return formatCurrency((value as number) || 0)
+  }
+  return value
+}
+
+const getCertificateUrl = (filename: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+}
+
+const getImageUrl = (filename: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
 }
 
 const handleClose = () => {
@@ -97,227 +129,203 @@ const handleClose = () => {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    :style="{ width: '65rem' }"
+    :style="{ width: '75rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
     :pt="{
-      header: 'p-4',
-      footer: 'p-4',
+      header: 'p-6',
+      footer: 'p-6',
     }"
   >
     <template #header>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg"
         >
-          <i class="pi pi-eye text-white text-lg"></i>
+          <i class="pi pi-eye text-white text-xl"></i>
         </div>
         <div>
-          <h3 class="text-lg font-semibold! text-gray-800">รายละเอียดสินค้า</h3>
-          <p class="text-sm text-gray-600">{{ productData?.name }}</p>
+          <h3 class="text-xl font-bold text-gray-900">รายละเอียดสินค้า</h3>
+          <p class="text-sm text-gray-500">{{ productData?.name }}</p>
         </div>
       </div>
     </template>
 
-    <div v-if="productData" class="space-y-6">
-      <!-- Product Header -->
-      <Card :pt="{ body: 'p-4' }" class="bg-gray-50">
-        <template #content>
-          <div class="flex items-center gap-4">
-            <div
-              :class="`w-16 h-16 rounded-lg flex items-center justify-center ${
-                isAuctionProduct ? 'bg-purple-100' : 'bg-blue-100'
-              }`"
-            >
-              <i
-                :class="`${
-                  isAuctionProduct ? 'pi pi-gavel text-purple-600' : 'pi pi-fish text-blue-600'
-                } text-2xl`"
-              ></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="text-xl font-semibold text-gray-900">{{ productData.name }}</h4>
-              <p class="text-sm text-gray-600">SKU: {{ productData.sku }}</p>
-              <div class="flex items-center gap-2 mt-2">
-                <Tag
-                  :value="getProductTypeTag(productData.type).label"
-                  :severity="getProductTypeTag(productData.type).severity"
-                  size="small"
-                />
-                <Tag
-                  :value="getStatusTag(productData.sold).label"
-                  :severity="getStatusTag(productData.sold).severity"
-                  size="small"
-                />
-                <Tag v-if="isAuctionProduct" value="สำหรับประมูล" severity="warning" size="small" />
+    <div v-if="productData" class="space-y-8">
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Left Column - Product Information -->
+        <div class="lg:col-span-2 space-y-4">
+          <!-- Dynamic Form Fields Display -->
+          <div
+            v-if="selectedCategoryInfo"
+            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+          >
+            <h5 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-info-circle text-blue-600"></i>
               </div>
+              ข้อมูลสินค้า
+            </h5>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <template v-for="field in selectedCategoryInfo.fields" :key="field.key">
+                <div v-if="getFieldValue(field.key)" class="flex items-center gap-2">
+                  <label class="text-sm font-semibold! text-gray-700 uppercase tracking-wide">
+                    {{ field.label }}:
+                  </label>
+
+                  <div>
+                    <!-- Special handling for different field types -->
+                    <Tag
+                      v-if="field.key === 'gender'"
+                      :value="getGenderTag(productData.gender || '').label"
+                      :severity="getGenderTag(productData.gender || '').severity"
+                      class="px-3 py-1"
+                    />
+                    <p
+                      v-else-if="
+                        field.key === 'birth' ||
+                        field.key === 'produceDate' ||
+                        field.key === 'expireDate'
+                      "
+                      class="text-base text-gray-900 font-medium"
+                    >
+                      {{ formatFieldValue(field.key) }}
+                    </p>
+                    <p
+                      v-else-if="
+                        field.key === 'marketPrice' ||
+                        field.key === 'costPrice' ||
+                        field.key === 'customerPrice' ||
+                        field.key === 'dealerPrice' ||
+                        field.key === 'price'
+                      "
+                      class="text-base text-gray-900 font-medium"
+                    >
+                      {{ formatFieldValue(field.key) }}
+                    </p>
+                    <p v-else class="text-base text-gray-900 font-medium">
+                      {{ getFieldValue(field.key) }}
+                    </p>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
-        </template>
-      </Card>
 
-      <!-- Basic Information -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card :pt="{ body: 'p-4' }">
-          <template #content>
-            <h5 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <i class="pi pi-info-circle text-blue-600"></i>
-              ข้อมูลพื้นฐาน
+          <!-- Additional Information -->
+          <div
+            v-if="productData.detail || productData.youtube"
+            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+          >
+            <h5 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-file-edit text-gray-600"></i>
+              </div>
+              รายละเอียดเพิ่มเติม
             </h5>
-            <div class="space-y-3">
-              <div>
-                <label class="text-sm font-medium text-gray-600">ชื่อสินค้า</label>
-                <p class="text-sm text-gray-900">{{ productData.name }}</p>
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-600">SKU</label>
-                <p class="text-sm text-gray-900">{{ productData.sku }}</p>
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-600">ฟาร์ม</label>
-                <p class="text-sm text-gray-900">{{ productData.farm }}</p>
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-600">ขนาด</label>
-                <p class="text-sm text-gray-900">{{ productData.size }} ซม.</p>
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-600">เพศ</label>
-                <Tag
-                  :value="getGenderTag(productData.gender ? parseInt(productData.gender) : 1).label"
-                  :severity="getGenderTag(productData.gender ? parseInt(productData.gender) : 1).severity"
-                  size="small"
-                />
-              </div>
-              <div v-if="productData.age">
-                <label class="text-sm font-medium text-gray-600">อายุ</label>
-                <p class="text-sm text-gray-900">{{ productData.age }}</p>
-              </div>
-            </div>
-          </template>
-        </Card>
-
-        <Card :pt="{ body: 'p-4' }">
-          <template #content>
-            <h5 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <i class="pi pi-dollar text-yellow-600"></i>
-              ข้อมูล{{ isAuctionProduct ? 'ประมูล' : 'ราคา' }}
-            </h5>
-            <div class="space-y-3">
-              <div v-if="!isAuctionProduct && productData.price">
-                <label class="text-sm font-medium text-gray-600">ราคา</label>
-                <p class="text-lg font-semibold text-green-600">
-                  {{ formatCurrency(productData.price) }}
+            <div class="space-y-4">
+              <div v-if="productData.detail">
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  >รายละเอียด</label
+                >
+                <p class="text-base text-gray-900 whitespace-pre-wrap mt-2 leading-relaxed">
+                  {{ productData.detail }}
                 </p>
               </div>
-              <div v-if="isAuctionProduct">
-                <label class="text-sm font-medium text-gray-600">คะแนนคุณภาพ</label>
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-star-fill text-yellow-500"></i>
-                  <span class="text-lg font-semibold text-gray-900"
-                    >{{ productData.rate || 0 }}/10</span
-                  >
-                </div>
-              </div>
-              <div v-if="productData.rate && !isAuctionProduct">
-                <label class="text-sm font-medium text-gray-600">คะแนนคุณภาพ</label>
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-star-fill text-yellow-500"></i>
-                  <span class="text-sm text-gray-900">{{ productData.rate }}/10</span>
-                </div>
-              </div>
-              <div v-if="productData.category">
-                <label class="text-sm font-medium text-gray-600">หมวดหมู่</label>
-                <p class="text-sm text-gray-900">{{ productData.category }}</p>
+              <div v-if="productData.youtube">
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  >YouTube</label
+                >
+                <a
+                  :href="productData.youtube"
+                  target="_blank"
+                  class="text-blue-600 hover:text-blue-800 hover:underline block mt-2 text-base font-medium"
+                >
+                  {{ productData.youtube }}
+                </a>
               </div>
             </div>
-          </template>
-        </Card>
+          </div>
+
+          <div
+            v-if="productData.images.length > 0"
+            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+          >
+            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-image text-gray-600"></i>
+              </div>
+              รูปภาพสินค้า
+            </h5>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              <img
+                v-for="image in productData.images"
+                :key="image.filename"
+                :src="getImageUrl(image.filename)"
+                alt="Certificate"
+                class="w-full h-40 object-contain rounded-lg border border-gray-200"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Price & Certificate -->
+        <div class="space-y-4">
+          <!-- Certificate -->
+          <div
+            v-if="productData.certificate"
+            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+          >
+            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-file text-purple-600"></i>
+              </div>
+              ใบรับรอง
+            </h5>
+            <div class="text-center">
+              <img
+                :src="getCertificateUrl(productData.certificate)"
+                alt="Certificate"
+                class="w-full h-60 object-contain rounded-lg border border-gray-200 mb-3"
+              />
+            </div>
+          </div>
+
+          <!-- System Information -->
+          <div class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-cog text-gray-600"></i>
+              </div>
+              ข้อมูลระบบ
+            </h5>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  >อัปเดตล่าสุด</label
+                >
+                <p class="text-sm text-gray-900 mt-1">
+                  {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- Additional Information -->
-      <Card :pt="{ body: 'p-4' }">
-        <template #content>
-          <h5 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <i class="pi pi-file-edit text-gray-600"></i>
-            รายละเอียดเพิ่มเติม
-          </h5>
-          <div class="space-y-3">
-            <div v-if="productData.detail">
-              <label class="text-sm font-medium text-gray-600">รายละเอียด</label>
-              <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ productData.detail }}</p>
-            </div>
-            <div v-if="productData.youtube">
-              <label class="text-sm font-medium text-gray-600">YouTube</label>
-              <a
-                :href="productData.youtube"
-                target="_blank"
-                class="text-sm text-blue-600 hover:underline"
-              >
-                {{ productData.youtube }}
-              </a>
-            </div>
-            <div v-if="productData.certificate">
-              <label class="text-sm font-medium text-gray-600">ใบรับรอง</label>
-              <p class="text-sm text-gray-900">{{ productData.certificate }}</p>
-            </div>
-          </div>
-        </template>
-      </Card>
-
-      <!-- System Information -->
-      <Card :pt="{ body: 'p-4' }">
-        <template #content>
-          <h5 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <i class="pi pi-cog text-gray-600"></i>
-            ข้อมูลระบบ
-          </h5>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            <div>
-              <label class="text-sm font-medium text-gray-600">อัปเดตล่าสุด</label>
-              <p class="text-sm text-gray-900">{{ formatDate(productData.uat) }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-600">สถานะ</label>
-              <Tag
-                :value="getStatusTag(productData.sold).label"
-                :severity="getStatusTag(productData.sold).severity"
-                size="small"
-              />
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-600">ประเภทการขาย</label>
-              <Tag
-                :value="isAuctionProduct ? 'สำหรับประมูล' : 'สำหรับขาย'"
-                :severity="isAuctionProduct ? 'warning' : 'info'"
-                size="small"
-              />
-            </div>
-          </div>
-        </template>
-      </Card>
     </div>
 
     <template #footer>
-      <div class="flex justify-between">
+      <div class="flex justify-end gap-3">
         <Button
-          label="ลบสินค้า"
-          icon="pi pi-trash"
-          severity="danger"
-          @click="handleDelete"
+          label="ปิด"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="handleClose"
           size="small"
-          outlined
+          class="px-6 py-2"
         />
-        <div class="flex gap-3">
-          <Button
-            label="ปิด"
-            icon="pi pi-times"
-            severity="secondary"
-            @click="handleClose"
-            size="small"
-          />
-          <Button label="แก้ไข" icon="pi pi-pencil" @click="handleEdit" size="small" />
-        </div>
       </div>
     </template>
   </Dialog>

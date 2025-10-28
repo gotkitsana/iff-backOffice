@@ -71,7 +71,7 @@ const productForm = ref<ICreateProductPayload>({
   weight: 0,
   breeders: '',
   quality: '',
-  fishpond: '',
+  fishpond: undefined,
   rate: 0,
   species: undefined,
 
@@ -106,9 +106,15 @@ const productType = computed(() => {
   return 1 // สินค้าอื่นๆ (product)
 })
 
-// อัปเดต productForm เมื่อเปลี่ยน category
 watch(selectedCategory, (newCategory) => {
   if (newCategory) {
+    // รีเซ็ตทุกอย่างทุกครั้งที่เปลี่ยนหมวดหมู่
+    productImages.value = []
+    productForm.value.images = []
+    certificateFile.value = null
+    productForm.value.certificate = ''
+
+    // อัปเดตข้อมูลหมวดหมู่
     productForm.value.type = productType.value
     productForm.value.category = newCategory._id
   }
@@ -187,6 +193,8 @@ const goBackToCategorySelection = () => {
   currentStep.value = 1
   selectedCategory.value = null
   dynamicFormData.value = {} as Record<IFieldsKey, string | number | Date | null>
+
+  resetForm()
 }
 
 const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
@@ -373,7 +381,7 @@ const resetForm = () => {
     weight: 0,
     breeders: '',
     quality: '',
-    fishpond: '',
+    fishpond: undefined,
     rate: 0,
 
     // สินค้าอื่น fields

@@ -104,8 +104,23 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => selectedCategoryId.value?.value,
+  (val) => {
+    if (val !== 'fish') {
+      certificateFile.value = null
+      productForm.value.certificate = ''
+    }
+  }
+)
+
 const initializeDynamicForm = (newProductData: IProduct) => {
   if (!selectedCategoryInfo.value || !newProductData) return
+
+  productImages.value = []
+  productForm.value.images = []
+  certificateFile.value = null
+  productForm.value.certificate = ''
 
   const formData: Record<string, any> = {}
 
@@ -167,6 +182,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
         newProductData.certificate
       }`,
     }
+    productForm.value.certificate = newProductData.certificate
   }
 }
 
@@ -311,7 +327,7 @@ const handleSubmit = async () => {
       filename: img.filename,
       type: img.type,
     })),
-    certificate: certificateFile.value?.filename || '',
+    certificate: isFishCategory.value ? (certificateFile.value?.filename || '') : '',
   }
 
   updateProduct(payload)
@@ -343,6 +359,10 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
 
 const handleClose = () => {
   isSubmitting.value = false
+  productImages.value = []
+  certificateFile.value = null
+  productForm.value.images = []
+  productForm.value.certificate = ''
   emit('update:visible', false)
 }
 

@@ -302,7 +302,8 @@ const onPondSettings = () => {
   <ModalProductDetail
     v-model:visible="showDetailModal"
     :product-data="selectedProduct"
-    @edit-product="openEditModal"
+    :selected-category="selectedCategory"
+    :categoryOptionsUI="categoryOptionsUI"
   />
 
   <ModalDeleteProduct
