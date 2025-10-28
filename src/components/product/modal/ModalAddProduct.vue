@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Button } from 'primevue'
+import { Dialog } from 'primevue'
 import {
   useProductStore,
   type ICategoryOption,
   type ICertificateFile,
   type ICreateProductPayload,
-  type IFields,
   type IFieldsKey,
   type IProductImage,
   type ISeedSizeValue,
@@ -14,8 +13,7 @@ import {
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '@/stores/product/category'
-import { useSalesStore } from '@/stores/sales/sales'
+import { type ICategory } from '@/stores/product/category'
 
 // Import components
 import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
@@ -24,6 +22,8 @@ import FileUploadSection from '@/components/product/add_product/FileUploadSectio
 import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
 import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
 import dayjs from 'dayjs'
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { usePondStore } from '@/stores/product/pond'
 
 // Props
 const props = defineProps<{
@@ -38,6 +38,9 @@ const emit = defineEmits<{
 
 // Stores
 const productStore = useProductStore()
+const speciesStore = useSpeciesStore()
+const pondStore = usePondStore()
+
 // State
 const currentStep = ref(1) // 1 = เลือกหมวดหมู่, 2 = กรอกข้อมูล
 const selectedCategory = ref<ICategory | null>(null)
@@ -68,7 +71,7 @@ const productForm = ref<ICreateProductPayload>({
   weight: 0,
   breeders: '',
   quality: '',
-  pond: '',
+  fishpond: '',
   rate: 0,
   species: undefined,
 
@@ -230,8 +233,8 @@ const mapDynamicFormToProductForm = () => {
       case 'quality':
         productForm.value.quality = value as string
         break
-      case 'pond':
-        productForm.value.pond = value as string
+      case 'fishpond':
+        productForm.value.fishpond = value as string
         break
       case 'rate':
         productForm.value.rate = value as number
@@ -268,6 +271,9 @@ const mapDynamicFormToProductForm = () => {
         break
       case 'species':
         productForm.value.species = value as string
+        break
+      case 'price':
+        productForm.value.price = value as number
         break
     }
   })
@@ -367,7 +373,7 @@ const resetForm = () => {
     weight: 0,
     breeders: '',
     quality: '',
-    pond: '',
+    fishpond: '',
     rate: 0,
 
     // สินค้าอื่น fields
@@ -433,8 +439,30 @@ const removeCertificate = () => {
   productForm.value.certificate = ''
 }
 
+const { data: speciesData } = useQuery<ISpecies[]>({
+  queryKey: ['get_species'],
+  queryFn: () => speciesStore.onGetSpecies(),
+})
 const speciesOptions = computed(() => {
-  return []
+  if (!speciesData.value) return []
+
+  return speciesData.value.map((specie) => ({
+    label: specie.name, // ชื่อที่แสดงใน dropdown
+    value: specie._id, // ค่าที่จะเก็บใน form
+  }))
+})
+
+const { data: pondsData } = useQuery<any[]>({
+  queryKey: ['get_ponds'],
+  queryFn: () => pondStore.onGetPonds(),
+})
+const pondOptions = computed(() => {
+  if (!pondsData.value) return []
+
+  return pondsData.value.map((pond) => ({
+    label: pond.name,
+    value: pond._id,
+  }))
 })
 </script>
 
@@ -471,6 +499,7 @@ const speciesOptions = computed(() => {
           :form-data="dynamicFormData"
           :is-submitting="isSubmitting"
           :species-options="speciesOptions"
+          :pond-options="pondOptions"
           @update-field="updateDynamicField"
         />
 

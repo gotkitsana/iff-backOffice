@@ -7,9 +7,9 @@ import {
   type IFoodFilters,
   type IProduct,
 } from '../../stores/product/product'
-import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory } from '../../stores/product/category'
-import { orderBy } from 'lodash-es'
+import { type ICategory } from '../../stores/product/category'
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
+import { useQuery } from '@tanstack/vue-query';
 
 // Props
 const props = defineProps<{
@@ -86,11 +86,8 @@ const isFoodSelected = computed(() => {
 
 const getCategoryStats = (category: ICategory) => {
   const productsCategory = props.productsCategory
-  const quantity = productsCategory.length
-  const value = productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)
 
   let ageStats: Record<string, number> = {}
-  let qualityStats: Record<string, number> = {}
   let seedSizeStats: Record<string, number> = {}
 
   if (category.value === 'fish') {
@@ -101,12 +98,6 @@ const getCategoryStats = (category: ICategory) => {
       'Sansai (2-3ปี)': productsCategory.filter((p) => p.age?.includes('sansai')).length,
       'Yonsai (3-4ปี)': productsCategory.filter((p) => p.age?.includes('yonsai')).length,
       'Rokusai (4-5ปี)': productsCategory.filter((p) => p.age?.includes('rokusai')).length,
-    }
-
-    // Quality statistics
-    qualityStats = {
-      Tategoi: productsCategory.filter((p) => p.rate && p.rate >= 8).length,
-      'J.Tosai': productsCategory.filter((p) => p.rate && p.rate >= 6 && p.rate < 8).length,
     }
   }
   if (category.value === 'food') {
@@ -121,11 +112,8 @@ const getCategoryStats = (category: ICategory) => {
   }
 
   return {
-    quantity,
-    value,
     ageStats,
     seedSizeStats,
-    qualityStats,
   }
 }
 
@@ -162,6 +150,26 @@ const clearFilters = () => {
     emit('update-fish-filters', { ...localFishFilters.value })
   }
 }
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+  }).format(value)
+}
+
+const productStore = useProductStore()
+const speciesStore = useSpeciesStore()
+const { data: species } = useQuery<ISpecies[]>({
+  queryKey: ['get_species'],
+  queryFn: () => speciesStore.onGetSpecies(),
+})
+const speciesOptions = computed(() => {
+  return species.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
 </script>
 
 <template>
@@ -227,15 +235,17 @@ const clearFilters = () => {
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
-            <InputText
+            <Select
               :model-value="localFishFilters.species"
-              @update:model-value="updateFishFilter('species', $event)"
-              placeholder="ระบุสายพันธุ์"
+              :options="speciesOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกสายพันธุ์"
               size="small"
               fluid
+              showClear
             />
           </div>
-
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
             <Select
@@ -267,7 +277,7 @@ const clearFilters = () => {
             <Select
               :model-value="localFishFilters.gender"
               @update:model-value="updateFishFilter('gender', $event)"
-              :options="genderOptions"
+              :options="productStore.genderOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกเพศ"
@@ -405,7 +415,7 @@ const clearFilters = () => {
               <div>
                 <p class="text-sm text-gray-600">จำนวน</p>
                 <p class="text-xl font-semibold text-blue-600">
-                  {{ getCategoryStats(selectedCategory).quantity }} ตัว
+                  {{ props.productsCategory.length }} ตัว
                 </p>
               </div>
             </div>
@@ -418,7 +428,7 @@ const clearFilters = () => {
               <div>
                 <p class="text-sm text-gray-600">มูลค่า</p>
                 <p class="text-xl font-semibold text-green-600">
-                  {{ getCategoryStats(selectedCategory).value.toLocaleString() }} บาท
+                  {{ formatCurrency(props.productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)) }} บาท
                 </p>
               </div>
             </div>
@@ -435,53 +445,8 @@ const clearFilters = () => {
             </div>
           </div>
 
-          <!-- Quality Stats (for Fish) -->
-          <!-- <div v-if="selectedCategory === 'fish'" class="bg-orange-50 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                <i class="pi pi-star text-white"></i>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">เกรดคุณภาพ</p>
-                <div class="text-xs text-gray-500 space-y-1">
-                  <div
-                    v-for="(count, grade) in getCategoryStats(selectedCategory).qualityStats"
-                    :key="grade"
-                  >
-                    {{ grade }}: {{ count }} ตัว
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> -->
         </div>
 
-        <!-- <div
-          v-if="selectedCategory.value === 'food'"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <div class="bg-red-50 rounded-lg p-4">
-            <div class="flex gap-3">
-              <div>
-                <p class="text-sm text-gray-600">ประเภทอาหาร</p>
-                <div class="text-xs text-gray-500 space-y-1">
-                  <div>
-                    เม็ดเล็ก:
-                    {{ getCategoryStats(selectedCategory).seedSizeStats.ss || 0 }} รายการ
-                  </div>
-                  <div>
-                    เม็ดกลาง:
-                    {{ getCategoryStats(selectedCategory).seedSizeStats.m || 0 }} รายการ
-                  </div>
-                  <div>
-                    เม็ดใหญ่:
-                    {{ getCategoryStats(selectedCategory).seedSizeStats.l || 0 }} รายการ
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div> -->
       </div>
     </div>
   </div>

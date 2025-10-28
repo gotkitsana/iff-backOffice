@@ -7,6 +7,7 @@ const props = defineProps<{
   formData: Record<IFieldsKey, string | number | Date | null>
   isSubmitting: boolean
   speciesOptions?: { label: string; value: string }[]
+  pondOptions?: { label: string; value: string }[]
 }>()
 
 
@@ -24,12 +25,24 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
     return productStore.genderOptions
   }
 
+  if (fieldKey === 'age') {
+    return productStore.ageOptions
+  }
+
   if (fieldKey === 'seedType') {
     return productStore.seedTypeOptions
   }
 
   if (fieldKey === 'seedSize') {
     return productStore.seedSizeOptions
+  }
+
+  if (fieldKey === 'fishpond') {
+    return props.pondOptions
+  }
+
+  if (fieldKey === 'species') {
+    return props.speciesOptions
   }
 
   return []

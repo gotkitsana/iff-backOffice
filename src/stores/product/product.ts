@@ -73,6 +73,14 @@ export const useProductStore = defineStore('product', () => {
     { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
   ]
 
+  const ageOptions = [
+    { label: 'Tosai (6เดือน-1ปี)', value: 'tosai' },
+    { label: 'Nisai (1-2ปี)', value: 'nisai' },
+    { label: 'Sansai (2-3ปี)', value: 'sansai' },
+    { label: 'Yonsai (3-4ปี)', value: 'yonsai' },
+    { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
+  ]
+
   return {
     onGetProducts,
     onGetProductsByID,
@@ -85,6 +93,7 @@ export const useProductStore = defineStore('product', () => {
     seedSizeOptions,
     seedTypeOptions,
     genderOptions,
+    ageOptions,
   }
 })
 
@@ -95,7 +104,15 @@ export interface IProduct {
   breeders?: string
   lotNumber: string
   quality?: string
-  pond?: string
+  fishpond: {
+    _id: string
+    name: string
+    code: string
+    images: { filename: string; type: string }[]
+    active: boolean
+    cat: string
+    uat: string
+  } | null
   foodType?: string
   seedType?: string
   seedSize?: ISeedSizeValue
@@ -161,7 +178,7 @@ export interface ICreateProductPayload {
   gender?: string // เพศผู้, เพศเมีย, ไม่ระบุ  ถ้า type = 1 ไม่ต้องระบุ
   breeders?: string // แม่พันธุ์ปลา ถ้า type = 1 ไม่ต้องระบุ
   quality?: string // คุณภาพปลา ถ้า type = 1 ไม่ต้องระบุ
-  pond?: string // บ่อปลา ถ้า type = 1 ไม่ต้องระบุ
+  fishpond?: string // บ่อปลา ถ้า type = 1 ไม่ต้องระบุ
   rate?: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 1 ไม่ต้องระบุ
   species?: string // ชื่อสายพันธุ์ปลา ถ้า type = 1 ไม่ต้องระบุ
 
@@ -180,8 +197,10 @@ export interface ICreateProductPayload {
   }
 }
 
-export interface IUpdateProductPayload extends IProduct {
+export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species'> {
   _id: string
+  fishpond?: string
+  species?: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
@@ -211,7 +230,7 @@ export type IFieldsKey =
   | 'gender'
   | 'breeders'
   | 'quality'
-  | 'pond'
+  | 'fishpond'
   | 'rate'
   | 'seedType'
   | 'seedSize'

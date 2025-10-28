@@ -5,6 +5,9 @@ import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/produ
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
+import { useQuery } from '@tanstack/vue-query'
+import type { IPond } from '@/stores/product/pond'
+import { usePondStore } from '../../stores/product/pond'
 
 // Props
 const props = defineProps<{
@@ -21,13 +24,13 @@ defineEmits<{
 }>()
 
 // Utility functions
-const getGenderTag = (gender: number) => {
+const getGenderTag = (gender: string) => {
   switch (gender) {
-    case 1:
+    case 'ตัวผู้':
       return { label: 'ตัวผู้', severity: 'info' }
-    case 2:
+    case 'ตัวเมีย':
       return { label: 'ตัวเมีย', severity: 'warning' }
-    default:
+    case 'ไม่ระบุ':
       return { label: 'ไม่ระบุ', severity: 'secondary' }
   }
 }
@@ -319,103 +322,243 @@ const foodColumns = ref([
 
 const fishColumns = ref([
   {
-    field: 'name',
-    header: 'ชื่อสินค้า',
-    headCell: '!min-w-[8rem]',
-    bodyCell: ' ',
+    field: 'lotNumber',
+    header: 'เลขล็อต',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       h(
         'div',
         {
-          class: ['flex items-center gap-2'],
+          class: ['flex items-center gap-1.5'],
         },
         [
-          h('img', {
-            src: getImageUrl(slotProps.data.images[0]),
-            alt: 'product image',
-            class: 'w-auto h-12 object-contain rounded-lg',
-          }),
-          h('div', {}, [
-            h('p', { class: 'font-medium text-gray-900 text-sm' }, slotProps.data.name),
-            h('p', { class: 'text-xs text-gray-500' }, slotProps.data.sku),
-          ]),
+          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber || '-'),
         ]
       ),
   },
   {
-    field: 'size',
-    header: 'ขนาด (ซม.)',
+    field: 'fishpond',
+    header: 'บ่อ',
     headCell: '!min-w-[5rem]',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center justify-center gap-1'],
-        },
-        [
-          h('i', { class: 'pi pi-ruler text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size),
-        ]
-      ),
+      slotProps?.data?.fishpond
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-circle-fill text-cyan-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.fishpond.name),
+            ]
+          )
+        : h('span', '-'),
   },
   {
-    field: 'gender',
-    header: 'เพศ',
-    headCell: '!min-w-[4rem]',
+    field: 'sku',
+    header: 'รหัสปลา',
     render: (slotProps: any) =>
-      h(Tag, {
-        value: getGenderTag(slotProps.data.gender).label,
-        severity: getGenderTag(slotProps.data.gender).severity,
-        size: 'small',
-      }),
+      slotProps.data.sku
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'species',
+    header: 'สายพันธุ์',
+    headCell: '!min-w-[7rem]',
+    render: (slotProps: any) =>
+      slotProps.data.species
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-star text-blue-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                slotProps.data.species.name
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'breeders',
+    header: 'แม่พันธุ์',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.breeders
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-heart text-pink-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.breeders),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'birth',
+    header: 'วันเกิด',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.birth
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-calendar text-purple-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                dayjs(slotProps.data.birth).format('DD/MM/YYYY')
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'age',
+    header: 'อายุ',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.age
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-clock text-orange-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'quality',
+    header: 'คุณภาพปลา',
+    render: (slotProps: any) =>
+      slotProps.data.quality
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-star-fill text-yellow-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality),
+            ]
+          )
+        : h('span', '-'),
   },
   {
     field: 'farm',
     header: 'ฟาร์ม',
     headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-2'],
-        },
-        [
-          h('i', { class: 'pi pi-building text-green-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.farm),
-        ]
-      ),
+      slotProps.data.farm
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-building text-green-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.farm),
+            ]
+          )
+        : h('span', '-'),
   },
   {
-    field: 'age',
-    header: 'อายุ',
-    headCell: '!min-w-[4rem]',
+    field: 'size',
+    header: 'ไซต์',
+    headCell: '!min-w-[4rem] justify-center',
+    bodyCell: 'text-center',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-1'],
-        },
-        [
-          h('i', { class: 'pi pi-calendar text-purple-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.age || '-'),
-        ]
-      ),
+      slotProps.data.size
+        ? h(
+            'div',
+            {
+              class: ['flex items-center justify-center gap-1'],
+            },
+            [
+              h('i', { class: 'pi pi-thumbtack text-blue-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size),
+            ]
+          )
+        : h('span', '-'),
   },
   {
-    field: 'rate',
-    header: 'คะแนน',
-    headCell: '!min-w-[4rem]',
+    field: 'weight',
+    header: 'น้ำหนัก',
+    headCell: '!min-w-[5rem] justify-end',
+    bodyCell: 'text-end',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center justify-center gap-1'],
-        },
-        [
-          h('i', { class: 'pi pi-star-fill text-yellow-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.rate || '-'),
-        ]
-      ),
+      slotProps.data.weight
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-inbox text-indigo-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'gender',
+    header: 'เพศ',
+    headCell: '!min-w-[4rem] justify-center',
+    bodyCell: 'text-center',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: getGenderTag(slotProps.data.gender)?.label,
+        severity: getGenderTag(slotProps.data.gender)?.severity,
+        size: 'small',
+      }),
+  },
+  {
+    field: 'price',
+    header: 'ราคา',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.price
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data.price)
+              ),
+            ]
+          )
+        : h('span', '-'),
   },
 ])
 

@@ -16,8 +16,10 @@ import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
 import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
 import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { usePondStore, type IPond } from '@/stores/product/pond'
 
 // Props
 const props = defineProps<{
@@ -45,10 +47,7 @@ const productForm = ref<IUpdateProductPayload>({
   lotNumber: '',
   code: '',
   price: 0,
-  species: {
-    _id: '',
-    name: '',
-  },
+  species: '',
   detail: '',
   category: {
     _id: '',
@@ -70,7 +69,7 @@ const productForm = ref<IUpdateProductPayload>({
   weight: 0,
   breeders: '',
   quality: '',
-  pond: '',
+  fishpond: undefined,
   rate: 0,
 
   // สินค้าอื่น fields
@@ -132,6 +131,12 @@ const initializeDynamicForm = (newProductData: IProduct) => {
       formData[field.key] = newProductData.food.customerPrice || 0
     } else if (field.key === 'dealerPrice' && newProductData.food) {
       formData[field.key] = newProductData.food.dealerPrice || 0
+    } else if (field.key === 'species' && newProductData.species) {
+      formData[field.key] = newProductData.species._id || ''
+    } else if (field.key === 'fishpond' && newProductData.fishpond) {
+      formData[field.key] = newProductData.fishpond._id || ''
+    } else if (field.key === 'birth' && newProductData.birth) {
+      formData[field.key] = dayjs(newProductData.birth).toDate() || ''
     } else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
@@ -142,9 +147,10 @@ const initializeDynamicForm = (newProductData: IProduct) => {
   productForm.value = {
     ...newProductData,
     _id: newProductData._id,
-    category: newProductData.category || { _id: '', name: '' },
-    species: newProductData.species || null,
+    category: newProductData.category,
     food: newProductData.food || null,
+    fishpond: newProductData.fishpond ?._id,
+    species: newProductData.species?._id,
   }
 
   productImages.value = newProductData.images.map((img) => ({
@@ -238,8 +244,8 @@ const mapDynamicFormToProductForm = () => {
       case 'quality':
         productForm.value.quality = value as string
         break
-      case 'pond':
-        productForm.value.pond = value as string
+      case 'fishpond':
+        productForm.value.fishpond = value as string
         break
       case 'rate':
         productForm.value.rate = value as number
@@ -274,15 +280,9 @@ const mapDynamicFormToProductForm = () => {
       case 'foodType':
         productForm.value.food!.type = value as string
         break
-
-
-      // case 'species':
-      //   const selectedSpecies = speciesOptions.value.find((s: any) => s.value === value)
-      //   productForm.value.species = selectedSpecies ? {
-      //     _id: value as string,
-      //     name: '',
-      //   } : null
-      //   break
+      case 'species':
+        productForm.value.species = value as string
+        break
     }
   })
 }
@@ -345,10 +345,6 @@ const handleClose = () => {
   isSubmitting.value = false
   emit('update:visible', false)
 }
-
-const speciesOptions = computed(() => {
-  return []
-})
 
 const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
   dynamicFormData.value![key] = value
@@ -444,6 +440,33 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
   },
 })
 
+const pondStore = usePondStore()
+const { data: pondsData } = useQuery<IPond[]>({
+  queryKey: ['get_ponds'],
+  queryFn: () => pondStore.onGetPonds(),
+})
+const pondOptions = computed(() => {
+  if (!pondsData.value) return []
+
+  return pondsData.value.map((pond) => ({
+    label: pond.name,
+    value: pond._id,
+  }))
+})
+
+const speciesStore = useSpeciesStore()
+const { data: speciesData } = useQuery<ISpecies[]>({
+  queryKey: ['get_species'],
+  queryFn: () => speciesStore.onGetSpecies(),
+})
+const speciesOptions = computed(() => {
+  if (!speciesData.value) return []
+
+  return speciesData.value.map((specie) => ({
+    label: specie.name, // ชื่อที่แสดงใน dropdown
+    value: specie._id, // ค่าที่จะเก็บใน form
+  }))
+})
 </script>
 
 <template>
@@ -473,13 +496,13 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
 
     <div v-if="selectedCategoryInfo" class="space-y-4">
       <!-- Dynamic Form Fields -->
-       {{ dynamicFormData }}
       <DynamicFormField
         v-if="dynamicFormData"
         :fields="editableFields"
         :form-data="dynamicFormData"
         :is-submitting="isSubmitting"
         :species-options="speciesOptions"
+        :pond-options="pondOptions"
         @update-field="updateDynamicField"
       />
 
