@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, InputText, DataTable, Column, Dialog, FileUpload } from 'primevue'
+import { Button, InputText, InputNumber, DataTable, Column, Dialog, FileUpload, Textarea } from 'primevue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
@@ -44,6 +44,10 @@ const pondImages = ref<IPondImage[]>([])
 const pondForm = ref<ICreatePondPayload>({
   code: '',
   name: '',
+  width: 0,
+  length: 0,
+  depth: 0,
+  note: '',
   images: [],
 })
 
@@ -56,6 +60,24 @@ const { data: pondsData, isLoading: isLoadingPonds } = useQuery<IPond[]>({
 // Computed
 const ponds = computed(() => pondsData.value || [])
 const filteredPonds = computed(() => ponds.value)
+
+// คำนวณขนาดบ่อ
+const pondSize = computed(() => {
+  if (pondForm.value.width && pondForm.value.length && pondForm.value.depth) {
+    return `${pondForm.value.width} x ${pondForm.value.length} x ${pondForm.value.depth} เมตร`
+  }
+  return '-'
+})
+
+// คำนวณปริมาตรบ่อ (ลิตร)
+const pondVolume = computed(() => {
+  if (pondForm.value.width && pondForm.value.length && pondForm.value.depth) {
+    const volumeInCubicMeters = pondForm.value.width * pondForm.value.length * pondForm.value.depth
+    const volumeInLiters = volumeInCubicMeters * 1000
+    return volumeInLiters.toLocaleString()
+  }
+  return '-'
+})
 
 // Upload mutations
 const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
@@ -176,6 +198,10 @@ const resetForm = () => {
   pondForm.value = {
     code: '',
     name: '',
+    width: 0,
+    length: 0,
+    depth: 0,
+    note: '',
     images: [],
   }
   pondImages.value = []
@@ -191,6 +217,10 @@ const openEditPond = (pond: IPond) => {
   pondForm.value = {
     code: pond.code,
     name: pond.name,
+    width: pond.width || 0,
+    length: pond.length || 0,
+    depth: pond.depth || 0,
+    note: pond.note || '',
     images: [...pond.images],
   }
   // Load images
@@ -229,6 +259,18 @@ const validateForm = () => {
     toast.error('กรุณากรอกชื่อกรีนเฮ้า')
     return false
   }
+  if (!pondForm.value.width || pondForm.value.width <= 0) {
+    toast.error('กรุณากรอกความกว้างที่ถูกต้อง')
+    return false
+  }
+  if (!pondForm.value.length || pondForm.value.length <= 0) {
+    toast.error('กรุณากรอกความยาวที่ถูกต้อง')
+    return false
+  }
+  if (!pondForm.value.depth || pondForm.value.depth <= 0) {
+    toast.error('กรุณากรอกความลึกที่ถูกต้อง')
+    return false
+  }
   return true
 }
 
@@ -238,6 +280,10 @@ const handleSubmit = () => {
   const payload = {
     code: pondForm.value.code,
     name: pondForm.value.name,
+    width: pondForm.value.width,
+    length: pondForm.value.length,
+    depth: pondForm.value.depth,
+    note: pondForm.value.note,
     images: pondForm.value.images,
   }
 
@@ -316,6 +362,17 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
         :paginator="true"
         :rows="10"
         :rowsPerPageOptions="[5, 10, 20]"
+        :pt="{
+          table: '!text-sm',
+          header: '!text-sm font-semibold! text-gray-800',
+          body: '!text-sm text-gray-700',
+          cell: '!text-sm text-gray-700',
+          columnHeader: '!text-sm font-semibold! text-gray-800',
+          row: '!text-sm text-gray-700',
+          rowGroup: '!text-sm text-gray-700',
+          rowGroupHeader: '!text-sm font-semibold! text-gray-800',
+          rowGroupFooter: '!text-sm font-semibold! text-gray-800',
+        }"
       >
         <Column field="code" header="รหัสบ่อ" sortable>
           <template #body="{ data }">
@@ -331,6 +388,28 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
           </template>
         </Column>
 
+        <Column field="size" header="ขนาดบ่อ (กว้างxยาวxลึก)" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-700">
+              {{
+                data.width && data.length && data.depth
+                  ? `${data.width} x ${data.length} x ${data.depth} เมตร`
+                  : '-'
+              }}
+            </span>
+          </template>
+        </Column>
+
+        <Column field="volume" header="ปริมาตรบ่อ (ลิตร)" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-700">{{
+              data.width && data.length && data.depth
+                ? (data.width * data.length * data.depth * 1000).toLocaleString()
+                : '-'
+            }}</span>
+          </template>
+        </Column>
+
         <Column header="รูปภาพ">
           <template #body="{ data }">
             <div v-if="data.images && data.images.length > 0" class="flex gap-2">
@@ -339,7 +418,7 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
                 :key="idx"
                 :src="getImageUrl(img.filename)"
                 alt="Pond image"
-                class="w-auto h-12 object-contain rounded"
+                class="w-auto h-10 object-contain rounded"
               />
             </div>
             <span v-else class="text-gray-400">ไม่มีรูปภาพ</span>
@@ -400,7 +479,14 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
 
     <div class="space-y-4">
       <!-- Code & Name -->
-      <div class="grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-1 gap-3">
+        <div>
+          <label class="text-sm font-medium text-gray-700 mb-1 block">
+            รหัสบ่อ <span class="text-red-500">*</span>
+          </label>
+          <InputText v-model="pondForm.code" placeholder="เช่น P001" class="w-full" />
+        </div>
+
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">
             ชื่อกรีนเฮ้า <span class="text-red-500">*</span>
@@ -410,9 +496,49 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
 
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">
-            รหัสบ่อ <span class="text-red-500">*</span>
+            ความกว้าง (เมตร) <span class="text-red-500">*</span>
           </label>
-          <InputText v-model="pondForm.code" placeholder="เช่น P001" class="w-full" />
+          <InputNumber v-model="pondForm.width" :minFractionDigits="2" placeholder="เช่น 2" fluid :min="0" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 mb-1 block">
+            ความยาว (เมตร) <span class="text-red-500">*</span>
+          </label>
+          <InputNumber v-model="pondForm.length" :minFractionDigits="2" placeholder="เช่น 3" fluid :min="0" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 mb-1 block">
+            ความลึก (เมตร) <span class="text-red-500">*</span>
+          </label>
+          <InputNumber v-model="pondForm.depth" :minFractionDigits="2" placeholder="เช่น 1.5" fluid :min="0" />
+        </div>
+
+        <!-- แสดงขนาดบ่อที่คำนวณได้ -->
+        <div
+          v-if="pondForm.width && pondForm.length && pondForm.depth"
+          class="bg-blue-50 border border-blue-200 rounded-lg p-3"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <i class="pi pi-calculator text-blue-600"></i>
+            <span class="text-sm font-medium text-blue-800">ขนาดบ่อที่คำนวณได้</span>
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">ขนาดบ่อ:</span>
+              <span class="font-medium text-gray-900">{{ pondSize }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">ปริมาตรบ่อ:</span>
+              <span class="font-medium text-gray-900">{{ pondVolume }} ลิตร</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 mb-1 block"> หมายเหตุ </label>
+          <Textarea rows="3" fluid v-model="pondForm.note" placeholder="หมายเหตุเพิ่มเติม" />
         </div>
       </div>
 
@@ -508,6 +634,33 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
         <div class="flex justify-between">
           <span class="text-gray-600">ชื่อกรีนเฮ้า:</span>
           <span class="font-medium text-gray-900">{{ selectedPond.name }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">ขนาดบ่อ:</span>
+          <span class="font-medium text-gray-900">
+            {{
+              selectedPond.width && selectedPond.length && selectedPond.depth
+                ? `${selectedPond.width} x ${selectedPond.length} x ${selectedPond.depth} เมตร`
+                : '-'
+            }}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">ปริมาตรบ่อ:</span>
+          <span class="font-medium text-gray-900">{{
+            selectedPond.width && selectedPond.length && selectedPond.depth
+              ? (
+                  selectedPond.width *
+                  selectedPond.length *
+                  selectedPond.depth *
+                  1000
+                ).toLocaleString() + ' ลิตร'
+              : '-'
+          }}</span>
+        </div>
+        <div v-if="selectedPond.note" class="flex justify-between">
+          <span class="text-gray-600">หมายเหตุ:</span>
+          <span class="font-medium text-gray-900">{{ selectedPond.note }}</span>
         </div>
       </div>
       <p class="text-sm text-red-600">⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
