@@ -12,6 +12,7 @@ import Employee from '@/views/Employee/EmployeeView.vue'
 import Production from '@/views/Production/ProductionView.vue'
 import Product from '@/views/Product/ProductView.vue'
 import PondSettings from '@/views/Product/PondSettingsView.vue'
+import SpeciesSettings from '@/views/Product/SpeciesSettingsView.vue'
 import Marketing from '@/views/Marketing/MarketingView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
@@ -203,6 +204,20 @@ export default [
             { label: 'ระบบ POS' },
             { label: 'จัดการสินค้า' },
             { label: 'ตั้งค่าบ่อปลาคาร์ฟ' },
+          ],
+        },
+      },
+      {
+        path: '/product/species-settings',
+        name: 'species-settings',
+        component: SpeciesSettings,
+        meta: {
+          title: 'จัดการสายพันธุ์ปลา',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบ POS' },
+            { label: 'จัดการสินค้า' },
+            { label: 'จัดการสายพันธุ์ปลา' },
           ],
         },
       },

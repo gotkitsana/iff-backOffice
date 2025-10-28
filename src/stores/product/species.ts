@@ -7,11 +7,6 @@ export const useSpeciesStore = defineStore('species', () => {
     return data.data
   }
 
-  // async function onGetSpeciesByID(id: string) {
-  //   const { data } = await api.get(`/species?id=${id}`)
-  //   return data.data
-  // }
-
   async function onCreateSpecies(payload: ICreateSpeciesPayload) {
     const { data } = await api.post(`/species`, payload)
     return data
@@ -22,16 +17,17 @@ export const useSpeciesStore = defineStore('species', () => {
     return data
   }
 
-  // async function onDeleteProduct(id: string) {
-  //   const { data } = await api.delete(`/species?id=${id}`)
-  //   return data
-  // }
+  async function onDeleteProduct(id: string) {
+    const { data } = await api.delete(`/species?id=${id}`)
+    return data
+  }
 
   return {
     onGetSpecies,
 
     onCreateSpecies,
     onUpdateSpecies,
+    onDeleteProduct,
   }
 })
 

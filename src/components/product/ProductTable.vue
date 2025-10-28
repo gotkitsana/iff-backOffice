@@ -5,6 +5,10 @@ import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/produ
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
+import { useRouter } from 'vue-router'
+
+// Router
+const router = useRouter()
 
 // Props
 const props = defineProps<{
@@ -333,11 +337,13 @@ const fishColumns = ref([
           class: ['flex items-center'],
         },
         [
-          slotProps.data.images && slotProps.data.images.length > 0 ? h('img', {
-            src: getImageUrl(slotProps.data.images[0]),
-            alt: 'fish image',
-            class: 'w-auto h-10 object-contain rounded',
-          }) : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
+          slotProps.data.images && slotProps.data.images.length > 0
+            ? h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'fish image',
+                class: 'w-auto h-10 object-contain rounded',
+              })
+            : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
         ]
       ),
   },
@@ -351,12 +357,13 @@ const fishColumns = ref([
           class: ['flex items-center'],
         },
         [
-          slotProps.data.certificate ? h('img', {
-              src: getCertificateUrl(slotProps.data.certificate),
-              alt: 'certificate image',
-              class: 'w-auto h-10 object-contain rounded',
-            })
-          : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
+          slotProps.data.certificate
+            ? h('img', {
+                src: getCertificateUrl(slotProps.data.certificate),
+                alt: 'certificate image',
+                class: 'w-auto h-10 object-contain rounded',
+              })
+            : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
         ]
       ),
   },
@@ -608,6 +615,11 @@ const displayColumns = computed(() => {
   }
   return []
 })
+
+// Methods
+const openSpeciesSettings = () => {
+  router.push('/product/species-settings')
+}
 </script>
 
 <template>
@@ -627,6 +639,16 @@ const displayColumns = computed(() => {
             </h3>
             <p class="text-sm text-gray-600">แสดง {{ filteredProducts.length }} รายการ</p>
           </div>
+        </div>
+
+        <div v-if="props.selectedCategory?.value === 'fish'" class="flex items-center gap-2">
+          <Button
+            label="สายพันธุ์ปลา"
+            icon="pi pi-pencil"
+            severity="success"
+            size="small"
+            @click="openSpeciesSettings"
+          />
         </div>
       </div>
     </div>
