@@ -349,7 +349,7 @@ const fishColumns = ref([
   },
   {
     field: 'certificate',
-    header: 'Certificate',
+    header: 'ใบรับรอง',
     render: (slotProps: any) =>
       h(
         'div',
@@ -357,9 +357,9 @@ const fishColumns = ref([
           class: ['flex items-center'],
         },
         [
-          slotProps.data.certificate
+          slotProps.data?.certificate
             ? h('img', {
-                src: getCertificateUrl(slotProps.data.certificate),
+                src: getCertificateUrl(slotProps.data?.certificate),
                 alt: 'certificate image',
                 class: 'w-auto h-10 object-contain rounded',
               })
