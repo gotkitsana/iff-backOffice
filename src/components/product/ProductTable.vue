@@ -40,6 +40,11 @@ const getImageUrl = (image: IProductImage | undefined) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image?.filename}`
 }
 
+const getCertificateUrl = (image: string | undefined) => {
+  if (!image) return ''
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
+
 const getSeedSizeLabel = (seedSize: ISeedSizeValue) => {
   const sizeMap = {
     1: 'SS',
@@ -322,9 +327,45 @@ const foodColumns = ref([
 
 const fishColumns = ref([
   {
+    field: 'images',
+    header: 'รูปปลา',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center'],
+        },
+        [
+          slotProps.data.images && slotProps.data.images.length > 0 ? h('img', {
+            src: getImageUrl(slotProps.data.images[0]),
+            alt: 'fish image',
+            class: 'w-auto h-10 object-contain rounded',
+          }) : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
+        ]
+      ),
+  },
+  {
+    field: 'certificate',
+    header: 'Certificate',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center'],
+        },
+        [
+          slotProps.data.certificate ? h('img', {
+              src: getCertificateUrl(slotProps.data.certificate),
+              alt: 'certificate image',
+              class: 'w-auto h-10 object-contain rounded',
+            })
+          : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
+        ]
+      ),
+  },
+  {
     field: 'lotNumber',
     header: 'เลขล็อต',
-    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       h(
         'div',
