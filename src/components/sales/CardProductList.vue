@@ -19,7 +19,7 @@ const props = defineProps<Props>()
   <Card
     v-if="props.category"
     :pt="{ body: 'p-3' }"
-    :class="`${props.category.bgColor.replace('-100', '-50')} ${props.category.bgColor}`"
+    :class="`${props.category.bgColor.replace('-100', '-50')}`"
   >
     <template #content>
       <div class="flex items-center justify-between">
@@ -36,7 +36,7 @@ const props = defineProps<Props>()
 
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3">
-              <h5 class="font-[500]! text-gray-900">
+              <h5 class="font-[500]! text-sm text-gray-900">
                 {{ props.name }}
               </h5>
               <Tag v-if="props.detail"

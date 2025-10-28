@@ -86,10 +86,44 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     (product) => !selectedProductIds.includes(product._id)
   )
 
-  return unselectedProducts.map((product) => ({
-    label: `${product.name} (รหัส: ${product.lotNumber})`,
-    value: product._id,
-  }))
+  // group by category._id
+  const groupsMap = new Map<
+    string,
+    { label: string; items: Array<{ label: string; value: string; image?: string }> }
+  >()
+
+  unselectedProducts.forEach((product) => {
+    const catId = product.category?._id || 'unknown'
+    const cat = handleFindCategory(product.category?._id)
+    const group = groupsMap.get(catId) || {
+      label: cat?.name || 'ไม่ระบุหมวดหมู่',
+      items: [],
+    }
+
+    // เพิ่มรูปภาพจาก images[0]
+    const imageUrl =
+      product.images && product.images.length > 0
+        ? `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
+            product.images[0].filename
+          }`
+        : undefined
+
+    group.items.push({
+      label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
+      value: product._id,
+      image: imageUrl,
+    })
+
+    groupsMap.set(catId, group)
+  })
+
+  return Array.from(groupsMap.values())
+
+  // return unselectedProducts.map((product) => ({
+  //   label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
+  //   value: product._id,
+  //   product: product,
+  // }))
 }
 
 const selectedProductDetails = computed(() => {
@@ -98,7 +132,9 @@ const selectedProductDetails = computed(() => {
     return {
       ...availableProducts.value.find((p) => p._id === product.id),
       quantity: product.quantity,
-      category: handleFindCategory(availableProducts.value?.find((p) => p._id === product.id)?.category?._id),
+      category: handleFindCategory(
+        availableProducts.value?.find((p) => p._id === product.id)?.category?._id
+      ),
     }
   })
 })
@@ -386,12 +422,28 @@ const resetForm = () => {
                   :options="getProductOptionsForIndex(index)"
                   optionLabel="label"
                   optionValue="value"
+                  optionGroupLabel="label"
+                  optionGroupChildren="items"
                   placeholder="เลือกสินค้าที่ต้องการขาย"
                   fluid
                   size="small"
                   filter
                   :invalid="!product.id && isSubmitting"
-                />
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2">
+                      <img
+                        v-if="option.image"
+                        :src="option.image"
+                        alt="product"
+                        class="w-6 h-6 object-cover rounded"
+                      />
+                      <i v-else class="pi pi-image text-gray-400 text-sm"></i>
+                      <span>{{ option.label }}</span>
+                    </div>
+                  </template>
+                </Select>
+
                 <small v-if="!product.id && isSubmitting" class="text-red-500"
                   >กรุณาเลือกสินค้า</small
                 >
@@ -415,7 +467,7 @@ const resetForm = () => {
 
             <CardProductList
               v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
-              :name="selectedProductDetails[index]?.name || ''"
+              :name="selectedProductDetails[index]?.name || selectedProductDetails[index]?.species?.name || ''"
               :quantity="selectedProductDetails[index]?.quantity || 0"
               :price="selectedProductDetails[index]?.price || 0"
               :detail="selectedProductDetails[index]?.detail || ''"
