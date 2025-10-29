@@ -24,7 +24,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'select-category': [category: ICategory]
   'open-add-modal': []
-  'on-pond-settings': []
   'open-search-modal': []
   'open-export-modal': []
 
@@ -208,11 +207,11 @@ const speciesOptions = computed(() => {
           />
 
           <Button
-            label="ตั้งค่าบ่อ"
+            label="ตั้งค่า"
             icon="pi pi-cog"
             severity="info"
             size="small"
-            @click="$emit('on-pond-settings')"
+            @click="$router.push('/product/options-settings')"
           />
         </div>
       </div>

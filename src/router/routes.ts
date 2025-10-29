@@ -11,9 +11,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout.vue'
 import Employee from '@/views/Employee/EmployeeView.vue'
 import Production from '@/views/Production/ProductionView.vue'
 import Product from '@/views/Product/ProductView.vue'
-import PondSettings from '@/views/Product/PondSettingsView.vue'
-import SpeciesSettings from '@/views/Product/SpeciesSettingsView.vue'
-import Marketing from '@/views/Marketing/MarketingView.vue'
+import ProductOptionSetting from '@/views/Product/ProductOptionSetting.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
@@ -204,31 +202,45 @@ export default [
           breadcrumb: [{ label: 'ระบบ POS' }, { label: 'จัดการสินค้า' }],
         },
       },
+      // {
+      //   path: '/product/pond-settings',
+      //   name: 'pond-settings',
+      //   component: PondSettings,
+      //   meta: {
+      //     title: 'ตั้งค่าบ่อปลาคาร์ฟ',
+      //     roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+      //     breadcrumb: [
+      //       { label: 'ระบบ POS' },
+      //       { label: 'จัดการสินค้า' },
+      //       { label: 'ตั้งค่าบ่อปลาคาร์ฟ' },
+      //     ],
+      //   },
+      // },
+      // {
+      //   path: '/product/species-settings',
+      //   name: 'species-settings',
+      //   component: SpeciesSettings,
+      //   meta: {
+      //     title: 'จัดการสายพันธุ์ปลา',
+      //     roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+      //     breadcrumb: [
+      //       { label: 'ระบบ POS' },
+      //       { label: 'จัดการสินค้า' },
+      //       { label: 'จัดการสายพันธุ์ปลา' },
+      //     ],
+      //   },
+      // },
       {
-        path: '/product/pond-settings',
-        name: 'pond-settings',
-        component: PondSettings,
+        path: '/product/options-settings',
+        name: 'product-settings',
+        component: ProductOptionSetting,
         meta: {
-          title: 'ตั้งค่าบ่อปลาคาร์ฟ',
+          title: 'ตั้งค่าตัวเลือกสินค้า',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [
             { label: 'ระบบ POS' },
             { label: 'จัดการสินค้า' },
-            { label: 'ตั้งค่าบ่อปลาคาร์ฟ' },
-          ],
-        },
-      },
-      {
-        path: '/product/species-settings',
-        name: 'species-settings',
-        component: SpeciesSettings,
-        meta: {
-          title: 'จัดการสายพันธุ์ปลา',
-          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [
-            { label: 'ระบบ POS' },
-            { label: 'จัดการสินค้า' },
-            { label: 'จัดการสายพันธุ์ปลา' },
+            { label: 'ตั้งค่าตัวเลือกสินค้า' },
           ],
         },
       },

@@ -103,9 +103,7 @@ const filteredProducts = computed(() => {
       )
     }
     if (fishFilters.value.species) {
-      filtered = filtered.filter((product) =>
-        product.species?._id === fishFilters.value.species
-      )
+      filtered = filtered.filter((product) => product.species?._id === fishFilters.value.species)
     }
     if (fishFilters.value.age) {
       filtered = filtered.filter((product) => product.age?.includes(fishFilters.value.age))
@@ -246,9 +244,6 @@ const updateFishFilter = (filters: IFishFilters) => {
   fishFilters.value = { ...filters }
 }
 
-const onPondSettings = () => {
-  router.push('/product/pond-settings')
-}
 </script>
 
 <template>
@@ -267,7 +262,7 @@ const onPondSettings = () => {
       :fish-filters="fishFilters"
       @select-category="selectCategory"
       @open-add-modal="openAddModal"
-      @on-pond-settings="onPondSettings"
+
       @open-search-modal="openSearchModal"
       @open-export-modal="openExportModal"
       @update-food-filters="updateFoodFilters"

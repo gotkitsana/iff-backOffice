@@ -482,17 +482,19 @@ const isSubmitting = computed(() => isCreatingPond.value || isUpdatingPond.value
       <div class="grid grid-cols-1 gap-3">
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">
+            ชื่อกรีนเฮ้า <span class="text-red-500">*</span>
+          </label>
+          <InputText v-model="pondForm.name" placeholder="เช่น บ่อ A" class="w-full" />
+        </div>
+        
+        <div>
+          <label class="text-sm font-medium text-gray-700 mb-1 block">
             รหัสบ่อ <span class="text-red-500">*</span>
           </label>
           <InputText v-model="pondForm.code" placeholder="เช่น P001" class="w-full" />
         </div>
 
-        <div>
-          <label class="text-sm font-medium text-gray-700 mb-1 block">
-            ชื่อกรีนเฮ้า <span class="text-red-500">*</span>
-          </label>
-          <InputText v-model="pondForm.name" placeholder="เช่น บ่อ A" class="w-full" />
-        </div>
+
 
         <div>
           <label class="text-sm font-medium text-gray-700 mb-1 block">
