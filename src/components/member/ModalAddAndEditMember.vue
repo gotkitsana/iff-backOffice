@@ -196,7 +196,7 @@ const handleAddMember = () => {
     interests: interestsArray,
     code: props.data ? newMember.value.code : buildPrefix(),
     status: props.data ? newMember.value.status : 'ci',
-    username: newMember.value.username || newMember.value.phone,
+    username: newMember.value.username,
   }
 
   if (props.data) {
