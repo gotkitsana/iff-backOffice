@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product';
-import { InputText, InputNumber, Select, Textarea, DatePicker  } from 'primevue'
+import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
+import { InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
 
 const props = defineProps<{
   fields: IFields[]
   formData: Record<IFieldsKey, string | number | Date | null>
   isSubmitting: boolean
   speciesOptions?: { label: string; value: string }[]
-  pondOptions?: { label: string; value: string }[]
+  pondOptions?: { label: string; value: string; group?: string }[]
 }>()
-
 
 const emit = defineEmits<{
   'update-field': [key: IFieldsKey, value: string | number | Date | null]
@@ -20,6 +19,7 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
 }
 
 const productStore = useProductStore()
+
 const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
     return productStore.genderOptions
@@ -38,7 +38,33 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
   }
 
   if (fieldKey === 'fishpond') {
-    return props.pondOptions
+    const options = props.pondOptions || []
+    if (options.length === 0) return []
+
+    const hasGroup = options.some(opt => opt.group)
+
+     if (hasGroup) {
+      // Group options by group (name) field
+      const grouped = options.reduce((acc, opt) => {
+        const groupName = opt.group || 'อื่นๆ'
+        if (!acc[groupName]) {
+          acc[groupName] = []
+        }
+        acc[groupName].push({
+          label: opt.label, // code
+          value: opt.value  // _id
+        })
+        return acc
+      }, {} as Record<string, { label: string; value: string }[]>)
+
+      // Convert to array format for PrimeVue Select
+      return Object.keys(grouped).map(groupName => ({
+        label: groupName,
+        items: grouped[groupName]
+      }))
+    }
+
+    return options
   }
 
   if (fieldKey === 'species') {
@@ -46,6 +72,14 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
   }
 
   return []
+}
+
+const isGroupedSelect = (fieldKey: IFieldsKey) => {
+  if (fieldKey === 'fishpond') {
+    const options = props.pondOptions || []
+    return options.some(opt => opt.group)
+  }
+  return false
 }
 </script>
 
@@ -93,6 +127,8 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
           :options="getSelectOptions(field.key)"
           optionLabel="label"
           optionValue="value"
+          :optionGroupLabel="isGroupedSelect(field.key) ? 'label' : undefined"
+          :optionGroupChildren="isGroupedSelect(field.key) ? 'items' : undefined"
           :placeholder="`เลือก${field.label}`"
           fluid
           size="small"
@@ -131,7 +167,6 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
         >
           กรุณากรอก{{ field.label }}
         </small>
-
       </div>
     </div>
   </div>

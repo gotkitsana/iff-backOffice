@@ -469,8 +469,9 @@ const pondOptions = computed(() => {
   if (!pondsData.value) return []
 
   return pondsData.value.map((pond) => ({
-    label: pond.name,
+    label: pond.code,
     value: pond._id,
+    group: pond.name
   }))
 })
 

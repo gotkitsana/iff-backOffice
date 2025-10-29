@@ -44,7 +44,8 @@ export const usePondStore = defineStore('pond', () => {
 })
 
 export interface ICreatePondPayload {
-  name: string // ชื่อกรีนเฮ้า
+  name: string,
+  greenhouse: string // ชื่อกรีนเฮ้า
   code: string // รหัสบ่อ
   images: { filename: string; type: string }[]
   width: number // กว้าง (เมตร)
@@ -60,7 +61,15 @@ export interface IUpdatePondPayload extends ICreatePondPayload {
 
 export interface IPond {
   _id: string
-  name: string // ชื่อกรีนเฮ้า
+  name: string,
+  greenhouse: {
+    _id: string
+    name: string
+    active: boolean
+    note: string
+    cat: number
+    uat: number
+  } // ชื่อกรีนเฮ้า
   code: string // รหัสบ่อ
   images: { filename: string; type: string }[]
   width: number // กว้าง (เมตร)
