@@ -104,7 +104,7 @@ const menuSections = [
         route: 'auction',
       },
       {
-        icon: 'pi pi-trophy',
+        icon: 'pi pi-megaphone',
         label: 'โปรโมชั่น',
         route: 'promotion',
       },

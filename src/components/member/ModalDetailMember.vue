@@ -8,6 +8,7 @@ import lineOaIcon from '@/assets/images/icon/line-oa.webp'
 import lineChatIcon from '@/assets/images/icon/line.png'
 import lineGroupIcon from '@/assets/images/icon/line.png'
 import tiktokIcon from '@/assets/images/icon/tiktok.png'
+import groupIcon from '@/assets/images/icon/icon-group.png'
 
 const props = defineProps<{
   showDetailModal: boolean
@@ -48,7 +49,7 @@ const getContactImage = (contactType: string): string | undefined => {
     case 'line_chat':
       return lineChatIcon
     case 'line_group':
-      return lineGroupIcon
+      return groupIcon
     case 'tiktok':
       return tiktokIcon
     default:

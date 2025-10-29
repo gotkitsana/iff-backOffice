@@ -13,6 +13,7 @@ import { toast } from 'vue3-toastify'
 import fbImg from '@/assets/images/icon/fb.png'
 import lineOaImg from '@/assets/images/icon/line-oa.webp'
 import lineImg from '@/assets/images/icon/line.png'
+import groupImg from '@/assets/images/icon/icon-group.png'
 import tiktokImg from '@/assets/images/icon/tiktok.png'
 
 const memberStore = useMemberStore()
@@ -78,7 +79,7 @@ const getContactImage = (contactType: string): string | undefined => {
     case 'line_chat':
       return lineImg
     case 'line_group':
-      return lineImg
+      return groupImg
     case 'tiktok':
       return tiktokImg
     default:
