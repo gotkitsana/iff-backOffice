@@ -514,6 +514,7 @@ function buildPrefix() {
               placeholder="กรุณาใส่ชื่อผู้ใช้"
               fluid
               size="small"
+              autocomplete="off"
             />
           </div>
 
@@ -527,6 +528,7 @@ function buildPrefix() {
               toggleMask
               fluid
               size="small"
+              autocomplete="new-password"
             />
           </div>
 
