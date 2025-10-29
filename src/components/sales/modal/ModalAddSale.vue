@@ -159,7 +159,7 @@ const memberOptions = computed(() => {
   return members.value.map((member) => {
     const code = member.code.charAt(0).toUpperCase() + member.code.slice(1)
     return {
-      label: `${code} - ${member.name || member.displayName}`,
+      label: `${code} - ${member.displayName}`,
       value: member._id,
     }
   })
