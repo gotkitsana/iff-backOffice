@@ -68,6 +68,16 @@ const menuSections = [
         label: 'บัญชี',
         route: 'accounting',
       },
+      {
+        icon: 'pi pi-money-bill',
+        label: 'การเงิน',
+        route: 'finance',
+      },
+      {
+        icon: 'pi pi-users',
+        label: 'บุคลากร',
+        route: 'employee',
+      },
     ],
   },
   {
@@ -103,11 +113,7 @@ const menuSections = [
   {
     title: 'ระบบบุคลากร',
     items: [
-      {
-        icon: 'pi pi-cog',
-        label: 'บุคลากร',
-        route: 'employee',
-      },
+
       {
         icon: 'pi pi-cog',
         label: 'จัดการ Admin',

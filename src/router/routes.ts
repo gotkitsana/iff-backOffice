@@ -16,6 +16,7 @@ import SpeciesSettings from '@/views/Product/SpeciesSettingsView.vue'
 import Marketing from '@/views/Marketing/MarketingView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
+import Finance from '@/views/finance/FinanceView.vue'
 
 export default [
   {
@@ -99,6 +100,16 @@ export default [
           title: 'บัญชี',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }],
+        },
+      },
+      {
+        path: '/finance',
+        name: 'finance',
+        component: Finance,
+        meta: {
+          title: 'การเงิน',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }],
         },
       },
       {
