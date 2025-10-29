@@ -189,8 +189,8 @@ export interface IMember {
   contacts?: { index: number; type: string; value: string }[] //{index:number,type:key ทางติดต่อ,value:ชื่อชองทางติดต่อ} []
   interests?: { index: number; type: string; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
 
-  username?: string //ยูสเซอร์
-  password?: string //รหัสผ่าน
+  username?: string | null //ยูสเซอร์
+  password?: string | null //รหัสผ่าน
   bidder?: boolean //สถานะยูสเซอร์
   info?: string //ข้อมูล
   isVerify?: boolean
@@ -216,8 +216,8 @@ export interface CreateMemberPayload {
   phone?: string
   type?: string
 
-  username?: string
-  password?: string
+  username?: string | null
+  password?: string | null
   bidder?: boolean
 }
 
