@@ -251,7 +251,7 @@ export default [
         component: AdminSettings,
         meta: {
           title: 'จัดการ Admin',
-          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          roles: ['system', 'super_admin', 'admin'],
           breadcrumb: [{ label: 'ระบบ Admin' }, { label: 'จัดการ Admin' }],
         },
       },

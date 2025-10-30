@@ -23,9 +23,9 @@ export const useAuthStore = defineStore(
         permissionStore.admin_role.find(
           (item: { label: string; value: number; key: Role }) => item.value === user.value?.role,
         ) || {
-          label: 'ผู้ใช้งาน',
+          label: 'Admin',
           value: 3,
-          key: 'user',
+          key: 'admin',
         },
     )
 

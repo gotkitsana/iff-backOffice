@@ -6,11 +6,11 @@ import {
   DataTable,
   Column,
   Tag,
-  Avatar,
   Dialog,
   InputText,
   Select,
-  ToggleButton,
+  Checkbox,
+  Password
 } from 'primevue'
 import { toast } from 'vue3-toastify'
 import {
@@ -19,7 +19,7 @@ import {
   type CreateAdminPayload,
   type EditAdminPayload,
 } from '../../stores/admin/admin'
-import { useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 
 // Store
 const adminStore = useAdminStore()
@@ -37,36 +37,36 @@ const {
 // Modal states
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-const showDetailModal = ref(false)
+// const showDetailModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedAdmin = ref<IAdmin | null>(null)
 
 // Form data
-const adminForm = ref<CreateAdminPayload>({
+const adminForm = ref({
   username: '',
   name: '',
   password: '',
-  role: 1,
+  role: null,
   email: '',
 })
 
-const editForm = ref<EditAdminPayload>({
+const editForm = ref({
   _id: '',
   username: '',
   name: '',
   password: '',
   email: '',
   image: '',
-  role: 1,
+  role: null as number | null,
   block: false,
 })
 
 // Role options
 const roleOptions = ref([
-  { label: 'Super Admin', value: 0 },
-  { label: 'Admin', value: 1 },
-  { label: 'Manager', value: 2 },
-  { label: 'Staff', value: 3 },
+  { label: 'Sales', value: 1 },
+  { label: 'User', value: 2 },
+  { label: 'Admin', value: 3 },
+  { label: 'Super Admin', value: 5 },
 ])
 
 // Computed
@@ -87,7 +87,7 @@ const openAddModal = () => {
     username: '',
     name: '',
     password: '',
-    role: 1,
+    role: null,
     email: '',
   }
   showAddModal.value = true
@@ -108,10 +108,10 @@ const openEditModal = (admin: IAdmin) => {
   showEditModal.value = true
 }
 
-const openDetailModal = (admin: IAdmin) => {
-  selectedAdmin.value = admin
-  showDetailModal.value = true
-}
+// const openDetailModal = (admin: IAdmin) => {
+//   selectedAdmin.value = admin
+//   showDetailModal.value = true
+// }
 
 const openDeleteModal = (admin: IAdmin) => {
   selectedAdmin.value = admin
@@ -121,35 +121,117 @@ const openDeleteModal = (admin: IAdmin) => {
 const closeModals = () => {
   showAddModal.value = false
   showEditModal.value = false
-  showDetailModal.value = false
   showDeleteModal.value = false
   selectedAdmin.value = null
+  adminForm.value = {
+    username: '',
+    name: '',
+    password: '',
+    role: null,
+    email: '',
+  }
+  editForm.value = {
+    _id: '',
+    username: '',
+    name: '',
+    password: '',
+    email: '',
+    image: '',
+    role: null,
+    block: false,
+  }
 }
 
 // Form handlers
 const handleAddAdmin = async () => {
-  try {
-    await adminStore.onCreateAdmin(adminForm.value)
-    toast.success('เพิ่ม Admin สำเร็จ!')
-    closeModals()
-    refetch()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการเพิ่ม Admin')
-    console.error(error)
+  if (!adminForm.value.username) {
+    toast.error('กรุณาระบุชื่อผู้ใช้งาน')
+    return
   }
+
+  if (!adminForm.value.name) {
+    toast.error('กรุณาระบุชื่อ')
+    return
+  }
+
+  if (!adminForm.value.password) {
+    toast.error('กรุณาระบุรหัสผ่าน')
+    return
+  }
+
+  if (!adminForm.value.role || adminForm.value.role === null) {
+    toast.error('กรุณาระบุบทบาท')
+    return
+  }
+
+  createAdmin({
+    username: adminForm.value.username,
+    name: adminForm.value.name,
+    password: adminForm.value.password,
+    role: adminForm.value.role,
+    email: adminForm.value.email,
+  })
 }
 
+const { mutate: createAdmin, isPending: isCreating } = useMutation({
+  mutationFn: (payload: CreateAdminPayload) => adminStore.onCreateAdmin(payload),
+  onSuccess: (data: any) => {
+    if (data.data) {
+      toast.success('เพิ่ม Admin สำเร็จ!')
+      closeModals()
+      refetch()
+    } else {
+      toast.error(data.error.message || 'เพิ่ม Admin ไม่สำเร็จ!')
+    }
+  },
+  onError: (error: any) => {
+    toast.error(error.response?.data?.message || 'เพิ่ม Admin ไม่สำเร็จ!')
+  },
+})
+
 const handleEditAdmin = async () => {
-  try {
-    await adminStore.onUpdateAdmin(editForm.value)
-    toast.success('แก้ไข Admin สำเร็จ!')
-    closeModals()
-    refetch()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการแก้ไข Admin')
-    console.error(error)
+  if (!editForm.value.username) {
+    toast.error('กรุณาระบุชื่อผู้ใช้งาน')
+    return
   }
+
+  if (!editForm.value.name) {
+    toast.error('กรุณาระบุชื่อ')
+    return
+  }
+
+  if (!editForm.value.role || editForm.value.role === null) {
+    toast.error('กรุณาระบุบทบาท')
+    return
+  }
+
+  updateAdmin({
+    _id: editForm.value._id,
+    username: editForm.value.username,
+    name: editForm.value.name,
+    password: editForm.value.password,
+    role: editForm.value.role,
+    email: editForm.value.email,
+    image: editForm.value.image,
+    block: editForm.value.block,
+  })
 }
+
+const { mutate: updateAdmin, isPending: isUpdating } = useMutation({
+  mutationFn: (payload: EditAdminPayload) => adminStore.onUpdateAdmin(payload),
+  onSuccess: (data: any) => {
+    if (data.data) {
+      toast.success('แก้ไข Admin สำเร็จ!')
+      closeModals()
+      refetch()
+    } else {
+      toast.error(data.error.message || 'แก้ไข Admin ไม่สำเร็จ!')
+    }
+  },
+  onError: (error: any) => {
+    toast.error(error.response?.data?.message || 'แก้ไข Admin ไม่สำเร็จ!')
+  },
+})
 
 const handleDeleteAdmin = async () => {
   if (!selectedAdmin.value) return
@@ -168,23 +250,23 @@ const handleDeleteAdmin = async () => {
 // Helper functions
 const getRoleLabel = (role: number) => {
   const roleMap = {
-    0: 'Super Admin',
-    1: 'Admin',
-    2: 'Manager',
-    3: 'Staff',
+    1: 'Sales',
+    2: 'User',
+    3: 'Admin',
+    5: 'Super Admin',
   }
   return roleMap[role as keyof typeof roleMap] || 'Unknown'
 }
 
 const getRoleSeverity = (role: number) => {
   switch (role) {
-    case 0:
-      return 'danger'
     case 1:
-      return 'warning'
+      return 'warn'
     case 2:
-      return 'info'
+      return 'contrast'
     case 3:
+      return 'primary'
+    case 5:
       return 'success'
     default:
       return 'secondary'
@@ -218,29 +300,11 @@ const formatDate = (timestamp: number) => {
         <h1 class="text-xl font-semibold! text-gray-900">จัดการ Admin</h1>
         <p class="text-gray-600">จัดการผู้ดูแลระบบและสิทธิ์การเข้าถึง</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <Button
-          label="เพิ่ม Admin"
-          icon="pi pi-plus"
-          severity="success"
-          size="small"
-          class="btn-hover"
-          @click="openAddModal"
-        />
-        <Button
-          label="รีเฟรช"
-          icon="pi pi-refresh"
-          severity="secondary"
-          size="small"
-          class="btn-hover"
-          @click="() => refetch()"
-        />
-      </div>
     </div>
 
     <!-- Admin Stats Dashboard -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Card class="p-4 md:p-6 card-hover">
+      <Card class="card-hover">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -259,7 +323,7 @@ const formatDate = (timestamp: number) => {
         </template>
       </Card>
 
-      <Card class="p-4 md:p-6 card-hover">
+      <Card class="card-hover">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -278,7 +342,7 @@ const formatDate = (timestamp: number) => {
         </template>
       </Card>
 
-      <Card class="p-4 md:p-6 card-hover">
+      <Card class="card-hover">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -297,7 +361,7 @@ const formatDate = (timestamp: number) => {
         </template>
       </Card>
 
-      <Card class="p-4 md:p-6 card-hover">
+      <Card class="card-hover">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
@@ -320,162 +384,162 @@ const formatDate = (timestamp: number) => {
     <!-- Admin List -->
     <Card class="rounded-2xl bg-white/80">
       <template #content>
-        <div class="p-6">
-          <h3 class="text-lg font-semibold! text-gray-900 mb-1">รายการ Admin</h3>
-          <p class="text-sm text-gray-600 mb-4">จัดการข้อมูลผู้ดูแลระบบทั้งหมด</p>
+        <div class="flex gap-2 justify-between items-center mb-4">
+          <div>
+            <h3 class="text-lg font-semibold! text-gray-900">รายการ Admin</h3>
+            <p class="text-sm text-gray-600">จัดการข้อมูลผู้ดูแลระบบทั้งหมด</p>
+          </div>
 
-          <DataTable
-            :value="admins"
-            :loading="isLoading"
-            :paginator="true"
-            :rows="10"
-            class="p-datatable-sm"
+          <div class="flex flex-wrap gap-2">
+            <Button
+              label="เพิ่ม Admin"
+              icon="pi pi-plus"
+              severity="success"
+              size="small"
+              class="btn-hover"
+              @click="openAddModal"
+            />
+          </div>
+        </div>
+
+        <DataTable
+          :value="admins"
+          :loading="isLoading"
+          :paginator="true"
+          :rows="20"
+          :pt="{
+            table: 'min-w-full text-sm',
+            thead: 'bg-gray-50',
+            tbody: 'divide-y divide-gray-200 text-sm',
+          }"
+        >
+          <Column
+            field="name"
+            header="ชื่อ"
             :pt="{
-              table: 'min-w-full',
-              thead: 'bg-gray-50',
+              headerCell: 'min-w-[5rem]',
             }"
           >
-            <Column
-              field="image"
-              header="รูปภาพ"
-              :pt="{ columnTitle: 'font-semibold', columnHeaderContent: 'min-w-[6rem]' }"
-            >
-              <template #body="slotProps">
-                <Avatar
-                  :image="slotProps.data.image"
-                  :label="slotProps.data.name.charAt(0)"
-                  shape="circle"
-                  size="large"
-                  class="bg-gradient-to-r from-blue-500 to-purple-600"
-                />
-              </template>
-            </Column>
+            <template #body="slotProps">
+              <div>
+                <p class="font-medium! text-gray-900">{{ slotProps.data.name }}</p>
+                <p class="text-sm text-gray-500">@{{ slotProps.data.username }}</p>
+              </div>
+            </template>
+          </Column>
 
-            <Column
-              field="name"
-              header="ชื่อ-นามสกุล"
-              sortable
-              :pt="{ columnTitle: 'font-semibold', columnHeaderContent: 'min-w-[12rem]' }"
-            >
-              <template #body="slotProps">
-                <div>
-                  <p class="font-medium text-gray-900">{{ slotProps.data.name }}</p>
-                  <p class="text-sm text-gray-500">@{{ slotProps.data.username }}</p>
-                </div>
-              </template>
-            </Column>
+          <Column
+            field="email"
+            header="อีเมล"
+            :pt="{
+              headerCell: 'min-w-[6rem]',
+            }"
+          >
+            <template #body="slotProps">
+              <div class="flex items-center gap-2">
+                <span class="text-sm">{{ slotProps.data.email || '-' }}</span>
+              </div>
+            </template>
+          </Column>
 
-            <Column
-              field="email"
-              header="อีเมล"
-              sortable
-              :pt="{ columnTitle: 'font-semibold', columnHeaderContent: 'min-w-[15rem]' }"
-            >
-              <template #body="slotProps">
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-envelope text-gray-400 text-sm"></i>
-                  <span class="text-sm">{{ slotProps.data.email }}</span>
-                </div>
-              </template>
-            </Column>
+          <Column
+            field="role"
+            header="บทบาท"
+            :pt="{
+              headerCell: 'min-w-[5rem]',
+              columnHeaderContent: '!justify-center',
+              bodyCell: 'text-center',
+            }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="getRoleLabel(slotProps.data.role)"
+                :severity="getRoleSeverity(slotProps.data.role)"
+                size="small"
+                class="text-xs"
+              />
+            </template>
+          </Column>
 
-            <Column
-              field="role"
-              header="บทบาท"
-              sortable
-              :pt="{
-                columnTitle: 'font-semibold',
-                columnHeaderContent: 'justify-center min-w-[8rem]',
-                bodyCell: 'text-center',
-              }"
-            >
-              <template #body="slotProps">
-                <Tag
-                  :value="getRoleLabel(slotProps.data.role)"
-                  :severity="getRoleSeverity(slotProps.data.role)"
+          <Column
+            field="block"
+            header="สถานะ"
+            :pt="{
+              headerCell: 'min-w-[6rem]',
+              columnHeaderContent: '!justify-center',
+              bodyCell: 'text-center',
+            }"
+          >
+            <template #body="slotProps">
+              <Tag
+                :value="getStatusLabel(slotProps.data.block)"
+                :severity="getStatusSeverity(slotProps.data.block)"
+                size="small"
+                class="text-xs"
+              />
+            </template>
+          </Column>
+
+          <Column
+            field="cat"
+            header="สร้างเมื่อ"
+            :pt="{
+              headerCell: 'min-w-[9rem]',
+            }"
+          >
+            <template #body="slotProps">
+              <span class="text-sm text-gray-600">
+                {{ formatDate(slotProps.data.cat) }}
+              </span>
+            </template>
+          </Column>
+
+          <Column
+            header="จัดการ"
+            :pt="{
+              columnHeaderContent: '!justify-end',
+            }"
+          >
+            <template #body="slotProps">
+              <div class="flex space-x-2 justify-end">
+                <!-- <Button
+                  icon="pi pi-eye"
                   size="small"
-                />
-              </template>
-            </Column>
-
-            <Column
-              field="block"
-              header="สถานะ"
-              :pt="{
-                columnTitle: 'font-semibold',
-                columnHeaderContent: 'justify-center min-w-[8rem]',
-                bodyCell: 'text-center',
-              }"
-            >
-              <template #body="slotProps">
-                <Tag
-                  :value="getStatusLabel(slotProps.data.block)"
-                  :severity="getStatusSeverity(slotProps.data.block)"
+                  text
+                  rounded
+                  severity="info"
+                  v-tooltip.top="'ดูรายละเอียด'"
+                  @click="openDetailModal(slotProps.data)"
+                /> -->
+                <Button
+                  icon="pi pi-pencil"
                   size="small"
+                  text
+                  rounded
+                  severity="warning"
+                  v-tooltip.top="'แก้ไข'"
+                  @click="openEditModal(slotProps.data)"
                 />
-              </template>
-            </Column>
-
-            <Column
-              field="cat"
-              header="สร้างเมื่อ"
-              sortable
-              :pt="{ columnTitle: 'font-semibold', columnHeaderContent: 'min-w-[10rem]' }"
-            >
-              <template #body="slotProps">
-                <span class="text-sm text-gray-600">
-                  {{ formatDate(slotProps.data.cat) }}
-                </span>
-              </template>
-            </Column>
-
-            <Column
-              header="จัดการ"
-              :pt="{
-                columnTitle: 'font-semibold',
-                columnHeaderContent: 'justify-end min-w-[12rem]',
-              }"
-            >
-              <template #body="slotProps">
-                <div class="flex space-x-2 justify-end">
-                  <Button
-                    icon="pi pi-eye"
-                    size="small"
-                    text
-                    rounded
-                    severity="info"
-                    v-tooltip.top="'ดูรายละเอียด'"
-                    @click="openDetailModal(slotProps.data)"
-                  />
-                  <Button
-                    icon="pi pi-pencil"
-                    size="small"
-                    text
-                    rounded
-                    severity="warning"
-                    v-tooltip.top="'แก้ไข'"
-                    @click="openEditModal(slotProps.data)"
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    size="small"
-                    text
-                    rounded
-                    severity="danger"
-                    v-tooltip.top="'ลบ'"
-                    @click="openDeleteModal(slotProps.data)"
-                  />
-                </div>
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+                <Button
+                  icon="pi pi-trash"
+                  size="small"
+                  text
+                  rounded
+                  severity="danger"
+                  v-tooltip.top="'ลบ'"
+                  @click="openDeleteModal(slotProps.data)"
+                />
+              </div>
+            </template>
+          </Column>
+        </DataTable>
       </template>
     </Card>
 
     <!-- Add Admin Modal -->
     <Dialog
       v-model:visible="showAddModal"
+      @update:visible="closeModals"
       modal
       :style="{ width: '50rem' }"
       :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
@@ -500,9 +564,9 @@ const formatDate = (timestamp: number) => {
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ-นามสกุล *
+              ชื่อ *
             </label>
-            <InputText v-model="adminForm.name" placeholder="กรอกชื่อ-นามสกุล" fluid size="small" />
+            <InputText v-model="adminForm.name" placeholder="กรอกชื่อ" fluid size="small" />
           </div>
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
@@ -531,12 +595,13 @@ const formatDate = (timestamp: number) => {
               <i class="pi pi-key mr-1.5 !text-sm"></i>
               รหัสผ่าน *
             </label>
-            <InputText
+            <Password
               v-model="adminForm.password"
               type="password"
               placeholder="กรอกรหัสผ่าน"
               fluid
               size="small"
+              toggleMask
             />
           </div>
         </div>
@@ -572,6 +637,7 @@ const formatDate = (timestamp: number) => {
             icon="pi pi-plus"
             severity="success"
             @click="handleAddAdmin"
+            :loading="isCreating"
             size="small"
           />
         </div>
@@ -605,9 +671,9 @@ const formatDate = (timestamp: number) => {
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ-นามสกุล *
+              ชื่อ *
             </label>
-            <InputText v-model="editForm.name" placeholder="กรอกชื่อ-นามสกุล" fluid size="small" />
+            <InputText v-model="editForm.name" placeholder="กรอกชื่อ" fluid size="small" />
           </div>
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
@@ -631,12 +697,13 @@ const formatDate = (timestamp: number) => {
               <i class="pi pi-key mr-1.5 !text-sm"></i>
               รหัสผ่าน (เว้นว่างหากไม่ต้องการเปลี่ยน)
             </label>
-            <InputText
+            <Password
               v-model="editForm.password"
               type="password"
               placeholder="กรอกรหัสผ่านใหม่"
               fluid
               size="small"
+              toggleMask
             />
           </div>
         </div>
@@ -657,17 +724,10 @@ const formatDate = (timestamp: number) => {
               size="small"
             />
           </div>
-          <div class="flex items-center gap-3">
-            <ToggleButton
-              v-model="editForm.block"
-              onLabel="บล็อก"
-              offLabel="ใช้งานได้"
-              onIcon="pi pi-ban"
-              offIcon="pi pi-check"
-              class="w-32"
-              aria-label="Block status"
-            />
-            <span class="text-sm font-[500]! text-gray-700">สถานะการใช้งาน</span>
+
+          <div class="flex items-center gap-2 pt-3">
+            <Checkbox v-model="editForm.block" size="small" binary />
+            <span class="text-sm font-[500]! text-gray-700"> บล็อกบัญชี </span>
           </div>
         </div>
       </div>
@@ -686,84 +746,7 @@ const formatDate = (timestamp: number) => {
             icon="pi pi-check"
             severity="success"
             @click="handleEditAdmin"
-            size="small"
-          />
-        </div>
-      </template>
-    </Dialog>
-
-    <!-- Detail Admin Modal -->
-    <Dialog
-      v-model:visible="showDetailModal"
-      modal
-      :style="{ width: '45rem' }"
-      :breakpoints="{ '1199px': '70vw', '575px': '90vw' }"
-      :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
-    >
-      <template #header>
-        <div class="flex items-center gap-3">
-          <div
-            class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center"
-          >
-            <i class="pi pi-eye text-white text-lg"></i>
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold! text-gray-800">รายละเอียด Admin</h3>
-            <p class="text-sm text-gray-600">ข้อมูลโดยละเอียดของ Admin</p>
-          </div>
-        </div>
-      </template>
-
-      <div v-if="selectedAdmin" class="space-y-4">
-        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-          <Avatar
-            :image="selectedAdmin.image"
-            :label="selectedAdmin.name.charAt(0)"
-            shape="circle"
-            size="xlarge"
-            class="bg-gradient-to-r from-blue-500 to-purple-600"
-          />
-          <div>
-            <h4 class="text-lg font-semibold text-gray-900">{{ selectedAdmin.name }}</h4>
-            <p class="text-sm text-gray-600">@{{ selectedAdmin.username }}</p>
-            <div class="flex gap-2 mt-2">
-              <Tag
-                :value="getRoleLabel(selectedAdmin.role)"
-                :severity="getRoleSeverity(selectedAdmin.role)"
-                size="small"
-              />
-              <Tag
-                :value="getStatusLabel(selectedAdmin.block)"
-                :severity="getStatusSeverity(selectedAdmin.block)"
-                size="small"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-600">อีเมล</label>
-            <p class="text-sm text-gray-900">{{ selectedAdmin.email }}</p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600">สร้างเมื่อ</label>
-            <p class="text-sm text-gray-900">{{ formatDate(selectedAdmin.cat) }}</p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-600">อัปเดตล่าสุด</label>
-            <p class="text-sm text-gray-900">{{ formatDate(selectedAdmin.uat) }}</p>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <Button
-            label="ปิด"
-            icon="pi pi-times"
-            severity="secondary"
-            @click="closeModals"
+            :loading="isUpdating"
             size="small"
           />
         </div>
@@ -793,30 +776,7 @@ const formatDate = (timestamp: number) => {
       </template>
 
       <div v-if="selectedAdmin" class="space-y-4">
-        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div class="flex items-center gap-3">
-            <Avatar
-              :image="selectedAdmin.image"
-              :label="selectedAdmin.name.charAt(0)"
-              shape="circle"
-              size="large"
-              class="bg-gradient-to-r from-blue-500 to-purple-600"
-            />
-            <div>
-              <h4 class="font-semibold text-gray-900">{{ selectedAdmin.name }}</h4>
-              <p class="text-sm text-gray-600">@{{ selectedAdmin.username }}</p>
-              <Tag
-                :value="getRoleLabel(selectedAdmin.role)"
-                :severity="getRoleSeverity(selectedAdmin.role)"
-                size="small"
-                class="mt-1"
-              />
-            </div>
-          </div>
-        </div>
-        <p class="text-sm text-gray-600">
-          การลบ Admin นี้จะไม่สามารถกู้คืนได้ กรุณาตรวจสอบให้แน่ใจก่อนดำเนินการ
-        </p>
+        <p class="text-gray-900">คุณต้องการลบ Admin {{ selectedAdmin.name }} หรือไม่?</p>
       </div>
 
       <template #footer>

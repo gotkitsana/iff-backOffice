@@ -14,11 +14,11 @@ export const usePermissionStore = defineStore('permission', () => {
   })
 
   const admin_role = ref<{ label: string; value: number; key: Role }[]>([
-    { label: 'ผู้ขาย', value: 1, key: 'sales' },
-    { label: 'ผู้ใช้งาน', value: 2, key: 'user' },
+    { label: 'Sales', value: 1, key: 'sales' },
+    { label: 'User', value: 2, key: 'user' },
     { label: 'Admin', value: 3, key: 'admin' },
     { label: 'Super Admin', value: 5, key: 'super_admin' },
-    { label: 'ผู้ดูแลระบบ', value: 6, key: 'system' },
+    { label: 'System', value: 6, key: 'system' },
   ])
 
   function canAccess(isRole: number, allowedRoles: number[]): boolean {
