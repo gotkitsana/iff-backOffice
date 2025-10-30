@@ -220,7 +220,7 @@ const handleEditAdmin = async () => {
 const { mutate: updateAdmin, isPending: isUpdating } = useMutation({
   mutationFn: (payload: EditAdminPayload) => adminStore.onUpdateAdmin(payload),
   onSuccess: (data: any) => {
-    if (data.data) {
+    if (data.data.modifiedCount > 0) {
       toast.success('แก้ไข Admin สำเร็จ!')
       closeModals()
       refetch()
@@ -234,18 +234,25 @@ const { mutate: updateAdmin, isPending: isUpdating } = useMutation({
 })
 
 const handleDeleteAdmin = async () => {
-  if (!selectedAdmin.value) return
-
-  try {
-    await adminStore.onDeleteAdmin(selectedAdmin.value._id)
-    toast.success('ลบ Admin สำเร็จ!')
-    closeModals()
-    refetch()
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการลบ Admin')
-    console.error(error)
-  }
+  if (!selectedAdmin.value?._id) return
+  deleteAdmin(selectedAdmin.value?._id)
 }
+
+const { mutate: deleteAdmin, isPending: isDeleting } = useMutation({
+  mutationFn: (id: string) => adminStore.onDeleteAdmin(id),
+  onSuccess: (data: any) => {
+    if (data.data.deletedCount > 0) {
+      toast.success('ลบ Admin สำเร็จ!')
+      closeModals()
+      refetch()
+    } else {
+      toast.error(data.error.message || 'ลบ Admin ไม่สำเร็จ!')
+    }
+  },
+  onError: (error: any) => {
+    toast.error(error.response?.data?.message || 'ลบ Admin ไม่สำเร็จ!')
+  },
+})
 
 // Helper functions
 const getRoleLabel = (role: number) => {
@@ -793,6 +800,7 @@ const formatDate = (timestamp: number) => {
             icon="pi pi-trash"
             severity="danger"
             @click="handleDeleteAdmin"
+            :loading="isDeleting"
             size="small"
           />
         </div>
