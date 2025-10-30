@@ -20,6 +20,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { usePondStore, type IPond } from '@/stores/product/pond'
+import { useFarmStore, type IFarm } from '@/stores/product/farm'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 
 // Props
 const props = defineProps<{
@@ -123,16 +125,9 @@ const initializeDynamicForm = (newProductData: IProduct) => {
   productForm.value.certificate = ''
 
   const formData: Record<string, any> = {}
-
   selectedCategoryInfo.value.fields.forEach((field) => {
     const fieldValue = newProductData[field.key as keyof IProduct]
-
-    // Handle special cases for nested fields
-    // if (field.key === 'species' && fieldValue && typeof fieldValue === 'object') {
-    //   formData[field.key] = (fieldValue as any)?._id || ''
-    // } else
     if (field.key === 'foodType' && newProductData.food) {
-      // Handle knocknested food.type
       formData[field.key] = newProductData.food.type || ''
     } else if (field.key === 'produceDate' && newProductData.food) {
       formData[field.key] = dayjs(newProductData.food.produceDate).toDate() || ''
@@ -152,19 +147,30 @@ const initializeDynamicForm = (newProductData: IProduct) => {
       formData[field.key] = newProductData.fishpond._id || ''
     } else if (field.key === 'birth' && newProductData.birth) {
       formData[field.key] = dayjs(newProductData.birth).toDate() || ''
+    } else if (field.key === 'farm' && newProductData.farm) {
+      formData[field.key] = newProductData.farm._id || ''
     } else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
   })
 
+  const currentPondId = newProductData.fishpond?._id
+  if (currentPondId && pondsData.value) {
+    const pond = pondsData.value.find((pond) => pond._id === currentPondId)
+    if (pond?.greenhouse?._id && 'greenhouse' in formData) {
+      formData['greenhouse'] = pond.greenhouse?._id
+    }
+  }
+
   dynamicFormData.value = formData
 
+  console.log(newProductData,'formData')
   productForm.value = {
     ...newProductData,
     _id: newProductData._id,
     category: newProductData.category,
     food: newProductData.food || null,
-    fishpond: newProductData.fishpond ?._id,
+    fishpond: newProductData.fishpond?._id,
     species: newProductData.species?._id,
     farm: newProductData.farm?._id,
   }
@@ -328,7 +334,7 @@ const handleSubmit = async () => {
       filename: img.filename,
       type: img.type,
     })),
-    certificate: isFishCategory.value ? (certificateFile.value?.filename || '') : '',
+    certificate: isFishCategory.value ? certificateFile.value?.filename || '' : '',
   }
 
   updateProduct(payload)
@@ -466,13 +472,28 @@ const { data: pondsData } = useQuery<IPond[]>({
   queryKey: ['get_ponds'],
   queryFn: () => pondStore.onGetPonds(),
 })
-const pondOptions = computed(() => {
+const filteredPondOptions = computed(() => {
+  const ghId = dynamicFormData.value?.greenhouse
   if (!pondsData.value) return []
+  if (!ghId) return []
+  return pondsData.value
+    .filter((pond) => pond.greenhouse?._id === ghId)
+    .map((pond) => ({
+      label: pond.code,
+      value: pond._id,
+    }))
+})
 
-  return pondsData.value.map((pond) => ({
-    label: pond.code,
-    value: pond._id,
-    group: pond.name
+const greenhouseStore = useGreenhouseStore()
+const { data: greenhousesData } = useQuery<IGreenhouse[]>({
+  queryKey: ['get_greenhouses'],
+  queryFn: () => greenhouseStore.onGetGreenhouses(),
+})
+const greenhouseOptions = computed(() => {
+  if (!greenhousesData.value) return []
+  return greenhousesData.value.map((greenhouse) => ({
+    label: greenhouse.name,
+    value: greenhouse._id,
   }))
 })
 
@@ -489,6 +510,20 @@ const speciesOptions = computed(() => {
     value: specie._id, // ค่าที่จะเก็บใน form
   }))
 })
+
+const farmStore = useFarmStore()
+const { data: farmsData } = useQuery<IFarm[]>({
+  queryKey: ['get_farms'],
+  queryFn: () => farmStore.onGetFarms(),
+})
+const farmOptions = computed(() => {
+  if (!farmsData.value) return []
+  return farmsData.value.map((farm) => ({
+    label: farm.name,
+    value: farm._id,
+  }))
+})
+
 </script>
 
 <template>
@@ -524,7 +559,9 @@ const speciesOptions = computed(() => {
         :form-data="dynamicFormData"
         :is-submitting="isSubmitting"
         :species-options="speciesOptions"
-        :pond-options="pondOptions"
+        :pond-options="filteredPondOptions"
+        :greenhouse-options="greenhouseOptions"
+        :farm-options="farmOptions"
         @update-field="updateDynamicField"
       />
 

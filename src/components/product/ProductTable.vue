@@ -648,10 +648,6 @@ const displayColumns = computed(() => {
   return []
 })
 
-// Methods
-const openSpeciesSettings = () => {
-  router.push('/product/species-settings')
-}
 </script>
 
 <template>
@@ -673,15 +669,6 @@ const openSpeciesSettings = () => {
           </div>
         </div>
 
-        <div v-if="props.selectedCategory?.value === 'fish'" class="flex items-center gap-2">
-          <Button
-            label="สายพันธุ์ปลา"
-            icon="pi pi-pencil"
-            severity="success"
-            size="small"
-            @click="openSpeciesSettings"
-          />
-        </div>
       </div>
     </div>
 

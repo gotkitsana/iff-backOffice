@@ -140,6 +140,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :optionGroupLabel="isGroupedSelect(field.key) ? 'label' : undefined"
           :optionGroupChildren="isGroupedSelect(field.key) ? 'items' : undefined"
           :placeholder="`เลือก${field.label}`"
+          :disabled="field.key === 'fishpond' && !formData['greenhouse']"
           fluid
           size="small"
           :invalid="field.required && !formData[field.key] && isSubmitting"
