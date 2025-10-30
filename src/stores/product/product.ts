@@ -105,13 +105,17 @@ export interface IProduct {
   lotNumber: string
   quality?: string
   fishpond: {
-    _id: string
-    name: string
-    code: string
-    images: { filename: string; type: string }[]
     active: boolean
-    cat: string
-    uat: string
+    cat: number
+    code: string
+    depth: number
+    greenhouse: string
+    images: { filename: string; type: string }[]
+    length: number
+    note: string
+    uat: number
+    width: number
+    _id: string
   } | null
   foodType?: string
   seedType?: string
@@ -204,10 +208,11 @@ export interface ICreateProductPayload {
   }
 }
 
-export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species'> {
+export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm'> {
   _id: string
   fishpond?: string
   species?: string
+  farm?: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ

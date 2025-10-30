@@ -166,6 +166,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
     food: newProductData.food || null,
     fishpond: newProductData.fishpond ?._id,
     species: newProductData.species?._id,
+    farm: newProductData.farm?._id,
   }
 
   productImages.value = newProductData.images.map((img) => ({

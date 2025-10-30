@@ -110,7 +110,7 @@ const filteredProducts = computed(() => {
     }
     if (fishFilters.value.farm) {
       filtered = filtered.filter((product) =>
-        product.farm?.toLowerCase().includes(fishFilters.value.farm.toLowerCase())
+        product.farm?._id === fishFilters.value.farm
       )
     }
     if (fishFilters.value.gender) {

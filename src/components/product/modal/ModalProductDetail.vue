@@ -5,6 +5,8 @@ import { type IProduct, type ICategoryOption } from '../../../stores/product/pro
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
 import type { ICategory } from '../../../stores/product/category'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { useQuery } from '@tanstack/vue-query'
 
 // Props
 const props = defineProps<{
@@ -37,47 +39,55 @@ const getGenderTag = (gender: string) => {
   }
 }
 
+const greenhouseStore = useGreenhouseStore()
+const { data: greenhouseData } = useQuery<IGreenhouse[]>({
+  queryKey: ['get_greenhouses'],
+  queryFn: () => greenhouseStore.onGetGreenhouses(),
+})
+
 const formatBirthDate = (birth: string | number) => {
   if (!birth) return '-'
   return dayjs(birth).format('DD/MM/YYYY')
 }
-
 // Helper function to get field value from productData
 const getFieldValue = (fieldKey: string) => {
   if (!props.productData) return null
 
   // Handle nested fields
   if (fieldKey === 'species' && props.productData.species) {
-    return props.productData.species.name || props.productData.species
+    return props.productData.species.name || '-'
+  }
+  if (fieldKey === 'greenhouse' && props.productData.fishpond) {
+    return greenhouseData.value?.find((greenhouse) => greenhouse._id === props.productData?.fishpond?.greenhouse)?.name || '-'
   }
   if (fieldKey === 'fishpond' && props.productData.fishpond) {
-    return props.productData.fishpond.name || props.productData.fishpond
+    return props.productData.fishpond.code || '-'
   }
-  if (fieldKey === 'category' && props.productData.category) {
-    return props.productData.category.name || props.productData.category
-  }
-
   // Handle food fields
   if (fieldKey === 'foodType' && props.productData.food) {
-    return props.productData.food.type
+    return props.productData.food.type || '-'
   }
   if (fieldKey === 'produceDate' && props.productData.food) {
-    return props.productData.food.produceDate
+    return props.productData.food.produceDate || '-'
   }
   if (fieldKey === 'expireDate' && props.productData.food) {
-    return props.productData.food.expireDate
+    return props.productData.food.expireDate || '-'
   }
   if (fieldKey === 'marketPrice' && props.productData.food) {
-    return props.productData.food.marketPrice
+    return props.productData.food.marketPrice || '-'
   }
   if (fieldKey === 'costPrice' && props.productData.food) {
-    return props.productData.food.costPrice
+    return props.productData.food.costPrice || '-'
   }
   if (fieldKey === 'customerPrice' && props.productData.food) {
-    return props.productData.food.customerPrice
+    return props.productData.food.customerPrice || '-'
   }
   if (fieldKey === 'dealerPrice' && props.productData.food) {
-    return props.productData.food.dealerPrice
+    return props.productData.food.dealerPrice || '-'
+  }
+
+  if (fieldKey === 'farm' && props.productData.farm) {
+    return props.productData.farm.name || '-'
   }
 
   // Handle direct fields
