@@ -204,14 +204,29 @@ const openEditModal = (product: IProduct) => {
   showEditModal.value = true
 }
 
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedProduct.value = null
+}
+
 const openDetailModal = (product: IProduct) => {
   selectedProduct.value = product
   showDetailModal.value = true
 }
 
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedProduct.value = null
+}
+
 const openDeleteModal = (product: IProduct) => {
   selectedProduct.value = product
   showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false
+  selectedProduct.value = null
 }
 
 const selectCategory = (category: ICategory) => {
@@ -293,6 +308,7 @@ const updateFishFilter = (filters: IFishFilters) => {
     :product-data="selectedProduct"
     :categoryOptionsUI="categoryOptionsUI"
     :selected-category="selectedCategory"
+    @close-edit-modal="closeEditModal"
   />
 
   <ModalProductDetail
@@ -300,12 +316,14 @@ const updateFishFilter = (filters: IFishFilters) => {
     :product-data="selectedProduct"
     :selected-category="selectedCategory"
     :categoryOptionsUI="categoryOptionsUI"
+    @close-detail-modal="closeDetailModal"
   />
 
   <ModalDeleteProduct
     v-if="selectedProduct"
     v-model:visible="showDeleteModal"
     :product-data="selectedProduct"
+    @close-delete-modal="closeDeleteModal"
   />
 
   <!-- Search Modal -->

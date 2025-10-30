@@ -33,7 +33,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-edit-modal': []
 }>()
 
 const selectedCategoryId = computed(() => props.selectedCategory)
@@ -124,6 +124,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
   certificateFile.value = null
   productForm.value.certificate = ''
 
+
   const formData: Record<string, any> = {}
   selectedCategoryInfo.value.fields.forEach((field) => {
     const fieldValue = newProductData[field.key as keyof IProduct]
@@ -164,7 +165,6 @@ const initializeDynamicForm = (newProductData: IProduct) => {
 
   dynamicFormData.value = formData
 
-  console.log(newProductData,'formData')
   productForm.value = {
     ...newProductData,
     _id: newProductData._id,
@@ -338,8 +338,6 @@ const handleSubmit = async () => {
   }
 
   updateProduct(payload)
-
-  // handleClose()
 }
 
 const queryClient = useQueryClient()
@@ -370,7 +368,7 @@ const handleClose = () => {
   certificateFile.value = null
   productForm.value.images = []
   productForm.value.certificate = ''
-  emit('update:visible', false)
+  emit('close-edit-modal')
 }
 
 const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
@@ -523,13 +521,12 @@ const farmOptions = computed(() => {
     value: farm._id,
   }))
 })
-
 </script>
 
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '65rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"

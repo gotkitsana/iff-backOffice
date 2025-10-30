@@ -519,7 +519,7 @@ const farmOptions = computed(() => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '70rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"

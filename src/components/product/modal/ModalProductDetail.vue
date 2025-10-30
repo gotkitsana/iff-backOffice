@@ -18,7 +18,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-detail-modal': []
 }>()
 
 // Stores
@@ -130,14 +130,14 @@ const getImageUrl = (filename: string) => {
 }
 
 const handleClose = () => {
-  emit('update:visible', false)
+  emit('close-detail-modal')
 }
 </script>
 
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '75rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"

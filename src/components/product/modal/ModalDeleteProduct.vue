@@ -12,7 +12,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-delete-modal': []
 }>()
 
 // Stores
@@ -49,14 +49,14 @@ const handleDelete = () => {
 }
 
 const handleClose = () => {
-  emit('update:visible', false)
+  emit('close-delete-modal')
 }
 </script>
 
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '35rem' }"
     :breakpoints="{ '1199px': '70vw', '575px': '95vw' }"
