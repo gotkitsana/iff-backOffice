@@ -141,6 +141,7 @@ const categoryOptionsUI = computed(() => {
       value: 'fish',
       fields: [
         { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'greenhouse', label: 'กรีนเฮ้า', type: 'select', required: true },
         { key: 'fishpond', label: 'บ่อ', type: 'select', required: true },
         { key: 'sku', label: 'รหัสปลา', type: 'text', required: true },
         { key: 'species', label: 'สายพันธุ์', type: 'select', required: true },
@@ -148,7 +149,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'birth', label: 'วันเกิด', type: 'date', required: true },
         { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'select', required: true },
         { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
-        { key: 'farm', label: 'ฟาร์ม', type: 'text', required: true },
+        { key: 'farm', label: 'ฟาร์ม', type: 'select', required: true },
         { key: 'size', label: 'ไซต์', type: 'number', required: true },
         { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
         { key: 'gender', label: 'เพศ', type: 'select', required: true },

@@ -141,7 +141,14 @@ export interface IProduct {
     dealerPrice: number
   } | null
   sku: string
-  farm?: string
+  farm: {
+    active: boolean
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  } | null
   size?: number
   gender?: string
   age?: string
@@ -252,6 +259,7 @@ export type IFieldsKey =
   | 'dealerPrice'
   | 'species'
   | 'code'
+  | 'greenhouse'
 
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
 export type IFieldsRequired = boolean

@@ -6,6 +6,8 @@ import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
 import { useRouter } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 
 // Router
 const router = useRouter()
@@ -60,6 +62,12 @@ const getSeedSizeLabel = (seedSize: ISeedSizeValue) => {
 const getSeedTypeLabel = (seedType: string) => {
   return seedType || '-'
 }
+
+const greenhouseStore = useGreenhouseStore()
+const { data: greenhouseData } = useQuery<IGreenhouse[]>({
+  queryKey: ['get_greenhouses'],
+  queryFn: () => greenhouseStore.onGetGreenhouses(),
+})
 
 const foodColumns = ref([
   {
@@ -383,6 +391,30 @@ const fishColumns = ref([
       ),
   },
   {
+    field: 'greenhouse',
+    header: 'กรีนเฮ้า',
+    headCell: '!min-w-[5rem]',
+    render: (slotProps: any) =>
+      slotProps?.data?.fishpond
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-warehouse text-blue-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                greenhouseData.value?.find(
+                  (greenhouse) => greenhouse._id === slotProps?.data?.fishpond?.greenhouse
+                )?.name
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
     field: 'fishpond',
     header: 'บ่อ',
     headCell: '!min-w-[5rem]',
@@ -395,7 +427,7 @@ const fishColumns = ref([
             },
             [
               h('i', { class: 'pi pi-circle-fill text-cyan-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.fishpond.name),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.fishpond?.code),
             ]
           )
         : h('span', '-'),
@@ -519,7 +551,7 @@ const fishColumns = ref([
     header: 'ฟาร์ม',
     headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
-      slotProps.data.farm
+      slotProps?.data?.farm
         ? h(
             'div',
             {
@@ -527,7 +559,7 @@ const fishColumns = ref([
             },
             [
               h('i', { class: 'pi pi-building text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.farm),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.farm?.name),
             ]
           )
         : h('span', '-'),

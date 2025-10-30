@@ -8,6 +8,8 @@ const props = defineProps<{
   isSubmitting: boolean
   speciesOptions?: { label: string; value: string }[]
   pondOptions?: { label: string; value: string; group?: string }[]
+  greenhouseOptions?: { label: string; value: string }[]
+  farmOptions?: { label: string; value: string }[]
 }>()
 
 const emit = defineEmits<{
@@ -35,6 +37,10 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 
   if (fieldKey === 'seedSize') {
     return productStore.seedSizeOptions
+  }
+
+  if (fieldKey === 'greenhouse') {
+    return props.greenhouseOptions || []
   }
 
   if (fieldKey === 'fishpond') {
@@ -69,6 +75,10 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 
   if (fieldKey === 'species') {
     return props.speciesOptions
+  }
+
+  if (fieldKey === 'farm') {
+    return props.farmOptions
   }
 
   return []
