@@ -131,12 +131,27 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 const selectedProductDetails = computed(() => {
   return saleForm.value.products.map((product: { id: string; quantity: number }) => {
     if (!product.id || !availableProducts.value) return null
+
+    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    const category = handleFindCategory(productDetail?.category?._id)
+
+    if (!productDetail) {
+      return {
+        name: '',
+        price: 0,
+        productId: product.id,
+        quantity: product.quantity,
+        isMissing: true,
+        category: undefined,
+      }
+    }
+
     return {
-      ...availableProducts.value.find((p) => p._id === product.id),
+      ...productDetail,
       quantity: product.quantity,
-      category: handleFindCategory(
-        availableProducts.value?.find((p) => p._id === product.id)?.category?._id
-      ),
+      productId: product.id,
+      isMissing: false,
+      category: category,
     }
   })
 })
@@ -144,8 +159,9 @@ const selectedProductDetails = computed(() => {
 const totalAmount = computed(() => {
   return saleForm.value.products.reduce((sum, product) => {
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
     if (productDetail && productDetail.price) {
-      return sum + productDetail.price * product.quantity
+      return sum + (productDetail.price || 0) * product.quantity
     }
     return sum
   }, 0)
@@ -265,10 +281,12 @@ const resetForm = () => {
 
 const sellers = computed(() => {
   if (!props.admins) return []
-  return props.admins?.filter((admin) => admin.role === 1).map((admin) => ({
-    label: admin.name,
-    value: admin._id,
-  }))
+  return props.admins
+    ?.filter((admin) => admin.role === 1)
+    .map((admin) => ({
+      label: admin.name,
+      value: admin._id,
+    }))
 })
 </script>
 
@@ -476,12 +494,14 @@ const sellers = computed(() => {
             </div>
 
             <CardProductList
-              v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
-              :name="selectedProductDetails[index]?.name || selectedProductDetails[index]?.species?.name || ''"
-              :quantity="selectedProductDetails[index]?.quantity || 0"
-              :price="selectedProductDetails[index]?.price || 0"
-              :detail="selectedProductDetails[index]?.detail || ''"
+              v-if="selectedProductDetails[index]"
+              :name="selectedProductDetails[index]?.name"
+              :quantity="selectedProductDetails[index]?.quantity || product.quantity"
+              :price="selectedProductDetails[index]?.price"
+              :detail="''"
               :category="selectedProductDetails[index]?.category"
+              :product-id="selectedProductDetails[index]?.productId || product.id"
+              :is-missing="!selectedProductDetails[index]"
             />
           </div>
         </div>

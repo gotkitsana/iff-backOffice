@@ -33,6 +33,8 @@ const totalAmount = computed(() => {
   return productTotal - props.saleData.discount
 })
 
+console.log(products)
+
 const productTotal = computed(() => {
   return products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity

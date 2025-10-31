@@ -56,18 +56,65 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     (product) => !selectedProductIds.includes(product._id)
   )
 
-  return unselectedProducts.map((product) => ({
-    label: `${product.name} (รหัส: ${product.lotNumber})`,
-    value: product._id,
-  }))
+  // group by category._id
+  const groupsMap = new Map<
+    string,
+    { label: string; items: Array<{ label: string; value: string; image?: string }> }
+  >()
+
+  unselectedProducts.forEach((product) => {
+    const catId = product.category?._id || 'unknown'
+    const cat = handleFindCategory(product.category?._id)
+    const group = groupsMap.get(catId) || {
+      label: cat?.name || 'ไม่ระบุหมวดหมู่',
+      items: [],
+    }
+
+    // เพิ่มรูปภาพจาก images[0]
+    const imageUrl =
+      product.images && product.images.length > 0
+        ? `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
+            product.images[0].filename
+          }`
+        : undefined
+
+    group.items.push({
+      label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
+      value: product._id,
+      image: imageUrl,
+    })
+
+    groupsMap.set(catId, group)
+  })
+
+  return Array.from(groupsMap.values())
 }
 
 const selectedProductDetails = computed(() => {
   return props.products.map((product: { id: string; quantity: number }) => {
     if (!product.id || !availableProducts.value) return null
+
+    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    if (!productDetail) {
+      return {
+        productId: product.id,
+        quantity: product.quantity,
+        isMissing: true,
+        name: '',
+        price: 0,
+        category: undefined,
+        detail: '',
+      }
+    }
+
+    const category = handleFindCategory(productDetail?.category?._id)
+
     return {
-      ...availableProducts.value.find((p) => p._id === product.id),
+      ...productDetail,
       quantity: product.quantity,
+      productId: productDetail._id,
+      isMissing: false,
+      category: category,
     }
   })
 })
@@ -75,9 +122,11 @@ const selectedProductDetails = computed(() => {
 const totalAmount = computed(() => {
   return props.products.reduce((sum, product) => {
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
     if (productDetail && productDetail.price) {
-      return sum + productDetail.price * product.quantity
+      return sum + (productDetail.price || 0) * product.quantity
     }
+
     return sum
   }, 0)
 })
@@ -117,7 +166,6 @@ const removeProduct = (index: number) => {
 const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
-
 </script>
 
 <template>
@@ -163,12 +211,55 @@ const isProductValid = (product: { id: string; quantity: number }) => {
                 :options="getProductOptionsForIndex(index)"
                 optionLabel="label"
                 optionValue="value"
+                optionGroupLabel="label"
+                optionGroupChildren="items"
                 placeholder="เลือกสินค้าที่ต้องการขาย"
                 fluid
                 size="small"
                 :invalid="!product.id && isSubmitting"
                 filter
-              />
+              >
+                <template #option="{ option }">
+                  <div class="flex items-center gap-2">
+                    <img
+                      v-if="option.image"
+                      :src="option.image"
+                      alt="product"
+                      class="w-6 h-6 object-cover rounded"
+                    />
+                    <i v-else class="pi pi-image text-gray-400 text-sm"></i>
+                    <span>{{ option.label }}</span>
+                  </div>
+                </template>
+              </Select>
+
+              <!-- <Select
+                  v-model="product.id"
+                  :options="getProductOptionsForIndex(index)"
+                  optionLabel="label"
+                  optionValue="value"
+                  optionGroupLabel="label"
+                  optionGroupChildren="items"
+                  placeholder="เลือกสินค้าที่ต้องการขาย"
+                  fluid
+                  size="small"
+                  filter
+                  :invalid="!product.id && isSubmitting"
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2">
+                      <img
+                        v-if="option.image"
+                        :src="option.image"
+                        alt="product"
+                        class="w-6 h-6 object-cover rounded"
+                      />
+                      <i v-else class="pi pi-image text-gray-400 text-sm"></i>
+                      <span>{{ option.label }}</span>
+                    </div>
+                  </template>
+                </Select> -->
+
               <small v-if="!product.id && isSubmitting" class="text-red-500"
                 >กรุณาเลือกสินค้า</small
               >
@@ -192,23 +283,25 @@ const isProductValid = (product: { id: string; quantity: number }) => {
           </div>
 
           <CardProductList
-            v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
-            :name="selectedProductDetails[index]?.name || ''"
-            :quantity="selectedProductDetails[index]?.quantity || 0"
-            :price="selectedProductDetails[index]?.price || 0"
-            :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category._id)"
+            :name="selectedProductDetails[index]?.name"
+            :quantity="selectedProductDetails[index]?.quantity || product.quantity"
+            :price="selectedProductDetails[index]?.price"
+            :detail="selectedProductDetails[index]?.detail"
+            :category="selectedProductDetails[index]?.category"
+            :productId="selectedProductDetails[index]?.productId || product.id"
+            :isMissing="selectedProductDetails[index]?.isMissing"
           />
         </div>
 
         <div v-else>
           <CardProductList
-            v-if="selectedProductDetails[index] && selectedProductDetails[index]?.category"
-            :name="selectedProductDetails[index]?.name || ''"
-            :quantity="selectedProductDetails[index]?.quantity || 0"
-            :price="selectedProductDetails[index]?.price || 0"
-            :detail="selectedProductDetails[index]?.detail || ''"
-            :category="handleFindCategory(selectedProductDetails[index]?.category._id)"
+            :name="selectedProductDetails[index]?.name"
+            :quantity="selectedProductDetails[index]?.quantity || product.quantity"
+            :price="selectedProductDetails[index]?.price"
+            :detail="selectedProductDetails[index]?.detail"
+            :category="selectedProductDetails[index]?.category"
+            :productId="selectedProductDetails[index]?.productId || product.id"
+            :isMissing="selectedProductDetails[index]?.isMissing"
           />
         </div>
       </div>

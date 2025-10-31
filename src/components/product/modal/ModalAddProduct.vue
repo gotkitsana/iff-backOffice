@@ -55,7 +55,7 @@ const productForm = ref<ICreateProductPayload>({
   name: '',
   code: '',
   lotNumber: '',
-  price: undefined,
+  price: 0,
   detail: '',
   category: '',
   sold: false,
@@ -324,6 +324,16 @@ const handleSubmit = async () => {
     ...productForm.value,
     type: productType.value,
     category: selectedCategory.value._id,
+    name:
+      selectedCategory.value.value !== 'fish'
+        ? productForm.value.name
+        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || '',
+    price:
+      selectedCategory.value.value == 'fish'
+        ? productForm.value.price
+        : selectedCategory.value.value === 'food'
+        ? productForm.value.food.customerPrice
+        : 0,
   }
 
   createProduct(payload)
@@ -365,7 +375,7 @@ const resetForm = () => {
     name: '',
     code: '',
     lotNumber: '',
-    price: undefined,
+    price: 0,
     detail: '',
     category: '',
     sold: false,

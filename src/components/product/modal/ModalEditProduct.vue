@@ -49,7 +49,7 @@ const productForm = ref<IUpdateProductPayload>({
   lotNumber: '',
   code: '',
   price: 0,
-  species: '',
+  species: undefined,
   detail: '',
   category: {
     _id: '',
@@ -64,7 +64,7 @@ const productForm = ref<IUpdateProductPayload>({
   // ปลา fields
   sku: '',
   size: undefined,
-  farm: '',
+  farm: undefined,
   birth: '',
   age: '',
   gender: '',
@@ -143,13 +143,13 @@ const initializeDynamicForm = (newProductData: IProduct) => {
     } else if (field.key === 'dealerPrice' && newProductData.food) {
       formData[field.key] = newProductData.food.dealerPrice || 0
     } else if (field.key === 'species' && newProductData.species) {
-      formData[field.key] = newProductData.species._id || ''
+      formData[field.key] = newProductData.species._id || undefined
     } else if (field.key === 'fishpond' && newProductData.fishpond) {
-      formData[field.key] = newProductData.fishpond._id || ''
+      formData[field.key] = newProductData.fishpond._id || undefined
     } else if (field.key === 'birth' && newProductData.birth) {
       formData[field.key] = dayjs(newProductData.birth).toDate() || ''
     } else if (field.key === 'farm' && newProductData.farm) {
-      formData[field.key] = newProductData.farm._id || ''
+      formData[field.key] = newProductData.farm._id || undefined
     } else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
@@ -334,7 +334,17 @@ const handleSubmit = async () => {
       filename: img.filename,
       type: img.type,
     })),
-    certificate: isFishCategory.value ? certificateFile.value?.filename || '' : '',
+    certificate: isFishCategory.value ? certificateFile.value?.filename : '',
+    price:
+      selectedCategoryId.value?.value == 'fish'
+        ? productForm.value.price
+        : selectedCategoryId.value?.value === 'food'
+        ? productForm.value.food?.customerPrice || 0
+        : 0,
+    name:
+      selectedCategoryId.value?.value !== 'fish'
+        ? productForm.value.name
+        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || '',
   }
 
   updateProduct(payload)

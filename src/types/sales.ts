@@ -40,10 +40,10 @@ export type ISales = {
     type: string
   }
   products: {
-    name: string
-    price: number | null
-    type: number
-    category: string | null
+    name?: string
+    price?: number | null
+    type?: number
+    category?: string | null
     id: string
     quantity: number
   }[]
