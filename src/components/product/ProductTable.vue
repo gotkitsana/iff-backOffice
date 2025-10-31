@@ -89,7 +89,7 @@ const foodColumns = ref([
   },
   {
     field: 'lotNumber',
-    header: 'รหัสล็อต',
+    header: 'เลขล็อต',
     render: (slotProps: any) =>
       h(
         'div',
@@ -639,11 +639,235 @@ const fishColumns = ref([
   },
 ])
 
+const microorganismColumns = ref([
+  {
+    field: 'sku',
+    header: 'รหัสสารปรับสภาพน้ำ',
+    render: (slotProps: any) =>
+      slotProps.data.sku
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'lotNumber',
+    header: 'เลขล็อต',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber),
+        ]
+      ),
+  },
+  {
+    field: 'name',
+    header: 'ชื่อแบรนด์',
+    headCell: '!min-w-[8rem]',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center gap-1.5'],
+        },
+        [
+          slotProps.data.images && slotProps.data.images.length > 0
+            ? h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'product image',
+                class: 'w-auto h-8 object-contain rounded-lg',
+              })
+            : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
+          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.name),
+        ]
+      ),
+  },
+  {
+    field: 'weight',
+    header: 'น้ำหนัก (กรัม)',
+    headCell: '!min-w-[7rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.weight
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
+        : h('span', '-'),
+  },
+  {
+    field: 'food.produceDate',
+    header: 'วันที่ผลิต',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.produceDate
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'food.expireDate',
+    header: 'วันหมดอายุ',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.expireDate
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5'],
+            },
+            [
+              h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900' },
+                dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'food.marketPrice',
+    header: 'ราคาท้องตลาด',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.marketPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.food?.marketPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'food.costPrice',
+    header: 'ราคาทุน',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.costPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.food?.costPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'food.customerPrice',
+    header: 'ราคาลูกค้า',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.customerPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.food?.customerPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'food.dealerPrice',
+    header: 'ราคาพ่อค้า',
+    headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data?.food?.dealerPrice
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
+              h(
+                'span',
+                { class: 'text-sm text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.food?.dealerPrice)
+              ),
+            ]
+          )
+        : h('span', '-'),
+  },
+  {
+    field: 'balance',
+    header: 'สินค้าคงเหลือ',
+    headCell: '!min-w-[6rem] justify-end',
+    render: (slotProps: any) =>
+      slotProps.data.balance
+        ? h(
+            'div',
+            {
+              class: ['flex items-center gap-1.5 justify-end'],
+            },
+            [
+              h('i', { class: 'pi pi-box text-green-500 text-xs' }),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
+            ]
+          )
+        : h('span', '-'),
+  },
+])
+
+
 const displayColumns = computed(() => {
   if (props.selectedCategory?.value === 'food') {
     return foodColumns.value
   } else if (props.selectedCategory?.value === 'fish') {
     return fishColumns.value
+  } else if (props.selectedCategory?.value === 'microorganism') {
+    return microorganismColumns.value
   }
   return []
 })

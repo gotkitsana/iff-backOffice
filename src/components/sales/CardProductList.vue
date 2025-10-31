@@ -12,6 +12,7 @@ interface Props {
   price?: number
   detail?: string
   isMissing?: boolean
+  image?: string
 }
 
 const props = defineProps<Props>()
@@ -30,6 +31,7 @@ const iconClass = computed(() =>
     ? `pi ${props.category.icon} text-lg ${props.category.iconColor}`
     : 'pi pi-exclamation-triangle text-lg text-red-500'
 )
+
 </script>
 
 <template>
@@ -38,8 +40,15 @@ const iconClass = computed(() =>
       <div class="flex items-center justify-between gap-3">
         <!-- Product Info -->
         <div class="flex items-center gap-3 flex-1">
+          <img
+            v-if="props.image"
+            :src="props.image"
+            alt="product image"
+            class="w-auto h-16 object-contain"
+          />
           <div
-            class="w-12 h-12 rounded-lg flex items-center justify-center backdrop-blur-xl"
+            v-else
+            class="w-16 h-16 rounded-lg flex items-center justify-center backdrop-blur-xl"
             :class="iconWrapperClass"
           >
             <i :class="iconClass"></i>
@@ -48,7 +57,7 @@ const iconClass = computed(() =>
           <div class="flex-1 min-w-0">
             <template v-if="!isProductMissing">
               <div class="flex items-center gap-3">
-                <h5 class="font-[500]! text-sm text-gray-900">
+                <h5 class="font-[600]! text-gray-900 mb-1">
                   {{ props.name }}
                 </h5>
                 <Tag
@@ -56,10 +65,9 @@ const iconClass = computed(() =>
                   :value="props.category?.name || 'ไม่ระบุ'"
                   severity="info"
                   size="small"
-                  class="text-xs"
                 />
               </div>
-              <span v-if="props.detail" class="text-xs text-gray-500"
+              <span v-if="props.detail" class="text-sm text-gray-500"
                 >รายละเอียด: {{ props.detail }}</span
               >
               <Tag
@@ -67,14 +75,13 @@ const iconClass = computed(() =>
                 :value="props.category?.name || 'ไม่ระบุ'"
                 severity="info"
                 size="small"
-                class="text-xs"
               />
             </template>
 
             <template v-else>
               <!-- กรณีสินค้าไม่พบ -->
-              <h5 class="font-[500]! text-sm text-red-600">ไม่พบข้อมูลสินค้า</h5>
-              <p class="text-xs text-gray-500">รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่</p>
+              <h5 class="font-[500]! text-red-600 mb-1">ไม่พบข้อมูลสินค้า</h5>
+              <p class="text-sm text-gray-500">รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่</p>
             </template>
           </div>
         </div>

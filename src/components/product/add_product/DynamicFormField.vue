@@ -124,6 +124,8 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`กรอก${field.label}`"
           :min="0"
+          :minFractionDigits="2"
+          :maxFractionDigits="2"
           fluid
           size="small"
           :invalid="field.required && !formData[field.key] && isSubmitting"

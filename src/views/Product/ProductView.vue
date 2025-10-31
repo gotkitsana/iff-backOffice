@@ -7,6 +7,7 @@ import {
   type IFields,
   type IFishFilters,
   type IFoodFilters,
+  type IMicroorganismFilters,
   type IProduct,
 } from '../../stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
@@ -42,6 +43,11 @@ const foodFilters = ref<IFoodFilters>({
   foodType: '',
   seedType: '',
   seedSize: null,
+})
+
+const microorganismFilters = ref<IMicroorganismFilters>({
+  sku: '',
+  brandName: '',
 })
 
 const fishFilters = ref<IFishFilters>({
@@ -92,6 +98,21 @@ const filteredProducts = computed(() => {
 
     if (foodFilters.value.seedSize !== null) {
       filtered = filtered.filter((product) => product.seedSize === foodFilters.value.seedSize)
+    }
+  }
+
+  // Apply microorganism filters if category is microorganism
+  if (selectedCategory.value?.value === 'microorganism') {
+    if (microorganismFilters.value.sku) {
+      filtered = filtered.filter((product) =>
+        product.sku?.toLowerCase().includes(microorganismFilters.value.sku.toLowerCase())
+      )
+    }
+
+    if (microorganismFilters.value.brandName) {
+      filtered = filtered.filter((product) =>
+        product.name?.toLowerCase().includes(microorganismFilters.value.brandName.toLowerCase())
+      )
     }
   }
 
@@ -151,7 +172,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
         { key: 'farm', label: 'ฟาร์ม', type: 'select', required: true },
         { key: 'size', label: 'ไซต์', type: 'number', required: true },
-        { key: 'weight', label: 'น้ำหนัก', type: 'number', required: true },
+        { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
         { key: 'gender', label: 'เพศ', type: 'select', required: true },
         { key: 'price', label: 'ราคา', type: 'number', required: true },
       ],
@@ -165,15 +186,29 @@ const categoryOptionsUI = computed(() => {
         { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
         { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
         { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
-        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กก.)', type: 'number', required: true },
+        { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กรัม)', type: 'number', required: true },
         { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },
         { key: 'expireDate', label: 'วันหมดอายุ', type: 'date', required: true },
-
         { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
         { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
         { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
         { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
-
+        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
+      ],
+    },
+    {
+      value: 'microorganism',
+      fields: [
+        { key: 'sku', label: 'รหัสสารปรับสภาพน้ำ', type: 'text', required: true },
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
+        { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
+        { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },
+        { key: 'expireDate', label: 'วันหมดอายุ', type: 'date', required: true },
+        { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
+        { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
+        { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
+        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
         { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
       ],
     },
@@ -249,6 +284,11 @@ const selectCategory = (category: ICategory) => {
       size: null,
       price: null,
     }
+  } else if (category.value === 'microorganism') {
+    microorganismFilters.value = {
+      sku: '',
+      brandName: '',
+    }
   }
 }
 
@@ -258,6 +298,10 @@ const updateFoodFilters = (filters: IFoodFilters) => {
 
 const updateFishFilter = (filters: IFishFilters) => {
   fishFilters.value = { ...filters }
+}
+
+const updateMicroorganismFilter = (filters: IMicroorganismFilters) => {
+  microorganismFilters.value = { ...filters }
 }
 
 </script>
@@ -276,6 +320,7 @@ const updateFishFilter = (filters: IFishFilters) => {
       :products-category="filteredProducts"
       :food-filters="foodFilters"
       :fish-filters="fishFilters"
+      :microorganism-filters="microorganismFilters"
       @select-category="selectCategory"
       @open-add-modal="openAddModal"
 
@@ -283,6 +328,7 @@ const updateFishFilter = (filters: IFishFilters) => {
       @open-export-modal="openExportModal"
       @update-food-filters="updateFoodFilters"
       @update-fish-filters="updateFishFilter"
+      @update-microorganism-filters="updateMicroorganismFilter"
     />
 
     <!-- Product Table -->

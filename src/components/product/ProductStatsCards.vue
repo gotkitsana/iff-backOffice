@@ -53,7 +53,7 @@ const formatCurrency = (value: number) => {
       </template>
     </Card>
 
-    <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+    <!-- <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200">
       <template #content>
         <div class="flex items-center justify-between">
           <div>
@@ -102,6 +102,6 @@ const formatCurrency = (value: number) => {
           </div>
         </div>
       </template>
-    </Card>
+    </Card> -->
   </div>
 </template>

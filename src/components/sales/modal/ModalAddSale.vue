@@ -500,7 +500,6 @@ const sellers = computed(() => {
               :price="selectedProductDetails[index]?.price"
               :detail="''"
               :category="selectedProductDetails[index]?.category"
-              :product-id="selectedProductDetails[index]?.productId || product.id"
               :is-missing="!selectedProductDetails[index]"
             />
           </div>

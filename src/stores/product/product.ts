@@ -309,6 +309,11 @@ export interface IFoodFilters {
   seedSize: number | null
 }
 
+export interface IMicroorganismFilters {
+  sku: string
+  brandName: string
+}
+
 export interface IFishFilters {
   sku: string
   species: string

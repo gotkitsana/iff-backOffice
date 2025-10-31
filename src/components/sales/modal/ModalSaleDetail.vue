@@ -7,6 +7,9 @@ import dayjs from 'dayjs'
 import { useMemberStore, type IMember } from '../../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import type { IAdmin } from '@/stores/admin/admin'
+import { useAdminStore } from '../../../stores/admin/admin'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 
 // Props
 const props = defineProps<{
@@ -379,6 +382,29 @@ const handleFindCategory = (id: string | null | undefined): ICategory | undefine
   if (!id) return undefined
   return categories.value?.find((category) => category._id === id)
 }
+
+const adminStore = useAdminStore()
+const { data: admins } = useQuery<IAdmin[]>({
+  queryKey: ['get_admins'],
+  queryFn: () => adminStore.onGetAdmins(),
+})
+const handleFindAdmin = (id: string): IAdmin | undefined => {
+  if (!id) return undefined
+  return admins.value?.find((admin) => admin._id === id)
+}
+
+const productStore = useProductStore()
+const { data: products } = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+const getProductImage = (productId: string): string | undefined => {
+  const product = products.value?.find((p) => p._id === productId)
+  const image = product?.images[0]?.filename
+  return image
+    ? `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+    : undefined
+}
 </script>
 
 <template>
@@ -458,7 +484,7 @@ const handleFindCategory = (id: string | null | undefined): ICategory | undefine
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">ผู้ขาย:</span>
-              <span class="font-medium">{{ saleData.seller }}</span>
+              <span class="font-medium">{{ handleFindAdmin(saleData.seller)?.name || '-' }}</span>
             </div>
             <!-- <div class="flex justify-between">
               <span class="text-gray-600">วิธีการชำระเงิน:</span>
@@ -505,13 +531,23 @@ const handleFindCategory = (id: string | null | undefined): ICategory | undefine
               >
                 <td class="px-4 py-2 text-sm text-gray-900">{{ index + 1 }}</td>
                 <td class="px-4 py-2 text-sm text-gray-900">
-                  <div>
-                    <div class="font-medium!">{{ product.name }}</div>
-                    <div class="text-xs text-gray-600">
-                      หมวดหมู่:
-                      {{
-                        handleFindCategory(product?.category)?.name || '-'
-                      }}
+                  <div v-if="!product.category && !product.name">
+                    <p class="font-[500]! text-sm text-red-600 mb-0.5">ไม่พบข้อมูลสินค้า</p>
+                    <p class="text-xs text-gray-500">รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่</p>
+                  </div>
+                  <div v-else class="flex items-center gap-1.5">
+                    <img
+                      v-if="getProductImage(product.id)"
+                      :src="getProductImage(product.id)"
+                      alt="product image"
+                      class="w-auto h-10 object-contain"
+                    />
+                    <div>
+                      <p class="font-[500]!">{{ product.name }}</p>
+                      <p class="text-xs text-gray-600">
+                        หมวดหมู่:
+                        {{ handleFindCategory(product?.category)?.name || '-' }}
+                      </p>
                     </div>
                   </div>
                 </td>
@@ -519,10 +555,10 @@ const handleFindCategory = (id: string | null | undefined): ICategory | undefine
                   {{ product.quantity }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
-                  {{ formatCurrency(product.price || 0) }}
+                  {{ product.price ? formatCurrency(product.price || 0) : '-' }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
-                  {{ formatCurrency((product.price || 0) * product.quantity) }}
+                  {{ product.price ? formatCurrency((product.price || 0) * product.quantity) : '-' }}
                 </td>
               </tr>
             </tbody>

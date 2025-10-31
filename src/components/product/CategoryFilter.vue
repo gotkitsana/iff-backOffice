@@ -5,6 +5,7 @@ import {
   useProductStore,
   type IFishFilters,
   type IFoodFilters,
+  type IMicroorganismFilters,
   type IProduct,
 } from '../../stores/product/product'
 import { type ICategory } from '../../stores/product/category'
@@ -18,6 +19,7 @@ const props = defineProps<{
 
   foodFilters?: IFoodFilters
   fishFilters?: IFishFilters
+  microorganismFilters?: IMicroorganismFilters
 }>()
 
 // Emits
@@ -29,6 +31,7 @@ const emit = defineEmits<{
 
   'update-food-filters': [filters: IFoodFilters]
   'update-fish-filters': [filters: IFishFilters]
+  'update-microorganism-filters': [filters: IMicroorganismFilters]
 }>()
 
 const foodSeedTypeOptions = [
@@ -75,12 +78,21 @@ const localFishFilters = ref<IFishFilters>({
   price: props.fishFilters?.price || null,
 })
 
+const localMicroorganismFilters = ref<IMicroorganismFilters>({
+  sku: props.microorganismFilters?.sku || '',
+  brandName: props.microorganismFilters?.brandName || '',
+})
+
 // Computed
 const isFishSelected = computed(() => {
   return props.selectedCategory?.value === 'fish'
 })
 const isFoodSelected = computed(() => {
   return props.selectedCategory?.value === 'food'
+})
+
+const isMicroorganismSelected = computed(() => {
+  return props.selectedCategory?.value === 'microorganism'
 })
 
 const getCategoryStats = (category: ICategory) => {
@@ -121,6 +133,11 @@ const updateFoodFilter = (key: string, value: any) => {
   emit('update-food-filters', { ...localFoodFilters.value })
 }
 
+const updateMicroorganismFilter = (key: string, value: any) => {
+  localMicroorganismFilters.value[key as keyof typeof localMicroorganismFilters.value] = value as never
+  emit('update-microorganism-filters', { ...localMicroorganismFilters.value })
+}
+
 const updateFishFilter = (key: string, value: any) => {
   localFishFilters.value[key as keyof typeof localFishFilters.value] = value as never
   emit('update-fish-filters', { ...localFishFilters.value })
@@ -147,6 +164,12 @@ const clearFilters = () => {
       price: null,
     }
     emit('update-fish-filters', { ...localFishFilters.value })
+  } else if (props.selectedCategory?.value === 'microorganism') {
+    localMicroorganismFilters.value = {
+      sku: '',
+      brandName: '',
+    }
+    emit('update-microorganism-filters', { ...localMicroorganismFilters.value })
   }
 }
 
@@ -382,6 +405,36 @@ const speciesOptions = computed(() => {
               size="small"
               fluid
 
+            />
+          </div>
+        </div>
+
+        <div
+          v-if="isMicroorganismSelected"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+        >
+          <!-- รหัสสารปรับสภาพน้ำ -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสสารปรับสภาพน้ำ</label>
+            <InputText
+              :model-value="localMicroorganismFilters.sku"
+              @update:model-value="updateMicroorganismFilter('sku', $event)"
+              placeholder="รหัสสารปรับสภาพน้ำ"
+              size="small"
+              fluid
+              showClear
+            />
+          </div>
+
+          <!-- ชื่อแบรนด์ -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
+            <InputText
+              :model-value="localMicroorganismFilters.brandName"
+              @update:model-value="updateMicroorganismFilter('brandName', $event)"
+              placeholder="ระบุชื่อแบรนด์"
+              size="small"
+              fluid
             />
           </div>
         </div>

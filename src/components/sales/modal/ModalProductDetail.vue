@@ -7,6 +7,7 @@ import type { ISales } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { useProductStore, type IProduct } from '@/stores/product/product'
 
 // Props
 const props = defineProps<{
@@ -33,7 +34,6 @@ const totalAmount = computed(() => {
   return productTotal - props.saleData.discount
 })
 
-
 const productTotal = computed(() => {
   return products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
@@ -54,6 +54,22 @@ const handleFindCategory = (id: string): ICategory | undefined => {
   if (!id) return undefined
   return categories.value?.find((category) => category._id === id)
 }
+
+const productStore = useProductStore()
+const {data: productsData} = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
+const getProductImage = (productId: string) => {
+  const image = productsData.value?.find((p) => p._id === productId)?.images[0]?.filename
+  return image ? getImageUrl(image) : undefined
+}
+
+const getImageUrl = (image: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
+
 </script>
 
 <template>
@@ -128,12 +144,13 @@ const handleFindCategory = (id: string): ICategory | undefined => {
         <div class="space-y-2">
           <template v-for="(product, index) in products" :key="index">
             <CardProductList
-              v-if="product.category"
               :name="product.name || ''"
               :quantity="product.quantity || 0"
               :price="product.price || 0"
               :detail="''"
-              :category="handleFindCategory(product.category)"
+              :category="handleFindCategory(product.category || '')"
+              :isMissing="!product.category"
+              :image="getProductImage(product.id)"
             />
           </template>
         </div>
