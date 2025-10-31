@@ -171,7 +171,7 @@ export interface ICreateProductPayload {
   name: string // ชื่อสินค้า
   code: string // รหัสสินค้า
   lotNumber: string // หมายเลขล็อต
-  price: number | null // ราคาสินค้า
+  price?: number // ราคาสินค้า
   detail?: string // รายละเอียดสินค้า
   category: string // หมวดหมู่ของสินค้า
   sold: boolean // สถานะขายสินค้า true = ขายแล้ว, false = ยังไม่ขาย

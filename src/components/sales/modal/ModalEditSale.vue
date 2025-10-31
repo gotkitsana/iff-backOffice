@@ -10,11 +10,13 @@ import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
 import ProductManagementSection from '../ProductManagementSection.vue'
 import PaymentCalculationSection from '../PaymentCalculationSection.vue'
+import type { IAdmin } from '@/stores/admin/admin'
 
 // Props
 const props = defineProps<{
   visible: boolean
   saleData: ISales
+  admins: IAdmin[]
 }>()
 
 // Emits
@@ -255,6 +257,14 @@ const hasSlip = ref(false)
 const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
 }
+
+const sellers = computed(() => {
+  if (!props.admins) return []
+  return props.admins?.filter((admin) => admin.role === 1).map((admin) => ({
+    label: admin.name,
+    value: admin._id,
+  }))
+})
 </script>
 
 <template>
@@ -341,7 +351,7 @@ const handleSlipStatusChanged = (status: boolean) => {
           <div>
             <Select
               v-model="saleForm.seller"
-              :options="salesStore.sellers"
+              :options="sellers"
               optionLabel="label"
               optionValue="value"
               fluid

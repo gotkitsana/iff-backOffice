@@ -10,10 +10,12 @@ import { useSalesStore } from '@/stores/sales/sales'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import type { ICreateSalesPayload } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
+import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
 // Props
-defineProps<{
+const props = defineProps<{
   visible: boolean
+  admins: IAdmin[]
 }>()
 
 // Emits
@@ -260,6 +262,14 @@ const resetForm = () => {
     note: '',
   }
 }
+
+const sellers = computed(() => {
+  if (!props.admins) return []
+  return props.admins?.filter((admin) => admin.role === 1).map((admin) => ({
+    label: admin.name,
+    value: admin._id,
+  }))
+})
 </script>
 
 <template>
@@ -329,7 +339,7 @@ const resetForm = () => {
           <div>
             <Select
               v-model="saleForm.seller"
-              :options="salesStore.sellers"
+              :options="sellers"
               optionLabel="label"
               optionValue="value"
               fluid

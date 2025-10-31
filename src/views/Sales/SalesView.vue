@@ -14,6 +14,7 @@ import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'
 import type { ISales, SellingStatus } from '@/types/sales'
 import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/product/category'
+import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
 // Stores
 const salesStore = useSalesStore()
@@ -195,6 +196,14 @@ const closeDeleteModal = () => {
   showDeleteModal.value = false
   selectedSaleForDelete.value = null
 }
+
+const adminStore = useAdminStore()
+const {
+  data: admins,
+} = useQuery<IAdmin[]>({
+  queryKey: ['get_admins'],
+  queryFn: () => adminStore.onGetAdmins(),
+})
 </script>
 
 <template>
@@ -708,7 +717,9 @@ const closeDeleteModal = () => {
             :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <p class="text-sm text-gray-900 font-medium">{{ slotProps.data.seller }}</p>
+              <p class="text-sm text-gray-900 font-medium">
+                {{ admins?.find((admin) => admin._id === slotProps.data.seller)?.name }}
+                </p>
             </template>
           </Column>
 
@@ -747,10 +758,10 @@ const closeDeleteModal = () => {
   </div>
 
   <!-- เพิ่มรายการขาย -->
-  <ModalAddSale v-model:visible="showAddModal" />
+  <ModalAddSale v-model:visible="showAddModal" :admins="admins || []" />
 
   <!-- แก้ไขรายการขาย -->
-  <ModalEditSale v-if="selectedSale" v-model:visible="showEditModal" :sale-data="selectedSale" />
+  <ModalEditSale v-if="selectedSale" v-model:visible="showEditModal" :sale-data="selectedSale" :admins="admins || []" />
 
   <!-- รายละเอียดรายการขาย -->
   <ModalSaleDetail
