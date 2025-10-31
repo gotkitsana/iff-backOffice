@@ -11,12 +11,10 @@ interface Props {
   quantity: number
   price?: number
   detail?: string
-  productId?: string
   isMissing?: boolean
 }
 
 const props = defineProps<Props>()
-
 const isProductMissing = computed(() => !props.category || props.isMissing)
 
 const cardToneClass = computed(
@@ -77,9 +75,6 @@ const iconClass = computed(() =>
               <!-- กรณีสินค้าไม่พบ -->
               <h5 class="font-[500]! text-sm text-red-600">ไม่พบข้อมูลสินค้า</h5>
               <p class="text-xs text-gray-500">รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่</p>
-              <p v-if="props.productId" class="text-xs text-gray-500">
-                รหัสสินค้า: {{ props.productId }}
-              </p>
             </template>
           </div>
         </div>

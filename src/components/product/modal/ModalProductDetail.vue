@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Button, Tag } from 'primevue'
-import { type IProduct, type ICategoryOption } from '../../../stores/product/product'
+import { type IProduct, type ICategoryOption, useProductStore } from '../../../stores/product/product'
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
 import type { ICategory } from '../../../stores/product/category'
@@ -39,6 +39,7 @@ const getGenderTag = (gender: string) => {
   }
 }
 
+const productStore = useProductStore()
 const greenhouseStore = useGreenhouseStore()
 const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryKey: ['get_greenhouses'],
@@ -213,6 +214,9 @@ const handleClose = () => {
                       class="text-base text-gray-900 font-medium"
                     >
                       {{ formatFieldValue(field.key) }}
+                    </p>
+                    <p v-else-if="field.key === 'seedSize'" class="text-base text-gray-900 font-medium">
+                      {{ productStore.seedSizeOptions.find((size) => size.value === Number(productData?.seedSize))?.label || '-' }}
                     </p>
                     <p v-else class="text-base text-gray-900 font-medium">
                       {{ getFieldValue(field.key) }}

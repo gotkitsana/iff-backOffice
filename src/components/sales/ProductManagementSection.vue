@@ -95,9 +95,9 @@ const selectedProductDetails = computed(() => {
     if (!product.id || !availableProducts.value) return null
 
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
     if (!productDetail) {
       return {
-        productId: product.id,
         quantity: product.quantity,
         isMissing: true,
         name: '',
@@ -112,7 +112,6 @@ const selectedProductDetails = computed(() => {
     return {
       ...productDetail,
       quantity: product.quantity,
-      productId: productDetail._id,
       isMissing: false,
       category: category,
     }
@@ -288,7 +287,6 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :price="selectedProductDetails[index]?.price"
             :detail="selectedProductDetails[index]?.detail"
             :category="selectedProductDetails[index]?.category"
-            :productId="selectedProductDetails[index]?.productId || product.id"
             :isMissing="selectedProductDetails[index]?.isMissing"
           />
         </div>
@@ -300,7 +298,6 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :price="selectedProductDetails[index]?.price"
             :detail="selectedProductDetails[index]?.detail"
             :category="selectedProductDetails[index]?.category"
-            :productId="selectedProductDetails[index]?.productId || product.id"
             :isMissing="selectedProductDetails[index]?.isMissing"
           />
         </div>
