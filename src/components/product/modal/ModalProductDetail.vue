@@ -47,7 +47,7 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
 })
 
 const formatBirthDate = (birth: string | number) => {
-  if (!birth) return '-'
+  if (!birth || birth === '-' || birth === 0) return '-'
   return dayjs(birth).format('DD/MM/YYYY')
 }
 // Helper function to get field value from productData
@@ -222,7 +222,7 @@ const handleClose = () => {
                       {{ formatFieldValue(field.key) }}
                     </p>
                     <p v-else-if="field.key === 'seedSize'" class="text-base text-gray-900 font-medium">
-                      {{ productStore.seedSizeOptions.find((size) => size.value === Number(productData?.seedSize))?.label || '-' }}
+                      {{  productData?.seedSize?.name || '-' }}
                     </p>
                     <p v-else class="text-base text-gray-900 font-medium">
                       {{ getFieldValue(field.key) }}

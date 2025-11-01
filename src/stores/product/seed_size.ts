@@ -37,6 +37,7 @@ export interface ISeedSize {
   note: string
   cat: number
   uat: number
+  value: number
 }
 
 export interface ICreateSeedSizePayload {

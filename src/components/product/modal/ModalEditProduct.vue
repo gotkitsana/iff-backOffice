@@ -8,7 +8,6 @@ import {
   type ICategoryOption,
   type IFieldsKey,
   type IProductImage,
-  type ISeedSizeValue,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
@@ -73,7 +72,6 @@ const productForm = ref<IUpdateProductPayload>({
 
   // สินค้าอื่น fields
   seedType: '',
-  seedSize: undefined,
   balance: 0,
   food: {
     type: '',
@@ -86,6 +84,10 @@ const productForm = ref<IUpdateProductPayload>({
   },
   cat: 0,
   uat: 0,
+
+  brand: undefined,
+  foodtype: undefined,
+  seedSize: undefined,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -125,9 +127,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
   const formData: Record<string, any> = {}
   selectedCategoryInfo.value.fields.forEach((field) => {
     const fieldValue = newProductData[field.key as keyof IProduct]
-    if (field.key === 'foodType' && newProductData.food) {
-      formData[field.key] = newProductData.food.type || ''
-    } else if (field.key === 'produceDate' && newProductData.food) {
+    if (field.key === 'produceDate' && newProductData.food) {
       formData[field.key] = dayjs(newProductData.food.produceDate).toDate() || ''
     } else if (field.key === 'expireDate' && newProductData.food) {
       formData[field.key] = dayjs(newProductData.food.expireDate).toDate() || ''
@@ -151,7 +151,14 @@ const initializeDynamicForm = (newProductData: IProduct) => {
       formData[field.key] = newProductData.quality._id || undefined
     } else if (field.key === 'lotNumber' && newProductData.lotNumber) {
       formData[field.key] = newProductData.lotNumber._id || undefined
-    } else {
+    } else if (field.key === 'foodtype' && newProductData.food) {
+      formData[field.key] = newProductData.foodtype?._id || ''
+    } else if (field.key === 'seedSize' && newProductData.seedSize) {
+      formData[field.key] = newProductData.seedSize?._id || ''
+    } else if (field.key === 'brand' && newProductData.brand) {
+      formData[field.key] = newProductData.brand?._id || ''
+    }
+    else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
   })
@@ -176,6 +183,9 @@ const initializeDynamicForm = (newProductData: IProduct) => {
     farm: newProductData.farm?._id,
     quality: newProductData.quality?._id,
     lotNumber: newProductData.lotNumber?._id,
+    foodtype: newProductData.foodtype?._id,
+    seedSize: newProductData.seedSize?._id,
+    brand: newProductData.brand?._id,
   }
 
   productForm.value.images = newProductData.images
@@ -266,7 +276,7 @@ const mapDynamicFormToProductForm = () => {
         productForm.value.seedType = value as string
         break
       case 'seedSize':
-        productForm.value.seedSize = Number(value) as ISeedSizeValue
+        productForm.value.seedSize = value as string
         break
       case 'balance':
         productForm.value.balance = value as number
@@ -289,8 +299,8 @@ const mapDynamicFormToProductForm = () => {
       case 'dealerPrice':
         productForm.value.food!.dealerPrice = value as number
         break
-      case 'foodType':
-        productForm.value.food!.type = value as string
+      case 'foodtype':
+        productForm.value.foodtype = value as string
         break
       case 'species':
         productForm.value.species = value as string

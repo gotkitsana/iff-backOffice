@@ -7,7 +7,6 @@ import {
   type ICreateProductPayload,
   type IFieldsKey,
   type IProductImage,
-  type ISeedSizeValue,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -21,6 +20,7 @@ import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { usePondStore } from '@/stores/product/pond'
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 
 // Props
 const props = defineProps<{
@@ -75,7 +75,6 @@ const productForm = ref<ICreateProductPayload>({
 
   // สินค้าอื่น fields
   seedType: '',
-  seedSize: undefined,
   balance: 0,
 
   food: {
@@ -87,6 +86,10 @@ const productForm = ref<ICreateProductPayload>({
     customerPrice: 0,
     dealerPrice: 0,
   },
+
+  brand: undefined,
+  foodtype: undefined,
+  seedSize: undefined,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -193,7 +196,7 @@ const mapDynamicFormToProductForm = () => {
         productForm.value.seedType = value as string
         break
       case 'seedSize':
-        productForm.value.seedSize = Number(value) as ISeedSizeValue
+        productForm.value.seedSize = value as string
         break
       case 'balance':
         productForm.value.balance = value as number
@@ -216,8 +219,11 @@ const mapDynamicFormToProductForm = () => {
       case 'dealerPrice':
         productForm.value.food.dealerPrice = value as number
         break
-      case 'foodType':
-        productForm.value.food.type = value as string
+      case 'foodtype':
+        productForm.value.foodtype = value as string
+        break
+      case 'brand':
+        productForm.value.brand = value as string
         break
       case 'species':
         productForm.value.species = value as string
@@ -251,6 +257,11 @@ const { data: speciesData } = useQuery<ISpecies[]>({
   queryFn: () => speciesStore.onGetSpecies(),
 })
 
+const foodBrandStore = useFoodBrandStore()
+const { data: brandData } = useQuery<IFoodBrand[]>({
+  queryKey: ['get_food_brands'],
+  queryFn: () => foodBrandStore.onGetFoodBrands(),
+})
 const handleSubmit = async () => {
   isSubmitting.value = true
   if (!validateForm()) {
@@ -270,8 +281,12 @@ const handleSubmit = async () => {
     category: selectedCategory.value._id,
     name:
       selectedCategory.value.value !== 'fish'
-        ? productForm.value.name
-        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || '',
+        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส ${
+            productForm.value.sku
+          }`
+        : `${
+            speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name
+          } รหัส ${productForm.value.sku}`,
     price:
       selectedCategory.value.value == 'fish'
         ? productForm.value.price
@@ -341,7 +356,7 @@ const resetForm = () => {
 
     // สินค้าอื่น fields
     seedType: '',
-    seedSize: undefined,
+
     balance: 0,
     food: {
       type: '',
@@ -353,6 +368,9 @@ const resetForm = () => {
       dealerPrice: 0,
     },
     species: undefined,
+    brand: undefined,
+    foodtype: undefined,
+    seedSize: undefined,
   }
 
   dynamicFormData.value = null
@@ -384,7 +402,6 @@ const filteredPondOptions = computed(() => {
     }))
 })
 
-
 const updateProductImages = (images: IProductImage[]) => {
   productForm.value.images = images
 }
@@ -392,7 +409,6 @@ const updateProductImages = (images: IProductImage[]) => {
 const updateCertificateFile = (filename: string | undefined) => {
   productForm.value.certificate = filename
 }
-
 </script>
 
 <template>
@@ -436,11 +452,7 @@ const updateCertificateFile = (filename: string | undefined) => {
     </div>
 
     <template #footer>
-      <ModalFooter
-        :is-submitting="isCreatingProduct"
-        @close="handleClose"
-        @submit="handleSubmit"
-      />
+      <ModalFooter :is-submitting="isCreatingProduct" @close="handleClose" @submit="handleSubmit" />
     </template>
   </Dialog>
 </template>

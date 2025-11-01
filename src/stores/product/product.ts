@@ -45,17 +45,6 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
-  const seedSizeOptions: ISeedSizeOptions[] = [
-    {
-      label: 'SS',
-      value: 1,
-    },
-    { label: 'S', value: 2 },
-    { label: 'M', value: 3 },
-    { label: 'L', value: 4 },
-    { label: 'XL', value: 5 },
-  ]
-
   const seedTypeOptions = [
     {
       label: 'ลอย',
@@ -90,7 +79,6 @@ export const useProductStore = defineStore('product', () => {
     onUpdateProduct,
     onDeleteProduct,
     onUploadImage,
-    seedSizeOptions,
     seedTypeOptions,
     genderOptions,
     ageOptions,
@@ -131,9 +119,33 @@ export interface IProduct {
     width: number
     _id: string
   } | null
-  foodType?: string
+
   seedType?: string
-  seedSize?: ISeedSizeValue
+  foodtype?: {
+    active: boolean
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  }
+  seedSize?: {
+    active: boolean
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  }
+  brand?: {
+    active: true
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  }
+
   balance?: number
   _id: string
   type: IType
@@ -207,12 +219,11 @@ export interface ICreateProductPayload {
   rate?: number // คะแนนของสินค้า (เป็น ดาวเต็ม 5) ถ้า type = 1 ไม่ต้องระบุ
   species?: string // ชื่อสายพันธุ์ปลา ถ้า type = 1 ไม่ต้องระบุ
 
-  seedSize?: ISeedSizeValue // ขนาดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   seedType?: string // ชนิดเม็ด ถ้า type = 0 ไม่ต้องระบุ
   balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
 
   food: {
-    type: string // ประเภทอาหาร ถ้า type = 0 ไม่ต้องระบุ
+    type: string
     produceDate: number // วันที่ผลิต ถ้า type = 0 ไม่ต้องระบุ
     expireDate: number // วันหมดอายุ ถ้า type = 0 ไม่ต้องระบุ
     marketPrice: number // ราคาท้องตลาด ถ้า type = 0 ไม่ต้องระบุ
@@ -220,15 +231,22 @@ export interface ICreateProductPayload {
     customerPrice: number // ราคาลูกค้า ถ้า type = 0 ไม่ต้องระบุ
     dealerPrice: number // ราคาพ่อค้า ถ้า type = 0 ไม่ต้องระบุ
   }
+
+  brand?:string
+  foodtype?:string
+  seedSize?:string
 }
 
-export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber'> {
+export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand'> {
   _id: string
   fishpond?: string
   species?: string
   farm?: string
   quality?: string
   lotNumber?: string
+  seedSize?: string
+  foodtype?: string
+  brand?: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
@@ -271,7 +289,7 @@ export type IFieldsKey =
   | 'certificate'
   | 'auctionOnly'
   | 'sold'
-  | 'foodType'
+  | 'foodtype'
   | 'produceDate'
   | 'expireDate'
   | 'marketPrice'
@@ -281,6 +299,7 @@ export type IFieldsKey =
   | 'species'
   | 'code'
   | 'greenhouse'
+  | 'brand'
 
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
 export type IFieldsRequired = boolean
@@ -308,20 +327,12 @@ export type ICertificateFile = {
   preview: string
 }
 
-export type ISeedSizeLabel = 'SS' | 'S' | 'M' | 'L' | 'XL'
-export type ISeedSizeValue = 1 | 2 | 3 | 4 | 5
-export interface ISeedSizeOptions {
-  label: ISeedSizeLabel
-  value: ISeedSizeValue
-}
-
-
 export interface IFoodFilters {
   sku: string
   brandName: string
-  foodType: string
+  foodtype: string
   seedType: string
-  seedSize: number | null
+  seedSize: string
 }
 
 export interface IMicroorganismFilters {

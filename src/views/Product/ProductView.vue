@@ -37,9 +37,9 @@ const showDeleteModal = ref(false)
 const foodFilters = ref<IFoodFilters>({
   sku: '',
   brandName: '',
-  foodType: '',
+  foodtype: '',
   seedType: '',
-  seedSize: null,
+  seedSize: '',
 })
 
 const microorganismFilters = ref<IMicroorganismFilters>({
@@ -79,13 +79,13 @@ const filteredProducts = computed(() => {
 
     if (foodFilters.value.brandName) {
       filtered = filtered.filter((product) =>
-        product.name?.toLowerCase().includes(foodFilters.value.brandName.toLowerCase())
+        product.brand?._id === foodFilters.value.brandName
       )
     }
 
-    if (foodFilters.value.foodType) {
+    if (foodFilters.value.foodtype) {
       filtered = filtered.filter((product) =>
-        product.foodType?.toLowerCase().includes(foodFilters.value.foodType.toLowerCase())
+        product.foodtype?._id === foodFilters.value.foodtype
       )
     }
 
@@ -94,7 +94,7 @@ const filteredProducts = computed(() => {
     }
 
     if (foodFilters.value.seedSize !== null) {
-      filtered = filtered.filter((product) => product.seedSize === foodFilters.value.seedSize)
+      filtered = filtered.filter((product) => product.seedSize?._id === foodFilters.value.seedSize)
     }
   }
 
@@ -177,8 +177,8 @@ const categoryOptionsUI = computed(() => {
       fields: [
         { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
         { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
-        { key: 'name', label: 'ชื่อแบร์น', type: 'select', required: true },
-        { key: 'foodType', label: 'ประเภทอาหาร', type: 'select', required: true },
+        { key: 'brand', label: 'ชื่อแบรนด์', type: 'select', required: true },
+        { key: 'foodtype', label: 'ประเภทอาหาร', type: 'select', required: true },
         { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
         { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
         { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กรัม)', type: 'number', required: true },
@@ -196,7 +196,7 @@ const categoryOptionsUI = computed(() => {
       fields: [
         { key: 'sku', label: 'รหัสสารปรับสภาพน้ำ', type: 'text', required: true },
         { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
-        { key: 'name', label: 'ชื่อแบร์น', type: 'select', required: true },
+        { key: 'brand', label: 'ชื่อแบรนด์', type: 'select', required: true },
         { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
         { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },
         { key: 'expireDate', label: 'วันหมดอายุ', type: 'date', required: true },

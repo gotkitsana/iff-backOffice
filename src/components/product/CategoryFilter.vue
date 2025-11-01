@@ -66,9 +66,9 @@ const foodSeedSizeOptions = [
 const localFoodFilters = ref<IFoodFilters>({
   sku: props.foodFilters?.sku || '',
   brandName: props.foodFilters?.brandName || '',
-  foodType: props.foodFilters?.foodType || '',
+  foodtype: props.foodFilters?.foodtype || '',
   seedType: props.foodFilters?.seedType || '',
-  seedSize: props.foodFilters?.seedSize || null,
+  seedSize: props.foodFilters?.seedSize || '',
 })
 
 const localFishFilters = ref<IFishFilters>({
@@ -119,9 +119,9 @@ const clearFilters = () => {
     localFoodFilters.value = {
       sku: '',
       brandName: '',
-      foodType: '',
+      foodtype: '',
       seedType: '',
-      seedSize: null,
+      seedSize: '',
     }
     emit('update-food-filters', { ...localFoodFilters.value })
   } else if (props.selectedCategory?.value === 'fish') {
@@ -390,8 +390,8 @@ const seedSizeOptions = computed(() => {
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทอาหาร</label>
             <Select
-              :model-value="localFoodFilters.foodType"
-              @update:model-value="updateFoodFilter('foodType', $event)"
+              :model-value="localFoodFilters.foodtype"
+              @update:model-value="updateFoodFilter('foodtype', $event)"
               placeholder="เลือกประเภทอาหาร"
               :options="foodTypeOptions"
               optionLabel="label"

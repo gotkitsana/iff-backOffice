@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
 import { DataTable, Column, Tag, Button } from 'primevue'
-import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/product/product'
+import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
@@ -44,17 +44,6 @@ const getCertificateUrl = (image: string | undefined) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
 }
 
-const getSeedSizeLabel = (seedSize: ISeedSizeValue) => {
-  const sizeMap = {
-    1: 'SS',
-    2: 'S',
-    3: 'M',
-    4: 'L',
-    5: 'XL',
-  }
-  return sizeMap[seedSize as keyof typeof sizeMap] || '-'
-}
-
 const getSeedTypeLabel = (seedType: string) => {
   return seedType || '-'
 }
@@ -81,7 +70,7 @@ const foodColumns = ref([
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },
   {
-    field: 'name',
+    field: 'brand',
     header: 'ชื่อแบรนด์',
     headCell: '!min-w-[8rem]',
     render: (slotProps: any) =>
@@ -98,17 +87,17 @@ const foodColumns = ref([
                 class: 'w-auto h-8 object-contain rounded-lg',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
-          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.name),
+          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
         ]
       ),
   },
   {
-    field: 'food.type',
+    field: 'foodtype',
     header: 'ประเภทอาหาร',
     headCell: '!min-w-[5.5rem]',
     render: (slotProps: any) =>
-      slotProps.data?.food?.type
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.food.type)
+      slotProps.data?.foodType
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.foodtype.name)
         : h('span', '-'),
   },
   {
@@ -131,7 +120,7 @@ const foodColumns = ref([
     bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(Tag, {
-        value: getSeedSizeLabel(slotProps.data.seedSize),
+        value: slotProps.data?.seedSize?.name,
         severity: 'success',
         size: 'small',
         class: 'text-xs',
@@ -454,6 +443,7 @@ const microorganismColumns = ref([
   {
     field: 'sku',
     header: 'รหัสสารปรับสภาพน้ำ',
+    headCell: '!min-w-[8rem]',
     render: (slotProps: any) =>
       slotProps.data.sku
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku)

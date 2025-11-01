@@ -198,11 +198,11 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
     return qualityOptions.value
   }
 
-  if (fieldKey === 'foodType') {
+  if (fieldKey === 'foodtype') {
     return foodTypeOptions.value
   }
 
-  if (fieldKey === 'name') {
+  if (fieldKey === 'brand') {
     return foodBrandOptions.value
   }
 
