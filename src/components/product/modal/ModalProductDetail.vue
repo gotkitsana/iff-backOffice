@@ -224,6 +224,9 @@ const handleClose = () => {
                     <p v-else-if="field.key === 'seedSize'" class="text-base text-gray-900 font-medium">
                       {{  productData?.seedSize?.name || '-' }}
                     </p>
+                    <p v-else-if="field.key === 'brand'" class="text-base text-gray-900 font-medium">
+                      {{ productData?.brand?.name || '-' }}
+                    </p>
                     <p v-else class="text-base text-gray-900 font-medium">
                       {{ getFieldValue(field.key) }}
                     </p>

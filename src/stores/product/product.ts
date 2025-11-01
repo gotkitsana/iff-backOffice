@@ -223,7 +223,6 @@ export interface ICreateProductPayload {
   balance?: number // คงเหลือ ถ้า type = 0 ไม่ต้องระบุ
 
   food: {
-    type: string
     produceDate: number // วันที่ผลิต ถ้า type = 0 ไม่ต้องระบุ
     expireDate: number // วันหมดอายุ ถ้า type = 0 ไม่ต้องระบุ
     marketPrice: number // ราคาท้องตลาด ถ้า type = 0 ไม่ต้องระบุ

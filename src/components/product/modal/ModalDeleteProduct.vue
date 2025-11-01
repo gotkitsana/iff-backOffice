@@ -86,7 +86,7 @@ const handleClose = () => {
       <div class="space-y-2">
           <div v-if="productData" class="bg-gray-50 rounded-lg p-3 space-y-1">
             <p class="text-sm text-gray-600">
-              <span class="font-medium">ชื่อสินค้า:</span> {{ productData.name }}
+              <span class="font-medium">ชื่อสินค้า:</span> {{ productData?.brand?.name || productData?.species?.name || productData?.name || '-' }}
             </p>
             <p class="text-sm text-gray-600">
               <span class="font-medium">รหัส:</span> {{ productData.sku }}

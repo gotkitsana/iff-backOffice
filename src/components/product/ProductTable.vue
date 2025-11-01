@@ -96,7 +96,7 @@ const foodColumns = ref([
     header: 'ประเภทอาหาร',
     headCell: '!min-w-[5.5rem]',
     render: (slotProps: any) =>
-      slotProps.data?.foodType
+      slotProps.data?.foodtype
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.foodtype.name)
         : h('span', '-'),
   },
@@ -120,7 +120,7 @@ const foodColumns = ref([
     bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(Tag, {
-        value: slotProps.data?.seedSize?.name,
+        value: slotProps.data?.seedSize?.name || '-',
         severity: 'success',
         size: 'small',
         class: 'text-xs',
@@ -234,11 +234,12 @@ const fishColumns = ref([
   {
     field: 'images',
     header: 'รูปปลา',
+    headCell: '!min-w-[2.5rem] justify-center',
     render: (slotProps: any) =>
       h(
         'div',
         {
-          class: ['flex items-center'],
+          class: ['flex items-center justify-center'],
         },
         [
           slotProps.data.images && slotProps.data.images.length > 0
@@ -456,7 +457,7 @@ const microorganismColumns = ref([
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },
   {
-    field: 'name',
+    field: 'brand',
     header: 'ชื่อแบรนด์',
     headCell: '!min-w-[8rem]',
     render: (slotProps: any) =>
@@ -473,7 +474,7 @@ const microorganismColumns = ref([
                 class: 'w-auto h-8 object-contain rounded-lg',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
-          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.name),
+          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
         ]
       ),
   },
@@ -621,6 +622,7 @@ const displayColumns = computed(() => {
       :rows="50"
       :rowsPerPageOptions="[20, 50, 100]"
       scrollHeight="600px"
+      scrollable
       :pt="{
         table: 'text-sm',
         header: 'py-2',
@@ -637,7 +639,7 @@ const displayColumns = computed(() => {
         :header="item.header"
         :frozen="index === 0"
         :pt="{
-          columnHeaderContent: { class: ['!min-w-[4.5rem]', item.headCell] },
+          columnHeaderContent: { class: ['min-w-[4.5rem]', item.headCell] },
           bodyCell: { class: [item?.bodyCell || ''] },
         }"
       >
