@@ -308,7 +308,7 @@ const updateMicroorganismFilter = (filters: IMicroorganismFilters) => {
 <template>
   <div class="md:space-y-4 space-y-3">
     <!-- Page Header -->
-    <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" />
+    <!-- <ProductHeader title="จัดการสินค้า" description="จัดการสินค้าสำหรับขายและประมูล" /> -->
 
     <!-- Product Stats -->
     <ProductStatsCards />
