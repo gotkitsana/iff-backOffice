@@ -95,39 +95,6 @@ const isMicroorganismSelected = computed(() => {
   return props.selectedCategory?.value === 'microorganism'
 })
 
-const getCategoryStats = (category: ICategory) => {
-  const productsCategory = props.productsCategory
-
-  let ageStats: Record<string, number> = {}
-  let seedSizeStats: Record<string, number> = {}
-
-  if (category.value === 'fish') {
-    // Age statistics
-    ageStats = {
-      'Tosai (6เดือน-1ปี)': productsCategory.filter((p) => p.age?.includes('tosai')).length,
-      'Nisai (1-2ปี)': productsCategory.filter((p) => p.age?.includes('nisai')).length,
-      'Sansai (2-3ปี)': productsCategory.filter((p) => p.age?.includes('sansai')).length,
-      'Yonsai (3-4ปี)': productsCategory.filter((p) => p.age?.includes('yonsai')).length,
-      'Rokusai (4-5ปี)': productsCategory.filter((p) => p.age?.includes('rokusai')).length,
-    }
-  }
-  if (category.value === 'food') {
-    // Food type statistics
-    seedSizeStats = {
-      ss: productsCategory.filter((p) => p.seedSize === 1).length,
-      s: productsCategory.filter((p) => p.seedSize === 2).length,
-      m: productsCategory.filter((p) => p.seedSize === 3).length,
-      l: productsCategory.filter((p) => p.seedSize === 4).length,
-      xl: productsCategory.filter((p) => p.seedSize === 5).length,
-    }
-  }
-
-  return {
-    ageStats,
-    seedSizeStats,
-  }
-}
-
 const updateFoodFilter = (key: string, value: any) => {
   localFoodFilters.value[key as keyof typeof localFoodFilters.value] = value as never
   emit('update-food-filters', { ...localFoodFilters.value })
@@ -174,12 +141,6 @@ const clearFilters = () => {
   }
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-  }).format(value)
-}
 
 const productStore = useProductStore()
 const speciesStore = useSpeciesStore()
@@ -217,7 +178,7 @@ const farmOptions = computed(() => {
           <h3 class="text-lg font-[600]! text-gray-800">หมวดหมู่: {{ props.selectedCategory?.name }}</h3>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-2">
           <Button
             label="นำเข้า"
             icon="pi pi-file-import"
@@ -252,7 +213,7 @@ const farmOptions = computed(() => {
         </div>
       </div>
 
-      <div class="mb-4 space-y-3">
+      <div class="space-y-3">
         <div
           v-if="isFishSelected"
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
@@ -459,61 +420,6 @@ const farmOptions = computed(() => {
           size="small"
           @click="clearFilters"
         />
-      </div>
-
-      <div>
-        <div class="flex items-center gap-2 mb-2">
-          <i class="pi pi-chart-bar text-green-600"></i>
-          <h3 class="text-lg font-semibold text-gray-800">สถิติตามหมวดหมู่สินค้า</h3>
-        </div>
-
-        <div
-          v-if="props.selectedCategory?.value === 'fish'"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <div class="bg-blue-50 rounded-lg p-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                <i class="pi pi-box text-white"></i>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">จำนวน</p>
-                <p class="text-xl font-semibold text-blue-600">
-                  {{ props.productsCategory.length }} ตัว
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-green-50 rounded-lg p-4">
-            <div class="flex gap-3">
-              <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                <i class="pi pi-dollar text-white"></i>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">มูลค่า</p>
-                <p class="text-xl font-semibold text-green-600">
-                  {{
-                    formatCurrency(
-                      props.productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)
-                    )
-                  }}
-                  บาท
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="md:col-span-2 bg-purple-50 rounded-lg p-4">
-            <div class="grid grid-cols-3 gap-2">
-              <div
-                v-for="(count, age) in getCategoryStats(props.selectedCategory).ageStats"
-                :key="age"
-                class="text-sm text-gray-600"
-              >
-                {{ age }} : {{ count }} ตัว
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
