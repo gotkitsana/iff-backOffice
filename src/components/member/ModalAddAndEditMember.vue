@@ -47,13 +47,13 @@ const newMember = ref<
   interests: [],
   displayName: '',
   name: '',
-  password: null,
+  password: undefined,
   bidder: false,
   address: '',
   province: '',
   phone: '',
   type: '',
-  username: null,
+  username: undefined,
   experience: '',
   fishPreference: '',
   pondSize: '',
@@ -69,9 +69,9 @@ const closeAddModal = () => {
     interests: [],
     displayName: '',
     name: '',
-    password: null,
+    password: undefined,
     bidder: false,
-    username: null,
+    username: undefined,
     address: '',
     province: '',
     phone: '',
@@ -150,7 +150,6 @@ watch(
 )
 
 const handleAddMember = () => {
-  console.log(buildPrefix())
   isSubmitting.value = true
 
   // ตรวจสอบ contacts
@@ -196,7 +195,7 @@ const handleAddMember = () => {
     interests: interestsArray,
     code: props.data ? newMember.value.code : buildPrefix(),
     status: props.data ? newMember.value.status : 'ci',
-    username: newMember.value.username || null,
+    username: newMember.value.username || undefined,
   }
 
   if (props.data) {

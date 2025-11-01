@@ -190,10 +190,10 @@ const selectedMemberDetails = computed(() => {
 
 // Product management functions
 const addProduct = () => {
-  if (saleForm.value.products.length < 10) {
+  if (saleForm.value.products.length < 20) {
     saleForm.value.products.push({ id: '', quantity: 1 })
   } else {
-    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
+    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 20 รายการ')
   }
 }
 

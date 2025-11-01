@@ -8,6 +8,7 @@ import { toast } from 'vue3-toastify'
 import SlipUploadSection from './SlipUploadSection.vue'
 import BankSelectionSection from './BankSelectionSection.vue'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
+import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
 
 // Props
 const props = defineProps<{
@@ -228,6 +229,13 @@ const { data: members } = useQuery<IMember[]>({
   queryKey: ['get_members'],
   queryFn: () => memberStore.onGetMembers(),
 })
+
+const productStore = useProductStore()
+const { data: productsData } = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
 const queryClient = useQueryClient()
 const { mutate: updateSalesStatus } = useMutation({
   mutationFn: (payload: IUpdateSalesPayload) => salesStore.onUpdateSales(payload),
@@ -257,6 +265,48 @@ const { mutate: updateSalesStatus } = useMutation({
             uat: member.uat,
           })
         }
+        const products = productsData.value?.filter((p) =>
+          variables.products.some((product) => product.id === p._id)
+        )
+        if (products && products.length > 0) {
+          products.forEach((product) => {
+            const purchasedItem = variables.products.find((p) => p.id === product._id)
+            if (!purchasedItem) return
+
+            const quantity = purchasedItem.quantity
+            const balance = product.balance || 0
+
+            let newSoldStatus = product.sold
+            let newBalance = balance
+
+            if (balance === quantity) {
+              newSoldStatus = true
+              newBalance = 0
+            } else if (balance > quantity) {
+              newSoldStatus = false
+              newBalance = balance - quantity
+            } else {
+              newSoldStatus = true
+              newBalance = 0
+            }
+
+            updateProduct({
+              ...product,
+              fishpond: product.fishpond?._id || undefined,
+              species: product.species?._id || undefined,
+              farm: product.farm?._id || undefined,
+              quality: product.quality?._id || undefined,
+              lotNumber: product.lotNumber?._id || undefined,
+              seedSize: product.seedSize?._id || undefined,
+              foodtype: product.foodtype?._id || undefined,
+              brand: product.brand?._id || undefined,
+
+              sold: newSoldStatus,
+              balance: newBalance,
+            })
+          })
+
+        }
       }
       emit('update:visible', false)
       resetForm()
@@ -274,6 +324,13 @@ const { mutate: updateSalesStatus } = useMutation({
 const memberStore = useMemberStore()
 const { mutate: mutateUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+  },
+})
+
+const { mutate: updateProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['get_sales'] })
   },

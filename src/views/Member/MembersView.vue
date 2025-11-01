@@ -137,6 +137,8 @@ const createContactTooltip = (contactName: string) => {
           paginator
           :rows="50"
           :rowsPerPageOptions="[50, 100, 150, 200]"
+          scrollable
+          scrollHeight="600px"
         >
           <Column field="code" header="รหัสลูกค้า" :pt="{ columnHeaderContent: 'min-w-[5.5rem]' }">
             <template #body="slotProps">
