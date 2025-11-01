@@ -66,6 +66,7 @@ const foodColumns = ref([
   {
     field: 'lotNumber',
     header: 'เลขล็อต',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },

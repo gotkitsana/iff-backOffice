@@ -224,6 +224,9 @@ const mapDynamicFormToProductForm = () => {
       case 'name':
         productForm.value.name = value as string
         break
+      case 'brand':
+        productForm.value.brand = value as string
+        break
       case 'lotNumber':
         productForm.value.lotNumber = value as string
         break

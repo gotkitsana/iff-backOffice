@@ -42,10 +42,6 @@ const foodSeedTypeOptions = [
   { label: 'จม', value: 'จม' },
 ]
 
-const genderOptions = [
-  { label: 'ตัวผู้', value: 1 },
-  { label: 'ตัวเมีย', value: 2 },
-]
 
 const ageOptions = [
   { label: 'Tosai (6เดือน-1ปี)', value: 'tosai' },
@@ -55,13 +51,6 @@ const ageOptions = [
   { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
 
-const foodSeedSizeOptions = [
-  { label: 'SS', value: 0 },
-  { label: 'S', value: 1 },
-  { label: 'M', value: 2 },
-  { label: 'L', value: 3 },
-  { label: 'XL', value: 4 },
-]
 
 const localFoodFilters = ref<IFoodFilters>({
   sku: props.foodFilters?.sku || '',
@@ -375,7 +364,7 @@ const seedSizeOptions = computed(() => {
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
             <Select
               :model-value="localFoodFilters.brandName"
-              @update:model-value="updateFoodFilter('foodBrand', $event)"
+              @update:model-value="updateFoodFilter('brandName', $event)"
               :options="foodBrandOptions"
               optionLabel="label"
               optionValue="value"

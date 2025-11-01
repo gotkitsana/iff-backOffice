@@ -79,22 +79,22 @@ const filteredProducts = computed(() => {
 
     if (foodFilters.value.brandName) {
       filtered = filtered.filter((product) =>
-        product.brand?.name?.toLowerCase().includes(foodFilters.value.brandName.toLowerCase())
+        product.brand?._id === foodFilters.value.brandName
       )
     }
 
     if (foodFilters.value.foodtype) {
       filtered = filtered.filter((product) =>
-        product.foodtype?.name?.toLowerCase().includes(foodFilters.value.foodtype.toLowerCase())
+        product.foodtype?._id === foodFilters.value.foodtype
       )
     }
 
     if (foodFilters.value.seedType) {
-      filtered = filtered.filter((product) => product.seedType?.toLowerCase().includes(foodFilters.value.seedType.toLowerCase()))
+      filtered = filtered.filter((product) => product.seedType === foodFilters.value.seedType)
     }
 
     if (foodFilters.value.seedSize) {
-      filtered = filtered.filter((product) => product.seedSize?.name?.toLowerCase().includes(foodFilters.value.seedSize.toLowerCase()))
+      filtered = filtered.filter((product) => product.seedSize?._id === foodFilters.value.seedSize)
     }
   }
 
