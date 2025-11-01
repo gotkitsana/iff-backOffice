@@ -6,6 +6,8 @@ import SpeciesSetting from '@/components/product/settings/SpeciesSetting.vue'
 import PondSetting from '@/components/product/settings/PondSetting.vue'
 import GreenhouseSetting from '@/components/product/settings/GreenhouseSetting.vue'
 import FarmSetting from '@/components/product/settings/FarmSetting.vue'
+import QualitySetting from '@/components/product/settings/QualitySetting.vue'
+import LotNumberSetting from '@/components/product/settings/LotNumberSetting.vue'
 
 interface ISettingCategory {
   id: string
@@ -47,6 +49,20 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-home',
     color: 'from-orange-500 to-red-600',
     description: 'จัดการข้อมูลฟาร์ม',
+  },
+  {
+    id: 'quality',
+    name: 'คุณภาพ',
+    icon: 'pi pi-star-fill',
+    color: 'from-purple-500 to-pink-600',
+    description: 'จัดการคุณภาพสินค้า',
+  },
+  {
+    id: 'lotNumber',
+    name: 'เลขล็อต',
+    icon: 'pi pi-hashtag',
+    color: 'from-indigo-500 to-blue-600',
+    description: 'จัดการหมายเลขล็อต',
   },
 ])
 
@@ -117,6 +133,12 @@ const setActiveCategory = (categoryId: string) => {
 
       <!-- Farm Setting -->
       <FarmSetting v-if="activeCategory === 'farm'" />
+
+      <!-- Quality Setting -->
+      <QualitySetting v-if="activeCategory === 'quality'" />
+
+      <!-- Lot Number Setting -->
+      <LotNumberSetting v-if="activeCategory === 'lotNumber'" />
     </div>
   </div>
 </template>
