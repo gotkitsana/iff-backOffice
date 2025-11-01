@@ -5,14 +5,8 @@ import type { IProduct, IProductImage, ISeedSizeValue } from '../../stores/produ
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
-import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
-import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
-import { useQualityStore, type IQuality } from '@/stores/product/quality'
-
-// Router
-const router = useRouter()
 
 // Props
 const props = defineProps<{
@@ -77,32 +71,14 @@ const foodColumns = ref([
     header: 'รหัสอาหาร',
     render: (slotProps: any) =>
       slotProps.data.sku
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku)
         : h('span', '-'),
   },
   {
     field: 'lotNumber',
     header: 'เลขล็อต',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
-        ]
-      ),
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },
   {
     field: 'name',
@@ -132,16 +108,7 @@ const foodColumns = ref([
     headCell: '!min-w-[5.5rem]',
     render: (slotProps: any) =>
       slotProps.data?.food?.type
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-shopping-bag text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.food.type),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.food.type)
         : h('span', '-'),
   },
   {
@@ -187,18 +154,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.produceDate
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
           )
         : h('span', '-'),
   },
@@ -209,18 +167,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.expireDate
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
           )
         : h('span', '-'),
   },
@@ -232,18 +181,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.marketPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.marketPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.marketPrice)
           )
         : h('span', '-'),
   },
@@ -255,18 +195,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.costPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.costPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.costPrice)
           )
         : h('span', '-'),
   },
@@ -278,18 +209,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.customerPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.customerPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.customerPrice)
           )
         : h('span', '-'),
   },
@@ -301,18 +223,9 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.dealerPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.dealerPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.dealerPrice)
           )
         : h('span', '-'),
   },
@@ -322,16 +235,7 @@ const foodColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     render: (slotProps: any) =>
       slotProps.data.balance
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-box text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
         : h('span', '-'),
   },
 ])
@@ -358,8 +262,24 @@ const fishColumns = ref([
       ),
   },
   {
+    field: 'youtube',
+    header: 'วิดีโอ',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center'],
+        },
+        [
+          slotProps.data.youtube
+            ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.youtube)
+            : h('i', { class: 'pi pi-video text-gray-500 !text-xl' }),
+        ]
+      ),
+  },
+  {
     field: 'certificate',
-    header: 'ใบรับรอง',
+    header: 'ใบเซอร์',
     render: (slotProps: any) =>
       h(
         'div',
@@ -379,18 +299,14 @@ const fishColumns = ref([
   },
   {
     field: 'lotNumber',
-    header: 'เลขล็อต',
+    header: 'ล็อต',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber.name),
-        ]
-      ),
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber.name),
+  },
+  {
+    field: 'sku',
+    header: 'รหัสปลา',
+    render: (slotProps: any) => h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
   },
   {
     field: 'greenhouse',
@@ -399,20 +315,11 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps?.data?.fishpond
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-warehouse text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                greenhouseData.value?.find(
-                  (greenhouse) => greenhouse._id === slotProps?.data?.fishpond?.greenhouse
-                )?.name
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            greenhouseData.value?.find(
+              (greenhouse) => greenhouse._id === slotProps?.data?.fishpond?.greenhouse
+            )?.name
           )
         : h('span', '-'),
   },
@@ -422,33 +329,7 @@ const fishColumns = ref([
     headCell: '!min-w-[5rem]',
     render: (slotProps: any) =>
       slotProps?.data?.fishpond
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-circle-fill text-cyan-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.fishpond?.code),
-            ]
-          )
-        : h('span', '-'),
-  },
-  {
-    field: 'sku',
-    header: 'รหัสปลา',
-    render: (slotProps: any) =>
-      slotProps.data.sku
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.fishpond?.code)
         : h('span', '-'),
   },
   {
@@ -457,20 +338,7 @@ const fishColumns = ref([
     headCell: '!min-w-[7rem]',
     render: (slotProps: any) =>
       slotProps.data.species
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-star text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                slotProps.data.species.name
-              ),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data.species.name)
         : h('span', '-'),
   },
   {
@@ -479,16 +347,7 @@ const fishColumns = ref([
     headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       slotProps.data.breeders
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-heart text-pink-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.breeders),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.breeders)
         : h('span', '-'),
   },
   {
@@ -498,18 +357,9 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps.data.birth
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-calendar text-purple-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                dayjs(slotProps.data.birth).format('DD/MM/YYYY')
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data.birth).format('DD/MM/YYYY')
           )
         : h('span', '-'),
   },
@@ -519,16 +369,7 @@ const fishColumns = ref([
     headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       slotProps.data.age
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-clock text-orange-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age)
         : h('span', '-'),
   },
   {
@@ -536,16 +377,7 @@ const fishColumns = ref([
     header: 'คุณภาพปลา',
     render: (slotProps: any) =>
       slotProps.data.quality
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-star-fill text-yellow-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality.name || '-'),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality.name || '-')
         : h('span', '-'),
   },
   {
@@ -554,16 +386,7 @@ const fishColumns = ref([
     headCell: '!min-w-[7.5rem]',
     render: (slotProps: any) =>
       slotProps?.data?.farm
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-building text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.farm?.name),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.farm?.name)
         : h('span', '-'),
   },
   {
@@ -573,16 +396,7 @@ const fishColumns = ref([
     bodyCell: 'text-center',
     render: (slotProps: any) =>
       slotProps.data.size
-        ? h(
-            'div',
-            {
-              class: ['flex items-center justify-center gap-1'],
-            },
-            [
-              h('i', { class: 'pi pi-thumbtack text-blue-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size)
         : h('span', '-'),
   },
   {
@@ -592,16 +406,7 @@ const fishColumns = ref([
     bodyCell: 'text-end',
     render: (slotProps: any) =>
       slotProps.data.weight
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-inbox text-indigo-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
         : h('span', '-'),
   },
   {
@@ -624,18 +429,9 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps.data.price
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data.price)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data.price)
           )
         : h('span', '-'),
   },
@@ -647,32 +443,14 @@ const microorganismColumns = ref([
     header: 'รหัสสารปรับสภาพน้ำ',
     render: (slotProps: any) =>
       slotProps.data.sku
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-qrcode text-orange-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.sku)
         : h('span', '-'),
   },
   {
     field: 'lotNumber',
     header: 'เลขล็อต',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
-        ]
-      ),
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },
   {
     field: 'name',
@@ -713,18 +491,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.produceDate
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-calendar text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
           )
         : h('span', '-'),
   },
@@ -735,18 +504,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.expireDate
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5'],
-            },
-            [
-              h('i', { class: 'pi pi-clock text-red-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900' },
-                dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
           )
         : h('span', '-'),
   },
@@ -758,18 +518,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.marketPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-money-bill text-green-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.marketPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.marketPrice)
           )
         : h('span', '-'),
   },
@@ -781,18 +532,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.costPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-dollar text-orange-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.costPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.costPrice)
           )
         : h('span', '-'),
   },
@@ -804,18 +546,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.customerPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-shopping-cart text-blue-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.customerPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.customerPrice)
           )
         : h('span', '-'),
   },
@@ -827,18 +560,9 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.dealerPrice
         ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-building text-purple-500 text-xs' }),
-              h(
-                'span',
-                { class: 'text-sm text-gray-900 font-medium' },
-                formatCurrency(slotProps.data?.food?.dealerPrice)
-              ),
-            ]
+            'span',
+            { class: 'text-sm text-gray-900 font-medium' },
+            formatCurrency(slotProps.data?.food?.dealerPrice)
           )
         : h('span', '-'),
   },
@@ -848,20 +572,10 @@ const microorganismColumns = ref([
     headCell: '!min-w-[6rem] justify-end',
     render: (slotProps: any) =>
       slotProps.data.balance
-        ? h(
-            'div',
-            {
-              class: ['flex items-center gap-1.5 justify-end'],
-            },
-            [
-              h('i', { class: 'pi pi-box text-green-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance),
-            ]
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
         : h('span', '-'),
   },
 ])
-
 
 const displayColumns = computed(() => {
   if (props.selectedCategory?.value === 'food') {
@@ -873,7 +587,6 @@ const displayColumns = computed(() => {
   }
   return []
 })
-
 </script>
 
 <template>
@@ -894,7 +607,6 @@ const displayColumns = computed(() => {
             <p class="text-sm text-gray-600">แสดง {{ filteredProducts.length }} รายการ</p>
           </div>
         </div>
-
       </div>
     </div>
 

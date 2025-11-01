@@ -9,9 +9,9 @@ import {
   type IProduct,
 } from '../../stores/product/product'
 import { type ICategory } from '../../stores/product/category'
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
-import { useQuery } from '@tanstack/vue-query';
-import { useFarmStore, type IFarm } from '@/stores/product/farm';
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { useQuery } from '@tanstack/vue-query'
+import { useFarmStore, type IFarm } from '@/stores/product/farm'
 
 // Props
 const props = defineProps<{
@@ -25,14 +25,13 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'select-category': [category: ICategory]
   'open-add-modal': []
-  'open-search-modal': []
   'open-export-modal': []
 
   'update-food-filters': [filters: IFoodFilters]
   'update-fish-filters': [filters: IFishFilters]
   'update-microorganism-filters': [filters: IMicroorganismFilters]
+  'update-category-selector': []
 }>()
 
 const foodSeedTypeOptions = [
@@ -135,7 +134,8 @@ const updateFoodFilter = (key: string, value: any) => {
 }
 
 const updateMicroorganismFilter = (key: string, value: any) => {
-  localMicroorganismFilters.value[key as keyof typeof localMicroorganismFilters.value] = value as never
+  localMicroorganismFilters.value[key as keyof typeof localMicroorganismFilters.value] =
+    value as never
   emit('update-microorganism-filters', { ...localMicroorganismFilters.value })
 }
 
@@ -209,23 +209,15 @@ const farmOptions = computed(() => {
 
 <template>
   <div class="space-y-4">
+
     <!-- Main Filter Section -->
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
-          <i class="pi pi-filter text-blue-600"></i>
-          <h3 class="text-base font-[500]! text-gray-800">กรองสินค้าตามหมวดหมู่</h3>
+          <h3 class="text-lg font-[600]! text-gray-800">หมวดหมู่: {{ props.selectedCategory?.name }}</h3>
         </div>
 
         <div class="flex items-center gap-2">
-          <Button
-            label="ค้นหา"
-            icon="pi pi-search"
-            severity="info"
-            size="small"
-            @click="$emit('open-search-modal')"
-          />
-
           <Button
             label="นำเข้า"
             icon="pi pi-file-import"
@@ -248,6 +240,14 @@ const farmOptions = computed(() => {
             severity="info"
             size="small"
             @click="$router.push('/product/options-settings')"
+          />
+
+          <Button
+            label="เปลี่ยนหมวดหมู่"
+            icon="pi pi-sync"
+            severity="secondary"
+            size="small"
+            @click="$emit('update-category-selector')"
           />
         </div>
       </div>
@@ -279,7 +279,6 @@ const farmOptions = computed(() => {
               placeholder="เลือกสายพันธุ์"
               size="small"
               fluid
-
             />
           </div>
           <div>
@@ -293,7 +292,6 @@ const farmOptions = computed(() => {
               placeholder="เลือกอายุ"
               size="small"
               fluid
-
             />
           </div>
 
@@ -322,7 +320,6 @@ const farmOptions = computed(() => {
               placeholder="เลือกเพศ"
               size="small"
               fluid
-
             />
           </div>
 
@@ -405,7 +402,6 @@ const farmOptions = computed(() => {
               placeholder="เลือกชนิดเม็ด"
               size="small"
               fluid
-
             />
           </div>
 
@@ -421,7 +417,6 @@ const farmOptions = computed(() => {
               placeholder="เลือกขนาดเม็ด"
               size="small"
               fluid
-
             />
           </div>
         </div>
@@ -457,7 +452,6 @@ const farmOptions = computed(() => {
         </div>
 
         <Button
-          v-if="selectedCategory"
           label="ล้างกรอง"
           icon="pi pi-times"
           variant="text"
@@ -467,14 +461,14 @@ const farmOptions = computed(() => {
         />
       </div>
 
-      <div v-if="selectedCategory">
+      <div>
         <div class="flex items-center gap-2 mb-2">
           <i class="pi pi-chart-bar text-green-600"></i>
           <h3 class="text-lg font-semibold text-gray-800">สถิติตามหมวดหมู่สินค้า</h3>
         </div>
 
         <div
-          v-if="selectedCategory.value === 'fish'"
+          v-if="props.selectedCategory?.value === 'fish'"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <div class="bg-blue-50 rounded-lg p-4">
@@ -498,7 +492,12 @@ const farmOptions = computed(() => {
               <div>
                 <p class="text-sm text-gray-600">มูลค่า</p>
                 <p class="text-xl font-semibold text-green-600">
-                  {{ formatCurrency(props.productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)) }} บาท
+                  {{
+                    formatCurrency(
+                      props.productsCategory.reduce((sum, p) => sum + (p.price || 0), 0)
+                    )
+                  }}
+                  บาท
                 </p>
               </div>
             </div>
@@ -506,7 +505,7 @@ const farmOptions = computed(() => {
           <div class="md:col-span-2 bg-purple-50 rounded-lg p-4">
             <div class="grid grid-cols-3 gap-2">
               <div
-                v-for="(count, age) in getCategoryStats(selectedCategory).ageStats"
+                v-for="(count, age) in getCategoryStats(props.selectedCategory).ageStats"
                 :key="age"
                 class="text-sm text-gray-600"
               >
@@ -514,9 +513,7 @@ const farmOptions = computed(() => {
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   </div>

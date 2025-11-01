@@ -2,12 +2,25 @@
 import { Card } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query';
+import type { ICategory } from '@/stores/product/category';
+import { computed } from 'vue';
 
+const props = defineProps<{
+  selectedCategory: ICategory | null
+}>()
 
 const productStore = useProductStore()
 const { data: products } = useQuery<IProduct[]>({
   queryKey: ['get_products'],
   queryFn: () => productStore.onGetProducts(),
+})
+
+const getProductsByCategory = computed(() => {
+  if (!products.value) return []
+  if(props.selectedCategory == null){
+    return products.value
+  }
+  return products.value.filter((p) => p.category?._id === props.selectedCategory?._id)
 })
 
 // Computed
@@ -29,6 +42,21 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
+const totalLabel = computed(() => {
+  if(props.selectedCategory == null){
+    return 'มูลค่าคลังทั้งหมด'
+  }
+  return `มูลค่า${props.selectedCategory?.name}ทั้งหมด`
+})
+
+const countLabel = computed(() => {
+  if(props.selectedCategory == null){
+    return 'จำนวนสินค้าทั้งหมด'
+  }
+  return `จำนวน${props.selectedCategory?.name}ทั้งหมด`
+})
+
+
 </script>
 
 <template>
@@ -38,16 +66,35 @@ const formatCurrency = (value: number) => {
       <template #content>
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-[600]! text-gray-600 mb-1">มูลค่าคลังทั้งหมด</p>
-            <p class="text-xl md:text-2xl text-blue-600">
-              {{ formatCurrency(products?.reduce((sum, p) => sum + (p.price || 0), 0) || 0) }}
+            <p class="text-sm font-[600]! text-gray-600 mb-1">{{totalLabel}}</p>
+            <p class="text-lg md:text-xl text-green-600">
+              {{ formatCurrency(getProductsByCategory?.reduce((sum, p) => sum + (p.price || 0), 0) || 0) }}
             </p>
             <!-- <p class="text-xs text-gray-500">บาท</p> -->
           </div>
           <div
-            class="hidden md:flex w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl items-center justify-center shadow-lg"
+            class="hidden md:flex w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl items-center justify-center shadow-lg"
           >
-            <i class="pi pi-shopping-cart text-white text-2xl"></i>
+            <i class="pi pi-shopping-cart text-white text-xl"></i>
+          </div>
+        </div>
+      </template>
+    </Card>
+
+    <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200 justify-center">
+      <template #content>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-[600]! text-gray-600 mb-1">{{countLabel}}</p>
+            <p class="text-lg md:text-xl text-blue-600">
+              {{ getProductsByCategory?.length || 0 }}
+            </p>
+            <!-- <p class="text-xs text-gray-500">บาท</p> -->
+          </div>
+          <div
+            class="hidden md:flex w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl items-center justify-center shadow-lg"
+          >
+            <i class="pi pi-box text-white text-xl"></i>
           </div>
         </div>
       </template>

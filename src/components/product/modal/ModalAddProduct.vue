@@ -16,7 +16,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { type ICategory } from '@/stores/product/category'
 
 // Import components
-import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
 import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
 import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
 import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
@@ -24,13 +23,12 @@ import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { usePondStore } from '@/stores/product/pond'
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
-import { useFarmStore, type IFarm } from '@/stores/product/farm'
 
 // Props
 const props = defineProps<{
   visible: boolean
   categoryOptionsUI: ICategoryOption[]
+  selectedCategory: ICategory | null
 }>()
 
 // Emits
@@ -43,9 +41,9 @@ const productStore = useProductStore()
 const speciesStore = useSpeciesStore()
 const pondStore = usePondStore()
 
+const selectedCategory = computed<ICategory | null>(() => props.selectedCategory)
+
 // State
-const currentStep = ref(1) // 1 = เลือกหมวดหมู่, 2 = กรอกข้อมูล
-const selectedCategory = ref<ICategory | null>(null)
 const isSubmitting = ref(false)
 
 // Form data
@@ -124,7 +122,7 @@ watch(selectedCategory, (newCategory) => {
 
 // Computed
 const selectedCategoryInfo = computed(() => {
-  return props.categoryOptionsUI.find((cat) => cat._id === selectedCategory.value?._id)
+  return props.categoryOptionsUI.find((cat) => cat._id === props.selectedCategory?._id)
 })
 
 // File upload mutations
@@ -175,12 +173,15 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
 })
 
 // Methods
-const selectCategory = (category: ICategory) => {
-  selectedCategory.value = category
-  productForm.value.category = category._id
-  currentStep.value = 2
-  initializeDynamicForm()
-}
+watch(
+  () => [props.selectedCategory, props.visible],
+  (category) => {
+    if (category && props.visible) {
+      initializeDynamicForm()
+    }
+  },
+  { immediate: true }
+)
 
 const initializeDynamicForm = () => {
   if (!selectedCategoryInfo.value) return
@@ -189,14 +190,6 @@ const initializeDynamicForm = () => {
     formData[field.key] = field.type === 'number' ? 0 : ''
   })
   dynamicFormData.value = formData
-}
-
-const goBackToCategorySelection = () => {
-  currentStep.value = 1
-  selectedCategory.value = null
-  dynamicFormData.value = {} as Record<IFieldsKey, string | number | Date | null>
-
-  resetForm()
 }
 
 const updateDynamicField = (key: IFieldsKey, value: string | number | Date | null) => {
@@ -368,8 +361,6 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
 const handleClose = () => {
   resetForm()
   isSubmitting.value = false
-  currentStep.value = 1
-  selectedCategory.value = null
   emit('update:visible', false)
 }
 
@@ -505,19 +496,12 @@ const filteredPondOptions = computed(() => {
     }"
   >
     <template #header>
-      <ModalHeader :current-step="currentStep" />
+      <ModalHeader :selected-category="selectedCategory" />
     </template>
 
     <div class="space-y-4">
-      <!-- Step 1: Category Selection -->
-      <CategorySelectionStep
-        :category-options="categoryOptionsUI"
-        :selected-category="selectedCategory"
-        @select-category="selectCategory"
-      />
-
       <!-- Step 2: Dynamic Form -->
-      <div v-if="currentStep === 2 && selectedCategoryInfo" class="space-y-4">
+      <div v-if="selectedCategoryInfo" class="space-y-4">
         <!-- Dynamic Form Fields -->
         <DynamicFormField
           v-if="dynamicFormData"
@@ -545,9 +529,7 @@ const filteredPondOptions = computed(() => {
 
     <template #footer>
       <ModalFooter
-        :current-step="currentStep"
         :is-submitting="isCreatingProduct"
-        @go-back="goBackToCategorySelection"
         @close="handleClose"
         @submit="handleSubmit"
       />

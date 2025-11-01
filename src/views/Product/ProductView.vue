@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   useProductStore,
   type ICategoryOption,
@@ -19,9 +18,9 @@ import ProductStatsCards from '../../components/product/ProductStatsCards.vue'
 import CategoryFilter from '../../components/product/CategoryFilter.vue'
 import ProductTable from '../../components/product/ProductTable.vue'
 import { useCategoryStore, type ICategory } from '../../stores/product/category'
-import ModalSearchProduct from '../../components/product/modal/ModalSearchProduct.vue'
 import ModalExportProduct from '../../components/product/modal/ModalExportProduct.vue'
 import ModalDeleteProduct from '../../components/product/modal/ModalDeleteProduct.vue'
+import CategorySelectionStep from '../../components/product/add_product/CategorySelectionStep.vue'
 
 // Router & Stores
 const productStore = useProductStore()
@@ -32,7 +31,6 @@ const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const selectedProduct = ref<IProduct | null>(null)
 const selectedCategory = ref<ICategory | null>(null)
-const showSearchModal = ref(false)
 const showExportModal = ref(false)
 const showDeleteModal = ref(false)
 
@@ -129,9 +127,7 @@ const filteredProducts = computed(() => {
       filtered = filtered.filter((product) => product.age?.includes(fishFilters.value.age))
     }
     if (fishFilters.value.farm) {
-      filtered = filtered.filter((product) =>
-        product.farm?._id === fishFilters.value.farm
-      )
+      filtered = filtered.filter((product) => product.farm?._id === fishFilters.value.farm)
     }
     if (fishFilters.value.gender) {
       filtered = filtered.filter((product) => product.gender === fishFilters.value.gender)
@@ -225,10 +221,6 @@ const openAddModal = () => {
   showAddModal.value = true
 }
 
-const openSearchModal = () => {
-  showSearchModal.value = true
-}
-
 const openExportModal = () => {
   showExportModal.value = true
 }
@@ -263,34 +255,6 @@ const closeDeleteModal = () => {
   selectedProduct.value = null
 }
 
-const selectCategory = (category: ICategory) => {
-  selectedCategory.value = category
-  if (category.value === 'food') {
-    foodFilters.value = {
-      sku: '',
-      brandName: '',
-      foodType: '',
-      seedType: '',
-      seedSize: null,
-    }
-  } else if (category.value === 'fish') {
-    fishFilters.value = {
-      sku: '',
-      species: '',
-      age: '',
-      farm: '',
-      gender: '',
-      size: null,
-      price: null,
-    }
-  } else if (category.value === 'microorganism') {
-    microorganismFilters.value = {
-      sku: '',
-      brandName: '',
-    }
-  }
-}
-
 const updateFoodFilters = (filters: IFoodFilters) => {
   foodFilters.value = { ...filters }
 }
@@ -303,6 +267,17 @@ const updateMicroorganismFilter = (filters: IMicroorganismFilters) => {
   microorganismFilters.value = { ...filters }
 }
 
+const showCategorySelector = ref(true)
+
+const handleInitialCategorySelect = (category: ICategory) => {
+  selectedCategory.value = category
+  showCategorySelector.value = false
+}
+
+const updateCategorySelector = () => {
+  showCategorySelector.value = true
+  selectedCategory.value = null
+}
 </script>
 
 <template>
@@ -311,44 +286,64 @@ const updateMicroorganismFilter = (filters: IMicroorganismFilters) => {
     <ProductHeader title="ภาพรวมคลังสินค้า" description="" />
 
     <!-- Product Stats -->
-    <ProductStatsCards />
+    <ProductStatsCards :selected-category="selectedCategory" />
 
-    <!-- Category Filter -->
-    <CategoryFilter
-      :selected-category="selectedCategory"
-      :products-category="filteredProducts"
-      :food-filters="foodFilters"
-      :fish-filters="fishFilters"
-      :microorganism-filters="microorganismFilters"
-      @select-category="selectCategory"
-      @open-add-modal="openAddModal"
+    <div v-if="showCategorySelector">
+      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+        <h2 class="font-semibold! text-gray-900 mb-2">เลือกหมวดหมู่สินค้า</h2>
 
-      @open-search-modal="openSearchModal"
-      @open-export-modal="openExportModal"
-      @update-food-filters="updateFoodFilters"
-      @update-fish-filters="updateFishFilter"
-      @update-microorganism-filters="updateMicroorganismFilter"
-    />
+        <CategorySelectionStep
+          :category-options="categoryOptionsUI"
+          :selected-category="selectedCategory"
+          @select-category="handleInitialCategorySelect"
+          show-count
+        />
+      </div>
+    </div>
 
-    <!-- Product Table -->
-    <ProductTable
-      v-if="selectedCategory"
-      :filtered-products="filteredProducts || []"
-      :is-loading-products="isLoadingProductsByCategory"
-      :selected-category="selectedCategory"
-      @open-detail-modal="openDetailModal"
-      @open-edit-modal="openEditModal"
-      @open-delete-modal="openDeleteModal"
-    />
+    <div v-else class="space-y-4">
+      <CategoryFilter
+        :selected-category="selectedCategory"
+        :products-category="filteredProducts"
+        :food-filters="foodFilters"
+        :fish-filters="fishFilters"
+        :microorganism-filters="microorganismFilters"
+        @open-add-modal="openAddModal"
+        @open-export-modal="openExportModal"
+        @update-food-filters="updateFoodFilters"
+        @update-fish-filters="updateFishFilter"
+        @update-microorganism-filters="updateMicroorganismFilter"
+        @update-category-selector="updateCategorySelector"
+      />
+
+      <!-- Product Table -->
+      <ProductTable
+        v-if="selectedCategory"
+        :filtered-products="filteredProducts || []"
+        :is-loading-products="isLoadingProductsByCategory"
+        :selected-category="selectedCategory"
+        @open-detail-modal="openDetailModal"
+        @open-edit-modal="openEditModal"
+        @open-delete-modal="openDeleteModal"
+      />
+    </div>
   </div>
 
   <!-- Modal Components -->
-  <ModalAddProduct v-model:visible="showAddModal" :categoryOptionsUI="categoryOptionsUI" />
+  <ModalAddProduct
+    v-if="!showCategorySelector"
+    v-model:visible="showAddModal"
+    :categoryOptionsUI="categoryOptionsUI"
+    :selectedCategory="selectedCategory"
+  />
 
   <!-- Export Modal -->
-  <ModalExportProduct v-model:visible="showExportModal" />
+  <ModalExportProduct
+    v-if="!showCategorySelector"
+    v-model:visible="showExportModal" />
 
   <ModalEditProduct
+    v-if="!showCategorySelector"
     v-model:visible="showEditModal"
     :product-data="selectedProduct"
     :categoryOptionsUI="categoryOptionsUI"
@@ -369,12 +364,5 @@ const updateMicroorganismFilter = (filters: IMicroorganismFilters) => {
     v-model:visible="showDeleteModal"
     :product-data="selectedProduct"
     @close-delete-modal="closeDeleteModal"
-  />
-
-  <!-- Search Modal -->
-  <ModalSearchProduct
-    v-model:visible="showSearchModal"
-    :selected-category="selectedCategory"
-    @select-category="selectCategory"
   />
 </template>

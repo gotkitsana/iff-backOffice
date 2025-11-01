@@ -2,12 +2,10 @@
 import { Button } from 'primevue'
 
 defineProps<{
-  currentStep: number
   isSubmitting: boolean
 }>()
 
 defineEmits<{
-  'go-back': []
   close: []
   submit: []
 }>()
@@ -23,7 +21,6 @@ defineEmits<{
       size="small"
     />
     <Button
-      v-if="currentStep === 2"
       label="เพิ่มสินค้า"
       icon="pi pi-check"
       @click="$emit('submit')"

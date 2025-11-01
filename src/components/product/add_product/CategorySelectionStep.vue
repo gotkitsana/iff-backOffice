@@ -28,7 +28,7 @@ const getCategoryCount = (categoryId: string) => {
 </script>
 
 <template>
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       <Card
         v-for="category in orderBy(categoryOptions, 'cat')"
         :key="category._id"

@@ -7,16 +7,18 @@
       <i class="pi pi-plus text-white text-lg"></i>
     </div>
     <div>
-      <h3 class="text-lg font-semibold! text-gray-800">เพิ่มสินค้าใหม่</h3>
+      <h3 class="text-lg font-semibold! text-gray-800">เพิ่มสินค้า {{ selectedCategory?.name }}</h3>
       <p class="text-sm text-gray-600">
-        {{ currentStep === 1 ? 'เลือกหมวดหมู่สินค้า' : 'กรอกข้อมูลสินค้า' }}
+        กรอกข้อมูลสินค้า
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  currentStep: number
+import type { ICategory } from '@/stores/product/category';
+
+const props = defineProps<{
+  selectedCategory: ICategory | null
 }>()
 </script>
