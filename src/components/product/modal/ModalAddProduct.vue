@@ -78,7 +78,6 @@ const productForm = ref<ICreateProductPayload>({
   balance: 0,
 
   food: {
-    type: '',
     produceDate: 0,
     expireDate: 0,
     marketPrice: 0,
@@ -359,7 +358,6 @@ const resetForm = () => {
 
     balance: 0,
     food: {
-      type: '',
       produceDate: 0,
       expireDate: 0,
       marketPrice: 0,
