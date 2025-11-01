@@ -356,13 +356,14 @@ const handleSubmit = async () => {
 
 const queryClient = useQueryClient()
 const productStore = useProductStore()
+const selectedCategoryById = computed(() => props.productData?.category?._id)
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
   onSuccess: (data: any) => {
     if (data.data.modifiedCount > 0) {
       toast.success('อัปเดตสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
-      queryClient.invalidateQueries({ queryKey: ['get_products_by_category'] })
+      queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryById] })
       handleClose()
       isSubmitting.value = false
     } else {

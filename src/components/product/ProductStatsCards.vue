@@ -59,7 +59,7 @@ const getCategoryStats = (category: ICategory) => {
   const productsCategory = getProductsByCategory.value
 
   let ageStats: Record<string, number> = {}
-  let seedSizeStats: Record<string, number> = {}
+  const seedSizeStats: Record<string, number> = {}
 
   if (category.value === 'fish') {
     // Age statistics

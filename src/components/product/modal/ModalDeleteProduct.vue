@@ -3,6 +3,7 @@ import { Dialog, Button } from 'primevue'
 import { useProductStore, type IProduct } from '../../../stores/product/product'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { computed } from 'vue';
 
 // Props
 const props = defineProps<{
@@ -20,13 +21,14 @@ const productStore = useProductStore()
 const queryClient = useQueryClient()
 
 // Delete mutation
+const selectedCategoryId = computed(() => props.productData?.category?._id)
 const { mutate: deleteProduct, isPending: isDeletingProduct } = useMutation({
   mutationFn: (productId: string) => productStore.onDeleteProduct(productId),
   onSuccess: (data: any) => {
     if (data.data.deletedCount > 0) {
       toast.success('ลบสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
-      queryClient.invalidateQueries({ queryKey: ['get_products_by_category'] })
+      queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
       handleClose()
     } else {
       toast.error(data.error?.message || 'ลบสินค้าไม่สำเร็จ')
