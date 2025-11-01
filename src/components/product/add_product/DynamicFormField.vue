@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { useFarmStore, type IFarm } from '@/stores/product/farm';
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse';
+import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number';
 import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
+import { useQualityStore, type IQuality } from '@/stores/product/quality';
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
+import { useQuery } from '@tanstack/vue-query';
 import { InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
+import { computed } from 'vue';
 
 const props = defineProps<{
   fields: IFields[]
   formData: Record<IFieldsKey, string | number | Date | null>
   isSubmitting: boolean
-  speciesOptions?: { label: string; value: string }[]
-  pondOptions?: { label: string; value: string; group?: string }[]
-  greenhouseOptions?: { label: string; value: string }[]
-  farmOptions?: { label: string; value: string }[]
+  pondOptions: { label: string; value: string; group?: string }[]
+
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +26,72 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
 }
 
 const productStore = useProductStore()
+
+const greenhouseStore = useGreenhouseStore()
+const { data: greenhousesData } = useQuery<IGreenhouse[]>({
+  queryKey: ['get_greenhouses'],
+  queryFn: () => greenhouseStore.onGetGreenhouses(),
+})
+const greenhouseOptions = computed(() => {
+  if (!greenhousesData.value) return []
+  return greenhousesData.value.map((greenhouse) => ({
+    label: greenhouse.name,
+    value: greenhouse._id,
+  }))
+})
+
+const speciesStore = useSpeciesStore()
+const { data: speciesData } = useQuery<ISpecies[]>({
+  queryKey: ['get_species'],
+  queryFn: () => speciesStore.onGetSpecies(),
+})
+const speciesOptions = computed(() => {
+  if (!speciesData.value) return []
+
+  return speciesData.value.map((specie) => ({
+    label: specie.name, // ชื่อที่แสดงใน dropdown
+    value: specie._id, // ค่าที่จะเก็บใน form
+  }))
+})
+
+const farmStore = useFarmStore()
+const { data: farmsData } = useQuery<IFarm[]>({
+  queryKey: ['get_farms'],
+  queryFn: () => farmStore.onGetFarms(),
+})
+const farmOptions = computed(() => {
+  if (!farmsData.value) return []
+  return farmsData.value.map((farm) => ({
+    label: farm.name,
+    value: farm._id,
+  }))
+})
+
+const lotNumberStore = useLotNumberStore()
+const { data: lotNumberData } = useQuery<ILotNumber[]>({
+  queryKey: ['get_lot_numbers'],
+  queryFn: () => lotNumberStore.onGetLotNumbers(),
+})
+const lotNumberOptions = computed(() => {
+  if (!lotNumberData.value) return []
+  return lotNumberData.value.map((lotNumber) => ({
+    label: lotNumber.name,
+    value: lotNumber._id,
+  }))
+})
+
+const qualityStore = useQualityStore()
+const { data: qualityData } = useQuery<IQuality[]>({
+  queryKey: ['get_quality'],
+  queryFn: () => qualityStore.onGetQuality(),
+})
+const qualityOptions = computed(() => {
+  if (!qualityData.value) return []
+  return qualityData.value.map((quality) => ({
+    label: quality.name,
+    value: quality._id,
+  }))
+})
 
 const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
@@ -40,19 +111,19 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
   }
 
   if (fieldKey === 'greenhouse') {
-    return props.greenhouseOptions || []
+    return greenhouseOptions.value
   }
 
   if (fieldKey === 'fishpond') {
     const options = props.pondOptions || []
     if (options.length === 0) return []
 
-    const hasGroup = options.some(opt => opt.group)
+    const hasGroup = options.some(opt => opt?.group)
 
      if (hasGroup) {
       // Group options by group (name) field
       const grouped = options.reduce((acc, opt) => {
-        const groupName = opt.group || 'อื่นๆ'
+        const groupName = opt?.group || 'อื่นๆ'
         if (!acc[groupName]) {
           acc[groupName] = []
         }
@@ -74,11 +145,19 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
   }
 
   if (fieldKey === 'species') {
-    return props.speciesOptions
+    return speciesOptions.value
   }
 
   if (fieldKey === 'farm') {
-    return props.farmOptions
+    return farmOptions.value
+  }
+
+  if (fieldKey === 'lotNumber') {
+    return lotNumberOptions.value
+  }
+
+  if (fieldKey === 'quality') {
+    return qualityOptions.value
   }
 
   return []
@@ -146,6 +225,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           fluid
           size="small"
           :invalid="field.required && !formData[field.key] && isSubmitting"
+          filter
         />
 
         <!-- Textarea -->

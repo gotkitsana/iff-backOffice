@@ -24,7 +24,6 @@ import ModalExportProduct from '../../components/product/modal/ModalExportProduc
 import ModalDeleteProduct from '../../components/product/modal/ModalDeleteProduct.vue'
 
 // Router & Stores
-const router = useRouter()
 const productStore = useProductStore()
 
 // Data
@@ -161,7 +160,7 @@ const categoryOptionsUI = computed(() => {
     {
       value: 'fish',
       fields: [
-        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
         { key: 'greenhouse', label: 'กรีนเฮ้า', type: 'select', required: true },
         { key: 'fishpond', label: 'บ่อ', type: 'select', required: true },
         { key: 'sku', label: 'รหัสปลา', type: 'text', required: true },
@@ -169,7 +168,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'breeders', label: 'แม่พันธุ์', type: 'text', required: true },
         { key: 'birth', label: 'วันเกิด', type: 'date', required: true },
         { key: 'age', label: 'อายุ (6 เดือนขึ้นไป)', type: 'select', required: true },
-        { key: 'quality', label: 'คุณภาพปลา', type: 'number', required: true },
+        { key: 'quality', label: 'คุณภาพปลา', type: 'select', required: true },
         { key: 'farm', label: 'ฟาร์ม', type: 'select', required: true },
         { key: 'size', label: 'ไซต์', type: 'number', required: true },
         { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
@@ -181,7 +180,7 @@ const categoryOptionsUI = computed(() => {
       value: 'food',
       fields: [
         { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
-        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
         { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
         { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
         { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
@@ -200,7 +199,7 @@ const categoryOptionsUI = computed(() => {
       value: 'microorganism',
       fields: [
         { key: 'sku', label: 'รหัสสารปรับสภาพน้ำ', type: 'text', required: true },
-        { key: 'lotNumber', label: 'เลขล็อต', type: 'text', required: true },
+        { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
         { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
         { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
         { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },

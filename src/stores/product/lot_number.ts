@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import api from '@/utils/axios'
 
 export const useLotNumberStore = defineStore('lotNumber', () => {
-  async function onGetLotNumber() {
+  async function onGetLotNumbers() {
     const { data } = await api.get(`/lot/number`)
     return data.data
   }
@@ -23,7 +23,7 @@ export const useLotNumberStore = defineStore('lotNumber', () => {
   }
 
   return {
-    onGetLotNumber,
+    onGetLotNumbers,
     onCreateLotNumber,
     onUpdateLotNumber,
     onDeleteLotNumber,

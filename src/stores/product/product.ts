@@ -102,8 +102,22 @@ export interface IProduct {
   birth?: string
   weight?: number
   breeders?: string
-  lotNumber: string
-  quality?: string
+  lotNumber: {
+    active: boolean
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  }
+  quality?: {
+    active: true
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  } | null
   fishpond: {
     active: boolean
     cat: number
@@ -208,11 +222,13 @@ export interface ICreateProductPayload {
   }
 }
 
-export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm'> {
+export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber'> {
   _id: string
   fishpond?: string
   species?: string
   farm?: string
+  quality?: string
+  lotNumber?: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ

@@ -52,7 +52,7 @@ const settingCategories = ref<ISettingCategory[]>([
   },
   {
     id: 'quality',
-    name: 'คุณภาพ',
+    name: 'คุณภาพปลา',
     icon: 'pi pi-star-fill',
     color: 'from-purple-500 to-pink-600',
     description: 'จัดการคุณภาพสินค้า',

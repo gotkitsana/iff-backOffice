@@ -42,7 +42,6 @@ const emit = defineEmits<{
 const productStore = useProductStore()
 const speciesStore = useSpeciesStore()
 const pondStore = usePondStore()
-const greenhouseStore = useGreenhouseStore()
 
 // State
 const currentStep = ref(1) // 1 = เลือกหมวดหมู่, 2 = กรอกข้อมูล
@@ -307,6 +306,11 @@ const validateForm = () => {
   return true
 }
 
+const { data: speciesData } = useQuery<ISpecies[]>({
+  queryKey: ['get_species'],
+  queryFn: () => speciesStore.onGetSpecies(),
+})
+
 const handleSubmit = async () => {
   isSubmitting.value = true
   if (!validateForm()) {
@@ -460,31 +464,14 @@ const removeCertificate = () => {
   productForm.value.certificate = ''
 }
 
-const { data: speciesData } = useQuery<ISpecies[]>({
-  queryKey: ['get_species'],
-  queryFn: () => speciesStore.onGetSpecies(),
-})
-const speciesOptions = computed(() => {
-  if (!speciesData.value) return []
-
-  return speciesData.value.map((specie) => ({
-    label: specie.name, // ชื่อที่แสดงใน dropdown
-    value: specie._id, // ค่าที่จะเก็บใน form
-  }))
-})
-
-const { data: greenhousesData } = useQuery<IGreenhouse[]>({
-  queryKey: ['get_greenhouses'],
-  queryFn: () => greenhouseStore.onGetGreenhouses(),
-})
-const greenhouseOptions = computed(() => {
-  if (!greenhousesData.value) return []
-
-  return greenhousesData.value.map((greenhouse) => ({
-    label: greenhouse.name,
-    value: greenhouse._id,
-  }))
-})
+watch(
+  () => dynamicFormData.value?.greenhouse,
+  () => {
+    if (dynamicFormData.value) {
+      dynamicFormData.value.fishpond = ''
+    }
+  }
+)
 
 const { data: pondsData } = useQuery<any[]>({
   queryKey: ['get_ponds'],
@@ -503,27 +490,6 @@ const filteredPondOptions = computed(() => {
     }))
 })
 
-watch(
-  () => dynamicFormData.value?.greenhouse,
-  () => {
-    if (dynamicFormData.value) {
-      dynamicFormData.value.fishpond = ''
-    }
-  }
-)
-
-const farmStore = useFarmStore()
-const { data: farmsData } = useQuery<IFarm[]>({
-  queryKey: ['get_farms'],
-  queryFn: () => farmStore.onGetFarms(),
-})
-const farmOptions = computed(() => {
-  if (!farmsData.value) return []
-  return farmsData.value.map((farm) => ({
-    label: farm.name,
-    value: farm._id,
-  }))
-})
 </script>
 
 <template>
@@ -558,10 +524,7 @@ const farmOptions = computed(() => {
           :fields="selectedCategoryInfo.fields"
           :form-data="dynamicFormData"
           :is-submitting="isSubmitting"
-          :species-options="speciesOptions"
           :pond-options="filteredPondOptions"
-          :greenhouse-options="greenhouseOptions"
-          :farm-options="farmOptions"
           @update-field="updateDynamicField"
         />
 

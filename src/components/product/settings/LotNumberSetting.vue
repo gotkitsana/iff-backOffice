@@ -43,7 +43,7 @@ const form = ref<ICreateLotNumberPayload>({
 
 const { data: lotNumberData, isLoading } = useQuery<ILotNumber[]>({
   queryKey: ['get_lot_numbers'],
-  queryFn: () => lotNumberStore.onGetLotNumber(),
+  queryFn: () => lotNumberStore.onGetLotNumbers(),
 })
 
 const lotNumbers = computed(() => lotNumberData.value || [])

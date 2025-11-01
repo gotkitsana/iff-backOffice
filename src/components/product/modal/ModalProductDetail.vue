@@ -58,6 +58,12 @@ const getFieldValue = (fieldKey: string) => {
   if (fieldKey === 'species' && props.productData.species) {
     return props.productData.species.name || '-'
   }
+  if (fieldKey === 'quality' && props.productData.quality) {
+    return props.productData.quality.name || '-'
+  }
+  if (fieldKey === 'lotNumber' && props.productData.lotNumber) {
+    return props.productData.lotNumber.name || '-'
+  }
   if (fieldKey === 'greenhouse' && props.productData.fishpond) {
     return greenhouseData.value?.find((greenhouse) => greenhouse._id === props.productData?.fishpond?.greenhouse)?.name || '-'
   }

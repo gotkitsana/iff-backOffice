@@ -8,6 +8,8 @@ import dayjs from 'dayjs'
 import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
+import { useQualityStore, type IQuality } from '@/stores/product/quality'
 
 // Router
 const router = useRouter()
@@ -98,7 +100,7 @@ const foodColumns = ref([
         },
         [
           h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
         ]
       ),
   },
@@ -386,7 +388,7 @@ const fishColumns = ref([
         },
         [
           h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber || '-'),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber.name),
         ]
       ),
   },
@@ -541,7 +543,7 @@ const fishColumns = ref([
             },
             [
               h('i', { class: 'pi pi-star-fill text-yellow-500 text-xs' }),
-              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality),
+              h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality.name || '-'),
             ]
           )
         : h('span', '-'),
@@ -549,7 +551,7 @@ const fishColumns = ref([
   {
     field: 'farm',
     header: 'ฟาร์ม',
-    headCell: '!min-w-[6rem]',
+    headCell: '!min-w-[7.5rem]',
     render: (slotProps: any) =>
       slotProps?.data?.farm
         ? h(
@@ -668,7 +670,7 @@ const microorganismColumns = ref([
         },
         [
           h('i', { class: 'pi pi-tag text-blue-500 text-xs' }),
-          h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber),
+          h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
         ]
       ),
   },

@@ -52,16 +52,16 @@ const { mutate: create, isPending: isCreating } = useMutation({
   mutationFn: (payload: ICreateQualityPayload) => qualityStore.onCreateQuality(payload),
   onSuccess: (data: IApiResponse) => {
     if (data.data) {
-      toast.success('เพิ่มคุณภาพสำเร็จ')
+      toast.success('เพิ่มคุณภาพปลาสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_quality'] })
       closeModal()
     } else {
-      toast.error(data.error?.message || 'เพิ่มคุณภาพไม่สำเร็จ')
+      toast.error(data.error?.message || 'เพิ่มคุณภาพปลาไม่สำเร็จ')
     }
   },
   onError: (error: IErrorResponse) => {
     console.error('Create quality error:', error)
-    toast.error(error.response?.data?.message || 'เพิ่มคุณภาพไม่สำเร็จ')
+    toast.error(error.response?.data?.message || 'เพิ่มคุณภาพปลาไม่สำเร็จ')
   },
 })
 
@@ -74,16 +74,16 @@ const { mutate: update, isPending: isUpdating } = useMutation({
       'modifiedCount' in data.data &&
       (data.data as { modifiedCount: number }).modifiedCount > 0
     ) {
-      toast.success('อัปเดตคุณภาพสำเร็จ')
+      toast.success('อัปเดตคุณภาพปลาสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_quality'] })
       closeModal()
     } else {
-      toast.error(data.error?.message || 'อัปเดตคุณภาพไม่สำเร็จ')
+      toast.error(data.error?.message || 'อัปเดตคุณภาพปลาไม่สำเร็จ')
     }
   },
   onError: (error: IErrorResponse) => {
     console.error('Update quality error:', error)
-    toast.error(error.response?.data?.message || 'อัปเดตคุณภาพไม่สำเร็จ')
+    toast.error(error.response?.data?.message || 'อัปเดตคุณภาพปลาไม่สำเร็จ')
   },
 })
 
@@ -96,16 +96,16 @@ const { mutate: remove, isPending: isDeleting } = useMutation({
       'deletedCount' in data.data &&
       (data.data as { deletedCount: number }).deletedCount > 0
     ) {
-      toast.success('ลบคุณภาพสำเร็จ')
+      toast.success('ลบคุณภาพปลาสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_quality'] })
       closeModal()
     } else {
-      toast.error(data.error?.message || 'ลบคุณภาพไม่สำเร็จ')
+      toast.error(data.error?.message || 'ลบคุณภาพปลาไม่สำเร็จ')
     }
   },
   onError: (error: IErrorResponse) => {
     console.error('Delete quality error:', error)
-    toast.error(error.response?.data?.message || 'ลบคุณภาพไม่สำเร็จ')
+    toast.error(error.response?.data?.message || 'ลบคุณภาพปลาไม่สำเร็จ')
   },
 })
 
@@ -173,11 +173,11 @@ const isSubmitting = computed(() => isCreating.value || isUpdating.value || isDe
 const getModalTitle = () => {
   switch (modalType.value) {
     case 'add':
-      return 'เพิ่มคุณภาพใหม่'
+      return 'เพิ่มคุณภาพปลา'
     case 'edit':
-      return 'แก้ไขคุณภาพ'
+      return 'แก้ไขคุณภาพปลา'
     case 'delete':
-      return 'ยืนยันการลบคุณภาพ'
+      return 'ยืนยันการลบคุณภาพปลา'
     default:
       return ''
   }
@@ -196,12 +196,12 @@ const getModalTitle = () => {
             <i class="pi pi-star-fill text-white text-xl"></i>
           </div>
           <div>
-            <h2 class="font-semibold! text-gray-900">คุณภาพ</h2>
-            <p class="text-gray-600 text-sm">จัดการคุณภาพของสินค้า</p>
+            <h2 class="font-semibold! text-gray-900">คุณภาพปลา</h2>
+            <p class="text-gray-600 text-sm">จัดการคุณภาพปลา</p>
           </div>
         </div>
         <Button
-          label="เพิ่มคุณภาพ"
+          label="เพิ่มคุณภาพปลา"
           icon="pi pi-plus"
           severity="success"
           size="small"
@@ -219,7 +219,7 @@ const getModalTitle = () => {
         :rows="10"
         :rowsPerPageOptions="[5, 10, 20]"
       >
-        <Column field="name" header="ชื่อคุณภาพ" sortable>
+        <Column field="name" header="ชื่อคุณภาพปลา" sortable>
           <template #body="{ data }">
             <span class="font-medium text-gray-900">{{ data.name }}</span>
           </template>
@@ -283,7 +283,7 @@ const getModalTitle = () => {
         <div class="grid grid-cols-1 gap-3">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">
-              ชื่อคุณภาพ <span class="text-red-500">*</span>
+              ชื่อคุณภาพปลา <span class="text-red-500">*</span>
             </label>
             <InputText
               v-model="form.name"
@@ -315,7 +315,7 @@ const getModalTitle = () => {
         </div>
         <div class="bg-gray-50 rounded-lg p-3 space-y-1">
           <div class="flex justify-between">
-            <span class="text-gray-600">ชื่อคุณภาพ:</span>
+            <span class="text-gray-600">ชื่อคุณภาพปลา:</span>
             <span class="font-medium text-gray-900">{{ selectedItem.name }}</span>
           </div>
           <div class="flex justify-between">

@@ -11,6 +11,7 @@ import {
 import { type ICategory } from '../../stores/product/category'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
 import { useQuery } from '@tanstack/vue-query';
+import { useFarmStore, type IFarm } from '@/stores/product/farm';
 
 // Props
 const props = defineProps<{
@@ -192,6 +193,18 @@ const speciesOptions = computed(() => {
     value: p._id,
   }))
 })
+
+const farmStore = useFarmStore()
+const { data: farms } = useQuery<IFarm[]>({
+  queryKey: ['get_farms'],
+  queryFn: () => farmStore.onGetFarms(),
+})
+const farmOptions = computed(() => {
+  return farms.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
 </script>
 
 <template>
@@ -286,10 +299,13 @@ const speciesOptions = computed(() => {
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ฟาร์ม</label>
-            <InputText
+            <Select
               :model-value="localFishFilters.farm"
               @update:model-value="updateFishFilter('farm', $event)"
-              placeholder="ระบุชื่อฟาร์ม"
+              :options="farmOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกฟาร์ม"
               size="small"
               fluid
             />
@@ -311,14 +327,15 @@ const speciesOptions = computed(() => {
           </div>
 
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">ขนาด (ซม.)</label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
             <InputNumber
               :model-value="localFishFilters.size"
               @update:model-value="updateFishFilter('size', $event)"
-              placeholder="ระบุขนาด"
+              placeholder="ระบุไซด์"
               size="small"
               fluid
               :min="0"
+              :min-fraction-digits="2"
             />
           </div>
 
