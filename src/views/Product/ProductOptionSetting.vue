@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, Card } from 'primevue'
 import SpeciesSetting from '@/components/product/settings/SpeciesSetting.vue'
 import PondSetting from '@/components/product/settings/PondSetting.vue'
@@ -8,6 +8,10 @@ import GreenhouseSetting from '@/components/product/settings/GreenhouseSetting.v
 import FarmSetting from '@/components/product/settings/FarmSetting.vue'
 import QualitySetting from '@/components/product/settings/QualitySetting.vue'
 import LotNumberSetting from '@/components/product/settings/LotNumberSetting.vue'
+import type { ICategoryValue } from '@/stores/product/category'
+import FoodTypeSetting from '@/components/product/settings/FoodTypeSetting.vue'
+import BrandSetting from '@/components/product/settings/BrandSetting.vue'
+import SeedSizeSetting from '@/components/product/settings/SeedSizeSetting.vue'
 
 interface ISettingCategory {
   id: string
@@ -15,19 +19,30 @@ interface ISettingCategory {
   icon: string
   color: string
   description: string
+  type: ICategoryValue[]
 }
 
 const router = useRouter()
+const route = useRoute()
 
 const activeCategory = ref<string>('species')
 
 const settingCategories = ref<ISettingCategory[]>([
+    {
+    id: 'lotNumber',
+    name: 'เลขล็อต',
+    icon: 'pi pi-hashtag',
+    color: 'from-indigo-500 to-blue-600',
+    description: 'จัดการหมายเลขล็อต',
+    type: ['fish', 'food','microorganism']
+  },
   {
     id: 'species',
     name: 'สายพันธุ์ปลา',
     icon: 'pi pi-star',
     color: 'from-blue-500 to-cyan-600',
     description: 'จัดการสายพันธุ์ปลาคาร์ฟ',
+    type: ['fish'],
   },
   {
     id: 'greenhouse',
@@ -35,6 +50,7 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-sun',
     color: 'from-yellow-500 to-orange-600',
     description: 'จัดการกรีนเฮ้า',
+    type: ['fish']
   },
   {
     id: 'pond',
@@ -42,6 +58,7 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-inbox',
     color: 'from-green-500 to-emerald-600',
     description: 'จัดการบ่อปลาและกรีนเฮ้า',
+    type: ['fish']
   },
   {
     id: 'farm',
@@ -49,6 +66,7 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-home',
     color: 'from-orange-500 to-red-600',
     description: 'จัดการข้อมูลฟาร์ม',
+    type: ['fish']
   },
   {
     id: 'quality',
@@ -56,15 +74,52 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-star-fill',
     color: 'from-purple-500 to-pink-600',
     description: 'จัดการคุณภาพสินค้า',
+    type: ['fish']
   },
   {
-    id: 'lotNumber',
-    name: 'เลขล็อต',
-    icon: 'pi pi-hashtag',
-    color: 'from-indigo-500 to-blue-600',
-    description: 'จัดการหมายเลขล็อต',
+    id: 'foodType',
+    name: 'ประเภทอาหาร',
+    icon: 'pi pi-heart',
+    color: 'from-red-500 to-pink-600',
+    description: 'จัดการประเภทอาหาร',
+    type: ['food']
   },
+  {
+    id: 'brand',
+    name: 'ชื่อแบรนด์',
+    icon: 'pi pi-building',
+    color: 'from-gray-500 to-gray-600',
+    description: 'จัดการชื่อแบรนด์',
+    type: ['food', 'microorganism']
+  },
+  {
+    id: 'seedSize',
+    name: 'ขนาดเม็ด',
+    icon: 'pi pi-circle',
+    color: 'from-teal-500 to-cyan-600',
+    description: 'จัดการขนาดเม็ด',
+    type: ['food']
+  }
 ])
+
+const selectedType = computed(() => (route.query.type as ICategoryValue) || null)
+const filteredSettingCategories = computed(() => {
+  if (!selectedType.value) return settingCategories.value
+  return settingCategories.value.filter((category) =>
+    category.type.includes(selectedType.value)
+  )
+})
+
+watch(
+  filteredSettingCategories,
+  (list) => {
+    if (!list.some((cat) => cat.id === activeCategory.value)) {
+      activeCategory.value = list[0]?.id || ''
+    }
+  },
+  { immediate: true }
+)
+
 
 const goBack = () => {
   router.push('/product')
@@ -95,7 +150,7 @@ const setActiveCategory = (categoryId: string) => {
     <!-- Category Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
       <Card
-        v-for="category in settingCategories"
+        v-for="category in filteredSettingCategories"
         :key="category.id"
         :class="[
           'cursor-pointer transition-all duration-200 hover:shadow-lg ',
@@ -139,6 +194,15 @@ const setActiveCategory = (categoryId: string) => {
 
       <!-- Lot Number Setting -->
       <LotNumberSetting v-if="activeCategory === 'lotNumber'" />
+
+      <!-- Food Type Setting -->
+      <FoodTypeSetting v-if="activeCategory === 'foodType'" />
+
+      <!-- Brand Setting -->
+      <BrandSetting v-if="activeCategory === 'brand'" />
+
+      <!-- Seed Size Setting -->
+      <SeedSizeSetting v-if="activeCategory === 'seedSize'" />
     </div>
   </div>
 </template>

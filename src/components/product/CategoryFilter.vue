@@ -12,6 +12,9 @@ import { type ICategory } from '../../stores/product/category'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { useQuery } from '@tanstack/vue-query'
 import { useFarmStore, type IFarm } from '@/stores/product/farm'
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
+import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
+import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 
 // Props
 const props = defineProps<{
@@ -166,6 +169,42 @@ const farmOptions = computed(() => {
     value: p._id,
   }))
 })
+
+const foodBrandStore = useFoodBrandStore()
+const { data: foodBrands } = useQuery<IFoodBrand[]>({
+  queryKey: ['get_food_brands'],
+  queryFn: () => foodBrandStore.onGetFoodBrands(),
+})
+const foodBrandOptions = computed(() => {
+  return foodBrands.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
+
+const foodTypeStore = useFoodTypeStore()
+const { data: foodTypes } = useQuery<IFoodType[]>({
+  queryKey: ['get_food_types'],
+  queryFn: () => foodTypeStore.onGetFoodTypes(),
+})
+const foodTypeOptions = computed(() => {
+  return foodTypes.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
+
+const seedSizeStore = useSeedSizeStore()
+const { data: seedSizes } = useQuery<ISeedSize[]>({
+  queryKey: ['get_seed_sizes'],
+  queryFn: () => seedSizeStore.onGetSeedSizes(),
+})
+const seedSizeOptions = computed(() => {
+  return seedSizes.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
 </script>
 
 <template>
@@ -240,6 +279,7 @@ const farmOptions = computed(() => {
               placeholder="เลือกสายพันธุ์"
               size="small"
               fluid
+              filter
             />
           </div>
           <div>
@@ -253,6 +293,7 @@ const farmOptions = computed(() => {
               placeholder="เลือกอายุ"
               size="small"
               fluid
+              filter
             />
           </div>
 
@@ -267,6 +308,7 @@ const farmOptions = computed(() => {
               placeholder="เลือกฟาร์ม"
               size="small"
               fluid
+              filter
             />
           </div>
 
@@ -281,6 +323,7 @@ const farmOptions = computed(() => {
               placeholder="เลือกเพศ"
               size="small"
               fluid
+              filter
             />
           </div>
 
@@ -330,24 +373,32 @@ const farmOptions = computed(() => {
           <!-- ชื่อแบรนด์ -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
-            <InputText
+            <Select
               :model-value="localFoodFilters.brandName"
-              @update:model-value="updateFoodFilter('brandName', $event)"
-              placeholder="ระบุชื่อแบรนด์"
+              @update:model-value="updateFoodFilter('foodBrand', $event)"
+              :options="foodBrandOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกชื่อแบรนด์"
               size="small"
               fluid
+              filter
             />
           </div>
 
           <!-- ประเภทอาหาร -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทอาหาร</label>
-            <InputText
+            <Select
               :model-value="localFoodFilters.foodType"
               @update:model-value="updateFoodFilter('foodType', $event)"
-              placeholder="ระบุประเภทอาหาร"
+              placeholder="เลือกประเภทอาหาร"
+              :options="foodTypeOptions"
+              optionLabel="label"
+              optionValue="value"
               size="small"
               fluid
+              filter
             />
           </div>
 
@@ -363,6 +414,7 @@ const farmOptions = computed(() => {
               placeholder="เลือกชนิดเม็ด"
               size="small"
               fluid
+              filter
             />
           </div>
 
@@ -372,12 +424,13 @@ const farmOptions = computed(() => {
             <Select
               :model-value="localFoodFilters.seedSize"
               @update:model-value="updateFoodFilter('seedSize', $event)"
-              :options="foodSeedSizeOptions"
+              :options="seedSizeOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกขนาดเม็ด"
               size="small"
               fluid
+              filter
             />
           </div>
         </div>
@@ -402,12 +455,16 @@ const farmOptions = computed(() => {
           <!-- ชื่อแบรนด์ -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
-            <InputText
+            <Select
               :model-value="localMicroorganismFilters.brandName"
               @update:model-value="updateMicroorganismFilter('brandName', $event)"
-              placeholder="ระบุชื่อแบรนด์"
+              :options="foodBrandOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกชื่อแบรนด์"
               size="small"
               fluid
+              filter
             />
           </div>
         </div>

@@ -177,8 +177,8 @@ const categoryOptionsUI = computed(() => {
       fields: [
         { key: 'sku', label: 'รหัสอาหาร', type: 'text', required: true },
         { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
-        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
-        { key: 'foodType', label: 'ประเภทอาหาร', type: 'text', required: true },
+        { key: 'name', label: 'ชื่อแบร์น', type: 'select', required: true },
+        { key: 'foodType', label: 'ประเภทอาหาร', type: 'select', required: true },
         { key: 'seedType', label: 'ชนิดเม็ด', type: 'select', required: true },
         { key: 'seedSize', label: 'ขนาดเม็ด', type: 'select', required: true },
         { key: 'weight', label: 'น้ำหนัก ต่อกระสอบ (กรัม)', type: 'number', required: true },
@@ -196,7 +196,7 @@ const categoryOptionsUI = computed(() => {
       fields: [
         { key: 'sku', label: 'รหัสสารปรับสภาพน้ำ', type: 'text', required: true },
         { key: 'lotNumber', label: 'เลขล็อต', type: 'select', required: true },
-        { key: 'name', label: 'ชื่อแบร์น', type: 'text', required: true },
+        { key: 'name', label: 'ชื่อแบร์น', type: 'select', required: true },
         { key: 'weight', label: 'น้ำหนัก (กรัม)', type: 'number', required: true },
         { key: 'produceDate', label: 'วันที่ผลิต', type: 'date', required: true },
         { key: 'expireDate', label: 'วันหมดอายุ', type: 'date', required: true },

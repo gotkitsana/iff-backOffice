@@ -233,6 +233,7 @@ const foodColumns = ref([
     field: 'balance',
     header: 'สินค้าคงเหลือ',
     headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
     render: (slotProps: any) =>
       slotProps.data.balance
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
@@ -435,6 +436,18 @@ const fishColumns = ref([
           )
         : h('span', '-'),
   },
+  {
+    field: 'sold',
+    header: 'สถานะขาย',
+    headCell: 'justify-center',
+    bodyCell: 'text-center',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: slotProps.data.sold ? 'ขายแล้ว' : 'พร้อมขาย',
+        severity: slotProps.data.sold ? 'danger' : 'success',
+        size: 'small',
+      }),
+  },
 ])
 
 const microorganismColumns = ref([
@@ -570,6 +583,7 @@ const microorganismColumns = ref([
     field: 'balance',
     header: 'สินค้าคงเหลือ',
     headCell: '!min-w-[6rem] justify-end',
+    bodyCell: 'text-end',
     render: (slotProps: any) =>
       slotProps.data.balance
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)

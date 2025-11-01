@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useFarmStore, type IFarm } from '@/stores/product/farm';
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand';
+import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type';
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse';
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number';
 import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
 import { useQualityStore, type IQuality } from '@/stores/product/quality';
+import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size';
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
 import { useQuery } from '@tanstack/vue-query';
 import { InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
@@ -93,6 +96,45 @@ const qualityOptions = computed(() => {
   }))
 })
 
+const foodTypeStore = useFoodTypeStore()
+const { data: foodTypeData } = useQuery<IFoodType[]>({
+  queryKey: ['get_food_types'],
+  queryFn: () => foodTypeStore.onGetFoodTypes(),
+})
+const foodTypeOptions = computed(() => {
+  if (!foodTypeData.value) return []
+  return foodTypeData.value.map((foodType) => ({
+    label: foodType.name,
+    value: foodType._id,
+  }))
+})
+
+const brandStore = useFoodBrandStore()
+const { data: brandData } = useQuery<IFoodBrand[]>({
+  queryKey: ['get_food_brands'],
+  queryFn: () => brandStore.onGetFoodBrands(),
+})
+const foodBrandOptions = computed(() => {
+  if (!brandData.value) return []
+  return brandData.value.map((brand) => ({
+    label: brand.name,
+    value: brand._id,
+  }))
+})
+
+const seedSizeStore = useSeedSizeStore()
+const { data: seedSizeData } = useQuery<ISeedSize[]>({
+  queryKey: ['get_seed_sizes'],
+  queryFn: () => seedSizeStore.onGetSeedSizes(),
+})
+const seedSizeOptions = computed(() => {
+  if (!seedSizeData.value) return []
+  return seedSizeData.value.map((seedSize) => ({
+    label: seedSize.name,
+    value: seedSize._id,
+  }))
+})
+
 const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
     return productStore.genderOptions
@@ -104,10 +146,6 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 
   if (fieldKey === 'seedType') {
     return productStore.seedTypeOptions
-  }
-
-  if (fieldKey === 'seedSize') {
-    return productStore.seedSizeOptions
   }
 
   if (fieldKey === 'greenhouse') {
@@ -158,6 +196,18 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 
   if (fieldKey === 'quality') {
     return qualityOptions.value
+  }
+
+  if (fieldKey === 'foodType') {
+    return foodTypeOptions.value
+  }
+
+  if (fieldKey === 'name') {
+    return foodBrandOptions.value
+  }
+
+  if (fieldKey === 'seedSize') {
+    return seedSizeOptions.value
   }
 
   return []
