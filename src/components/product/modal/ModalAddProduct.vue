@@ -4,12 +4,10 @@ import { Dialog } from 'primevue'
 import {
   useProductStore,
   type ICategoryOption,
-  type ICertificateFile,
   type ICreateProductPayload,
   type IFieldsKey,
   type IProductImage,
   type ISeedSizeValue,
-  type IUploadImageResponse,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -70,7 +68,7 @@ const productForm = ref<ICreateProductPayload>({
   gender: '',
   weight: 0,
   breeders: '',
-  quality: '',
+  quality: undefined,
   fishpond: undefined,
   rate: 0,
   species: undefined,
@@ -92,8 +90,6 @@ const productForm = ref<ICreateProductPayload>({
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
-const productImages = ref<IProductImage[]>([])
-const certificateFile = ref<ICertificateFile | null>(null)
 
 // Queries
 const isFishCategory = computed(() => selectedCategory.value?.value === 'fish')
@@ -109,9 +105,7 @@ const productType = computed(() => {
 watch(selectedCategory, (newCategory) => {
   if (newCategory) {
     // รีเซ็ตทุกอย่างทุกครั้งที่เปลี่ยนหมวดหมู่
-    productImages.value = []
     productForm.value.images = []
-    certificateFile.value = null
     productForm.value.certificate = ''
 
     // อัปเดตข้อมูลหมวดหมู่
@@ -123,53 +117,6 @@ watch(selectedCategory, (newCategory) => {
 // Computed
 const selectedCategoryInfo = computed(() => {
   return props.categoryOptionsUI.find((cat) => cat._id === props.selectedCategory?._id)
-})
-
-// File upload mutations
-const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
-  onSuccess: (data: IUploadImageResponse) => {
-    const filename = data.filename
-    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
-
-    productImages.value.push({
-      filename,
-      type: 'image',
-      preview,
-    })
-
-    // Update productForm.images
-    productForm.value.images = productImages.value.map((img) => ({
-      filename: img.filename,
-      type: img.type,
-    }))
-
-    toast.success('อัปโหลดรูปภาพสำเร็จ')
-  },
-  onError: (error: any) => {
-    console.error('Upload error:', error)
-    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
-  },
-})
-
-const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
-  onSuccess: (data: IUploadImageResponse) => {
-    const filename = data.filename
-    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
-
-    certificateFile.value = {
-      filename,
-      preview,
-    }
-
-    productForm.value.certificate = filename
-    toast.success('อัปโหลดใบรับรองสำเร็จ')
-  },
-  onError: (error: any) => {
-    console.error('Upload error:', error)
-    toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
-  },
 })
 
 // Methods
@@ -388,7 +335,7 @@ const resetForm = () => {
     gender: '',
     weight: 0,
     breeders: '',
-    quality: '',
+    quality: undefined,
     fishpond: undefined,
     rate: 0,
 
@@ -409,50 +356,6 @@ const resetForm = () => {
   }
 
   dynamicFormData.value = null
-  productImages.value = []
-  certificateFile.value = null
-}
-
-const validateFileUpload = (file: File, maxSize: number = 2000000) => {
-  if (file.size > maxSize) {
-    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 2MB)')
-    return false
-  }
-
-  if (!file.type.startsWith('image/')) {
-    toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
-    return false
-  }
-
-  return true
-}
-
-// File upload handlers
-const onProductImageSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadImage(file)
-  }
-}
-
-const onCertificateSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadCertificate(file)
-  }
-}
-
-const removeProductImage = (index: number) => {
-  productImages.value.splice(index, 1)
-  productForm.value.images = productImages.value.map((img) => ({
-    filename: img.filename,
-    type: img.type,
-  }))
-}
-
-const removeCertificate = () => {
-  certificateFile.value = null
-  productForm.value.certificate = ''
 }
 
 watch(
@@ -480,6 +383,15 @@ const filteredPondOptions = computed(() => {
       value: pond._id,
     }))
 })
+
+
+const updateProductImages = (images: IProductImage[]) => {
+  productForm.value.images = images
+}
+
+const updateCertificateFile = (filename: string | undefined) => {
+  productForm.value.certificate = filename
+}
 
 </script>
 
@@ -514,15 +426,11 @@ const filteredPondOptions = computed(() => {
 
         <!-- File Upload Section -->
         <FileUploadSection
-          :product-images="productImages"
-          :certificate-file="certificateFile"
           :show-certificate="isFishCategory"
-          :is-uploading-image="isUploadingImage"
-          :is-uploading-certificate="isUploadingCertificate"
-          @product-image-select="onProductImageSelect"
-          @certificate-select="onCertificateSelect"
-          @remove-product-image="removeProductImage"
-          @remove-certificate="removeCertificate"
+          :product-images="productForm.images || []"
+          :certificate-file="productForm.certificate"
+          @update-product-images="updateProductImages"
+          @update-certificate-file="updateCertificateFile"
         />
       </div>
     </div>

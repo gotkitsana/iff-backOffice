@@ -1,21 +1,94 @@
 <script setup lang="ts">
-import type { IProductImage } from '@/stores/product/product';
+import { useProductStore, type IProductImage, type IUploadImageResponse } from '@/stores/product/product';
+import { useMutation } from '@tanstack/vue-query';
 import { Button, FileUpload } from 'primevue'
+import { toast } from 'vue3-toastify';
 
-defineProps<{
-  productImages: IProductImage[]
-  certificateFile: { filename: string; preview: string } | null
+const props = defineProps<{
   showCertificate: boolean
-  isUploadingImage: boolean
-  isUploadingCertificate: boolean
+  productImages: IProductImage[]
+  certificateFile: string | undefined
 }>()
 
-defineEmits<{
-  'product-image-select': [event: { files: File[] }]
-  'certificate-select': [event: { files: File[] }]
-  'remove-product-image': [index: number]
-  'remove-certificate': []
+const emit = defineEmits<{
+  'update-product-images': [images: IProductImage[]]
+  'update-certificate-file': [string | undefined]
 }>()
+
+const validateFileUpload = (file: File, maxSize: number = 2000000) => {
+  if (file.size > maxSize) {
+    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 2MB)')
+    return false
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
+    return false
+  }
+
+  return true
+}
+
+const onProductImageSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file && validateFileUpload(file)) {
+    uploadImage(file)
+  }
+}
+
+const onCertificateSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file && validateFileUpload(file)) {
+    uploadCertificate(file)
+  }
+}
+
+const removeProductImage = (index: number) => {
+  emit('update-product-images', props.productImages.filter((img, i) => i !== index))
+}
+
+const removeCertificate = () => {
+  emit('update-certificate-file', undefined)
+}
+
+const productStore = useProductStore()
+const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+
+    // Update productForm.images
+    emit('update-product-images', [...props.productImages, {
+      filename,
+      type: 'image',
+    }])
+
+    toast.success('อัปโหลดรูปภาพสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
+  },
+})
+
+const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+
+    emit('update-certificate-file', filename)
+    toast.success('อัปโหลดใบรับรองสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
+  },
+})
+
+const getImagePreview = (filename: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+}
+
 </script>
 
 <template>
@@ -27,11 +100,11 @@ defineEmits<{
         <h4 class="text-lg font-medium text-gray-800">รูปภาพสินค้า</h4>
       </div>
 
-      <div v-if="productImages.length > 0" class="mb-4">
+      <div v-if="productImages && productImages.length > 0" class="mb-4">
         <div class="grid grid-cols-2 gap-2">
           <div v-for="(image, index) in productImages" :key="index" class="relative">
             <img
-              :src="image.preview"
+              :src="getImagePreview(image.filename)"
               :alt="`Product image ${index + 1}`"
               class="w-full h-40 object-contain rounded-lg border border-gray-200"
             />
@@ -42,7 +115,7 @@ defineEmits<{
               text
               rounded
               class="absolute top-1 right-1"
-              @click="$emit('remove-product-image', index)"
+              @click="removeProductImage(index)"
             />
           </div>
         </div>
@@ -53,7 +126,7 @@ defineEmits<{
         name="productImage"
         accept="image/*"
         :maxFileSize="2000000"
-        @select="$emit('product-image-select', $event)"
+        @select="onProductImageSelect"
         :chooseLabel="isUploadingImage ? 'กำลังอัปโหลด...' : 'เพิ่มรูปภาพ'"
         :disabled="isUploadingImage"
         size="small"
@@ -73,7 +146,7 @@ defineEmits<{
       <div v-if="certificateFile" class="mb-4">
         <div class="relative">
           <img
-            :src="certificateFile.preview"
+            :src="getImagePreview(certificateFile)"
             alt="Certificate"
             class="w-full h-60 object-contain rounded-lg border border-gray-200"
           />
@@ -84,7 +157,7 @@ defineEmits<{
             text
             rounded
             class="absolute top-1 right-1"
-            @click="$emit('remove-certificate')"
+            @click="removeCertificate"
           />
         </div>
       </div>
@@ -95,7 +168,7 @@ defineEmits<{
         name="certificate"
         accept="image/*"
         :maxFileSize="2000000"
-        @select="$emit('certificate-select', $event)"
+        @select="onCertificateSelect"
         :chooseLabel="isUploadingCertificate ? 'กำลังอัปโหลด...' : 'เลือกใบรับรอง'"
         :disabled="isUploadingCertificate"
         size="small"

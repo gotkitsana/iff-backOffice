@@ -8,9 +8,7 @@ import {
   type ICategoryOption,
   type IFieldsKey,
   type IProductImage,
-  type ICertificateFile,
   type ISeedSizeValue,
-  type IUploadImageResponse,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
@@ -19,9 +17,8 @@ import FileUploadSection from '@/components/product/add_product/FileUploadSectio
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
-import { usePondStore, type IPond } from '@/stores/product/pond'
-import { useFarmStore, type IFarm } from '@/stores/product/farm'
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { usePondStore } from '@/stores/product/pond'
+
 
 // Props
 const props = defineProps<{
@@ -70,7 +67,7 @@ const productForm = ref<IUpdateProductPayload>({
   gender: '',
   weight: 0,
   breeders: '',
-  quality: '',
+  quality: undefined,
   fishpond: undefined,
   rate: 0,
 
@@ -92,8 +89,6 @@ const productForm = ref<IUpdateProductPayload>({
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
-const productImages = ref<IProductImage[]>([])
-const certificateFile = ref<ICertificateFile | null>(null)
 
 // Watch for props changes to populate form
 watch(
@@ -110,7 +105,6 @@ watch(
   () => selectedCategoryId.value?.value,
   (val) => {
     if (val !== 'fish') {
-      certificateFile.value = null
       productForm.value.certificate = ''
     }
   }
@@ -124,9 +118,7 @@ const { data: pondsData } = useQuery<any[]>({
 const initializeDynamicForm = (newProductData: IProduct) => {
   if (!selectedCategoryInfo.value || !newProductData) return
 
-  productImages.value = []
   productForm.value.images = []
-  certificateFile.value = null
   productForm.value.certificate = ''
 
 
@@ -186,22 +178,8 @@ const initializeDynamicForm = (newProductData: IProduct) => {
     lotNumber: newProductData.lotNumber?._id,
   }
 
-  productImages.value = newProductData.images.map((img) => ({
-    filename: img.filename,
-    type: img.type,
-    preview: `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${img.filename}`,
-  }))
-
-  // Set certificate
-  if (newProductData.certificate) {
-    certificateFile.value = {
-      filename: newProductData.certificate,
-      preview: `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
-        newProductData.certificate
-      }`,
-    }
-    productForm.value.certificate = newProductData.certificate
-  }
+  productForm.value.images = newProductData.images
+  productForm.value.certificate = newProductData.certificate || undefined
 }
 
 // Validation
@@ -346,11 +324,11 @@ const handleSubmit = async () => {
     _id: props.productData._id,
     type: props.productData.type,
     category: props.productData.category,
-    images: productImages.value.map((img) => ({
+    images: productForm.value.images.map((img) => ({
       filename: img.filename,
       type: img.type,
     })),
-    certificate: isFishCategory.value ? certificateFile.value?.filename : '',
+    certificate: isFishCategory.value ? productForm.value.certificate : '',
     price:
       selectedCategoryId.value?.value == 'fish'
         ? productForm.value.price
@@ -367,6 +345,7 @@ const handleSubmit = async () => {
 }
 
 const queryClient = useQueryClient()
+const productStore = useProductStore()
 const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
   onSuccess: (data: any) => {
@@ -390,8 +369,6 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
 
 const handleClose = () => {
   isSubmitting.value = false
-  productImages.value = []
-  certificateFile.value = null
   productForm.value.images = []
   productForm.value.certificate = ''
   emit('close-edit-modal')
@@ -402,94 +379,6 @@ const updateDynamicField = (key: IFieldsKey, value: string | number | Date | nul
 }
 
 const isFishCategory = computed(() => selectedCategoryId.value?.value === 'fish')
-
-const validateFileUpload = (file: File, maxSize: number = 2000000) => {
-  if (file.size > maxSize) {
-    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 2MB)')
-    return false
-  }
-
-  if (!file.type.startsWith('image/')) {
-    toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
-    return false
-  }
-
-  return true
-}
-
-const onProductImageSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadImage(file)
-  }
-}
-
-const onCertificateSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadCertificate(file)
-  }
-}
-
-const removeProductImage = (index: number) => {
-  productImages.value.splice(index, 1)
-  productForm.value.images = productImages.value.map((img) => ({
-    filename: img.filename,
-    type: img.type,
-  }))
-}
-
-const removeCertificate = () => {
-  certificateFile.value = null
-  productForm.value.certificate = ''
-}
-
-const productStore = useProductStore()
-const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
-  onSuccess: (data: IUploadImageResponse) => {
-    const filename = data.filename
-    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
-
-    productImages.value.push({
-      filename,
-      type: 'image',
-      preview,
-    })
-
-    // Update productForm.images
-    productForm.value.images = productImages.value.map((img) => ({
-      filename: img.filename,
-      type: img.type,
-    }))
-
-    toast.success('อัปโหลดรูปภาพสำเร็จ')
-  },
-  onError: (error: any) => {
-    console.error('Upload error:', error)
-    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
-  },
-})
-
-const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
-  onSuccess: (data: IUploadImageResponse) => {
-    const filename = data.filename
-    const preview = `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
-
-    certificateFile.value = {
-      filename,
-      preview,
-    }
-
-    productForm.value.certificate = filename
-    toast.success('อัปโหลดใบรับรองสำเร็จ')
-  },
-  onError: (error: any) => {
-    console.error('Upload error:', error)
-    toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
-  },
-})
 
 const filteredPondOptions = computed(() => {
   const ghId = dynamicFormData.value?.greenhouse || ''
@@ -503,6 +392,14 @@ const filteredPondOptions = computed(() => {
       value: pond._id,
     }))
 })
+
+const updateProductImages = (images: IProductImage[]) => {
+  productForm.value.images = images
+}
+
+const updateCertificateFile = (file: string | undefined) => {
+  productForm.value.certificate = file
+}
 </script>
 
 <template>
@@ -543,15 +440,11 @@ const filteredPondOptions = computed(() => {
 
       <!-- File Upload Section -->
       <FileUploadSection
-        :product-images="productImages"
-        :certificate-file="certificateFile"
         :show-certificate="isFishCategory"
-        :is-uploading-image="isUploadingImage"
-        :is-uploading-certificate="isUploadingCertificate"
-        @product-image-select="onProductImageSelect"
-        @certificate-select="onCertificateSelect"
-        @remove-product-image="removeProductImage"
-        @remove-certificate="removeCertificate"
+        :product-images="productForm.images"
+        :certificate-file="productForm.certificate"
+        @update-product-images="updateProductImages"
+        @update-certificate-file="updateCertificateFile"
       />
     </div>
 

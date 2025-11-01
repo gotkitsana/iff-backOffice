@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { Dialog, Button } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
-import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
-import { orderBy } from 'lodash-es'
 
 // Props
 defineProps<{
@@ -72,12 +70,8 @@ const handleClose = () => {
       </div>
     </template>
 
-    <div class="space-y-4">
-      <CategorySelectionStep
-        :category-options="orderBy(categoryOptionsUI, 'cat')"
-        :selected-category="selectedCategory"
-        @select-category="selectCategory"
-      />
+    <div>
+      เบิกออก
     </div>
 
     <template #footer>

@@ -301,7 +301,6 @@ export interface ICategoryOption extends ICategory {
 export type IProductImage = {
   filename: string
   type: string
-  preview?: string
 }
 
 export type ICertificateFile = {

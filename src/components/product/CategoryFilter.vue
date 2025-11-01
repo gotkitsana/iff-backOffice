@@ -200,7 +200,7 @@ const farmOptions = computed(() => {
             icon="pi pi-cog"
             severity="info"
             size="small"
-            @click="$router.push('/product/options-settings')"
+            @click="$router.push(`/product/options-settings?type=${props.selectedCategory?.value}`)"
           />
 
           <Button
