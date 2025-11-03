@@ -10,23 +10,40 @@ import { toast } from 'vue3-toastify'
 
 const props = defineProps<{
   showCertificate: boolean
+  showVideo: boolean
   productImages: IProductImage[]
   certificateFile: string | undefined
+  videoFile: string | undefined
 }>()
 
 const emit = defineEmits<{
   'update-product-images': [images: IProductImage[]]
   'update-certificate-file': [string | undefined]
+  'update-video-file': [string | undefined]
 }>()
 
 const validateFileUpload = (file: File, maxSize: number = 2000000) => {
   if (file.size > maxSize) {
-    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 2MB)')
+    toast.error(`ขนาดไฟล์ใหญ่เกินไป (สูงสุด ${maxSize / 1000000}MB)`)
     return false
   }
 
   if (!file.type.startsWith('image/')) {
     toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
+    return false
+  }
+
+  return true
+}
+
+const validateVideoUpload = (file: File, maxSize: number = 980000000) => {
+  if (file.size > maxSize) {
+    toast.error(`ขนาดไฟล์ใหญ่เกินไป (สูงสุด ${maxSize / 1000000}MB)`)
+    return false
+  }
+
+  if (!file.type.startsWith('video/')) {
+    toast.error('กรุณาเลือกไฟล์วิดีโอเท่านั้น')
     return false
   }
 
@@ -47,6 +64,13 @@ const onCertificateSelect = (event: { files: File[] }) => {
   }
 }
 
+const onVideoSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file && validateVideoUpload(file)) {
+    uploadVideo(file)
+  }
+}
+
 const removeProductImage = (index: number) => {
   emit(
     'update-product-images',
@@ -56,6 +80,10 @@ const removeProductImage = (index: number) => {
 
 const removeCertificate = () => {
   emit('update-certificate-file', undefined)
+}
+
+const removeVideo = () => {
+  emit('update-video-file', undefined)
 }
 
 const productStore = useProductStore()
@@ -94,6 +122,24 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
     toast.error(error.response?.data?.message || 'อัปโหลดใบรับรองไม่สำเร็จ')
   },
 })
+
+const { mutate: uploadVideo, isPending: isUploadingVideo } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+
+    emit('update-video-file', filename)
+    toast.success('อัปโหลดวิดีโอสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดวิดีโอไม่สำเร็จ')
+  },
+})
+
+const getVideoPreview = (filename: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+}
 
 const getImagePreview = (filename: string) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
@@ -138,6 +184,46 @@ const getImagePreview = (filename: string) => {
         @select="onProductImageSelect"
         :chooseLabel="isUploadingImage ? 'กำลังอัปโหลด...' : 'เพิ่มรูปภาพ'"
         :disabled="isUploadingImage"
+        size="small"
+      />
+    </div>
+
+     <!-- Video Upload Section -->
+    <div v-if="showVideo" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="pi pi-video text-green-600"></i>
+        <h4 class="text-lg font-medium text-gray-800">วิดีโอสินค้า</h4>
+        <span class="text-xs text-gray-500">(อัปโหลดได้ 1 คลิป สูงสุด 980MB)</span>
+      </div>
+
+      <div v-if="videoFile" class="mb-4">
+        <div class="relative">
+          <video
+            :src="getVideoPreview(videoFile)"
+            class="w-full h-60 rounded-lg border border-gray-200"
+            controls
+          />
+          <Button
+            icon="pi pi-times"
+            severity="danger"
+            size="small"
+            text
+            rounded
+            class="absolute top-1 right-1"
+            @click="removeVideo"
+          />
+        </div>
+      </div>
+
+      <FileUpload
+        v-else
+        mode="basic"
+        name="videoFile"
+        accept="video/*"
+        :maxFileSize="980000000"
+        @select="onVideoSelect"
+        :chooseLabel="isUploadingVideo ? 'กำลังอัปโหลด...' : 'เลือกวิดีโอ'"
+        :disabled="isUploadingVideo"
         size="small"
       />
     </div>

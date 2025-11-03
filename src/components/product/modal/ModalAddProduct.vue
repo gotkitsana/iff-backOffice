@@ -109,6 +109,7 @@ watch(selectedCategory, (newCategory) => {
     // รีเซ็ตทุกอย่างทุกครั้งที่เปลี่ยนหมวดหมู่
     productForm.value.images = []
     productForm.value.certificate = ''
+    productForm.value.youtube = ''
 
     // อัปเดตข้อมูลหมวดหมู่
     productForm.value.type = productType.value
@@ -410,6 +411,11 @@ const updateProductImages = (images: IProductImage[]) => {
 const updateCertificateFile = (filename: string | undefined) => {
   productForm.value.certificate = filename
 }
+
+const handleUpdateVideoFile = (filename: string | undefined) => {
+  productForm.value.youtube = filename || ''
+}
+
 </script>
 
 <template>
@@ -444,10 +450,13 @@ const updateCertificateFile = (filename: string | undefined) => {
         <!-- File Upload Section -->
         <FileUploadSection
           :show-certificate="isFishCategory"
+          :show-video="isFishCategory"
           :product-images="productForm.images || []"
           :certificate-file="productForm.certificate"
+          :video-file="productForm.youtube"
           @update-product-images="updateProductImages"
           @update-certificate-file="updateCertificateFile"
+          @update-video-file="handleUpdateVideoFile"
         />
       </div>
     </div>

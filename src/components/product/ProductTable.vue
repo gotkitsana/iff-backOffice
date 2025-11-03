@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
-import { DataTable, Column, Tag, Button } from 'primevue'
+import { DataTable, Column, Tag, Button, Dialog } from 'primevue'
 import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
@@ -53,6 +53,25 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryKey: ['get_greenhouses'],
   queryFn: () => greenhouseStore.onGetGreenhouses(),
 })
+
+const showVideoModal = ref(false)
+const selectedVideoUrl = ref<string | null>(null)
+
+const openVideoModal = (videoFilename: string) => {
+  selectedVideoUrl.value = getVideoUrl(videoFilename)
+  showVideoModal.value = true
+}
+
+// เพิ่ม function สำหรับปิด video modal
+const closeVideoModal = () => {
+  showVideoModal.value = false
+  selectedVideoUrl.value = null
+}
+
+const getVideoUrl = (filename: string) => {
+  if (!filename) return ''
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+}
 
 const foodColumns = ref([
   {
@@ -256,16 +275,27 @@ const fishColumns = ref([
   {
     field: 'youtube',
     header: 'วิดีโอ',
+    headCell: ' justify-center',
+    bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(
         'div',
         {
-          class: ['flex items-center'],
+          class: ['flex items-center justify-center'],
         },
         [
           slotProps.data.youtube
-            ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.youtube)
-            : h('i', { class: 'pi pi-video text-gray-500 !text-xl' }),
+            ? h(Button, {
+                icon: 'pi pi-play-circle',
+                severity: 'success',
+                size: 'small',
+                outlined: true,
+                onClick: () => openVideoModal(slotProps.data.youtube),
+                pt: {
+                  root: { class: '!w-8 !h-8' },
+                },
+              })
+            : h('i', { class: 'pi pi-video text-gray-400 !text-xl' }),
         ]
       ),
   },
@@ -686,4 +716,43 @@ const displayColumns = computed(() => {
       </Column>
     </DataTable>
   </div>
+
+  <Dialog
+    v-model:visible="showVideoModal"
+    modal
+    :dismissableMask="true"
+    :draggable="false"
+    :pt="{
+      root: { class: 'w-[90vw] max-w-4xl' },
+      content: { class: 'p-0' },
+    }"
+    @hide="closeVideoModal"
+  >
+    <template #header>
+      <div class="flex items-center gap-2">
+        <i class="pi pi-video text-green-600"></i>
+        <h3 class="text-lg font-semibold text-gray-800">วิดีโอสินค้า</h3>
+      </div>
+    </template>
+
+    <div v-if="selectedVideoUrl" class="relative px-4">
+      <div class="bg-black rounded-lg pb-2">
+        <video :src="selectedVideoUrl" class="w-full h-auto max-h-[60vh]" controls>
+          <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+        </video>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-2 pt-4">
+        <Button
+          label="ปิด"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="closeVideoModal"
+          size="small"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>
