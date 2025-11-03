@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Button, Select, InputText, InputNumber } from 'primevue'
+import { Button, Select, InputText, InputNumber, Slider } from 'primevue'
 import {
   useProductStore,
   type IFishFilters,
@@ -42,7 +42,6 @@ const foodSeedTypeOptions = [
   { label: 'จม', value: 'จม' },
 ]
 
-
 const ageOptions = [
   { label: 'Tosai (6เดือน-1ปี)', value: 'tosai' },
   { label: 'Nisai (1-2ปี)', value: 'nisai' },
@@ -50,7 +49,6 @@ const ageOptions = [
   { label: 'Yonsai (3-4ปี)', value: 'yonsai' },
   { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
-
 
 const localFoodFilters = ref<IFoodFilters>({
   sku: props.foodFilters?.sku || '',
@@ -60,6 +58,8 @@ const localFoodFilters = ref<IFoodFilters>({
   seedSize: props.foodFilters?.seedSize || '',
 })
 
+const maxPriceLimit = 500000 // กำหนดราคาสูงสุด
+
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
   species: props.fishFilters?.species || '',
@@ -68,11 +68,24 @@ const localFishFilters = ref<IFishFilters>({
   gender: props.fishFilters?.gender || '',
   size: props.fishFilters?.size || null,
   price: props.fishFilters?.price || null,
+  priceMin: props.fishFilters?.priceMin || 0,
+  priceMax: props.fishFilters?.priceMax || 500000,
 })
 
 const localMicroorganismFilters = ref<IMicroorganismFilters>({
   sku: props.microorganismFilters?.sku || '',
   brandName: props.microorganismFilters?.brandName || '',
+})
+
+const fishPriceRange = computed({
+  get: () => [
+    localFishFilters.value.priceMin || 0,
+    localFishFilters.value.priceMax || maxPriceLimit,
+  ],
+  set: (value: number[]) => {
+    localFishFilters.value.priceMin = value[0]
+    localFishFilters.value.priceMax = value[1]
+  },
 })
 
 // Computed
@@ -122,6 +135,8 @@ const clearFilters = () => {
       gender: '',
       size: null,
       price: null,
+      priceMin: 0,
+      priceMax: maxPriceLimit,
     }
     emit('update-fish-filters', { ...localFishFilters.value })
   } else if (props.selectedCategory?.value === 'microorganism') {
@@ -132,7 +147,6 @@ const clearFilters = () => {
     emit('update-microorganism-filters', { ...localMicroorganismFilters.value })
   }
 }
-
 
 const productStore = useProductStore()
 const speciesStore = useSpeciesStore()
@@ -194,16 +208,26 @@ const seedSizeOptions = computed(() => {
     value: p._id,
   }))
 })
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value)
+}
 </script>
 
 <template>
   <div class="space-y-4">
-
     <!-- Main Filter Section -->
     <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
-          <h3 class="text-lg font-[600]! text-gray-800">หมวดหมู่: {{ props.selectedCategory?.name }}</h3>
+          <h3 class="text-lg font-[600]! text-gray-800">
+            หมวดหมู่: {{ props.selectedCategory?.name }}
+          </h3>
         </div>
 
         <div class="flex items-center flex-wrap gap-2">
@@ -244,7 +268,7 @@ const seedSizeOptions = computed(() => {
       <div class="space-y-3">
         <div
           v-if="isFishSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
@@ -271,6 +295,7 @@ const seedSizeOptions = computed(() => {
               filter
             />
           </div>
+
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
             <Select
@@ -316,7 +341,7 @@ const seedSizeOptions = computed(() => {
             />
           </div>
 
-          <div>
+          <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
             <InputNumber
               :model-value="localFishFilters.size"
@@ -329,16 +354,27 @@ const seedSizeOptions = computed(() => {
             />
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">ราคา</label>
-            <InputNumber
-              :model-value="localFishFilters.price"
-              @update:model-value="updateFishFilter('price', $event)"
-              placeholder="ระบุราคา"
-              size="small"
-              fluid
-              :min="0"
-            />
+          <div class="col-span-2">
+            <label class="text-sm font-medium text-gray-700 mb-1 block">
+              ราคา
+            </label>
+            <div class="px-2 py-1.5">
+              <Slider
+                v-model="fishPriceRange"
+                @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
+                :min="0"
+                :max="maxPriceLimit"
+                :step="1000"
+                range
+                fluid
+                class="px-2"
+              />
+            </div>
+
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>{{ formatCurrency(fishPriceRange[0]) }}</span>
+              <span>{{ formatCurrency(fishPriceRange[1]) }}</span>
+            </div>
           </div>
         </div>
 

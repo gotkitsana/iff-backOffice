@@ -347,4 +347,6 @@ export interface IFishFilters {
   gender: string
   size: number | null
   price: number | null
+  priceMin: number
+  priceMax: number
 }
