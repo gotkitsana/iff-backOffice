@@ -40,11 +40,15 @@ const foodFilters = ref<IFoodFilters>({
   foodtype: '',
   seedType: '',
   seedSize: '',
+  priceMin: 0,
+  priceMax: 50000,
 })
 
 const microorganismFilters = ref<IMicroorganismFilters>({
   sku: '',
   brandName: '',
+  priceMin: 0,
+  priceMax: 50000,
 })
 
 const fishFilters = ref<IFishFilters>({
@@ -82,15 +86,11 @@ const filteredProducts = computed(() => {
     }
 
     if (foodFilters.value.brandName) {
-      filtered = filtered.filter((product) =>
-        product.brand?._id === foodFilters.value.brandName
-      )
+      filtered = filtered.filter((product) => product.brand?._id === foodFilters.value.brandName)
     }
 
     if (foodFilters.value.foodtype) {
-      filtered = filtered.filter((product) =>
-        product.foodtype?._id === foodFilters.value.foodtype
-      )
+      filtered = filtered.filter((product) => product.foodtype?._id === foodFilters.value.foodtype)
     }
 
     if (foodFilters.value.seedType) {
@@ -99,6 +99,15 @@ const filteredProducts = computed(() => {
 
     if (foodFilters.value.seedSize) {
       filtered = filtered.filter((product) => product.seedSize?._id === foodFilters.value.seedSize)
+    }
+
+    if (foodFilters.value.priceMin && foodFilters.value.priceMax) {
+      filtered = filtered.filter(
+        (product) =>
+          product.food &&
+          product.food?.marketPrice >= foodFilters.value.priceMin &&
+          product.food?.marketPrice <= foodFilters.value.priceMax
+      )
     }
   }
 
@@ -113,6 +122,15 @@ const filteredProducts = computed(() => {
     if (microorganismFilters.value.brandName) {
       filtered = filtered.filter((product) =>
         product.name?.toLowerCase().includes(microorganismFilters.value.brandName.toLowerCase())
+      )
+    }
+
+    if (microorganismFilters.value.priceMin && microorganismFilters.value.priceMax) {
+      filtered = filtered.filter(
+        (product) =>
+          product.food &&
+          product.food?.marketPrice >= microorganismFilters.value.priceMin &&
+          product.food?.marketPrice <= microorganismFilters.value.priceMax
       )
     }
   }
@@ -138,11 +156,19 @@ const filteredProducts = computed(() => {
     }
 
     if (fishFilters.value.sizeMin && fishFilters.value.sizeMax) {
-      filtered = filtered.filter((product) => product?.size && product.size >= fishFilters.value.sizeMin && product.size <= fishFilters.value.sizeMax)
+      filtered = filtered.filter(
+        (product) =>
+          product?.size &&
+          product.size >= fishFilters.value.sizeMin &&
+          product.size <= fishFilters.value.sizeMax
+      )
     }
 
     if (fishFilters.value.priceMin && fishFilters.value.priceMax) {
-      filtered = filtered.filter((product) => product.price >= fishFilters.value.priceMin && product.price <= fishFilters.value.priceMax)
+      filtered = filtered.filter(
+        (product) =>
+          product.price >= fishFilters.value.priceMin && product.price <= fishFilters.value.priceMax
+      )
     }
   }
 
@@ -342,9 +368,7 @@ const updateCategorySelector = () => {
   />
 
   <!-- Export Modal -->
-  <ModalExportProduct
-    v-if="!showCategorySelector"
-    v-model:visible="showExportModal" />
+  <ModalExportProduct v-if="!showCategorySelector" v-model:visible="showExportModal" />
 
   <ModalEditProduct
     v-if="!showCategorySelector"

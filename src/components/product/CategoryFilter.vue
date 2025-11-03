@@ -50,16 +50,19 @@ const ageOptions = [
   { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
 
+const maxFishPrice = 500000
+const maxProductPrice = 50000
+const maxSize = 200
+
 const localFoodFilters = ref<IFoodFilters>({
   sku: props.foodFilters?.sku || '',
   brandName: props.foodFilters?.brandName || '',
   foodtype: props.foodFilters?.foodtype || '',
   seedType: props.foodFilters?.seedType || '',
   seedSize: props.foodFilters?.seedSize || '',
+  priceMin: props.foodFilters?.priceMin || 0,
+  priceMax: props.foodFilters?.priceMax || maxProductPrice,
 })
-
-const maxPriceLimit = 500000 // กำหนดราคาสูงสุด
-const maxSizeLimit = 200
 
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
@@ -70,13 +73,21 @@ const localFishFilters = ref<IFishFilters>({
   size: props.fishFilters?.size || null,
   price: props.fishFilters?.price || null,
   priceMin: props.fishFilters?.priceMin || 0,
-  priceMax: props.fishFilters?.priceMax || 500000,
+  priceMax: props.fishFilters?.priceMax || maxFishPrice,
   sizeMin: props.fishFilters?.sizeMin || 0,
   sizeMax: props.fishFilters?.sizeMax || 200,
 })
 
+const localMicroorganismFilters = ref<IMicroorganismFilters>({
+  sku: props.microorganismFilters?.sku || '',
+  brandName: props.microorganismFilters?.brandName || '',
+  priceMin: props.microorganismFilters?.priceMin || 0,
+  priceMax: props.microorganismFilters?.priceMax || maxFishPrice,
+})
+
+
 const fishSizeRange = computed({
-  get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSizeLimit],
+  get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSize],
   set: (value: number[]) => {
     localFishFilters.value.sizeMin = value[0]
     localFishFilters.value.sizeMax = value[1]
@@ -86,7 +97,7 @@ const fishSizeRange = computed({
 const fishPriceRange = computed({
   get: () => [
     localFishFilters.value.priceMin || 0,
-    localFishFilters.value.priceMax || maxPriceLimit,
+    localFishFilters.value.priceMax || maxFishPrice,
   ],
   set: (value: number[]) => {
     localFishFilters.value.priceMin = value[0]
@@ -94,9 +105,26 @@ const fishPriceRange = computed({
   },
 })
 
-const localMicroorganismFilters = ref<IMicroorganismFilters>({
-  sku: props.microorganismFilters?.sku || '',
-  brandName: props.microorganismFilters?.brandName || '',
+const foodPriceRange = computed({
+  get: () => [
+    localFoodFilters.value.priceMin || 0,
+    localFoodFilters.value.priceMax || maxProductPrice,
+  ],
+  set: (value: number[]) => {
+    localFoodFilters.value.priceMin = value[0]
+    localFoodFilters.value.priceMax = value[1]
+  },
+})
+
+const microorganismPriceRange = computed({
+  get: () => [
+    localMicroorganismFilters.value.priceMin || 0,
+    localMicroorganismFilters.value.priceMax || maxProductPrice,
+  ],
+  set: (value: number[]) => {
+    localMicroorganismFilters.value.priceMin = value[0]
+    localMicroorganismFilters.value.priceMax = value[1]
+  },
 })
 
 // Computed
@@ -106,7 +134,6 @@ const isFishSelected = computed(() => {
 const isFoodSelected = computed(() => {
   return props.selectedCategory?.value === 'food'
 })
-
 const isMicroorganismSelected = computed(() => {
   return props.selectedCategory?.value === 'microorganism'
 })
@@ -135,6 +162,8 @@ const clearFilters = () => {
       foodtype: '',
       seedType: '',
       seedSize: '',
+      priceMin: 0,
+      priceMax: maxProductPrice,
     }
     emit('update-food-filters', { ...localFoodFilters.value })
   } else if (props.selectedCategory?.value === 'fish') {
@@ -147,15 +176,17 @@ const clearFilters = () => {
       size: null,
       price: null,
       priceMin: 0,
-      priceMax: maxPriceLimit,
+      priceMax: maxFishPrice,
       sizeMin: 0,
-      sizeMax: maxSizeLimit,
+      sizeMax: maxSize,
     }
     emit('update-fish-filters', { ...localFishFilters.value })
   } else if (props.selectedCategory?.value === 'microorganism') {
     localMicroorganismFilters.value = {
       sku: '',
       brandName: '',
+      priceMin: 0,
+      priceMax: maxProductPrice,
     }
     emit('update-microorganism-filters', { ...localMicroorganismFilters.value })
   }
@@ -365,7 +396,7 @@ const formatSize = (value: number) => {
                 v-model="fishSizeRange"
                 @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
                 :min="0"
-                :max="maxSizeLimit"
+                :max="maxSize"
                 :step="0.5"
                 range
                 fluid
@@ -385,7 +416,7 @@ const formatSize = (value: number) => {
                 v-model="fishPriceRange"
                 @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
                 :min="0"
-                :max="maxPriceLimit"
+                :max="maxFishPrice"
                 :step="1000"
                 range
                 fluid
@@ -402,7 +433,7 @@ const formatSize = (value: number) => {
 
         <div
           v-if="isFoodSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
           <!-- รหัสอาหาร -->
           <div>
@@ -480,11 +511,32 @@ const formatSize = (value: number) => {
               filter
             />
           </div>
+
+          <div class="col-span-2">
+            <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
+            <div class="px-2 py-1.5">
+              <Slider
+                v-model="foodPriceRange"
+                @update:model-value="emit('update-food-filters', { ...localFoodFilters })"
+                :min="0"
+                :max="maxProductPrice"
+                :step="500"
+                range
+                fluid
+                class="px-2"
+              />
+            </div>
+
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>{{ formatCurrency(foodPriceRange[0]) }}</span>
+              <span>{{ formatCurrency(foodPriceRange[1]) }}</span>
+            </div>
+          </div>
         </div>
 
         <div
           v-if="isMicroorganismSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3 items-end"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
           <!-- รหัสสารปรับสภาพน้ำ -->
           <div>
@@ -513,6 +565,27 @@ const formatSize = (value: number) => {
               fluid
               filter
             />
+          </div>
+
+          <div class="col-span-2">
+            <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
+            <div class="px-2 py-1.5">
+              <Slider
+                v-model="microorganismPriceRange"
+                @update:model-value="emit('update-microorganism-filters', { ...localMicroorganismFilters })"
+                :min="0"
+                :max="maxProductPrice"
+                :step="500"
+                range
+                fluid
+                class="px-2"
+              />
+            </div>
+
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>{{ formatCurrency(microorganismPriceRange[0]) }}</span>
+              <span>{{ formatCurrency(microorganismPriceRange[1]) }}</span>
+            </div>
           </div>
         </div>
 

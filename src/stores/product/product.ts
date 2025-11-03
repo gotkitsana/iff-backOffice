@@ -336,11 +336,15 @@ export interface IFoodFilters {
   foodtype: string
   seedType: string
   seedSize: string
+  priceMin: number
+  priceMax: number
 }
 
 export interface IMicroorganismFilters {
   sku: string
   brandName: string
+  priceMin: number
+  priceMax: number
 }
 
 export interface IFishFilters {
