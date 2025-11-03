@@ -25,7 +25,7 @@ app.use(VueQueryPlugin, {
     defaultOptions: {
       queries: {
         gcTime: 10 * 60 * 1000,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
       },
     },
   },

@@ -175,7 +175,7 @@ onUnmounted(() => {
         <div class="w-8 h-8 p-1 bg-blue-400 rounded-lg flex items-center justify-center">
           <img src="@/assets/images/icon/icon.png" alt="logo" class="w-full h-full object-cover" />
         </div>
-        <span class="font-semibold! text-lg text-gray-800">IFF Back Office</span>
+        <span class="font-semibold! text-lg text-gray-800">IFF ERP</span>
       </div>
 
       <!-- Navigation Menu -->
