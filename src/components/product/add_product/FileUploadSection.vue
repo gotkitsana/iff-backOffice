@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { useProductStore, type IProductImage, type IUploadImageResponse } from '@/stores/product/product';
-import { useMutation } from '@tanstack/vue-query';
+import {
+  useProductStore,
+  type IProductImage,
+  type IUploadImageResponse,
+} from '@/stores/product/product'
+import { useMutation } from '@tanstack/vue-query'
 import { Button, FileUpload } from 'primevue'
-import { toast } from 'vue3-toastify';
+import { toast } from 'vue3-toastify'
 
 const props = defineProps<{
   showCertificate: boolean
@@ -44,7 +48,10 @@ const onCertificateSelect = (event: { files: File[] }) => {
 }
 
 const removeProductImage = (index: number) => {
-  emit('update-product-images', props.productImages.filter((img, i) => i !== index))
+  emit(
+    'update-product-images',
+    props.productImages.filter((img, i) => i !== index)
+  )
 }
 
 const removeCertificate = () => {
@@ -58,10 +65,13 @@ const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
     const filename = data.filename
 
     // Update productForm.images
-    emit('update-product-images', [...props.productImages, {
-      filename,
-      type: 'image',
-    }])
+    emit('update-product-images', [
+      ...props.productImages,
+      {
+        filename,
+        type: 'image',
+      },
+    ])
 
     toast.success('อัปโหลดรูปภาพสำเร็จ')
   },
@@ -88,7 +98,6 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
 const getImagePreview = (filename: string) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
 }
-
 </script>
 
 <template>
@@ -134,10 +143,7 @@ const getImagePreview = (filename: string) => {
     </div>
 
     <!-- Certificate (for fish only) -->
-    <div
-      v-if="showCertificate"
-      class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-    >
+    <div v-if="showCertificate" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div class="flex items-center gap-2 mb-3">
         <i class="pi pi-file text-purple-600"></i>
         <h4 class="text-lg font-medium text-gray-800">ใบรับรอง</h4>

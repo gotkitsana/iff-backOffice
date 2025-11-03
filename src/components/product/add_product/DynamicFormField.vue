@@ -252,7 +252,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :model-value="(formData[field.key] as number | null)"
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`กรอก${field.label}`"
-          :min="0"
+          :min="field.key === 'balance' ? 0 : 1"
           :minFractionDigits="2"
           :maxFractionDigits="2"
           fluid
