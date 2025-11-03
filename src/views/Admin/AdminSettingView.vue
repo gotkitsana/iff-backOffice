@@ -145,12 +145,12 @@ const closeModals = () => {
 // Form handlers
 const handleAddAdmin = async () => {
   if (!adminForm.value.username) {
-    toast.error('กรุณาระบุชื่อผู้ใช้งาน')
+    toast.error('กรุณาระบุยูสเซอร์')
     return
   }
 
   if (!adminForm.value.name) {
-    toast.error('กรุณาระบุชื่อ')
+    toast.error('กรุณาระบุชื่อที่แสดงในระบบ')
     return
   }
 
@@ -191,12 +191,12 @@ const { mutate: createAdmin, isPending: isCreating } = useMutation({
 
 const handleEditAdmin = async () => {
   if (!editForm.value.username) {
-    toast.error('กรุณาระบุชื่อผู้ใช้งาน')
+    toast.error('กรุณาระบุยูสเซอร์')
     return
   }
 
   if (!editForm.value.name) {
-    toast.error('กรุณาระบุชื่อ')
+    toast.error('กรุณาระบุชื่อแสดง')
     return
   }
 
@@ -422,7 +422,7 @@ const formatDate = (timestamp: number) => {
         >
           <Column
             field="name"
-            header="ชื่อ"
+            header="ชื่อแสดง"
             :pt="{
               headerCell: 'min-w-[5rem]',
             }"
@@ -571,18 +571,18 @@ const formatDate = (timestamp: number) => {
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ *
+              ชื่อแสดง *
             </label>
-            <InputText v-model="adminForm.name" placeholder="กรอกชื่อ" fluid size="small" />
+            <InputText v-model="adminForm.name" placeholder="กรอกชื่อแสดง" fluid size="small" />
           </div>
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               <i class="pi pi-at mr-1.5 !text-sm"></i>
-              Username *
+              ยูสเซอร์ *
             </label>
             <InputText
               v-model="adminForm.username"
-              placeholder="กรอก username"
+              placeholder="กรอกยูสเซอร์"
               fluid
               size="small"
             />
