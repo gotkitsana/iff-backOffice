@@ -257,7 +257,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :maxFractionDigits="2"
           fluid
           size="small"
-          :invalid="field.required && !formData[field.key] && isSubmitting"
+          :invalid="field.required && formData[field.key] == null && isSubmitting"
         />
 
         <!-- Select Input -->
@@ -305,7 +305,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
         />
 
         <small
-          v-if="field.required && !formData[field.key] && isSubmitting"
+          v-if="field.required && !formData[field.key] && isSubmitting && field.key != 'balance'"
           class="text-red-500 text-xs mt-1"
         >
           กรุณากรอก{{ field.label }}
