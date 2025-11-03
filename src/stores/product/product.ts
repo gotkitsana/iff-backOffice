@@ -231,12 +231,16 @@ export interface ICreateProductPayload {
     dealerPrice: number // ราคาพ่อค้า ถ้า type = 0 ไม่ต้องระบุ
   }
 
-  brand?:string
-  foodtype?:string
-  seedSize?:string
+  brand?: string
+  foodtype?: string
+  seedSize?: string
 }
 
-export interface IUpdateProductPayload extends Omit<IProduct, 'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand'> {
+export interface IUpdateProductPayload
+  extends Omit<
+    IProduct,
+    'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand'
+  > {
   _id: string
   fishpond?: string
   species?: string
@@ -349,4 +353,6 @@ export interface IFishFilters {
   price: number | null
   priceMin: number
   priceMax: number
+  sizeMin: number
+  sizeMax: number
 }

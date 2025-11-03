@@ -59,6 +59,7 @@ const localFoodFilters = ref<IFoodFilters>({
 })
 
 const maxPriceLimit = 500000 // กำหนดราคาสูงสุด
+const maxSizeLimit = 200
 
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
@@ -70,11 +71,16 @@ const localFishFilters = ref<IFishFilters>({
   price: props.fishFilters?.price || null,
   priceMin: props.fishFilters?.priceMin || 0,
   priceMax: props.fishFilters?.priceMax || 500000,
+  sizeMin: props.fishFilters?.sizeMin || 0,
+  sizeMax: props.fishFilters?.sizeMax || 200,
 })
 
-const localMicroorganismFilters = ref<IMicroorganismFilters>({
-  sku: props.microorganismFilters?.sku || '',
-  brandName: props.microorganismFilters?.brandName || '',
+const fishSizeRange = computed({
+  get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSizeLimit],
+  set: (value: number[]) => {
+    localFishFilters.value.sizeMin = value[0]
+    localFishFilters.value.sizeMax = value[1]
+  },
 })
 
 const fishPriceRange = computed({
@@ -86,6 +92,11 @@ const fishPriceRange = computed({
     localFishFilters.value.priceMin = value[0]
     localFishFilters.value.priceMax = value[1]
   },
+})
+
+const localMicroorganismFilters = ref<IMicroorganismFilters>({
+  sku: props.microorganismFilters?.sku || '',
+  brandName: props.microorganismFilters?.brandName || '',
 })
 
 // Computed
@@ -137,6 +148,8 @@ const clearFilters = () => {
       price: null,
       priceMin: 0,
       priceMax: maxPriceLimit,
+      sizeMin: 0,
+      sizeMax: maxSizeLimit,
     }
     emit('update-fish-filters', { ...localFishFilters.value })
   } else if (props.selectedCategory?.value === 'microorganism') {
@@ -216,6 +229,10 @@ const formatCurrency = (value: number) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+const formatSize = (value: number) => {
+  return `${value.toFixed(1)} ซม.`
 }
 </script>
 
@@ -343,21 +360,26 @@ const formatCurrency = (value: number) => {
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
-            <InputNumber
-              :model-value="localFishFilters.size"
-              @update:model-value="updateFishFilter('size', $event)"
-              placeholder="ระบุไซด์"
-              size="small"
-              fluid
-              :min="0"
-              :min-fraction-digits="2"
-            />
+            <div class="px-2 py-1.5">
+              <Slider
+                v-model="fishSizeRange"
+                @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
+                :min="0"
+                :max="maxSizeLimit"
+                :step="0.5"
+                range
+                fluid
+                class="px-2"
+              />
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>{{ formatSize(fishSizeRange[0]) }}</span>
+              <span>{{ formatSize(fishSizeRange[1]) }}</span>
+            </div>
           </div>
 
           <div class="col-span-2">
-            <label class="text-sm font-medium text-gray-700 mb-1 block">
-              ราคา
-            </label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคา </label>
             <div class="px-2 py-1.5">
               <Slider
                 v-model="fishPriceRange"

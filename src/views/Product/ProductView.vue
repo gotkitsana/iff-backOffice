@@ -57,6 +57,8 @@ const fishFilters = ref<IFishFilters>({
   price: null,
   priceMin: 0,
   priceMax: 500000,
+  sizeMin: 0,
+  sizeMax: 200,
 })
 
 const selectedCategoryId = computed(() => selectedCategory.value?._id)
@@ -135,8 +137,8 @@ const filteredProducts = computed(() => {
       filtered = filtered.filter((product) => product.gender === fishFilters.value.gender)
     }
 
-    if (fishFilters.value.size !== null) {
-      filtered = filtered.filter((product) => product.size === fishFilters.value.size)
+    if (fishFilters.value.sizeMin && fishFilters.value.sizeMax) {
+      filtered = filtered.filter((product) => product?.size && product.size >= fishFilters.value.sizeMin && product.size <= fishFilters.value.sizeMax)
     }
 
     if (fishFilters.value.priceMin && fishFilters.value.priceMax) {
