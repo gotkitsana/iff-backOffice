@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, h, computed } from 'vue'
-import { DataTable, Column, Tag, Button, Dialog } from 'primevue'
+import { DataTable, Column, Tag, Button, Dialog, Galleria } from 'primevue'
 import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
@@ -57,12 +57,12 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
 const showVideoModal = ref(false)
 const selectedVideoUrl = ref<string | null>(null)
 
+// Video functions
 const openVideoModal = (videoFilename: string) => {
   selectedVideoUrl.value = getVideoUrl(videoFilename)
   showVideoModal.value = true
 }
 
-// เพิ่ม function สำหรับปิด video modal
 const closeVideoModal = () => {
   showVideoModal.value = false
   selectedVideoUrl.value = null
@@ -72,6 +72,50 @@ const getVideoUrl = (filename: string) => {
   if (!filename) return ''
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
 }
+
+// Image gallery modal states
+const showImageGalleryModal = ref(false)
+const selectedImages = ref<IProductImage[]>([])
+const activeImageIndex = ref(0)
+
+// Image gallery functions
+const openImageGalleryModal = (images: IProductImage[], startIndex: number = 0) => {
+  if (images && images.length > 0) {
+    selectedImages.value = images
+    activeImageIndex.value = startIndex
+    showImageGalleryModal.value = true
+  }
+}
+
+const closeImageGalleryModal = () => {
+  showImageGalleryModal.value = false
+  selectedImages.value = []
+  activeImageIndex.value = 0
+}
+
+// Certificate modal states
+const showCertificateModal = ref(false)
+const selectedCertificateUrl = ref<string | null>(null)
+
+// Certificate functions
+const openCertificateModal = (certificateFilename: string) => {
+  selectedCertificateUrl.value = getCertificateUrl(certificateFilename)
+  showCertificateModal.value = true
+}
+
+const closeCertificateModal = () => {
+  showCertificateModal.value = false
+  selectedCertificateUrl.value = null
+}
+
+// Computed for Galleria
+const galleriaImages = computed(() => {
+  return selectedImages.value.map((img) => ({
+    itemImageSrc: getImageUrl(img),
+    thumbnailImageSrc: getImageUrl(img),
+    alt: 'Product image',
+  }))
+})
 
 const foodColumns = ref([
   {
@@ -104,7 +148,9 @@ const foodColumns = ref([
             ? h('img', {
                 src: getImageUrl(slotProps.data.images[0]),
                 alt: 'product image',
-                class: 'w-auto h-8 object-contain rounded-lg',
+                class:
+                  'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',
+                onClick: () => openImageGalleryModal(slotProps.data.images, 0),
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -255,19 +301,41 @@ const fishColumns = ref([
     field: 'images',
     header: 'รูปปลา',
     headCell: '!min-w-[2.5rem] justify-center',
+    bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(
         'div',
         {
-          class: ['flex items-center justify-center'],
+          class: ['flex items-center justify-center relative group'],
         },
         [
           slotProps.data.images && slotProps.data.images.length > 0
-            ? h('img', {
-                src: getImageUrl(slotProps.data.images[0]),
-                alt: 'fish image',
-                class: 'w-auto h-10 object-contain rounded',
-              })
+            ? h('div', { class: 'relative' }, [
+                h('img', {
+                  src: getImageUrl(slotProps.data.images[0]),
+                  alt: 'fish image',
+                  class: [
+                    'w-auto h-10 object-contain rounded cursor-pointer',
+                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                    'hover:scale-110 transform',
+                  ].join(' '),
+                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                }),
+                // Badge แสดงจำนวนรูป
+                slotProps.data.images.length > 1
+                  ? h(
+                      'span',
+                      {
+                        class: [
+                          'absolute -top-1 -right-1 bg-blue-600 text-white',
+                          'text-[10px] font-semibold rounded-full',
+                          'w-4 h-4 flex items-center justify-center',
+                        ].join(' '),
+                      },
+                      slotProps.data.images.length
+                    )
+                  : null,
+              ])
             : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
         ]
       ),
@@ -302,18 +370,25 @@ const fishColumns = ref([
   {
     field: 'certificate',
     header: 'ใบเซอร์',
+    headCell: ' justify-center',
+    bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(
         'div',
         {
-          class: ['flex items-center'],
+          class: ['flex items-center justify-center'],
         },
         [
           slotProps.data?.certificate
             ? h('img', {
                 src: getCertificateUrl(slotProps.data?.certificate),
                 alt: 'certificate image',
-                class: 'w-auto h-10 object-contain rounded',
+                class: [
+                  'w-auto h-10 object-contain rounded cursor-pointer',
+                  'hover:ring hover:ring-purple-500/75 duration-150 transition-all',
+                  'hover:scale-110 transform',
+                ].join(' '),
+                onClick: () => openCertificateModal(slotProps.data?.certificate),
               })
             : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
         ]
@@ -502,7 +577,9 @@ const microorganismColumns = ref([
             ? h('img', {
                 src: getImageUrl(slotProps.data.images[0]),
                 alt: 'product image',
-                class: 'w-auto h-8 object-contain rounded-lg',
+                class:
+                  'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',
+                onClick: () => openImageGalleryModal(slotProps.data.images, 0),
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -750,6 +827,122 @@ const displayColumns = computed(() => {
           icon="pi pi-times"
           severity="secondary"
           @click="closeVideoModal"
+          size="small"
+        />
+      </div>
+    </template>
+  </Dialog>
+
+  <!-- Image Gallery Modal with Carousel -->
+  <Dialog
+    v-model:visible="showImageGalleryModal"
+    modal
+    :dismissableMask="true"
+    :draggable="false"
+    :pt="{
+      root: { class: 'w-[90vw] max-w-5xl' },
+      content: { class: 'p-0' },
+    }"
+    @hide="closeImageGalleryModal"
+  >
+    <template #header>
+      <div class="flex items-center gap-2">
+        <i class="pi pi-images text-blue-600"></i>
+        <h3 class="text-lg font-semibold text-gray-800">
+          รูปภาพสินค้า
+          <span class="text-sm font-normal text-gray-500 ml-2">
+            ({{ activeImageIndex + 1 }}/{{ selectedImages.length }})
+          </span>
+        </h3>
+      </div>
+    </template>
+
+    <div v-if="galleriaImages.length > 0" class="px-4 pb-4">
+      <Galleria
+        v-model:activeIndex="activeImageIndex"
+        :value="galleriaImages"
+        :numVisible="5"
+        :circular="true"
+        :showItemNavigators="true"
+        :showThumbnails="true"
+        :showItemNavigatorsOnHover="true"
+        :pt="{
+          root: { class: 'max-w-full' },
+          content: { class: 'bg-gray-50 rounded-lg' },
+          thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-3' },
+        }"
+      >
+        <template #item="{ item }">
+          <div class="flex justify-center items-center overflow-hidden">
+            <img
+              :src="item.itemImageSrc"
+              :alt="item.alt"
+              class="w-full h-auto max-h-[55vh] object-contain"
+            />
+          </div>
+        </template>
+
+        <template #thumbnail="{ item }">
+          <div class="p-1">
+            <img
+              :src="item.thumbnailImageSrc"
+              :alt="item.alt"
+              class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
+            />
+          </div>
+        </template>
+      </Galleria>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end items-center">
+        <Button
+          label="ปิด"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="closeImageGalleryModal"
+          size="small"
+        />
+      </div>
+    </template>
+  </Dialog>
+
+  <!-- Certificate Modal (Single Image) -->
+  <Dialog
+    v-model:visible="showCertificateModal"
+    modal
+    :dismissableMask="true"
+    :draggable="false"
+    :pt="{
+      root: { class: 'w-[90vw] max-w-3xl' },
+      content: { class: 'p-0' },
+    }"
+    @hide="closeCertificateModal"
+  >
+    <template #header>
+      <div class="flex items-center gap-2">
+        <i class="pi pi-file-pdf text-purple-600"></i>
+        <h3 class="text-lg font-semibold text-gray-800">ใบเซอร์</h3>
+      </div>
+    </template>
+
+    <div v-if="selectedCertificateUrl" class="relative px-4 pb-4">
+      <div class="bg-gray-50 rounded-lg p-4 flex justify-center items-center">
+        <img
+          :src="selectedCertificateUrl"
+          alt="Certificate"
+          class="w-full h-auto max-h-[60vh] object-contain rounded-lg shadow-md"
+        />
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end items-center">
+        <Button
+          label="ปิด"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="closeCertificateModal"
           size="small"
         />
       </div>

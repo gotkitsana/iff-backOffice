@@ -350,6 +350,8 @@ const handleSubmit = async () => {
         ? productForm.value.price
         : selectedCategoryId.value?.value === 'food'
         ? productForm.value.food?.customerPrice || 0
+        : selectedCategoryId.value?.value === 'microorganism'
+        ? productForm.value.food?.customerPrice || 0
         : 0,
     name:
       selectedCategoryId.value?.value !== 'fish'
