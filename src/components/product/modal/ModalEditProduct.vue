@@ -457,9 +457,11 @@ const updateCertificateFile = (file: string | undefined) => {
 
       <!-- File Upload Section -->
       <FileUploadSection
+        :show-video="isFishCategory"
         :show-certificate="isFishCategory"
         :product-images="productForm.images"
         :certificate-file="productForm.certificate"
+        :video-file="productForm.youtube"
         @update-product-images="updateProductImages"
         @update-certificate-file="updateCertificateFile"
       />
