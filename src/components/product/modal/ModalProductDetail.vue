@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, Button, Tag } from 'primevue'
-import { type IProduct, type ICategoryOption, useProductStore } from '../../../stores/product/product'
+import {
+  type IProduct,
+  type ICategoryOption,
+  useProductStore,
+} from '../../../stores/product/product'
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
 import type { ICategory } from '../../../stores/product/category'
@@ -65,7 +69,11 @@ const getFieldValue = (fieldKey: string) => {
     return props.productData.lotNumber.name || '-'
   }
   if (fieldKey === 'greenhouse' && props.productData.fishpond) {
-    return greenhouseData.value?.find((greenhouse) => greenhouse._id === props.productData?.fishpond?.greenhouse)?.name || '-'
+    return (
+      greenhouseData.value?.find(
+        (greenhouse) => greenhouse._id === props.productData?.fishpond?.greenhouse
+      )?.name || '-'
+    )
   }
   if (fieldKey === 'fishpond' && props.productData.fishpond) {
     return props.productData.fishpond.code || '-'
@@ -133,6 +141,10 @@ const getCertificateUrl = (filename: string) => {
 }
 
 const getImageUrl = (filename: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+}
+
+const getVideoUrl = (filename: string) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
 }
 
@@ -221,16 +233,24 @@ const handleClose = () => {
                     >
                       {{ formatFieldValue(field.key) }}
                     </p>
-                    <p v-else-if="field.key === 'seedSize'" class="text-base text-gray-900 font-medium">
-                      {{  productData?.seedSize?.name || '-' }}
+                    <p
+                      v-else-if="field.key === 'seedSize'"
+                      class="text-base text-gray-900 font-medium"
+                    >
+                      {{ productData?.seedSize?.name || '-' }}
                     </p>
-                    <p v-else-if="field.key === 'brand'" class="text-base text-gray-900 font-medium">
+                    <p
+                      v-else-if="field.key === 'brand'"
+                      class="text-base text-gray-900 font-medium"
+                    >
                       {{ productData?.brand?.name || '-' }}
                     </p>
-                    <p v-else-if="field.key === 'foodtype'" class="text-base text-gray-900 font-medium">
+                    <p
+                      v-else-if="field.key === 'foodtype'"
+                      class="text-base text-gray-900 font-medium"
+                    >
                       {{ productData?.foodtype?.name || '-' }}
                     </p>
-                    
 
                     <p v-else class="text-base text-gray-900 font-medium">
                       {{ getFieldValue(field.key) }}
@@ -265,13 +285,15 @@ const handleClose = () => {
                 <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
                   >YouTube</label
                 >
-                <a
-                  :href="productData.youtube"
-                  target="_blank"
-                  class="text-blue-600 hover:text-blue-800 hover:underline block mt-2 text-base font-medium"
-                >
-                  {{ productData.youtube }}
-                </a>
+                <div class="bg-black rounded-lg pb-2">
+                  <video
+                    :src="getVideoUrl(productData.youtube)"
+                    class="w-full h-auto max-h-[60vh]"
+                    controls
+                  >
+                    <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+                  </video>
+                </div>
               </div>
             </div>
           </div>
