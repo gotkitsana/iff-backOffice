@@ -15,6 +15,7 @@ import { useFarmStore, type IFarm } from '@/stores/product/farm'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
+import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 
 // Props
 const props = defineProps<{
@@ -56,6 +57,7 @@ const maxSize = 200
 
 const localFoodFilters = ref<IFoodFilters>({
   sku: props.foodFilters?.sku || '',
+  lotNumber: props.foodFilters?.lotNumber || '',
   brandName: props.foodFilters?.brandName || '',
   foodtype: props.foodFilters?.foodtype || '',
   seedType: props.foodFilters?.seedType || '',
@@ -66,6 +68,7 @@ const localFoodFilters = ref<IFoodFilters>({
 
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
+  lotNumber: props.fishFilters?.lotNumber || '',
   species: props.fishFilters?.species || '',
   age: props.fishFilters?.age || '',
   farm: props.fishFilters?.farm || '',
@@ -80,11 +83,11 @@ const localFishFilters = ref<IFishFilters>({
 
 const localMicroorganismFilters = ref<IMicroorganismFilters>({
   sku: props.microorganismFilters?.sku || '',
+  lotNumber: props.microorganismFilters?.lotNumber || '',
   brandName: props.microorganismFilters?.brandName || '',
   priceMin: props.microorganismFilters?.priceMin || 0,
   priceMax: props.microorganismFilters?.priceMax || maxFishPrice,
 })
-
 
 const fishSizeRange = computed({
   get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSize],
@@ -158,6 +161,7 @@ const clearFilters = () => {
   if (props.selectedCategory?.value === 'food') {
     localFoodFilters.value = {
       sku: '',
+      lotNumber: '',
       brandName: '',
       foodtype: '',
       seedType: '',
@@ -169,6 +173,7 @@ const clearFilters = () => {
   } else if (props.selectedCategory?.value === 'fish') {
     localFishFilters.value = {
       sku: '',
+      lotNumber: '',
       species: '',
       age: '',
       farm: '',
@@ -184,6 +189,7 @@ const clearFilters = () => {
   } else if (props.selectedCategory?.value === 'microorganism') {
     localMicroorganismFilters.value = {
       sku: '',
+      lotNumber: '',
       brandName: '',
       priceMin: 0,
       priceMax: maxProductPrice,
@@ -251,6 +257,21 @@ const seedSizeOptions = computed(() => {
     label: p.name,
     value: p._id,
   }))
+})
+
+const lotNumberStore = useLotNumberStore()
+const { data: lotNumbers } = useQuery<ILotNumber[]>({
+  queryKey: ['get_lot_numbers'],
+  queryFn: () => lotNumberStore.onGetLotNumbers(),
+})
+const lotNumberOptions = computed(() => {
+  if (!lotNumbers.value) return []
+  return lotNumbers.value
+    ?.filter((p) => p.category._id === props.selectedCategory?._id)
+    .map((p) => ({
+      label: p.name,
+      value: p._id,
+    }))
 })
 
 const formatCurrency = (value: number) => {
@@ -389,6 +410,21 @@ const formatSize = (value: number) => {
             />
           </div>
 
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
+            <Select
+              :model-value="localFishFilters.lotNumber"
+              @update:model-value="updateFishFilter('lotNumber', $event)"
+              :options="lotNumberOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเลขล็อต"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
             <div class="px-2 py-1.5">
@@ -512,6 +548,21 @@ const formatSize = (value: number) => {
             />
           </div>
 
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
+            <Select
+              :model-value="localFoodFilters.lotNumber"
+              @update:model-value="updateFoodFilter('lotNumber', $event)"
+              :options="lotNumberOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเลขล็อต"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
             <div class="px-2 py-1.5">
@@ -567,12 +618,29 @@ const formatSize = (value: number) => {
             />
           </div>
 
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
+            <Select
+              :model-value="localMicroorganismFilters.lotNumber"
+              @update:model-value="updateMicroorganismFilter('lotNumber', $event)"
+              :options="lotNumberOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเลขล็อต"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
             <div class="px-2 py-1.5">
               <Slider
                 v-model="microorganismPriceRange"
-                @update:model-value="emit('update-microorganism-filters', { ...localMicroorganismFilters })"
+                @update:model-value="
+                  emit('update-microorganism-filters', { ...localMicroorganismFilters })
+                "
                 :min="0"
                 :max="maxProductPrice"
                 :step="500"

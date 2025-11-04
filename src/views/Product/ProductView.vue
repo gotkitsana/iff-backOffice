@@ -42,6 +42,7 @@ const foodFilters = ref<IFoodFilters>({
   seedSize: '',
   priceMin: 0,
   priceMax: 50000,
+  lotNumber: '',
 })
 
 const microorganismFilters = ref<IMicroorganismFilters>({
@@ -49,10 +50,12 @@ const microorganismFilters = ref<IMicroorganismFilters>({
   brandName: '',
   priceMin: 0,
   priceMax: 50000,
+  lotNumber: '',
 })
 
 const fishFilters = ref<IFishFilters>({
   sku: '',
+  lotNumber: '',
   species: '',
   age: '',
   farm: '',
@@ -83,6 +86,10 @@ const filteredProducts = computed(() => {
       filtered = filtered.filter((product) =>
         product.sku?.toLowerCase().includes(foodFilters.value.sku.toLowerCase())
       )
+    }
+
+    if (foodFilters.value.lotNumber) {
+      filtered = filtered.filter((product) => product.lotNumber?._id === foodFilters.value.lotNumber)
     }
 
     if (foodFilters.value.brandName) {
@@ -119,6 +126,10 @@ const filteredProducts = computed(() => {
       )
     }
 
+    if (microorganismFilters.value.lotNumber) {
+      filtered = filtered.filter((product) => product.lotNumber?._id === microorganismFilters.value.lotNumber)
+    }
+
     if (microorganismFilters.value.brandName) {
       filtered = filtered.filter((product) =>
         product.name?.toLowerCase().includes(microorganismFilters.value.brandName.toLowerCase())
@@ -141,6 +152,9 @@ const filteredProducts = computed(() => {
       filtered = filtered.filter((product) =>
         product.sku?.toLowerCase().includes(fishFilters.value.sku.toLowerCase())
       )
+    }
+    if (fishFilters.value.lotNumber) {
+      filtered = filtered.filter((product) => product.lotNumber?._id === fishFilters.value.lotNumber)
     }
     if (fishFilters.value.species) {
       filtered = filtered.filter((product) => product.species?._id === fishFilters.value.species)

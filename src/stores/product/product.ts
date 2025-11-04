@@ -332,6 +332,7 @@ export type ICertificateFile = {
 
 export interface IFoodFilters {
   sku: string
+  lotNumber: string
   brandName: string
   foodtype: string
   seedType: string
@@ -342,6 +343,7 @@ export interface IFoodFilters {
 
 export interface IMicroorganismFilters {
   sku: string
+  lotNumber: string
   brandName: string
   priceMin: number
   priceMax: number
@@ -349,6 +351,7 @@ export interface IMicroorganismFilters {
 
 export interface IFishFilters {
   sku: string
+  lotNumber: string
   species: string
   age: string
   farm: string
