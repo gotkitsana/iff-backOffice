@@ -4,7 +4,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
+import {Dialog, Select} from 'primevue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
@@ -13,6 +13,7 @@ import {
   type ICreateLotNumberPayload,
   type IUpdateLotNumberPayload,
 } from '../../../stores/product/lot_number'
+import { type ICategory } from '@/stores/product/category'
 
 interface IApiResponse {
   data?: unknown
@@ -29,6 +30,11 @@ interface IErrorResponse {
   }
 }
 
+const props = defineProps<{
+  selectedCategory: ICategory
+  categoryOptions: { label: string; value: string }[]
+}>()
+
 const lotNumberStore = useLotNumberStore()
 const queryClient = useQueryClient()
 
@@ -39,6 +45,7 @@ const selectedItem = ref<ILotNumber | null>(null)
 const form = ref<ICreateLotNumberPayload>({
   name: '',
   note: '',
+  category: props.selectedCategory._id,
 })
 
 const { data: lotNumberData, isLoading } = useQuery<ILotNumber[]>({
@@ -114,11 +121,12 @@ const openModal = (type: 'add' | 'edit' | 'delete', item?: ILotNumber) => {
   selectedItem.value = item || null
 
   if (type === 'add') {
-    form.value = { name: '', note: '' }
+    form.value = { name: '', note: '', category: props.selectedCategory._id }
   } else if (type === 'edit' && item) {
     form.value = {
       name: item.name,
       note: item.note,
+      category: item.category?._id,
     }
   }
 
@@ -129,7 +137,7 @@ const closeModal = () => {
   showModal.value = false
   modalType.value = 'add'
   selectedItem.value = null
-  form.value = { name: '', note: '' }
+  form.value = { name: '', note: '', category: '' }
 }
 
 const validate = () => {
@@ -146,6 +154,7 @@ const handleSubmit = () => {
   const payload = {
     name: form.value.name.trim(),
     note: form.value.note.trim(),
+    category: form.value.category,
   }
 
   if (modalType.value === 'add') {
@@ -158,6 +167,7 @@ const handleSubmit = () => {
       active: selectedItem.value.active,
       cat: selectedItem.value.cat,
       uat: selectedItem.value.uat,
+      category: payload.category,
     })
   }
 }
@@ -182,6 +192,10 @@ const getModalTitle = () => {
       return ''
   }
 }
+
+const filteredLotNumbers = computed(() => {
+  return lotNumbers.value.filter((lotNumber) => lotNumber?.category?._id === props.selectedCategory._id)
+})
 </script>
 
 <template>
@@ -213,7 +227,7 @@ const getModalTitle = () => {
     <!-- Data Table -->
     <div>
       <DataTable
-        :value="lotNumbers"
+        :value="filteredLotNumbers"
         :loading="isLoading"
         :paginator="true"
         :rows="10"
@@ -222,6 +236,12 @@ const getModalTitle = () => {
         <Column field="name" header="เลขล็อต" sortable>
           <template #body="{ data }">
             <span class="font-medium text-gray-900">{{ data.name }}</span>
+          </template>
+        </Column>
+
+        <Column field="category" header="ประเภท" sortable>
+          <template #body="{ data }">
+            <span class="text-gray-700">{{ data.category?.name || 'ไม่ระบุ' }}</span>
           </template>
         </Column>
 
@@ -290,6 +310,19 @@ const getModalTitle = () => {
               placeholder="เช่น LOT001"
               class="w-full"
               autocomplete="off"
+            />
+          </div>
+
+          <div v-if="modalType == 'edit'">
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทสินค้า</label>
+            <Select
+              v-model="form.category"
+              :options="categoryOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกประเภทสินค้า"
+              fluid
+              size="small"
             />
           </div>
 

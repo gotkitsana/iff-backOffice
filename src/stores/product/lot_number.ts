@@ -37,14 +37,20 @@ export interface ILotNumber {
   active: boolean
   cat: number
   uat: number
+  category: {
+    _id: string
+    name: string
+  }
 }
 
 export interface ICreateLotNumberPayload {
   name: string
   note: string
+  category: string
 }
 
-export interface IUpdateLotNumberPayload extends ILotNumber {
+export interface IUpdateLotNumberPayload extends Omit<ILotNumber, 'category'> {
   _id: string
   active: boolean
+  category: string
 }
