@@ -4,7 +4,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
+import { Dialog, FileUpload, Select } from 'primevue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
@@ -13,6 +13,8 @@ import {
   type ICreateFoodBrandPayload,
   type IUpdateFoodBrandPayload,
 } from '../../../stores/product/food_brand'
+import type { ICategory } from '@/stores/product/category'
+import { useProductStore, type IUploadImageResponse } from '@/stores/product/product'
 
 interface IApiResponse {
   data?: unknown
@@ -29,6 +31,11 @@ interface IErrorResponse {
   }
 }
 
+const props = defineProps<{
+  selectedCategory: ICategory
+  categoryOptions: { label: string; value: string }[]
+}>()
+
 const foodBrandStore = useFoodBrandStore()
 const queryClient = useQueryClient()
 
@@ -39,6 +46,8 @@ const selectedItem = ref<IFoodBrand | null>(null)
 const form = ref<ICreateFoodBrandPayload>({
   name: '',
   note: '',
+  image: '',
+  category: props.selectedCategory._id,
 })
 
 const { data: foodBrandData, isLoading } = useQuery<IFoodBrand[]>({
@@ -114,11 +123,13 @@ const openModal = (type: 'add' | 'edit' | 'delete', item?: IFoodBrand) => {
   selectedItem.value = item || null
 
   if (type === 'add') {
-    form.value = { name: '', note: '' }
+    form.value = { name: '', note: '', image: '', category: props.selectedCategory._id }
   } else if (type === 'edit' && item) {
     form.value = {
       name: item.name,
       note: item.note,
+      image: item.image,
+      category: item.category?._id,
     }
   }
 
@@ -129,7 +140,7 @@ const closeModal = () => {
   showModal.value = false
   modalType.value = 'add'
   selectedItem.value = null
-  form.value = { name: '', note: '' }
+  form.value = { name: '', note: '', image: '', category: '' }
 }
 
 const validate = () => {
@@ -146,6 +157,8 @@ const handleSubmit = () => {
   const payload = {
     name: form.value.name.trim(),
     note: form.value.note.trim(),
+    image: form.value.image,
+    category: form.value.category,
   }
 
   if (modalType.value === 'add') {
@@ -155,6 +168,8 @@ const handleSubmit = () => {
       _id: selectedItem.value._id,
       name: payload.name,
       note: payload.note,
+      image: payload.image,
+      category: payload.category,
     })
   }
 }
@@ -179,6 +194,45 @@ const getModalTitle = () => {
       return ''
   }
 }
+
+const getImageUrl = (image: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
+
+const filteredFoodBrands = computed(() => {
+  return foodBrands.value.filter(
+    (foodBrand) => foodBrand?.category?._id === props.selectedCategory._id
+  )
+})
+
+const validateFileUpload = (file: File, maxSize: number = 1000000) => {
+  if (file.size > maxSize) {
+    toast.error('ขนาดไฟล์ใหญ่เกินไป (สูงสุด 1MB)')
+    return false
+  }
+  return true
+}
+
+const handleImageUpload = (event: any) => {
+  const file = event.files[0] as File
+  if (file && validateFileUpload(file)) {
+    uploadImage(file)
+  }
+}
+
+const productStore = useProductStore()
+const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
+  mutationFn: (file: File) => productStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    const filename = data.filename
+    form.value.image = filename
+    toast.success('อัปโหลดรูปภาพสำเร็จ')
+  },
+  onError: (error: any) => {
+    console.error('Upload error:', error)
+    toast.error(error.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ')
+  },
+})
 </script>
 
 <template>
@@ -208,19 +262,36 @@ const getModalTitle = () => {
 
     <div>
       <DataTable
-        :value="foodBrands"
+        :value="filteredFoodBrands"
         :loading="isLoading"
         :paginator="true"
         :rows="10"
         :rowsPerPageOptions="[5, 10, 20]"
       >
-        <Column field="name" header="ชื่อแบรนด์" sortable>
+        <Column field="image" header="รูปแบรนด์">
+          <template #body="{ data }">
+            <img
+              v-if="data.image"
+              :src="getImageUrl(data.image)"
+              alt="Food brand image"
+              class="w-auto h-12 object-contain rounded"
+            />
+            <span v-else class="text-gray-400 text-xs">ไม่มีรูปภาพ</span>
+          </template>
+        </Column>
+        <Column field="name" header="ชื่อแบรนด์">
           <template #body="{ data }">
             <span class="font-medium text-gray-900">{{ data.name }}</span>
           </template>
         </Column>
 
-        <Column field="note" header="หมายเหตุ" sortable>
+        <Column field="category" header="ประเภท">
+          <template #body="{ data }">
+            <span class="text-gray-700">{{ data.category?.name || 'ไม่ระบุ' }}</span>
+          </template>
+        </Column>
+
+        <Column field="note" header="หมายเหตุ">
           <template #body="{ data }">
             <span class="text-gray-700">{{ data.note }}</span>
           </template>
@@ -286,6 +357,17 @@ const getModalTitle = () => {
             />
           </div>
 
+          <div v-if="modalType == 'edit'">
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภท</label>
+            <Select
+              v-model="form.category"
+              :options="categoryOptions"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+            />
+          </div>
+
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">หมายเหตุ</label>
             <InputText
@@ -294,6 +376,28 @@ const getModalTitle = () => {
               class="w-full"
               autocomplete="off"
             />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รูปแบรนด์</label>
+            <img
+              v-if="form.image"
+              :src="getImageUrl(form.image)"
+              alt="Food brand image"
+              class="w-auto h-48 object-contain rounded pb-2"
+            />
+            <FileUpload
+              mode="basic"
+              :maxFileSize="1000000"
+              accept="image/*"
+              @select="handleImageUpload"
+              :chooseLabel="isUploadingImage ? 'กำลังอัปโหลด...' : 'เลือกรูปแบรนด์'"
+              :disabled="isUploadingImage"
+              size="small"
+              :fileLimit="1"
+              class="p-button-sm"
+            />
+            <small class="text-gray-500 text-xs">รูปแบรนด์ต้องมีขนาดไม่เกิน 1MB</small>
           </div>
         </div>
       </div>

@@ -37,11 +37,18 @@ export interface IFoodBrand {
   note: string
   cat: number
   uat: number
+  category: {
+    _id: string
+    name: string
+  }
+  image:string
 }
 
 export interface ICreateFoodBrandPayload {
   name: string
   note: string
+  image:string
+  category:string
 }
 
 export interface IUpdateFoodBrandPayload extends ICreateFoodBrandPayload {
