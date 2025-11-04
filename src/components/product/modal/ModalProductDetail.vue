@@ -113,7 +113,7 @@ const getFieldValue = (fieldKey: string) => {
     return `${value} ซม.`
   }
   if (fieldKey === 'weight' && value) {
-    return `${value} กรัม`
+    return `${value}`
   }
 
   return value || null

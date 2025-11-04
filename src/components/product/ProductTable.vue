@@ -524,7 +524,7 @@ const fishColumns = ref([
   },
   {
     field: 'weight',
-    header: 'น้ำหนัก',
+    header: 'น้ำหนัก (กก.)',
     headCell: '!min-w-[5rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
@@ -629,7 +629,7 @@ const microorganismColumns = ref([
     bodyCell: 'text-end',
     render: (slotProps: any) =>
       slotProps.data.weight
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
+        ? h('span', { class: 'text-sm text-gray-900' }, Number(slotProps.data.weight) * 1000)
         : h('span', '-'),
   },
   {

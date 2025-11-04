@@ -450,6 +450,7 @@ const updateCertificateFile = (file: string | undefined) => {
       <!-- Dynamic Form Fields -->
       <DynamicFormField
         v-if="dynamicFormData"
+        :category-id="selectedCategory"
         :fields="editableFields"
         :form-data="dynamicFormData"
         :is-submitting="isSubmitting"

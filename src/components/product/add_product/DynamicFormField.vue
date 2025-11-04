@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { useFarmStore, type IFarm } from '@/stores/product/farm';
-import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand';
-import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type';
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse';
-import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number';
+import type { ICategory } from '@/stores/product/category'
+import { useFarmStore, type IFarm } from '@/stores/product/farm'
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
+import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
-import { useQualityStore, type IQuality } from '@/stores/product/quality';
-import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size';
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species';
-import { useQuery } from '@tanstack/vue-query';
+import { useQualityStore, type IQuality } from '@/stores/product/quality'
+import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
+import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { useQuery } from '@tanstack/vue-query'
 import { InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps<{
   fields: IFields[]
   formData: Record<IFieldsKey, string | number | Date | null>
   isSubmitting: boolean
   pondOptions: { label: string; value: string; group?: string }[]
-
+  categoryId: ICategory | null
 }>()
 
 const emit = defineEmits<{
@@ -76,11 +77,13 @@ const { data: lotNumberData } = useQuery<ILotNumber[]>({
   queryFn: () => lotNumberStore.onGetLotNumbers(),
 })
 const lotNumberOptions = computed(() => {
-  if (!lotNumberData.value) return []
-  return lotNumberData.value.map((lotNumber) => ({
-    label: lotNumber.name,
-    value: lotNumber._id,
-  }))
+  if (!lotNumberData.value || !props.categoryId) return []
+  return lotNumberData.value
+    .filter((lotNumber) => lotNumber.category._id === props.categoryId?._id)
+    .map((lotNumber) => ({
+      label: lotNumber.name,
+      value: lotNumber._id,
+    }))
 })
 
 const qualityStore = useQualityStore()
@@ -114,12 +117,18 @@ const { data: brandData } = useQuery<IFoodBrand[]>({
   queryKey: ['get_food_brands'],
   queryFn: () => brandStore.onGetFoodBrands(),
 })
+const getImageUrl = (image: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
 const foodBrandOptions = computed(() => {
-  if (!brandData.value) return []
-  return brandData.value.map((brand) => ({
-    label: brand.name,
-    value: brand._id,
-  }))
+  if (!brandData.value || !props.categoryId) return []
+  return brandData.value
+    .filter((brand) => brand.category._id === props.categoryId?._id)
+    .map((brand) => ({
+      label: brand.name,
+      value: brand._id,
+      image: brand.image ? getImageUrl(brand.image) : null,
+    }))
 })
 
 const seedSizeStore = useSeedSizeStore()
@@ -156,9 +165,9 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
     const options = props.pondOptions || []
     if (options.length === 0) return []
 
-    const hasGroup = options.some(opt => opt?.group)
+    const hasGroup = options.some((opt) => opt?.group)
 
-     if (hasGroup) {
+    if (hasGroup) {
       // Group options by group (name) field
       const grouped = options.reduce((acc, opt) => {
         const groupName = opt?.group || 'อื่นๆ'
@@ -167,15 +176,15 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
         }
         acc[groupName].push({
           label: opt.label, // code
-          value: opt.value  // _id
+          value: opt.value, // _id
         })
         return acc
       }, {} as Record<string, { label: string; value: string }[]>)
 
       // Convert to array format for PrimeVue Select
-      return Object.keys(grouped).map(groupName => ({
+      return Object.keys(grouped).map((groupName) => ({
         label: groupName,
-        items: grouped[groupName]
+        items: grouped[groupName],
       }))
     }
 
@@ -216,7 +225,7 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 const isGroupedSelect = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'fishpond') {
     const options = props.pondOptions || []
-    return options.some(opt => opt.group)
+    return options.some((opt) => opt.group)
   }
   return false
 }
@@ -252,13 +261,39 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :model-value="(formData[field.key] as number | null)"
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`กรอก${field.label}`"
-          :min="field.key === 'balance' ? 0 : 1"
-          :minFractionDigits="2"
-          :maxFractionDigits="2"
+          :min="field.key === 'balance' || field.key === 'weight' ? 0 : 1"
+          :minFractionDigits="1"
+          :maxFractionDigits="5"
           fluid
           size="small"
           :invalid="field.required && formData[field.key] == null && isSubmitting"
         />
+
+        <Select
+          v-else-if="field.key === 'brand' && field.type === 'select'"
+          :model-value="formData[field.key]"
+          @update:model-value="updateField(field.key, $event)"
+          :options="foodBrandOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="เลือกชื่อแบรนด์"
+          fluid
+          size="small"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
+          filter
+        >
+          <template #option="slotProps">
+            <div class="flex items-center gap-2">
+              <img v-if="slotProps.option.image"
+                :src="slotProps.option.image"
+                alt="Brand Image"
+                class="w-auto h-8 rounded"
+              />
+              <i v-else class="pi pi-image text-gray-400 text-lg"></i>
+              <span>{{ slotProps.option.label }}</span>
+            </div>
+          </template>
+        </Select>
 
         <!-- Select Input -->
         <Select
@@ -277,6 +312,8 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :invalid="field.required && !formData[field.key] && isSubmitting"
           filter
         />
+
+
 
         <!-- Textarea -->
         <Textarea

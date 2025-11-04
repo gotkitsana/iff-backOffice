@@ -246,6 +246,9 @@ const validateForm = () => {
     if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
       return true
     }
+    if (field.key === 'weight' && dynamicFormData.value![field.key] != null) {
+      return true
+    }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
       return false
@@ -447,6 +450,7 @@ const handleUpdateVideoFile = (filename: string | undefined) => {
           :is-submitting="isSubmitting"
           :pond-options="filteredPondOptions"
           @update-field="updateDynamicField"
+          :category-id="selectedCategory"
         />
 
         <!-- File Upload Section -->
