@@ -45,7 +45,33 @@ const getCertificateUrl = (image: string | undefined) => {
 }
 
 const getSeedTypeLabel = (seedType: string) => {
-  return seedType || '-'
+  switch (seedType) {
+    case 'ลอย':
+      return { label: 'ลอย', severity: 'info' }
+    case 'จม':
+      return { label: 'จม', severity: 'success' }
+    default:
+      return { label: '-', severity: 'secondary' }
+  }
+}
+
+const getSeedSizeLabel = (seedSize: any) => {
+  if (!seedSize?.name) {
+    return { label: '-', severity: 'secondary' }
+  }
+
+  // กำหนดสีตายตัวตามชื่อขนาด
+  const colorMap: Record<string, string> = {
+    'S': 'info',      // ฟ้า
+    'M': 'success',   // เขียว
+    'L': 'warn',      // ส้ม
+    'XL': 'danger',   // แดง
+    'XXL': 'contrast', // ดำ/ขาว
+    // เพิ่มขนาดอื่นๆ ตามที่มีจริง
+  }
+
+  const severity = colorMap[seedSize.name] || 'secondary'
+  return { label: seedSize.name, severity }
 }
 
 const greenhouseStore = useGreenhouseStore()
@@ -134,6 +160,16 @@ const foodColumns = ref([
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
   },
   {
+    field: 'balance',
+    header: 'สินค้าคงเหลือ',
+    headCell: '!min-w-[5rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.balance
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
+        : h('span', { class: 'text-sm text-red-600' }, 'หมด'),
+  },
+  {
     field: 'brand',
     header: 'ชื่อแบรนด์',
     headCell: '!min-w-[8rem]',
@@ -173,8 +209,8 @@ const foodColumns = ref([
     bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(Tag, {
-        value: getSeedTypeLabel(slotProps.data.seedType),
-        severity: 'info',
+        value: getSeedTypeLabel(slotProps.data.seedType).label,
+        severity: getSeedTypeLabel(slotProps.data.seedType)?.severity,
         size: 'small',
         class: 'text-xs',
       }),
@@ -186,8 +222,8 @@ const foodColumns = ref([
     bodyCell: ' text-center',
     render: (slotProps: any) =>
       h(Tag, {
-        value: slotProps.data?.seedSize?.name || '-',
-        severity: 'success',
+        value: getSeedSizeLabel(slotProps.data?.seedSize)?.label,
+        severity: getSeedSizeLabel(slotProps.data?.seedSize)?.severity,
         size: 'small',
         class: 'text-xs',
       }),
@@ -282,16 +318,6 @@ const foodColumns = ref([
             { class: 'text-sm text-gray-900 font-medium' },
             formatCurrency(slotProps.data?.food?.dealerPrice)
           )
-        : h('span', '-'),
-  },
-  {
-    field: 'balance',
-    header: 'สินค้าคงเหลือ',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
-    render: (slotProps: any) =>
-      slotProps.data.balance
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
         : h('span', '-'),
   },
 ])
@@ -521,7 +547,7 @@ const fishColumns = ref([
   {
     field: 'price',
     header: 'ราคา',
-    headCell: '!min-w-[6rem] justify-end',
+    headCell: '!min-w-[5rem] justify-end',
     bodyCell: 'text-end',
     render: (slotProps: any) =>
       slotProps.data.price
@@ -561,6 +587,16 @@ const microorganismColumns = ref([
     header: 'เลขล็อต',
     render: (slotProps: any) =>
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.lotNumber?.name || '-'),
+  },
+  {
+    field: 'balance',
+    header: 'สินค้าคงเหลือ',
+    headCell: '!min-w-[5rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.balance
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
+        : h('span', { class: 'text-sm text-red-600' }, 'หมด'),
   },
   {
     field: 'brand',
@@ -676,16 +712,6 @@ const microorganismColumns = ref([
             { class: 'text-sm text-gray-900 font-medium' },
             formatCurrency(slotProps.data?.food?.dealerPrice)
           )
-        : h('span', '-'),
-  },
-  {
-    field: 'balance',
-    header: 'สินค้าคงเหลือ',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
-    render: (slotProps: any) =>
-      slotProps.data.balance
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.balance)
         : h('span', '-'),
   },
 ])
