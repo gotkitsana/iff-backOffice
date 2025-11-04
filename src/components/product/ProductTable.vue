@@ -145,6 +145,49 @@ const galleriaImages = computed(() => {
 
 const foodColumns = ref([
   {
+    field: 'images',
+    header: 'รูปสินค้า',
+    headCell: '!min-w-[3rem] justify-center',
+    bodyCell: ' text-center',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center justify-center relative group'],
+        },
+        [
+          slotProps.data.images && slotProps.data.images.length > 0
+            ? h('div', { class: 'relative' }, [
+                h('img', {
+                  src: getImageUrl(slotProps.data.images[0]),
+                  alt: 'product image',
+                  class: [
+                    'w-auto h-10 object-contain rounded cursor-pointer',
+                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                    'hover:scale-110 transform',
+                  ].join(' '),
+                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                }),
+                // Badge แสดงจำนวนรูป
+                slotProps.data.images.length > 1
+                  ? h(
+                      'span',
+                      {
+                        class: [
+                          'absolute -top-1 -right-1 bg-blue-600 text-white',
+                          'text-[10px] font-semibold rounded-full',
+                          'w-4 h-4 flex items-center justify-center',
+                        ].join(' '),
+                      },
+                      slotProps.data.images.length
+                    )
+                  : null,
+              ])
+            : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
+        ]
+      ),
+  },
+{
     field: 'sku',
     header: 'รหัสอาหาร',
     render: (slotProps: any) =>
@@ -172,7 +215,7 @@ const foodColumns = ref([
   {
     field: 'brand',
     header: 'ชื่อแบรนด์',
-    headCell: '!min-w-[8rem]',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       h(
         'div',
@@ -180,9 +223,9 @@ const foodColumns = ref([
           class: ['flex items-center gap-1.5'],
         },
         [
-          slotProps.data.images && slotProps.data.images.length > 0
+          slotProps.data?.brand?.image
             ? h('img', {
-                src: getImageUrl(slotProps.data.images[0]),
+                src: getImageUrl(slotProps.data?.brand?.image),
                 alt: 'product image',
                 class:
                   'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',
@@ -196,7 +239,7 @@ const foodColumns = ref([
   {
     field: 'foodtype',
     header: 'ประเภทอาหาร',
-    headCell: '!min-w-[5.5rem]',
+    headCell: '!min-w-[6.5rem]',
     render: (slotProps: any) =>
       slotProps.data?.foodtype
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.foodtype.name)
@@ -574,6 +617,49 @@ const fishColumns = ref([
 
 const microorganismColumns = ref([
   {
+    field: 'images',
+    header: 'รูปสินค้า',
+    headCell: '!min-w-[3rem] justify-center',
+    bodyCell: ' text-center',
+    render: (slotProps: any) =>
+      h(
+        'div',
+        {
+          class: ['flex items-center justify-center relative group'],
+        },
+        [
+          slotProps.data.images && slotProps.data.images.length > 0
+            ? h('div', { class: 'relative' }, [
+                h('img', {
+                  src: getImageUrl(slotProps.data.images[0]),
+                  alt: 'product image',
+                  class: [
+                    'w-auto h-10 object-contain rounded cursor-pointer',
+                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                    'hover:scale-110 transform',
+                  ].join(' '),
+                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                }),
+                // Badge แสดงจำนวนรูป
+                slotProps.data.images.length > 1
+                  ? h(
+                      'span',
+                      {
+                        class: [
+                          'absolute -top-1 -right-1 bg-blue-600 text-white',
+                          'text-[10px] font-semibold rounded-full',
+                          'w-4 h-4 flex items-center justify-center',
+                        ].join(' '),
+                      },
+                      slotProps.data.images.length
+                    )
+                  : null,
+              ])
+            : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
+        ]
+      ),
+  },
+  {
     field: 'sku',
     header: 'รหัสสารปรับสภาพน้ำ',
     headCell: '!min-w-[8rem]',
@@ -601,7 +687,7 @@ const microorganismColumns = ref([
   {
     field: 'brand',
     header: 'ชื่อแบรนด์',
-    headCell: '!min-w-[8rem]',
+    headCell: '!min-w-[6rem]',
     render: (slotProps: any) =>
       h(
         'div',
@@ -609,9 +695,9 @@ const microorganismColumns = ref([
           class: ['flex items-center gap-1.5'],
         },
         [
-          slotProps.data.images && slotProps.data.images.length > 0
+          slotProps.data?.brand?.image
             ? h('img', {
-                src: getImageUrl(slotProps.data.images[0]),
+                src: getImageUrl(slotProps.data?.brand?.image),
                 alt: 'product image',
                 class:
                   'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',

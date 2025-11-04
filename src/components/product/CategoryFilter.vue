@@ -223,16 +223,23 @@ const farmOptions = computed(() => {
   }))
 })
 
+const getImageUrl = (image: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
 const foodBrandStore = useFoodBrandStore()
 const { data: foodBrands } = useQuery<IFoodBrand[]>({
   queryKey: ['get_food_brands'],
   queryFn: () => foodBrandStore.onGetFoodBrands(),
 })
 const foodBrandOptions = computed(() => {
-  return foodBrands.value?.map((p) => ({
-    label: p.name,
-    value: p._id,
-  }))
+  if (!foodBrands.value || !props.selectedCategory) return []
+  return foodBrands.value
+    ?.filter((p) => p.category._id === props.selectedCategory?._id)
+    .map((p) => ({
+      label: p.name,
+      value: p._id,
+      image: p.image ? getImageUrl(p.image) : null,
+    }))
 })
 
 const foodTypeStore = useFoodTypeStore()
@@ -497,7 +504,20 @@ const formatSize = (value: number) => {
               size="small"
               fluid
               filter
-            />
+            >
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <img
+                    v-if="slotProps.option.image"
+                    :src="slotProps.option.image"
+                    alt="Brand Image"
+                    class="w-auto h-8 rounded"
+                  />
+                  <i v-else class="pi pi-image text-gray-400 text-lg"></i>
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </Select>
           </div>
 
           <!-- ประเภทอาหาร -->
@@ -615,7 +635,20 @@ const formatSize = (value: number) => {
               size="small"
               fluid
               filter
-            />
+            >
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <img
+                    v-if="slotProps.option.image"
+                    :src="slotProps.option.image"
+                    alt="Brand Image"
+                    class="w-auto h-8 rounded"
+                  />
+                  <i v-else class="pi pi-image text-gray-400 text-lg"></i>
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </Select>
           </div>
 
           <div>
