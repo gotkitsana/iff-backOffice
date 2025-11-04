@@ -508,86 +508,6 @@ const fishColumns = ref([
         : h('span', '-'),
   },
   {
-    field: 'breeders',
-    header: 'แม่พันธุ์',
-    headCell: '!min-w-[6rem]',
-    render: (slotProps: any) =>
-      slotProps.data.breeders
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.breeders)
-        : h('span', '-'),
-  },
-  {
-    field: 'birth',
-    header: 'วันเกิด',
-    headCell: '!min-w-[6rem]',
-    render: (slotProps: any) =>
-      slotProps.data.birth
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data.birth).format('DD/MM/YYYY')
-          )
-        : h('span', '-'),
-  },
-  {
-    field: 'age',
-    header: 'อายุ',
-    headCell: '!min-w-[6rem]',
-    render: (slotProps: any) =>
-      slotProps.data.age
-        ? h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age)
-        : h('span', '-'),
-  },
-  {
-    field: 'quality',
-    header: 'คุณภาพปลา',
-    render: (slotProps: any) =>
-      slotProps.data.quality
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality.name || '-')
-        : h('span', '-'),
-  },
-  {
-    field: 'farm',
-    header: 'ฟาร์ม',
-    headCell: '!min-w-[7.5rem]',
-    render: (slotProps: any) =>
-      slotProps?.data?.farm
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.farm?.name)
-        : h('span', '-'),
-  },
-  {
-    field: 'size',
-    header: 'ไซต์',
-    headCell: '!min-w-[4rem] justify-center',
-    bodyCell: 'text-center',
-    render: (slotProps: any) =>
-      slotProps.data.size
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size)
-        : h('span', '-'),
-  },
-  {
-    field: 'weight',
-    header: 'น้ำหนัก (กก.)',
-    headCell: '!min-w-[5rem] justify-end',
-    bodyCell: 'text-end',
-    render: (slotProps: any) =>
-      slotProps.data.weight
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
-        : h('span', '-'),
-  },
-  {
-    field: 'gender',
-    header: 'เพศ',
-    headCell: '!min-w-[4rem] justify-center',
-    bodyCell: 'text-center',
-    render: (slotProps: any) =>
-      h(Tag, {
-        value: getGenderTag(slotProps.data.gender)?.label,
-        severity: getGenderTag(slotProps.data.gender)?.severity,
-        size: 'small',
-      }),
-  },
-  {
     field: 'price',
     header: 'ราคา',
     headCell: '!min-w-[5rem] justify-end',
@@ -613,6 +533,93 @@ const fishColumns = ref([
         size: 'small',
       }),
   },
+
+   {
+    field: 'size',
+    header: 'ไซต์',
+    headCell: '!min-w-[4rem] justify-center',
+    bodyCell: 'text-center',
+    render: (slotProps: any) =>
+      slotProps.data.size
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.size)
+        : h('span', '-'),
+  },
+
+   {
+    field: 'age',
+    header: 'อายุ',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.age
+        ? h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age)
+        : h('span', '-'),
+  },
+    {
+    field: 'weight',
+    header: 'น้ำหนัก (กก.)',
+    headCell: '!min-w-[5rem] justify-end',
+    bodyCell: 'text-end',
+    render: (slotProps: any) =>
+      slotProps.data.weight
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.weight)
+        : h('span', '-'),
+  },
+
+  {
+    field: 'breeders',
+    header: 'แม่พันธุ์',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.breeders
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.breeders)
+        : h('span', '-'),
+  },
+  {
+    field: 'birth',
+    header: 'วันเกิด',
+    headCell: '!min-w-[6rem]',
+    render: (slotProps: any) =>
+      slotProps.data.birth
+        ? h(
+            'span',
+            { class: 'text-sm text-gray-900' },
+            dayjs(slotProps.data.birth).format('DD/MM/YYYY')
+          )
+        : h('span', '-'),
+  },
+
+  {
+    field: 'quality',
+    header: 'คุณภาพปลา',
+    render: (slotProps: any) =>
+      slotProps.data.quality
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.quality.name || '-')
+        : h('span', '-'),
+  },
+  {
+    field: 'farm',
+    header: 'ฟาร์ม',
+    headCell: '!min-w-[7.5rem]',
+    render: (slotProps: any) =>
+      slotProps?.data?.farm
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps?.data?.farm?.name)
+        : h('span', '-'),
+  },
+
+
+  {
+    field: 'gender',
+    header: 'เพศ',
+    headCell: '!min-w-[4rem] justify-center',
+    bodyCell: 'text-center',
+    render: (slotProps: any) =>
+      h(Tag, {
+        value: getGenderTag(slotProps.data.gender)?.label,
+        severity: getGenderTag(slotProps.data.gender)?.severity,
+        size: 'small',
+      }),
+  },
+
 ])
 
 const microorganismColumns = ref([
