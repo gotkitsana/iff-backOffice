@@ -12,7 +12,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const { title } = to.meta
-  const defaultTitle = 'IFF Back Office'
+  const defaultTitle = 'IFF ERP'
 
   document.title = title ? `${defaultTitle} : ${title}` : defaultTitle
 })

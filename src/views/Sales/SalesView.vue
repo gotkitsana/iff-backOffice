@@ -112,7 +112,7 @@ const totalRevenue = computed(() => {
         const saleTotal = sale.products.reduce((productSum, product) => {
           return productSum + (product.price || 0) * product.quantity
         }, 0)
-        return sum + saleTotal
+        return sum + (saleTotal - sale.discount)
       }, 0) || 0
   )
 })
