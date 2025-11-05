@@ -10,7 +10,7 @@ import { useQualityStore, type IQuality } from '@/stores/product/quality'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { useQuery } from '@tanstack/vue-query'
-import { InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
+import { InputText, InputNumber, Select, Textarea, DatePicker, Checkbox } from 'primevue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -313,7 +313,16 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           filter
         />
 
-
+        <Checkbox
+          v-else-if="field.type === 'boolean'"
+          :model-value="formData[field.key]"
+          @update:model-value="updateField(field.key, $event)"
+          :placeholder="`เลือก${field.label}`"
+          fluid
+          :binary="true"
+          size="small"
+          :invalid="field.required && !formData[field.key] && isSubmitting"
+        />
 
         <!-- Textarea -->
         <Textarea

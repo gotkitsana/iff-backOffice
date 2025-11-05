@@ -214,6 +214,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'weight', label: 'น้ำหนัก (กก.)', type: 'number', required: true },
         { key: 'gender', label: 'เพศ', type: 'select', required: true },
         { key: 'price', label: 'ราคา', type: 'number', required: true },
+        { key: 'sold', label: 'ขายแล้ว', type: 'boolean', required: true },
       ],
     },
     {

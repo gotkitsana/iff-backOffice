@@ -304,7 +304,7 @@ export type IFieldsKey =
   | 'greenhouse'
   | 'brand'
 
-export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date'
+export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date' | 'boolean'
 export type IFieldsRequired = boolean
 export type IFieldsOptions = { label: string; value: string | number }[]
 
