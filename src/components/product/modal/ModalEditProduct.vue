@@ -199,12 +199,9 @@ const validateForm = () => {
 
   // Validate required fields
   for (const field of selectedCategoryInfo.value.fields) {
-    if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
-      return true
-    }
-    if (field.key === 'sold') {
-      return true
-    }
+    // if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
+    //   return true
+    // }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
       return false
@@ -364,12 +361,9 @@ const handleSubmit = async () => {
         : 0,
     name:
       selectedCategoryId.value?.value !== 'fish'
-        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส (${
-            productForm.value.sku
-  })`
-        : `${
-            speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name
-          } รหัส (${productForm.value.sku})`,
+        ? brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name || ''
+        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || ''
+
   }
 
   updateProduct(payload)

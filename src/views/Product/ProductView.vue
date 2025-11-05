@@ -214,7 +214,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'weight', label: 'น้ำหนัก (กก.)', type: 'number', required: true },
         { key: 'gender', label: 'เพศ', type: 'select', required: true },
         { key: 'price', label: 'ราคา', type: 'number', required: true },
-        { key: 'sold', label: 'ขายแล้ว', type: 'boolean', required: true },
+        { key: 'sold', label: 'ขายแล้ว', type: 'boolean', required: false },
       ],
     },
     {
@@ -233,7 +233,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
         { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
         { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
-        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
+        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: false },
       ],
     },
     {
@@ -249,7 +249,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
         { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
         { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
-        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: true },
+        { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: false },
       ],
     },
   ]

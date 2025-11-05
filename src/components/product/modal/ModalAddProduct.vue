@@ -243,11 +243,11 @@ const validateForm = () => {
 
   // Validate required fields
   for (const field of selectedCategoryInfo.value.fields) {
-    if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
-      return true
-    }
+    // if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
+    //   continue;
+    // }
     if (field.key === 'weight' && dynamicFormData.value![field.key] != null) {
-      return true
+      continue;
     }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
@@ -287,12 +287,8 @@ const handleSubmit = async () => {
     category: selectedCategory.value._id,
     name:
       selectedCategory.value.value !== 'fish'
-        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส (${
-            productForm.value.sku
-          })`
-        : `${
-            speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name
-          } รหัส (${productForm.value.sku})`,
+        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name}`
+        : `${speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name}`,
     price:
       selectedCategory.value.value == 'fish'
         ? productForm.value.price
@@ -420,7 +416,6 @@ const updateCertificateFile = (filename: string | undefined) => {
 const handleUpdateVideoFile = (filename: string | undefined) => {
   productForm.value.youtube = filename || ''
 }
-
 </script>
 
 <template>
