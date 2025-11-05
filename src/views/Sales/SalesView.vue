@@ -451,7 +451,7 @@ const {
                 <Tag :value="shippingCount.toString()" severity="info" size="small" class="ml-1" />
               </div>
             </Tab>
-            <Tab value="delivered" class="flex-shrink-0">
+            <Tab value="received" class="flex-shrink-0">
               <div
                 class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
