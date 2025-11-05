@@ -2,7 +2,7 @@ export type ICreateSalesPayload = {
   item: string // เลขรายการ
   status: string // สถานะรายการ
   user: string // ผู้ซื้อ
-  products: { id: string; quantity: number }[] // สินค้า
+  products: { id: string; quantity: number }[] | null // สินค้า
   deposit: number // มัดจำ
   discount: number // ส่วนลด
   seller: string // ผู้ขาย
@@ -46,7 +46,7 @@ export type ISales = {
     category?: string | null
     id: string
     quantity: number
-  }[]
+  }[] | null
   deposit: number
   discount: number
   seller: string

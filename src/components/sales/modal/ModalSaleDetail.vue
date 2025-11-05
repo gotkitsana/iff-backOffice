@@ -55,9 +55,9 @@ const currentStatusInfo = computed(() => {
 })
 
 const totalAmount = computed(() => {
-  return props.saleData.products.reduce((total, product) => {
-    return total + (product.price || 0) * product.quantity
-  }, 0)
+  return props.saleData.products ? props.saleData.products.reduce((total, product) => {
+    return total ? total + (product.price || 0) * product.quantity : 0
+  }, 0) : 0
 })
 
 const finalAmount = computed(() => {
@@ -300,8 +300,7 @@ const generateInvoiceHTML = () => {
             </tr>
           </thead>
           <tbody>
-            ${props.saleData.products
-              .map(
+            ${props.saleData.products?.map(
                 (product, index) => `
               <tr>
                 <td>${index + 1}</td>

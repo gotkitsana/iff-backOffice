@@ -87,7 +87,7 @@ const updateDiscount = (value: number | null) => {
 
         <div v-if="discount > 0" class="flex items-center justify-between">
           <span class="text-sm text-red-600">ส่วนลด:</span>
-          <span class="text-sm font-medium text-red-600">-{{ formatCurrency(discount) }}</span>
+          <span class="text-sm font-medium text-red-600">{{ formatCurrency(discount) }}</span>
         </div>
 
         <div v-if="deposit > 0" class="flex items-center justify-between">

@@ -11,6 +11,7 @@ import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import type { ICreateSalesPayload } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
 import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -65,7 +66,7 @@ const handleFindCategory = (id: string | null | undefined): ICategory | undefine
 // Computed
 const availableProducts = computed(() => {
   if (!products.value) return []
-  return products.value.filter((p) => !p.sold && p.auctionOnly === 0)
+  return products.value.filter((p) => p.auctionOnly === 0)
 })
 
 const productOptions = computed(() => {
@@ -75,28 +76,51 @@ const productOptions = computed(() => {
   }))
 })
 
+const imageUrlCache = new Map<string, string>()
+const getImageUrl = (filename: string): string => {
+  if (imageUrlCache.has(filename)) {
+    return imageUrlCache.get(filename)!
+  }
+  const url = getProductImageUrl(filename)
+  imageUrlCache.set(filename, url)
+  return url
+}
 const getProductOptionsForIndex = (currentIndex: number) => {
   if (!availableProducts.value) return []
 
   // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
   const selectedProductIds = saleForm.value.products
-    .map((p, index) => (index !== currentIndex ? p.id : ''))
+    ?.map((p, index) => (index !== currentIndex ? p.id : ''))
     .filter((id) => id !== '')
 
   // กรองสินค้าที่ยังไม่ได้เลือก
   const unselectedProducts = availableProducts.value.filter(
-    (product) => !selectedProductIds.includes(product._id)
+    (product) => !selectedProductIds?.includes(product._id)
   )
 
   // group by category._id
   const groupsMap = new Map<
     string,
-    { label: string; items: Array<{ label: string; value: string; image?: string }> }
+    {
+      label: string
+      items: Array<{
+        label: string
+        value: string
+        image?: string
+        disabled?: boolean
+        sold?: boolean
+        balance?: number
+        isFish?: boolean
+        sku?: string
+      }>
+    }
   >()
 
   unselectedProducts.forEach((product) => {
     const catId = product.category?._id || 'unknown'
     const cat = handleFindCategory(product.category?._id)
+    const isFish = cat?.value === 'fish'
+
     const group = groupsMap.get(catId) || {
       label: cat?.name || 'ไม่ระบุหมวดหมู่',
       items: [],
@@ -105,21 +129,40 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     // เพิ่มรูปภาพจาก images[0]
     const imageUrl =
       product.images && product.images.length > 0
-        ? `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
-            product.images[0].filename
-          }`
+        ? getImageUrl(product.images[0].filename) // ใช้ function แทน
         : undefined
 
+    const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
+
     group.items.push({
-      label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
+      label: `${product.name || `${product.species?.name}`}`,
+      sku: product.sku || '',
       value: product._id,
       image: imageUrl,
+      disabled: isSold, // disable ถ้าขายแล้ว
+      sold: product.sold,
+      balance: product.balance,
+      isFish: isFish,
     })
 
     groupsMap.set(catId, group)
   })
 
-  return Array.from(groupsMap.values())
+  const sortedGroups = Array.from(groupsMap.values()).map((group) => ({
+    ...group,
+    items: group.items.sort((a, b) => {
+      // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง (return 1)
+      if (a.disabled && !b.disabled) return 1
+      // ถ้า a ไม่ disabled และ b disabled -> a ต้องขึ้นบน (return -1)
+      if (!a.disabled && b.disabled) return -1
+      // ถ้าเหมือนกัน เรียงตามชื่อ
+      return a.label.localeCompare(b.label)
+    }),
+  }))
+
+  return sortedGroups
+
+  // return Array.from(groupsMap.values())
 
   // return unselectedProducts.map((product) => ({
   //   label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
@@ -129,11 +172,15 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 }
 
 const selectedProductDetails = computed(() => {
-  return saleForm.value.products.map((product: { id: string; quantity: number }) => {
+  return saleForm.value.products?.map((product: { id: string; quantity: number }) => {
     if (!product.id || !availableProducts.value) return null
 
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
     const category = handleFindCategory(productDetail?.category?._id)
+    const imageUrl =
+      productDetail?.images && productDetail?.images.length > 0
+        ? getProductImageUrl(productDetail?.images[0].filename)
+        : undefined
 
     if (!productDetail) {
       return {
@@ -143,6 +190,9 @@ const selectedProductDetails = computed(() => {
         quantity: product.quantity,
         isMissing: true,
         category: undefined,
+        image: undefined,
+        sku: '',
+        balance: 0,
       }
     }
 
@@ -152,12 +202,14 @@ const selectedProductDetails = computed(() => {
       productId: product.id,
       isMissing: false,
       category: category,
+      image: imageUrl,
     }
   })
 })
 
 const totalAmount = computed(() => {
-  return saleForm.value.products.reduce((sum, product) => {
+  return saleForm.value.products?.reduce((sum, product) => {
+    if (!product.id || !availableProducts.value) return 0
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
 
     if (productDetail && productDetail.price) {
@@ -168,7 +220,7 @@ const totalAmount = computed(() => {
 })
 
 const netAmount = computed(() => {
-  const netAmount = totalAmount.value - saleForm.value.discount
+  const netAmount = (totalAmount.value || 0) - saleForm.value.discount
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -190,6 +242,11 @@ const selectedMemberDetails = computed(() => {
 
 // Product management functions
 const addProduct = () => {
+  if (!saleForm.value.products) {
+    saleForm.value.products = [{ id: '', quantity: 1 }]
+    return
+  }
+
   if (saleForm.value.products.length < 20) {
     saleForm.value.products.push({ id: '', quantity: 1 })
   } else {
@@ -198,8 +255,8 @@ const addProduct = () => {
 }
 
 const removeProduct = (index: number) => {
-  if (saleForm.value.products.length > 1) {
-    saleForm.value.products.splice(index, 1)
+  if (saleForm.value.products && saleForm.value.products.length > 1) {
+    saleForm.value.products?.splice(index, 1)
   } else {
     toast.warning('ต้องมีสินค้าอย่างน้อย 1 รายการ')
   }
@@ -230,14 +287,15 @@ const handleSubmit = () => {
   }
 
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products.filter((p) => !isProductValid(p))
-  if (invalidProducts.length > 0) {
+  const invalidProducts = saleForm.value.products?.filter((p) => !isProductValid(p)) || []
+  if (invalidProducts.length > 0 && saleForm.value.status !== 'wait_product') {
     toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
     return
   }
 
   createSale({
     ...saleForm.value,
+    products: saleForm.value.status == 'wait_product' ? null : saleForm.value.products,
     item: `SALE-${Date.now().toString().slice(-8)}`,
   })
 }
@@ -407,7 +465,10 @@ const sellers = computed(() => {
       </div>
 
       <!-- Product Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div
+        v-if="saleForm.status !== 'wait_product'"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-box text-blue-600"></i>
@@ -419,7 +480,6 @@ const sellers = computed(() => {
             severity="success"
             size="small"
             @click="addProduct"
-            :disabled="saleForm.products.length >= 10"
           />
         </div>
 
@@ -432,7 +492,7 @@ const sellers = computed(() => {
             <div class="flex items-center justify-between mb-2">
               <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
               <Button
-                v-if="saleForm.products.length > 1"
+                v-if="saleForm.products && saleForm.products.length > 1"
                 icon="pi pi-trash"
                 severity="danger"
                 size="small"
@@ -452,6 +512,7 @@ const sellers = computed(() => {
                   optionValue="value"
                   optionGroupLabel="label"
                   optionGroupChildren="items"
+                  :optionDisabled="(option: any) => option.disabled === true"
                   placeholder="เลือกสินค้าที่ต้องการขาย"
                   fluid
                   size="small"
@@ -459,15 +520,57 @@ const sellers = computed(() => {
                   :invalid="!product.id && isSubmitting"
                 >
                   <template #option="{ option }">
-                    <div class="flex items-center gap-2">
-                      <img
-                        v-if="option.image"
-                        :src="option.image"
-                        alt="product"
-                        class="w-6 h-6 object-cover rounded"
-                      />
-                      <i v-else class="pi pi-image text-gray-400 text-sm"></i>
-                      <span>{{ option.label }}</span>
+                    <div class="flex items-center justify-between gap-2 w-full">
+                      <div class="flex items-center gap-2">
+                        <img
+                          v-if="option.image"
+                          :src="option.image"
+                          alt="product"
+                          class="w-6 h-6 object-cover rounded"
+                          loading="lazy"
+                          fetchpriority="low"
+                          crossorigin="anonymous"
+                        />
+                        <i v-else class="pi pi-image text-gray-400 text-sm"></i>
+                        <span :class="{ 'opacity-50': option.disabled }">
+                          {{ option.label }} <span class="text-xs text-gray-500 pl-1">รหัส ({{ option.sku }})</span>
+                        </span>
+                      </div>
+
+                      <!-- Badge สถานะ -->
+                      <div v-if="option.value" class="flex-shrink-0">
+                        <!-- ปลา -->
+                        <Tag
+                          v-if="option.isFish && option.sold"
+                          value="ขายแล้ว"
+                          severity="danger"
+                          size="small"
+                          class="text-xs"
+                        />
+                        <Tag
+                          v-else-if="option.isFish && !option.sold"
+                          value="พร้อมขาย"
+                          severity="success"
+                          size="small"
+                          class="text-xs"
+                        />
+
+                        <!-- สินค้าทั่วไป -->
+                        <Tag
+                          v-else-if="!option.isFish && (option.sold || option.balance === 0)"
+                          :value="`คงเหลือ: ${option.balance || 0}`"
+                          severity="danger"
+                          size="small"
+                          class="text-xs"
+                        />
+                        <Tag
+                          v-else-if="!option.isFish"
+                          :value="`คงเหลือ: ${option.balance || 0}`"
+                          severity="success"
+                          size="small"
+                          class="text-xs"
+                        />
+                      </div>
                     </div>
                   </template>
                 </Select>
@@ -481,26 +584,30 @@ const sellers = computed(() => {
                 <InputNumber
                   v-model="product.quantity"
                   :min="1"
-                  :max="100"
+                  :max="products?.find((p) => p._id === product.id)?.balance || 100"
                   fluid
                   size="small"
                   placeholder="ระบุจำนวนสินค้า"
                   :invalid="!product.quantity && isSubmitting"
+                  :disabled="handleFindCategory(products?.find((p) => p._id === product.id)?.category?._id)?.value === 'fish'"
                 />
                 <small v-if="!product.quantity && isSubmitting" class="text-red-500"
-                  >กรุณากรอกจำนวนสินค้า</small
+                  >กรุณากรอกจำนวนสินค้า </small
                 >
               </div>
             </div>
 
             <CardProductList
-              v-if="selectedProductDetails[index]"
+              v-if="selectedProductDetails && selectedProductDetails[index]"
               :name="selectedProductDetails[index]?.name"
               :quantity="selectedProductDetails[index]?.quantity || product.quantity"
               :price="selectedProductDetails[index]?.price"
               :detail="''"
               :category="selectedProductDetails[index]?.category"
               :is-missing="!selectedProductDetails[index]"
+              :image="selectedProductDetails[index]?.image"
+              :sku="selectedProductDetails[index]?.sku"
+              :balance="selectedProductDetails[index]?.balance"
             />
           </div>
         </div>
@@ -550,7 +657,7 @@ const sellers = computed(() => {
             </div>
             <div class="text-right">
               <div class="text-sm text-gray-600">
-                มูลค่าสินค้า: {{ formatCurrency(totalAmount) }}
+                มูลค่าสินค้า: {{ formatCurrency(totalAmount || 0) }}
               </div>
               <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-0.5">
                 ส่วนลด: {{ formatCurrency(saleForm.discount) }}
@@ -604,3 +711,11 @@ const sellers = computed(() => {
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+:deep(.p-select-option[aria-disabled='true']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+</style>

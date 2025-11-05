@@ -80,7 +80,7 @@ const { mutate, isPending } = useMutation({
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600">จำนวนสินค้า:</span>
-          <span class="font-medium text-gray-900">{{ saleData.products.length }} รายการ</span>
+          <span class="font-medium text-gray-900">{{ saleData.products?.length || 0 }} รายการ</span>
         </div>
       </div>
       <p class="text-sm text-red-600 mt-2">⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>

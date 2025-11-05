@@ -11,6 +11,7 @@ import SlipUploadSection from '../SlipUploadSection.vue'
 import ProductManagementSection from '../ProductManagementSection.vue'
 import PaymentCalculationSection from '../PaymentCalculationSection.vue'
 import type { IAdmin } from '@/stores/admin/admin'
+import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
 
 // Props
 const props = defineProps<{
@@ -184,6 +185,16 @@ const handleSubmit = () => {
   updateSale(saleForm.value)
 }
 
+const { data: productsData } = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
+const { data: allSales } = useQuery<ISales[]>({
+  queryKey: ['get_sales'],
+  queryFn: () => salesStore.onGetSales(),
+})
+
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
@@ -191,26 +202,106 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+
       if (variables.status === 'paid_complete') {
+        // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
-        if (member && (member.status === 'ci' || member.code.startsWith('ci'))) {
-          mutateUpdate({
-            _id: member._id,
-            status: 'cs',
-            code: member.code.replace('ci', 'cs'),
-            contacts: member.contacts || [],
-            interests: member.interests || [],
-            displayName: member.displayName,
-            name: member.name,
-            address: member.address,
-            province: member.province,
-            phone: member.phone,
-            type: member.type,
-            username: member.username,
-            password: member.password,
-            bidder: member.bidder,
-            cat: member.cat,
-            uat: member.uat,
+
+        if (member && member.status !== 'css') {
+          // คำนวณยอดซื้อรวมทั้งหมด (รายการปัจจุบัน + ยอดซื้อในอดีต)
+          const currentTotal = calculateOrderTotal(variables, productsData.value || [])
+          const previousTotal =
+            allSales.value
+              ?.filter(
+                (s) =>
+                  s.user._id === variables.user &&
+                  s.status === 'paid_complete' &&
+                  s._id !== variables._id
+              )
+              .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0
+
+          const totalSpending = currentTotal + previousTotal
+
+          const shouldBeCss = totalSpending >= 50000
+          const shouldBeCs = !shouldBeCss && member.status === 'ci'
+
+          if (shouldBeCss || shouldBeCs) {
+            const newStatus = shouldBeCss ? 'css' : 'cs'
+            const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
+
+            mutateUpdate({
+              _id: member._id,
+              status: newStatus,
+              code: newCode,
+              contacts: member.contacts || [],
+              interests: member.interests || [],
+              displayName: member.displayName,
+              name: member.name,
+              address: member.address,
+              province: member.province,
+              phone: member.phone,
+              type: member.type,
+              username: member.username,
+              password: member.password,
+              bidder: member.bidder,
+              cat: member.cat,
+              uat: member.uat,
+            })
+          }
+        }
+
+        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
+        const products = productsData.value?.filter((p) =>
+          variables.products.some((product) => product.id === p._id)
+        )
+
+        if (products && products.length > 0) {
+          products.forEach((product) => {
+            const purchasedItem = variables.products.find((p) => p.id === product._id)
+            if (!purchasedItem) return
+
+            const quantity = purchasedItem.quantity
+            const isFish = product.category?.name === 'ปลา'
+
+            let newSoldStatus = product.sold
+            let newBalance = product.balance || 0
+
+            if (isFish) {
+              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
+              newSoldStatus = true
+              newBalance = product.balance || 0
+            } else {
+              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
+              const balance = product.balance || 0
+
+              if (balance >= quantity) {
+                // กรณีมีสต็อกเพียงพอ
+                newBalance = balance - quantity
+                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
+              } else {
+                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
+                newBalance = 0
+                newSoldStatus = true
+                console.warn(
+                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
+                )
+              }
+            }
+
+            updateProduct({
+              ...product,
+              fishpond: product.fishpond?._id || undefined,
+              species: product.species?._id || undefined,
+              farm: product.farm?._id || undefined,
+              quality: product.quality?._id || undefined,
+              lotNumber: product.lotNumber?._id || undefined,
+              seedSize: product.seedSize?._id || undefined,
+              foodtype: product.foodtype?._id || undefined,
+              brand: product.brand?._id || undefined,
+
+              sold: newSoldStatus,
+              balance: newBalance,
+            })
           })
         }
       }
@@ -221,12 +312,56 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   },
 })
 
+const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
+  const productsTotal = order.products.reduce((sum, item) => {
+    const product = allProducts.find((p) => p._id === item.id)
+    if (!product) return sum
+
+    if (product.category?.name === 'ปลา') {
+      const price = product.price || 0
+      return sum + price
+    } else {
+      const price = product.food?.customerPrice || 0
+      return sum + price * item.quantity
+    }
+  }, 0)
+
+  // ยอดสุทธิ = ยอดสินค้า - ส่วนลด
+  return productsTotal - (order.discount || 0)
+}
+
+const calculateSaleTotal = (sale: ISales, allProducts: IProduct[]): number => {
+  const productsTotal = sale.products?.reduce((sum, item) => {
+    const product = allProducts.find((p) => p._id === item.id)
+    if (!product) return sum
+
+    if (product.category?.name === 'ปลา') {
+      const price = product.price || 0
+      return sum + price
+    } else {
+      const price = product.food?.customerPrice || 0
+      return sum + price * item.quantity
+    }
+  }, 0)
+
+  return productsTotal ? productsTotal - (sale.discount || 0) : 0
+}
+
 const { mutate: mutateUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['get_sales'] })
   },
 })
+
+const productStore = useProductStore()
+const { mutate: updateProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+  },
+})
+
 
 const handleClose = () => {
   resetForm()

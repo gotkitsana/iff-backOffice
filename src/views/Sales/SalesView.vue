@@ -109,9 +109,9 @@ const totalRevenue = computed(() => {
     salesData.value
       ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
+        const saleTotal = sale.products ? sale.products.reduce((productSum, product) => {
           return productSum + (product.price || 0) * product.quantity
-        }, 0)
+        }, 0) : 0
         return sum + (saleTotal - sale.discount)
       }, 0) || 0
   )
@@ -132,9 +132,9 @@ const totalDeposit = computed(() => {
     salesData.value
       ?.filter((s) => getStatusStepOrder(s.status) === getStatusStepOrder('wait_payment'))
       .reduce((sum, sale) => {
-        const saleTotal = sale.products.reduce((productSum, product) => {
+        const saleTotal = sale.products ? sale.products.reduce((productSum, product) => {
           return productSum + (product.price || 0) * product.quantity
-        }, 0)
+        }, 0) : 0
         return sum + (saleTotal - sale.discount)
       }, 0) || 0
   )
@@ -146,14 +146,14 @@ const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
       ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
-        const categoryProductsTotal = sale.products
+        const categoryProductsTotal = sale.products ? sale.products
           .filter(
             (product) =>
               categories.value?.find((c) => c._id === product.category)?.value === categoryName
           )
           .reduce((productSum, product) => {
             return productSum + (product.price || 0) * product.quantity
-          }, 0)
+          }, 0) : 0
         return sum + categoryProductsTotal
       }, 0) || 0
   )
@@ -178,9 +178,9 @@ const formatDate = (date: Date) => {
 
 // Helper functions for sales data
 const getSaleTotalAmount = (sale: ISales) => {
-  const productTotal = sale.products.reduce((sum, product) => {
+  const productTotal = sale.products ? sale.products.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
-  }, 0)
+  }, 0) : 0
   const netAmount = productTotal - sale.discount
   return netAmount < 0 ? 0 : netAmount
 }
@@ -648,7 +648,7 @@ const { data: admins } = useQuery<IAdmin[]>({
               >
                 <div class="flex items-center justify-between gap-x-1.5">
                   <p class="text-sm text-gray-600 group-hover:text-blue-500">
-                    รายการสินค้า {{ slotProps.data.products.length }} รายการ
+                    รายการสินค้า {{ slotProps.data.products?.length }} รายการ
                   </p>
                   <div class="flex items-center !text-xs text-gray-600 group-hover:text-blue-500">
                     <i class="pi pi-eye"></i>
@@ -667,13 +667,13 @@ const { data: admins } = useQuery<IAdmin[]>({
               <div class="text-end">
                 <div class="font-semibold text-green-600 text-sm">
                   {{ formatCurrency(
-                    slotProps.data.products.reduce(
-                      (sum: number, product: any) => sum + ((product.price || 0) * product.quantity), 0)
+                    slotProps.data.products ? slotProps.data.products.reduce(
+                      (sum: number, product: any) => sum + ((product.price || 0) * product.quantity), 0) : 0
                     )
                   }}
                 </div>
                 <div class="text-xs text-gray-500 mt-0.5">
-                  {{ slotProps.data.products.length }} รายการ
+                  {{ slotProps.data.products?.length || 0 }} รายการ
                 </div>
               </div>
             </template>
@@ -713,7 +713,7 @@ const { data: admins } = useQuery<IAdmin[]>({
                   {{ formatCurrency(getSaleTotalAmount(slotProps.data)) }}
                 </div>
                 <div class="text-xs text-gray-500 mt-0.5">
-                  {{ slotProps.data.products.length }} รายการ
+                  {{ slotProps.data.products?.length || 0 }} รายการ
                 </div>
               </div>
             </template>

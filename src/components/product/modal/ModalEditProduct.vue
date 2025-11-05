@@ -223,7 +223,7 @@ const mapDynamicFormToProductForm = () => {
 
     switch (field.key) {
       case 'sold':
-        productForm.value.sold = value as unknown as boolean
+        productForm.value.sold = !!value as boolean
         break
       case 'name':
         productForm.value.name = value as string

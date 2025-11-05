@@ -5,7 +5,7 @@ import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import CardProductList from './CardProductList.vue'
-import formatCurrency from '@/utils/formatCurrency'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -40,7 +40,7 @@ const { data: categories } = useQuery<ICategory[]>({
 // Computed
 const availableProducts = computed(() => {
   if (!getProducts.value) return []
-  return getProducts.value.filter((p) => !p.sold && p.auctionOnly === 0)
+  return getProducts.value.filter((p) => p.auctionOnly === 0)
 })
 
 const getProductOptionsForIndex = (currentIndex: number) => {
@@ -73,9 +73,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     // เพิ่มรูปภาพจาก images[0]
     const imageUrl =
       product.images && product.images.length > 0
-        ? `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${
-            product.images[0].filename
-          }`
+        ? getProductImageUrl(product.images[0].filename)
         : undefined
 
     group.items.push({
@@ -104,9 +102,15 @@ const selectedProductDetails = computed(() => {
         price: 0,
         category: undefined,
         detail: '',
+        image: undefined,
+        sku: '',
       }
     }
 
+    const imageUrl =
+      productDetail?.images && productDetail?.images.length > 0
+        ? getProductImageUrl(productDetail?.images[0].filename)
+        : undefined
     const category = handleFindCategory(productDetail?.category?._id)
 
     return {
@@ -114,6 +118,7 @@ const selectedProductDetails = computed(() => {
       quantity: product.quantity,
       isMissing: false,
       category: category,
+      image: imageUrl,
     }
   })
 })
@@ -288,6 +293,8 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :detail="selectedProductDetails[index]?.detail"
             :category="selectedProductDetails[index]?.category"
             :isMissing="selectedProductDetails[index]?.isMissing"
+            :image="selectedProductDetails[index]?.image"
+            :sku="selectedProductDetails[index]?.sku"
           />
         </div>
 
@@ -299,6 +306,8 @@ const isProductValid = (product: { id: string; quantity: number }) => {
             :detail="selectedProductDetails[index]?.detail"
             :category="selectedProductDetails[index]?.category"
             :isMissing="selectedProductDetails[index]?.isMissing"
+            :image="selectedProductDetails[index]?.image"
+            :sku="selectedProductDetails[index]?.sku"
           />
         </div>
       </div>
