@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import DataTable from 'primevue/datatable'
-import { Column, Tag, Button, Card } from 'primevue'
+import { Column, Tag, Button, Card, Select, InputText } from 'primevue'
 import { useQuery } from '@tanstack/vue-query'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import ModalAddAndEditMember from '@/components/member/ModalAddAndEditMember.vue'
@@ -104,7 +104,33 @@ const createContactTooltip = (contactName: string) => {
   return `ชื่อช่องทางติดต่อ\n👤 ${contactName || 'ไม่ระบุชื่อ'}\n\n💡 คลิกเพื่อคัดลอก`
 }
 
-
+const selectedStatus = ref<string>('all')
+const search = ref<string>('')
+const filterStatus = computed(() => {
+  if (selectedStatus.value === 'all') {
+    return (
+      data.value?.filter((member) =>
+        member.displayName.toLowerCase().includes(search.value.toLowerCase())
+      ) || []
+    )
+  }
+  return (
+    data.value?.filter(
+      (member) =>
+        member.status === selectedStatus.value &&
+        member.displayName.toLowerCase().includes(search.value.toLowerCase())
+    ) || []
+  )
+})
+const statusOptions = computed(() => {
+  return [
+    { label: 'ทั้งหมด', value: 'all' },
+    ...memberStore.memberStatusOptions.map((option) => ({
+      label: option.label,
+      value: option.value,
+    })),
+  ]
+})
 </script>
 
 <template>
@@ -117,7 +143,7 @@ const createContactTooltip = (contactName: string) => {
             <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <Button
               label="บันทึกข้อมูลลูกค้า"
               icon="pi pi-plus"
@@ -125,13 +151,22 @@ const createContactTooltip = (contactName: string) => {
               @click="openAddModal"
             />
 
-            <Button label="ประวัติการซื้อ" icon="pi pi-history" size="small" severity="success" />
+            <InputText v-model="search" placeholder="ค้นหาลูกค้า" size="small" />
+
+            <Select
+              v-model="selectedStatus"
+              :options="statusOptions"
+              size="small"
+              placeholder="สถานะลูกค้า"
+              optionLabel="label"
+              optionValue="value"
+            />
           </div>
         </div>
       </template>
       <template #content>
         <DataTable
-          :value="orderBy(data, 'code', 'asc')"
+          :value="orderBy(filterStatus, 'code', 'asc')"
           dataKey="_id"
           :loading="isLoading"
           paginator
@@ -236,7 +271,7 @@ const createContactTooltip = (contactName: string) => {
           <Column
             field="address"
             header="ที่อยู่"
-            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
+            :pt="{ columnHeaderContent: 'min-w-[10rem]', bodyCell: 'text-sm' }"
           />
 
           <Column
