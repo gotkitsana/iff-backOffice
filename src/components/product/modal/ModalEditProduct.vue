@@ -17,7 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { usePondStore } from '@/stores/product/pond'
-
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 
 // Props
 const props = defineProps<{
@@ -123,7 +123,6 @@ const initializeDynamicForm = (newProductData: IProduct) => {
   productForm.value.images = []
   productForm.value.certificate = ''
 
-
   const formData: Record<string, any> = {}
   selectedCategoryInfo.value.fields.forEach((field) => {
     const fieldValue = newProductData[field.key as keyof IProduct]
@@ -157,8 +156,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
       formData[field.key] = newProductData.seedSize?._id || ''
     } else if (field.key === 'brand' && newProductData.brand) {
       formData[field.key] = newProductData.brand?._id || ''
-    }
-    else {
+    } else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
   })
@@ -322,9 +320,14 @@ const mapDynamicFormToProductForm = () => {
 }
 
 const speciesStore = useSpeciesStore()
-const {data: speciesData} = useQuery<ISpecies[]>({
+const { data: speciesData } = useQuery<ISpecies[]>({
   queryKey: ['get_species'],
   queryFn: () => speciesStore.onGetSpecies(),
+})
+const foodBrandStore = useFoodBrandStore()
+const { data: brandData } = useQuery<IFoodBrand[]>({
+  queryKey: ['get_food_brands'],
+  queryFn: () => foodBrandStore.onGetFoodBrands(),
 })
 const isSubmitting = ref(false)
 const handleSubmit = async () => {
@@ -361,8 +364,12 @@ const handleSubmit = async () => {
         : 0,
     name:
       selectedCategoryId.value?.value !== 'fish'
-        ? productForm.value.name
-        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || '',
+        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส (${
+            productForm.value.sku
+  })`
+        : `${
+            speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name
+          } รหัส (${productForm.value.sku})`,
   }
 
   updateProduct(payload)
@@ -377,7 +384,9 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
     if (data.data.modifiedCount > 0) {
       toast.success('อัปเดตสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
-      queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryById] })
+      queryClient.invalidateQueries({
+        queryKey: ['get_products_by_category', selectedCategoryById],
+      })
       handleClose()
       isSubmitting.value = false
     } else {

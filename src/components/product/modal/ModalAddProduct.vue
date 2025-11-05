@@ -287,12 +287,12 @@ const handleSubmit = async () => {
     category: selectedCategory.value._id,
     name:
       selectedCategory.value.value !== 'fish'
-        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส ${
+        ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name} รหัส (${
             productForm.value.sku
-          }`
+          })`
         : `${
             speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name
-          } รหัส ${productForm.value.sku}`,
+          } รหัส (${productForm.value.sku})`,
     price:
       selectedCategory.value.value == 'fish'
         ? productForm.value.price
