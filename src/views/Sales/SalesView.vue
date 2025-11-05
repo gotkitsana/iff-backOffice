@@ -117,6 +117,29 @@ const totalRevenue = computed(() => {
   )
 })
 
+const totalDiscount = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      .reduce((sum, sale) => {
+        return sum + (sale.discount || 0)
+      }, 0) || 0
+  )
+})
+
+const totalDeposit = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => getStatusStepOrder(s.status) === getStatusStepOrder('wait_payment'))
+      .reduce((sum, sale) => {
+        const saleTotal = sale.products.reduce((productSum, product) => {
+          return productSum + (product.price || 0) * product.quantity
+        }, 0)
+        return sum + (saleTotal - sale.discount)
+      }, 0) || 0
+  )
+})
+
 const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
   return (
     salesData.value
@@ -124,7 +147,10 @@ const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
         const categoryProductsTotal = sale.products
-          .filter((product) => categories.value?.find((c) => c._id === product.category)?.value === categoryName)
+          .filter(
+            (product) =>
+              categories.value?.find((c) => c._id === product.category)?.value === categoryName
+          )
           .reduce((productSum, product) => {
             return productSum + (product.price || 0) * product.quantity
           }, 0)
@@ -198,9 +224,7 @@ const closeDeleteModal = () => {
 }
 
 const adminStore = useAdminStore()
-const {
-  data: admins,
-} = useQuery<IAdmin[]>({
+const { data: admins } = useQuery<IAdmin[]>({
   queryKey: ['get_admins'],
   queryFn: () => adminStore.onGetAdmins(),
 })
@@ -219,17 +243,25 @@ const {
     <!-- Sales KPI Dashboard -->
     <div class="space-y-4">
       <!-- Dashboard Header -->
-      <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-semibold! mb-1">📊 สรุปรายงาน การขาย</h2>
-            <p class="text-blue-100">ภาพรวมยอดขายแยกตามหมวดหมู่สินค้า</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white">
+          <div class="flex flex-col">
+            <h2 class="text-lg font-semibold! mb-1">สรุปยอดขาย</h2>
+            <p class="text-xl font-semibold!">{{ formatCurrency(totalRevenue) }}</p>
           </div>
-          <div class="hidden md:block">
-            <div class="text-right">
-              <p class="text-3xl font-semibold!">{{ formatCurrency(totalRevenue) }}</p>
-              <p class="text-blue-100">ยอดขายรวมทั้งหมด</p>
-            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-violet-600 to-violet-700 rounded-2xl p-4 text-white">
+          <div class="flex flex-col">
+            <h2 class="text-lg font-semibold! mb-1">สรุปยอดส่วนลด</h2>
+            <p class="text-xl font-semibold!">{{ formatCurrency(totalDiscount) }}</p>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white">
+          <div class="flex flex-col">
+            <h2 class="text-lg font-semibold! mb-1">สรุปยอดรอชำระ</h2>
+            <p class="text-xl font-semibold!">{{ formatCurrency(totalDeposit) }}</p>
           </div>
         </div>
       </div>
@@ -719,7 +751,7 @@ const {
             <template #body="slotProps">
               <p class="text-sm text-gray-900 font-medium">
                 {{ admins?.find((admin) => admin._id === slotProps.data.seller)?.name }}
-                </p>
+              </p>
             </template>
           </Column>
 
@@ -761,7 +793,12 @@ const {
   <ModalAddSale v-model:visible="showAddModal" :admins="admins || []" />
 
   <!-- แก้ไขรายการขาย -->
-  <ModalEditSale v-if="selectedSale" v-model:visible="showEditModal" :sale-data="selectedSale" :admins="admins || []" />
+  <ModalEditSale
+    v-if="selectedSale"
+    v-model:visible="showEditModal"
+    :sale-data="selectedSale"
+    :admins="admins || []"
+  />
 
   <!-- รายละเอียดรายการขาย -->
   <ModalSaleDetail
