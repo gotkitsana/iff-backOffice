@@ -319,7 +319,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           @update:model-value="updateField(field.key, $event)"
           :placeholder="`เลือก${field.label}`"
           fluid
-          :binary="true"
+          binary
           size="small"
           :invalid="field.required && !formData[field.key] && isSubmitting"
         />

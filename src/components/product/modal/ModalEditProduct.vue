@@ -204,6 +204,9 @@ const validateForm = () => {
     if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
       return true
     }
+    if (field.key === 'sold') {
+      return true
+    }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
       return false
