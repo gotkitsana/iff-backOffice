@@ -15,12 +15,40 @@ const { data: products } = useQuery<IProduct[]>({
   queryFn: () => productStore.onGetProducts(),
 })
 
-const getProductsByCategory = computed(() => {
-  if (!products.value) return []
+const getProductsByCategory = computed<{ price: number; count: number }>(() => {
+  if (!products.value) return { price: 0, count: 0 }
   if (props.selectedCategory == null) {
-    return products.value
+    // คำนวณรวมทั้งหมด แยก logic ตาม category
+    const totalPrice = products.value.reduce((sum, p) => {
+      if (p.category?.name === 'ปลา') {
+        return sum + p.price || 0
+      } else {
+        return sum + (p.food?.costPrice || 0) * (p.balance || 0)
+      }
+    }, 0)
+
+    return {
+      price: totalPrice,
+      count: products.value.reduce((sum, p) => sum + (p.balance || 0), 0),
+    }
   }
-  return products.value.filter((p) => p.category?._id === props.selectedCategory?._id)
+
+  const filteredProducts = products.value.filter(
+    (p) => p.category?._id === props.selectedCategory?._id
+  )
+  const balance =
+    props.selectedCategory?.value === 'fish'
+      ? filteredProducts.length
+      : filteredProducts.reduce((sum, p) => sum + (p.balance || 0), 0)
+  const price =
+    props.selectedCategory?.value === 'fish'
+      ? filteredProducts.reduce((sum, p) => sum + (p.price || 0), 0)
+      : filteredProducts.reduce((sum, p) => sum + (p.food?.costPrice || 0) * (p.balance || 0), 0)
+
+  return {
+    price,
+    count: balance,
+  }
 })
 
 // Computed
@@ -56,24 +84,25 @@ const countLabel = computed(() => {
 })
 
 const getCategoryStats = (category: ICategory) => {
-  const productsCategory = getProductsByCategory.value
+  const filteredProducts = products.value?.filter(
+    (p) => p.category?._id === props.selectedCategory?._id
+  )
 
   let ageStats: Record<string, number> = {}
   const seedSizeStats: Record<string, number> = {}
 
-  if (category.value === 'fish') {
+  if (category.value === 'fish' && filteredProducts) {
     // Age statistics
     ageStats = {
-      'Tosai (6เดือน-1ปี)': productsCategory.filter((p) => p.age?.includes('tosai')).length,
-      'Nisai (1-2ปี)': productsCategory.filter((p) => p.age?.includes('nisai')).length,
-      'Sansai (2-3ปี)': productsCategory.filter((p) => p.age?.includes('sansai')).length,
-      'Yonsai (3-4ปี)': productsCategory.filter((p) => p.age?.includes('yonsai')).length,
-      'Rokusai (4-5ปี)': productsCategory.filter((p) => p.age?.includes('rokusai')).length,
+      'Tosai (6เดือน-1ปี)': filteredProducts.filter((p) => p.age?.includes('tosai')).length || 0,
+      'Nisai (1-2ปี)': filteredProducts.filter((p) => p.age?.includes('nisai')).length || 0,
+      'Sansai (2-3ปี)': filteredProducts.filter((p) => p.age?.includes('sansai')).length || 0,
+      'Yonsai (3-4ปี)': filteredProducts.filter((p) => p.age?.includes('yonsai')).length || 0,
+      'Rokusai (4-5ปี)': filteredProducts.filter((p) => p.age?.includes('rokusai')).length || 0,
     }
   }
   if (category.value === 'food') {
     // Food type statistics
-
   }
 
   return {
@@ -94,11 +123,7 @@ const getCategoryStats = (category: ICategory) => {
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">{{ totalLabel }}</p>
             <p class="text-lg md:text-xl text-green-600">
-              {{
-                formatCurrency(
-                  getProductsByCategory?.reduce((sum, p) => sum + (p.price || 0), 0) || 0
-                )
-              }}
+              {{ formatCurrency(getProductsByCategory?.price || 0) }}
             </p>
             <!-- <p class="text-xs text-gray-500">บาท</p> -->
           </div>
@@ -120,7 +145,7 @@ const getCategoryStats = (category: ICategory) => {
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">{{ countLabel }}</p>
             <p class="text-lg md:text-xl text-blue-600">
-              {{ getProductsByCategory?.length || 0 }}
+              {{ getProductsByCategory?.count || 0 }}
             </p>
             <!-- <p class="text-xs text-gray-500">บาท</p> -->
           </div>

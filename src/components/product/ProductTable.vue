@@ -39,6 +39,10 @@ const getImageUrl = (image: IProductImage | undefined) => {
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image?.filename}`
 }
 
+const getImageBrand = (image: string) => {
+  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+}
+
 const getCertificateUrl = (image: string | undefined) => {
   if (!image) return ''
   return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
@@ -215,21 +219,21 @@ const foodColumns = ref([
   {
     field: 'brand',
     header: 'ชื่อแบรนด์',
-    headCell: '!min-w-[6rem]',
+    headCell: '!min-w-[7.5rem]',
     render: (slotProps: any) =>
+
       h(
         'div',
         {
           class: ['flex items-center gap-1.5'],
         },
         [
-          slotProps.data?.brand?.image
+          slotProps.data.brand.image
             ? h('img', {
-                src: getImageUrl(slotProps.data?.brand?.image),
+                src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
                 class:
-                  'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',
-                onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  'w-auto h-8 object-contain rounded',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -694,7 +698,7 @@ const microorganismColumns = ref([
   {
     field: 'brand',
     header: 'ชื่อแบรนด์',
-    headCell: '!min-w-[6rem]',
+    headCell: '!min-w-[7.5rem]',
     render: (slotProps: any) =>
       h(
         'div',
@@ -704,11 +708,10 @@ const microorganismColumns = ref([
         [
           slotProps.data?.brand?.image
             ? h('img', {
-                src: getImageUrl(slotProps.data?.brand?.image),
+                src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
                 class:
-                  'w-auto h-8 object-contain rounded cursor-pointer hover:ring hover:ring-blue-500/75 duration-150 hover:scale-110 transform transition-all',
-                onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  'w-auto h-8 object-contain rounded',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
