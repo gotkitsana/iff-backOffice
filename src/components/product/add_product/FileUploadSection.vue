@@ -8,6 +8,15 @@ import { useMutation } from '@tanstack/vue-query'
 import { Button, FileUpload } from 'primevue'
 import { computed } from 'vue';
 import { toast } from 'vue3-toastify'
+import {
+  generateProductImageName,
+  generateCertificateName,
+  generateVideoName,
+  ALLOWED_IMAGE_EXTENSIONS,
+  ALLOWED_VIDEO_EXTENSIONS,
+  validateFileName
+} from '@/utils/fileNameGenerator'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 const props = defineProps<{
   showCertificate: boolean
@@ -53,27 +62,6 @@ const validateVideoUpload = (file: File, maxSize: number = 980000000) => {
   return true
 }
 
-const onProductImageSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadImage(file)
-  }
-}
-
-const onCertificateSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateFileUpload(file)) {
-    uploadCertificate(file)
-  }
-}
-
-const onVideoSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file && validateVideoUpload(file)) {
-    uploadVideo(file)
-  }
-}
-
 const removeProductImage = (index: number) => {
   emit(
     'update-product-images',
@@ -90,6 +78,32 @@ const removeVideo = () => {
 }
 
 const productStore = useProductStore()
+
+const onProductImageSelect = (event: { files: File[] }) => {
+  const files = event.files
+
+  if (files && files.length > 0) {
+    Array.from(files).forEach(file => {
+      // Validate
+      if (!validateFileName(file.name, ALLOWED_IMAGE_EXTENSIONS)) {
+        toast.error(`ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ`)
+        return
+      }
+
+      // สร้างชื่อไฟล์ใหม่
+      const newFileName = generateProductImageName(file.name)
+      console.log('New filename:', newFileName)
+
+      // สร้าง File object ใหม่ด้วยชื่อใหม่
+      const renamedFile = new File([file], newFileName, { type: file.type })
+
+      // อัพโหลดไฟล์...
+      if (renamedFile && validateFileUpload(renamedFile)) {
+        uploadImage(renamedFile)
+      }
+    })
+  }
+}
 const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
   mutationFn: (file: File) => productStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
@@ -112,6 +126,33 @@ const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
   },
 })
 
+const onCertificateSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+
+  if (!file) return
+
+  // Validate ประเภทไฟล์
+  if (!validateFileName(file.name, ALLOWED_IMAGE_EXTENSIONS)) {
+    toast.error(`ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ`)
+    return
+  }
+
+  // Validate ขนาดไฟล์
+  if (!validateFileUpload(file)) {
+    return
+  }
+
+  // สร้างชื่อไฟล์ใหม่พร้อม timestamp
+  const newFileName = generateCertificateName(file.name)
+  console.log('Certificate filename:', newFileName)
+  // ตัวอย่าง: certificate_cert001_1699999999999.jpg
+
+  // สร้าง File object ใหม่
+  const renamedFile = new File([file], newFileName, { type: file.type })
+
+  // อัพโหลดไฟล์
+  uploadCertificate(renamedFile)
+}
 const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
   mutationFn: (file: File) => productStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
@@ -126,6 +167,33 @@ const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMuta
   },
 })
 
+const onVideoSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+
+  if (!file) return
+
+  // Validate ประเภทไฟล์
+  if (!validateFileName(file.name, ALLOWED_VIDEO_EXTENSIONS)) {
+    toast.error(`ไฟล์ ${file.name} ไม่ใช่วิดีโอที่รองรับ`)
+    return
+  }
+
+  // Validate ขนาดไฟล์
+  if (!validateVideoUpload(file)) {
+    return
+  }
+
+  // สร้างชื่อไฟล์ใหม่พร้อม timestamp
+  const newFileName = generateVideoName(file.name)
+  console.log('Video filename:', newFileName)
+  // ตัวอย่าง: video_demo_1699999999999.mp4
+
+  // สร้าง File object ใหม่
+  const renamedFile = new File([file], newFileName, { type: file.type })
+
+  // อัพโหลดไฟล์
+  uploadVideo(renamedFile)
+}
 const { mutate: uploadVideo, isPending: isUploadingVideo } = useMutation({
   mutationFn: (file: File) => productStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
@@ -141,11 +209,11 @@ const { mutate: uploadVideo, isPending: isUploadingVideo } = useMutation({
 })
 
 const getVideoPreview = (filename: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 
 const getImagePreview = (filename: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 </script>
 
@@ -165,6 +233,9 @@ const getImagePreview = (filename: string) => {
               :src="getImagePreview(image.filename)"
               :alt="`Product image ${index + 1}`"
               class="w-full h-40 object-contain rounded-lg border border-gray-200"
+              loading="lazy"
+              fetchpriority="low"
+              crossorigin="anonymous"
             />
             <Button
               icon="pi pi-times"
@@ -245,6 +316,9 @@ const getImagePreview = (filename: string) => {
             :src="getImagePreview(certificateFile)"
             alt="Certificate"
             class="w-full h-60 object-contain rounded-lg border border-gray-200"
+            loading="lazy"
+            fetchpriority="low"
+            crossorigin="anonymous"
           />
           <Button
             icon="pi pi-times"

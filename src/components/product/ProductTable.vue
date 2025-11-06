@@ -101,7 +101,7 @@ const closeVideoModal = () => {
 
 const getVideoUrl = (filename: string) => {
   if (!filename) return ''
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 
 // Image gallery modal states
