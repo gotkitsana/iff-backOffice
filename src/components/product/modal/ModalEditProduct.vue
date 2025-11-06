@@ -192,6 +192,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
 
   productForm.value.images = newProductData.images
   productForm.value.certificate = newProductData.certificate || undefined
+  productForm.value.youtube = newProductData.youtube || ''
 }
 
 // Validation
@@ -203,9 +204,6 @@ const validateForm = () => {
 
   // Validate required fields
   for (const field of selectedCategoryInfo.value.fields) {
-    // if (field.key === 'balance' && dynamicFormData.value![field.key] != null) {
-    //   return true
-    // }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
       return false
@@ -246,9 +244,6 @@ const mapDynamicFormToProductForm = () => {
         break
       case 'detail':
         productForm.value.detail = value as string
-        break
-      case 'youtube':
-        productForm.value.youtube = value as string
         break
       case 'weight':
         productForm.value.weight = value as number
@@ -358,6 +353,7 @@ const handleSubmit = async () => {
       type: img.type,
     })),
     certificate: isFishCategory.value ? productForm.value.certificate : '',
+    youtube: productForm.value.youtube,
     price:
       selectedCategoryId.value?.value == 'fish'
         ? productForm.value.price
@@ -435,6 +431,10 @@ const updateProductImages = (images: IProductImage[]) => {
 const updateCertificateFile = (file: string | undefined) => {
   productForm.value.certificate = file
 }
+
+const handleUpdateVideoFile = (filename: string | undefined) => {
+  productForm.value.youtube = filename || ''
+}
 </script>
 
 <template>
@@ -483,6 +483,8 @@ const updateCertificateFile = (file: string | undefined) => {
         :video-file="productForm.youtube"
         @update-product-images="updateProductImages"
         @update-certificate-file="updateCertificateFile"
+        @update-video-file="handleUpdateVideoFile"
+        :is-edit="true"
       />
     </div>
 

@@ -6,6 +6,7 @@ import {
 } from '@/stores/product/product'
 import { useMutation } from '@tanstack/vue-query'
 import { Button, FileUpload } from 'primevue'
+import { computed } from 'vue';
 import { toast } from 'vue3-toastify'
 
 const props = defineProps<{
@@ -14,7 +15,9 @@ const props = defineProps<{
   productImages: IProductImage[]
   certificateFile: string | undefined
   videoFile: string | undefined
+  isEdit?: boolean
 }>()
+const isEdit = computed(() => props.isEdit || false)
 
 const emit = defineEmits<{
   'update-product-images': [images: IProductImage[]]
@@ -204,6 +207,7 @@ const getImagePreview = (filename: string) => {
             controls
           />
           <Button
+            v-if="!isEdit"
             icon="pi pi-times"
             severity="danger"
             size="small"
@@ -216,13 +220,13 @@ const getImagePreview = (filename: string) => {
       </div>
 
       <FileUpload
-        v-else
+        v-if="isEdit || !videoFile"
         mode="basic"
         name="videoFile"
         accept="video/*"
         :maxFileSize="980000000"
         @select="onVideoSelect"
-        :chooseLabel="isUploadingVideo ? 'กำลังอัปโหลด...' : 'เลือกวิดีโอ'"
+        :chooseLabel="isUploadingVideo ? 'กำลังอัปโหลด...' : (isEdit && videoFile) ? 'เปลี่ยนวิดีโอ' : 'เลือกวิดีโอ'"
         :disabled="isUploadingVideo"
         size="small"
       />

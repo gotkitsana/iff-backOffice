@@ -7,6 +7,7 @@ import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -36,16 +37,16 @@ const getGenderTag = (gender: string) => {
 
 const getImageUrl = (image: IProductImage | undefined) => {
   if (!image) return ''
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image?.filename}`
+  return getProductImageUrl(image?.filename)
 }
 
 const getImageBrand = (image: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+  return getProductImageUrl(image)
 }
 
 const getCertificateUrl = (image: string | undefined) => {
   if (!image) return ''
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+  return getProductImageUrl(image)
 }
 
 const getSeedTypeLabel = (seedType: string) => {
@@ -171,6 +172,9 @@ const foodColumns = ref([
                     'hover:scale-110 transform',
                   ].join(' '),
                   onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  loading: 'lazy',
+                  fetchpriority: 'low',
+                  crossorigin: 'anonymous',
                 }),
                 // Badge แสดงจำนวนรูป
                 slotProps.data.images.length > 1
@@ -232,6 +236,9 @@ const foodColumns = ref([
                 src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
                 class: 'w-auto h-8 object-contain rounded',
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -391,6 +398,9 @@ const fishColumns = ref([
                     'hover:scale-110 transform',
                   ].join(' '),
                   onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  loading: 'lazy',
+                  fetchpriority: 'low',
+                  crossorigin: 'anonymous',
                 }),
                 // Badge แสดงจำนวนรูป
                 slotProps.data.images.length > 1
@@ -460,6 +470,9 @@ const fishColumns = ref([
                   'hover:scale-110 transform',
                 ].join(' '),
                 onClick: () => openCertificateModal(slotProps.data?.certificate),
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
               })
             : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
         ]
@@ -540,11 +553,7 @@ const fishColumns = ref([
     header: 'สถานะปลา',
     render: (slotProps: any) =>
       slotProps.data.fishStatus
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            slotProps.data.fishStatus.name
-          )
+        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.fishStatus.name)
         : h('span', '-'),
   },
   {
@@ -657,6 +666,9 @@ const microorganismColumns = ref([
                     'hover:scale-110 transform',
                   ].join(' '),
                   onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  loading: 'lazy',
+                  fetchpriority: 'low',
+                  crossorigin: 'anonymous',
                 }),
                 // Badge แสดงจำนวนรูป
                 slotProps.data.images.length > 1
@@ -718,6 +730,9 @@ const microorganismColumns = ref([
                 src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
                 class: 'w-auto h-8 object-contain rounded',
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -985,7 +1000,7 @@ const displayColumns = computed(() => {
       </div>
     </template>
 
-    <div v-if="galleriaImages.length > 0" class="px-4 pb-4">
+    <div class="px-4 pb-4">
       <Galleria
         v-model:activeIndex="activeImageIndex"
         :value="galleriaImages"
@@ -1005,7 +1020,10 @@ const displayColumns = computed(() => {
             <img
               :src="item.itemImageSrc"
               :alt="item.alt"
-              class="w-full h-auto max-h-[55vh] object-contain"
+              class="w-full h-auto min-h-[320px] max-h-[55vh] object-contain"
+              loading="lazy"
+              fetchpriority="low"
+              crossorigin="anonymous"
             />
           </div>
         </template>
@@ -1016,6 +1034,9 @@ const displayColumns = computed(() => {
               :src="item.thumbnailImageSrc"
               :alt="item.alt"
               class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
+              loading="lazy"
+              fetchpriority="low"
+              crossorigin="anonymous"
             />
           </div>
         </template>
@@ -1060,6 +1081,9 @@ const displayColumns = computed(() => {
           :src="selectedCertificateUrl"
           alt="Certificate"
           class="w-full h-auto max-h-[60vh] object-contain rounded-lg shadow-md"
+          loading="lazy"
+          fetchpriority="low"
+          crossorigin="anonymous"
         />
       </div>
     </div>
