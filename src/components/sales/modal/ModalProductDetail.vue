@@ -57,7 +57,7 @@ const handleFindCategory = (id: string): ICategory | undefined => {
 }
 
 const productStore = useProductStore()
-const {data: productsData} = useQuery<IProduct[]>({
+const { data: productsData } = useQuery<IProduct[]>({
   queryKey: ['get_products'],
   queryFn: () => productStore.onGetProducts(),
 })
@@ -66,9 +66,6 @@ const getProductImage = (productId: string) => {
   const image = productsData.value?.find((p) => p._id === productId)?.images[0]?.filename
   return image ? getProductImageUrl(image) : undefined
 }
-
-
-
 </script>
 
 <template>
@@ -161,7 +158,7 @@ const getProductImage = (productId: string) => {
 
       <Card :pt="{ body: 'p-3' }" class="bg-gray-50 border-gray-200">
         <template #content>
-          <div class="space-y-2">
+          <div class="space-y-1.5">
             <div class="flex justify-between items-center">
               <span class="text-sm text-gray-600">มูลค่าสินค้ารวม:</span>
               <span class="text-sm font-semibold text-gray-900">{{
@@ -169,13 +166,19 @@ const getProductImage = (productId: string) => {
               }}</span>
             </div>
 
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">ค่าจัดส่ง:</span>
+              <span class="text-sm font-semibold text-green-600">{{
+                formatCurrency(saleData?.deliveryNo || 0)
+              }}</span>
+            </div>
+
             <div
-              v-if="saleData?.discount && saleData.discount > 0"
               class="flex justify-between items-center"
             >
               <span class="text-sm text-gray-600">ส่วนลด:</span>
               <span class="text-sm font-semibold text-red-600">{{
-                formatCurrency(saleData.discount)
+                formatCurrency(saleData?.discount || 0)
               }}</span>
             </div>
 

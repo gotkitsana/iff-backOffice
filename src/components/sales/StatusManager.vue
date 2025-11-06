@@ -231,6 +231,8 @@ const handleSubmit = () => {
     note: props.currentData.note,
     payment: props.currentData.payment,
     cat: props.currentData.cat,
+    deliveryNo: props.currentData.deliveryNo,
+    delivery: props.currentData.delivery,
   })
 }
 // Mutation for updating sales status

@@ -311,14 +311,17 @@ const generateInvoiceHTML = () => {
           </thead>
           <tbody>
             ${props.saleData.products
-              ?.map(
-                (product, index) => `
+              ?.map((product, index) => {
+                const productImage = getProductImage(product.id)
+                return `
               <tr>
                 <td>${index + 1}</td>
                 <td style="text-align: center;">
-                 <img src="${getProductImage(
-                   product.id
-                 )}" alt="product image" class="product-image">
+                 ${
+                   productImage
+                     ? `<img src="${productImage}" alt="product image" class="product-image">`
+                     : ``
+                 }
                 </td>
                 <td>${product.name}</td>
                 <td>${products.value?.find((p) => p._id === product.id)?.sku || '-'}</td>
@@ -329,7 +332,7 @@ const generateInvoiceHTML = () => {
                 )}</td>
               </tr>
             `
-              )
+              })
               .join('')}
           </tbody>
         </table>
@@ -343,6 +346,10 @@ const generateInvoiceHTML = () => {
           <div class="summary-row">
             <span>มัดจำ:</span>
             <span>${formatCurrency(props.saleData.deposit)}</span>
+          </div>
+          <div class="summary-row">
+            <span>ค่าจัดส่ง:</span>
+            <span>${formatCurrency(props.saleData?.deliveryNo || 0)}</span>
           </div>
           <div class="summary-row">
             <span>ส่วนลด:</span>
@@ -610,7 +617,7 @@ const getProductImage = (productId: string): string | undefined => {
           สรุปราคา
         </h4>
         <div class="grid grid-cols-1 gap-4">
-          <div class="space-y-2">
+          <div class="space-y-1">
             <div class="flex justify-between items-center">
               <span class="text-gray-600">ยอดรวมสินค้า:</span>
               <span class="font-medium text-lg">{{ formatCurrency(totalAmount) }}</span>
@@ -619,6 +626,14 @@ const getProductImage = (productId: string): string | undefined => {
               <span class="text-gray-600">มัดจำ:</span>
               <span class="font-medium text-blue-600">{{ formatCurrency(saleData.deposit) }}</span>
             </div>
+
+            <div class="flex justify-between items-center">
+              <span class="text-gray-600">ค่าจัดส่ง:</span>
+              <span class="font-medium text-green-600">{{
+                formatCurrency(saleData?.deliveryNo || 0)
+              }}</span>
+            </div>
+
             <div class="flex justify-between items-center">
               <span class="text-gray-600">ส่วนลด:</span>
               <span class="font-medium text-red-600">{{ formatCurrency(saleData.discount) }}</span>

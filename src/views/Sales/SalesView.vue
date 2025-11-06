@@ -140,6 +140,16 @@ const totalDeposit = computed(() => {
   )
 })
 
+const totalDelivery = computed(() => {
+  return (
+    salesData.value
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      .reduce((sum, sale) => {
+        return sum + (sale.deliveryNo || 0)
+      }, 0) || 0
+  )
+})
+
 const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
   return (
     salesData.value
@@ -181,7 +191,7 @@ const getSaleTotalAmount = (sale: ISales) => {
   const productTotal = sale.products ? sale.products.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0) : 0
-  const netAmount = productTotal - sale.discount
+  const netAmount = (productTotal + (sale.deliveryNo || 0)) - sale.discount
   return netAmount < 0 ? 0 : netAmount
 }
 
@@ -243,7 +253,7 @@ const { data: admins } = useQuery<IAdmin[]>({
     <!-- Sales KPI Dashboard -->
     <div class="space-y-4">
       <!-- Dashboard Header -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white">
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">สรุปยอดขาย</h2>
@@ -258,10 +268,17 @@ const { data: admins } = useQuery<IAdmin[]>({
           </div>
         </div>
 
-        <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-4 text-white">
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">สรุปยอดรอชำระ</h2>
             <p class="text-xl font-semibold!">{{ formatCurrency(totalDeposit) }}</p>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-pink-700 to-pink-900 rounded-2xl p-4 text-white">
+          <div class="flex flex-col">
+            <h2 class="text-lg font-semibold! mb-1">ยอดค่าจัดส่ง</h2>
+            <p class="text-xl font-semibold!">{{ formatCurrency(totalDelivery) }}</p>
           </div>
         </div>
       </div>
@@ -697,6 +714,20 @@ const { data: admins } = useQuery<IAdmin[]>({
                   class="text-gray-400 text-xs"
                 >
                   ไม่มี
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <Column
+            field="deliveryNo"
+            header="ค่าจัดส่ง"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
+          >
+            <template #body="slotProps">
+              <div class="text-end">
+                <div class="font-medium! text-green-600 text-sm">
+                  {{ formatCurrency(slotProps.data.deliveryNo || 0)}}
                 </div>
               </div>
             </template>

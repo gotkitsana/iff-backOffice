@@ -8,6 +8,7 @@ const props = defineProps<{
   totalAmount: number
   deposit: number
   discount: number
+  deliveryNo: number
   isSubmitting: boolean
   readOnly?: boolean
 }>()
@@ -16,11 +17,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:deposit': [value: number]
   'update:discount': [value: number]
+  'update:deliveryNo': [value: number]
 }>()
 
 // Computed
 const netAmount = computed(() => {
-  const netAmount = props.totalAmount - props.discount
+  const netAmount = (props.totalAmount + props.deliveryNo) - props.discount
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -30,6 +32,10 @@ const updateDeposit = (value: number | null) => {
 
 const updateDiscount = (value: number | null) => {
   emit('update:discount', value || 0)
+}
+
+const updateDeliveryNo = (value: number | null) => {
+  emit('update:deliveryNo', value || 0)
 }
 </script>
 
@@ -41,7 +47,7 @@ const updateDiscount = (value: number | null) => {
     </div>
 
     <!-- Input Fields -->
-    <div v-if="!props.readOnly" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div v-if="!props.readOnly" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <div>
         <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
           มัดจำ (บาท)
@@ -75,6 +81,23 @@ const updateDiscount = (value: number | null) => {
           placeholder="ระบุส่วนลด"
         />
       </div>
+
+      <div>
+        <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+          ค่าจัดส่ง (บาท)
+        </label>
+        <InputNumber
+          :modelValue="deliveryNo"
+          @update:modelValue="updateDeliveryNo"
+          :min="0"
+          mode="currency"
+          currency="THB"
+          locale="th-TH"
+          fluid
+          size="small"
+          placeholder="ระบุค่าจัดส่ง"
+        />
+      </div>
     </div>
 
     <!-- Summary -->
@@ -83,6 +106,11 @@ const updateDiscount = (value: number | null) => {
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-600">มูลค่าสินค้า:</span>
           <span class="text-sm font-medium text-gray-800">{{ formatCurrency(totalAmount) }}</span>
+        </div>
+
+        <div v-if="deliveryNo > 0" class="flex items-center justify-between">
+          <span class="text-sm text-green-600">ค่าจัดส่ง:</span>
+          <span class="text-sm font-medium text-green-600">{{ formatCurrency(deliveryNo) }}</span>
         </div>
 
         <div v-if="discount > 0" class="flex items-center justify-between">

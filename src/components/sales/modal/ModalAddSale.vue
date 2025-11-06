@@ -10,7 +10,7 @@ import { useSalesStore } from '@/stores/sales/sales'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import type { ICreateSalesPayload } from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
-import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
+import { type IAdmin } from '@/stores/admin/admin'
 import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
@@ -40,6 +40,8 @@ const saleForm = ref<ICreateSalesPayload>({
   discount: 0,
   seller: '',
   note: '',
+  deliveryNo: 0,
+  delivery: '',
 })
 
 // Queries
@@ -220,7 +222,7 @@ const totalAmount = computed(() => {
 })
 
 const netAmount = computed(() => {
-  const netAmount = (totalAmount.value || 0) - saleForm.value.discount
+  const netAmount = ((totalAmount.value || 0) + (saleForm.value.deliveryNo || 0)) - (saleForm.value.discount || 0)
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -334,6 +336,8 @@ const resetForm = () => {
     discount: 0,
     seller: '',
     note: '',
+    deliveryNo: 0,
+    delivery: '',
   }
 }
 
@@ -613,7 +617,7 @@ const sellers = computed(() => {
         </div>
 
         <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
         >
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
@@ -646,11 +650,27 @@ const sellers = computed(() => {
               placeholder="ระบุส่วนลด"
             />
           </div>
+
+          <div>
+            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
+              ค่าจัดส่ง (บาท)
+            </label>
+            <InputNumber
+              v-model="saleForm.deliveryNo"
+              :min="0"
+              mode="currency"
+              currency="THB"
+              locale="th-TH"
+              fluid
+              size="small"
+              placeholder="ระบุค่าจัดส่ง"
+            />
+          </div>
         </div>
 
         <!-- Summary -->
         <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <div class="flex items-center justify-between">
+          <div class="flex items-start justify-between">
             <div class="flex items-center gap-2">
               <i class="pi pi-calculator text-green-600"></i>
               <span class="font-semibold text-gray-800">สรุปยอดเงิน</span>
@@ -659,9 +679,13 @@ const sellers = computed(() => {
               <div class="text-sm text-gray-600">
                 มูลค่าสินค้า: {{ formatCurrency(totalAmount || 0) }}
               </div>
-              <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-0.5">
+               <div v-if="saleForm.deliveryNo > 0" class="text-sm text-green-600 my-1">
+                ค่าจัดส่ง: {{ formatCurrency(saleForm.deliveryNo) }}
+              </div>
+              <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-1">
                 ส่วนลด: {{ formatCurrency(saleForm.discount) }}
               </div>
+
               <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
                 มัดจำ: {{ formatCurrency(saleForm.deposit) }}
               </div>

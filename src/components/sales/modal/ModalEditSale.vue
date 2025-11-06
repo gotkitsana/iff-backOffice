@@ -44,6 +44,8 @@ const saleForm = ref<IUpdateSalesPayload>({
   discount: 0,
   seller: '',
   note: '',
+  deliveryNo: 0,
+  delivery: '',
 })
 
 // Queries
@@ -115,6 +117,10 @@ const updateDiscount = (discount: number) => {
   saleForm.value.discount = discount
 }
 
+const updateDeliveryNo = (deliveryNo: number) => {
+  saleForm.value.deliveryNo = deliveryNo
+}
+
 const updateBankCode = (bankCode: string) => {
   saleForm.value.bankCode = bankCode
 }
@@ -145,6 +151,8 @@ const populateForm = (saleData: ISales) => {
     discount: saleData.discount || 0,
     seller: saleData.seller || '',
     note: saleData.note || '',
+    deliveryNo: saleData.deliveryNo || 0,
+    delivery: saleData.delivery || '',
   }
 }
 
@@ -386,6 +394,8 @@ const resetForm = () => {
     discount: 0,
     seller: '',
     note: '',
+    deliveryNo: 0,
+    delivery: '',
   }
 }
 
@@ -540,12 +550,14 @@ const sellers = computed(() => {
         :total-amount="totalAmount"
         :deposit="saleForm.deposit"
         :discount="saleForm.discount"
+        :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
         :read-only="
           getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
         "
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
+        @update:delivery-no="updateDeliveryNo"
       />
 
       <!-- Notes -->

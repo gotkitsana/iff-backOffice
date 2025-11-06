@@ -7,6 +7,8 @@ export type ICreateSalesPayload = {
   discount: number // ส่วนลด
   seller: string // ผู้ขาย
   note: string // หมายเหตุ
+  deliveryNo: number //ค่าจัดส่ง
+  delivery?: string //หมายเลขการจัดส่ง
 }
 
 export type IUpdateSalesPayload = {
@@ -19,6 +21,9 @@ export type IUpdateSalesPayload = {
   discount: number // ส่วนลด
   seller: string // ผู้ขาย
   note: string // หมายเหตุ
+
+  deliveryNo: number //ค่าจัดส่ง
+  delivery?: string //หมายเลขการจัดส่ง
 
   payment?: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode?: string
@@ -39,14 +44,16 @@ export type ISales = {
     status: 'ci' | 'cs' | 'css'
     type: string
   }
-  products: {
-    name?: string
-    price?: number | null
-    type?: number
-    category?: string | null
-    id: string
-    quantity: number
-  }[] | null
+  products:
+    | {
+        name?: string
+        price?: number | null
+        type?: number
+        category?: string | null
+        id: string
+        quantity: number
+      }[]
+    | null
   deposit: number
   discount: number
   seller: string
@@ -57,6 +64,8 @@ export type ISales = {
   payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode: string
   bankAccount: string
+  deliveryNo: number
+  delivery?: string
 }
 
 export type StatusWorkflow = Record<
