@@ -55,9 +55,11 @@ const currentStatusInfo = computed(() => {
 })
 
 const totalAmount = computed(() => {
-  return props.saleData.products ? props.saleData.products.reduce((total, product) => {
-    return total ? total + (product.price || 0) * product.quantity : 0
-  }, 0) : 0
+  return props.saleData.products
+    ? props.saleData.products.reduce((total, product) => {
+        return total + (product.price || 0) * (product.quantity || 0)
+      }, 0)
+    : 0
 })
 
 const finalAmount = computed(() => {
@@ -249,6 +251,12 @@ const generateInvoiceHTML = () => {
           body { margin: 0; }
           .invoice-container { border: none; }
         }
+
+        .product-image {
+          width: auto;
+          height: 48px;
+          object-fit: contain;
+        }
       </style>
     </head>
     <body>
@@ -293,18 +301,27 @@ const generateInvoiceHTML = () => {
           <thead>
             <tr>
               <th>ลำดับที่</th>
+              <th style="text-align: center;">รูปสินค้า</th>
               <th>รายการ</th>
+              <th>รหัส</th>
               <th class="text-center">จำนวน</th>
               <th class="text-right">ราคา/หน่วย</th>
               <th class="text-right">จำนวนเงิน</th>
             </tr>
           </thead>
           <tbody>
-            ${props.saleData.products?.map(
+            ${props.saleData.products
+              ?.map(
                 (product, index) => `
               <tr>
                 <td>${index + 1}</td>
+                <td style="text-align: center;">
+                 <img src="${getProductImage(
+                   product.id
+                 )}" alt="product image" class="product-image">
+                </td>
                 <td>${product.name}</td>
+                <td>${products.value?.find((p) => p._id === product.id)?.sku || '-'}</td>
                 <td class="text-center">${product.quantity}</td>
                 <td class="text-right">${formatCurrency(product.price || 0)}</td>
                 <td class="text-right">${formatCurrency(
@@ -447,7 +464,7 @@ const getProductImage = (productId: string): string | undefined => {
             <i class="pi pi-user text-green-600"></i>
             ข้อมูลลูกค้า
           </h4>
-          <div class="space-y-2 text-sm">
+          <div class="space-y-1.5 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">รหัสลูกค้า:</span>
               <span class="font-medium capitalize">{{ saleData.user.code }}</span>
@@ -460,17 +477,30 @@ const getProductImage = (productId: string): string | undefined => {
               <span class="text-gray-600">ชื่อเล่น:</span>
               <span class="font-medium">{{ saleData.user.displayName || '-' }}</span>
             </div>
+
             <!-- <div class="flex justify-between">
               <span class="text-gray-600">ประเภทลูกค้า:</span>
               <Tag :value="saleData.user.type" severity="info" size="small" />
             </div> -->
-            <div class="flex justify-between">
+            <div class="flex justify-between items-center">
               <span class="text-gray-600">สถานะ:</span>
               <Tag
                 :value="findMemberStatusTag(saleData.user.status)?.label"
                 :severity="findMemberStatusSeverity(saleData.user.status)"
                 size="small"
               />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="text-gray-600">ที่อยู่:</span>
+              <span class="font-medium! text-xs"
+                >{{ findMemberData(saleData.user._id)?.address || '-' }},
+                {{
+                  memberStore.provinceOptions.find(
+                    (option) => option.value === findMemberData(props.saleData.user._id)?.province
+                  )?.label
+                }}</span
+              >
             </div>
           </div>
         </div>
@@ -480,7 +510,7 @@ const getProductImage = (productId: string): string | undefined => {
             <i class="pi pi-shopping-cart text-blue-600"></i>
             ข้อมูลการสั่งซื้อ
           </h4>
-          <div class="space-y-2 text-sm">
+          <div class="space-y-1.5 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">ผู้ขาย:</span>
               <span class="font-medium">{{ handleFindAdmin(saleData.seller)?.name || '-' }}</span>
@@ -532,7 +562,9 @@ const getProductImage = (productId: string): string | undefined => {
                 <td class="px-4 py-2 text-sm text-gray-900">
                   <div v-if="!product.category && !product.name">
                     <p class="font-[500]! text-sm text-red-600 mb-0.5">ไม่พบข้อมูลสินค้า</p>
-                    <p class="text-xs text-gray-500">รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่</p>
+                    <p class="text-xs text-gray-500">
+                      รายการนี้อาจถูกลบออกจากระบบ โปรดเลือกสินค้าใหม่
+                    </p>
                   </div>
                   <div v-else class="flex items-center gap-1.5">
                     <img
@@ -542,7 +574,11 @@ const getProductImage = (productId: string): string | undefined => {
                       class="w-auto h-10 object-contain"
                     />
                     <div>
-                      <p class="font-[500]!">{{ product.name }}</p>
+                      <p class="font-[500]!">
+                        {{ product.name }} รหัส ({{
+                          products?.find((p) => p._id === product.id)?.sku || '-'
+                        }})
+                      </p>
                       <p class="text-xs text-gray-600">
                         หมวดหมู่:
                         {{ handleFindCategory(product?.category)?.name || '-' }}
@@ -557,7 +593,9 @@ const getProductImage = (productId: string): string | undefined => {
                   {{ product.price ? formatCurrency(product.price || 0) : '-' }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
-                  {{ product.price ? formatCurrency((product.price || 0) * product.quantity) : '-' }}
+                  {{
+                    product.price ? formatCurrency((product.price || 0) * product.quantity) : '-'
+                  }}
                 </td>
               </tr>
             </tbody>
@@ -647,6 +685,7 @@ const getProductImage = (productId: string): string | undefined => {
           @click="handlePrintInvoice"
           severity="success"
           size="small"
+          :disabled="!saleData.products || saleData.products.length === 0"
         />
 
         <div class="flex gap-3">

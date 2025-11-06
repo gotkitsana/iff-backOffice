@@ -8,6 +8,7 @@ import CardProductList from '../CardProductList.vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useProductStore, type IProduct } from '@/stores/product/product'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -63,12 +64,10 @@ const {data: productsData} = useQuery<IProduct[]>({
 
 const getProductImage = (productId: string) => {
   const image = productsData.value?.find((p) => p._id === productId)?.images[0]?.filename
-  return image ? getImageUrl(image) : undefined
+  return image ? getProductImageUrl(image) : undefined
 }
 
-const getImageUrl = (image: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
-}
+
 
 </script>
 
@@ -151,6 +150,7 @@ const getImageUrl = (image: string) => {
               :category="handleFindCategory(product.category || '')"
               :isMissing="!product.category"
               :image="getProductImage(product.id)"
+              :sku="productsData?.find((p) => p._id === product.id)?.sku || ''"
             />
           </template>
         </div>
