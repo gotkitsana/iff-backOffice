@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ICategory } from '@/stores/product/category'
 import { useFarmStore, type IFarm } from '@/stores/product/farm'
+import { useFishStatusStore, type IFishStatus } from '@/stores/product/fish_status'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
@@ -144,6 +145,19 @@ const seedSizeOptions = computed(() => {
   }))
 })
 
+const fishStatusStore = useFishStatusStore()
+const { data: fishStatusData } = useQuery<IFishStatus[]>({
+  queryKey: ['get_fish_status'],
+  queryFn: () => fishStatusStore.onGetFishStatus(),
+})
+const fishStatusOptions = computed(() => {
+  if (!fishStatusData.value) return []
+  return fishStatusData.value.map((fishStatus) => ({
+    label: fishStatus.name,
+    value: fishStatus._id,
+  }))
+})
+
 const getSelectOptions = (fieldKey: IFieldsKey) => {
   if (fieldKey === 'gender') {
     return productStore.genderOptions
@@ -217,6 +231,10 @@ const getSelectOptions = (fieldKey: IFieldsKey) => {
 
   if (fieldKey === 'seedSize') {
     return seedSizeOptions.value
+  }
+
+  if (fieldKey === 'fishStatus') {
+    return fishStatusOptions.value
   }
 
   return []

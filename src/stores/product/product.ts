@@ -179,6 +179,14 @@ export interface IProduct {
     uat: number
     _id: string
   } | null
+  fishStatus?: {
+    active: boolean
+    cat: number
+    name: string
+    note: string
+    uat: number
+    _id: string
+  } | null
   size?: number
   gender?: string
   age?: string
@@ -234,12 +242,13 @@ export interface ICreateProductPayload {
   brand?: string
   foodtype?: string
   seedSize?: string
+  fishStatus?: string
 }
 
 export interface IUpdateProductPayload
   extends Omit<
     IProduct,
-    'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand'
+    'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand' | 'fishStatus'
   > {
   _id: string
   fishpond?: string
@@ -250,6 +259,7 @@ export interface IUpdateProductPayload
   seedSize?: string
   foodtype?: string
   brand?: string
+  fishStatus?: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
@@ -303,6 +313,7 @@ export type IFieldsKey =
   | 'code'
   | 'greenhouse'
   | 'brand'
+  | 'fishStatus'
 
 export type IFieldsType = 'text' | 'number' | 'select' | 'textarea' | 'date' | 'boolean'
 export type IFieldsRequired = boolean

@@ -12,6 +12,7 @@ import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/
 import FoodTypeSetting from '@/components/product/settings/FoodTypeSetting.vue'
 import BrandSetting from '@/components/product/settings/BrandSetting.vue'
 import SeedSizeSetting from '@/components/product/settings/SeedSizeSetting.vue'
+import FishStatusSetting from '@/components/product/settings/FishStatus.vue'
 import { useQuery } from '@tanstack/vue-query'
 
 interface ISettingCategory {
@@ -75,6 +76,14 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-star-fill',
     color: 'from-purple-500 to-pink-600',
     description: 'จัดการคุณภาพสินค้า',
+    type: ['fish'],
+  },
+  {
+    id: 'fishStatus',
+    name: 'สถานะปลา',
+    icon: 'pi pi-gauge',
+    color: 'from-blue-500 to-indigo-600',
+    description: 'จัดการสถานะปลา',
     type: ['fish'],
   },
   {
@@ -227,6 +236,9 @@ const categoryOptions = computed(() => {
 
       <!-- Seed Size Setting -->
       <SeedSizeSetting v-if="activeCategory === 'seedSize'" />
+
+      <!-- Fish Status Setting -->
+      <FishStatusSetting v-if="activeCategory === 'fishStatus'" />
     </div>
   </div>
 </template>

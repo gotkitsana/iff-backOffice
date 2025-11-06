@@ -89,6 +89,7 @@ const productForm = ref<ICreateProductPayload>({
   brand: undefined,
   foodtype: undefined,
   seedSize: undefined,
+  fishStatus: undefined,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -227,6 +228,9 @@ const mapDynamicFormToProductForm = () => {
         break
       case 'species':
         productForm.value.species = value as string
+        break
+      case 'fishStatus':
+        productForm.value.fishStatus = value as string || undefined
         break
       case 'price':
         productForm.value.price = value as number
@@ -374,6 +378,7 @@ const resetForm = () => {
     brand: undefined,
     foodtype: undefined,
     seedSize: undefined,
+    fishStatus: undefined,
   }
 
   dynamicFormData.value = null

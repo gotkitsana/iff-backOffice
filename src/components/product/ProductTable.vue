@@ -66,11 +66,11 @@ const getSeedSizeLabel = (seedSize: any) => {
 
   // กำหนดสีตายตัวตามชื่อขนาด
   const colorMap: Record<string, string> = {
-    'S': 'info',      // ฟ้า
-    'M': 'success',   // เขียว
-    'L': 'warn',      // ส้ม
-    'XL': 'danger',   // แดง
-    'XXL': 'contrast', // ดำ/ขาว
+    S: 'info', // ฟ้า
+    M: 'success', // เขียว
+    L: 'warn', // ส้ม
+    XL: 'danger', // แดง
+    XXL: 'contrast', // ดำ/ขาว
     // เพิ่มขนาดอื่นๆ ตามที่มีจริง
   }
 
@@ -191,7 +191,7 @@ const foodColumns = ref([
         ]
       ),
   },
-{
+  {
     field: 'sku',
     header: 'รหัสอาหาร',
     render: (slotProps: any) =>
@@ -221,7 +221,6 @@ const foodColumns = ref([
     header: 'ชื่อแบรนด์',
     headCell: '!min-w-[7.5rem]',
     render: (slotProps: any) =>
-
       h(
         'div',
         {
@@ -232,8 +231,7 @@ const foodColumns = ref([
             ? h('img', {
                 src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
-                class:
-                  'w-auto h-8 object-contain rounded',
+                class: 'w-auto h-8 object-contain rounded',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
@@ -537,8 +535,19 @@ const fishColumns = ref([
         size: 'small',
       }),
   },
-
-   {
+  {
+    field: 'fishStatus',
+    header: 'สถานะปลา',
+    render: (slotProps: any) =>
+      slotProps.data.fishStatus
+        ? h(
+            'span',
+            { class: 'text-sm text-gray-900' },
+            slotProps.data.fishStatus.name
+          )
+        : h('span', '-'),
+  },
+  {
     field: 'size',
     header: 'ไซต์',
     headCell: '!min-w-[4rem] justify-center',
@@ -549,7 +558,7 @@ const fishColumns = ref([
         : h('span', '-'),
   },
 
-   {
+  {
     field: 'age',
     header: 'อายุ',
     headCell: '!min-w-[6rem]',
@@ -558,7 +567,7 @@ const fishColumns = ref([
         ? h('span', { class: 'text-sm text-gray-900 uppercase' }, slotProps.data.age)
         : h('span', '-'),
   },
-    {
+  {
     field: 'weight',
     header: 'น้ำหนัก (กก.)',
     headCell: '!min-w-[5rem] justify-end',
@@ -610,7 +619,6 @@ const fishColumns = ref([
         : h('span', '-'),
   },
 
-
   {
     field: 'gender',
     header: 'เพศ',
@@ -623,7 +631,6 @@ const fishColumns = ref([
         size: 'small',
       }),
   },
-
 ])
 
 const microorganismColumns = ref([
@@ -710,8 +717,7 @@ const microorganismColumns = ref([
             ? h('img', {
                 src: getImageBrand(slotProps.data.brand.image),
                 alt: 'product image',
-                class:
-                  'w-auto h-8 object-contain rounded',
+                class: 'w-auto h-8 object-contain rounded',
               })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),

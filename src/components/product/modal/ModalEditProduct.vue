@@ -88,6 +88,7 @@ const productForm = ref<IUpdateProductPayload>({
   brand: undefined,
   foodtype: undefined,
   seedSize: undefined,
+  fishStatus: undefined,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -156,6 +157,8 @@ const initializeDynamicForm = (newProductData: IProduct) => {
       formData[field.key] = newProductData.seedSize?._id || ''
     } else if (field.key === 'brand' && newProductData.brand) {
       formData[field.key] = newProductData.brand?._id || ''
+    } else if (field.key === 'fishStatus' && newProductData.fishStatus) {
+      formData[field.key] = newProductData.fishStatus?._id || ''
     } else {
       formData[field.key] = fieldValue || (field.type === 'number' ? 0 : '')
     }
@@ -184,6 +187,7 @@ const initializeDynamicForm = (newProductData: IProduct) => {
     foodtype: newProductData.foodtype?._id,
     seedSize: newProductData.seedSize?._id,
     brand: newProductData.brand?._id,
+    fishStatus: newProductData.fishStatus?._id,
   }
 
   productForm.value.images = newProductData.images
@@ -311,6 +315,9 @@ const mapDynamicFormToProductForm = () => {
         break
       case 'species':
         productForm.value.species = value as string
+        break
+      case 'fishStatus':
+        productForm.value.fishStatus = value as string || undefined
         break
     }
   })

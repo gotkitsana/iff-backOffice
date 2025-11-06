@@ -353,6 +353,7 @@ const { mutate: updateSalesStatus } = useMutation({
               seedSize: product.seedSize?._id || undefined,
               foodtype: product.foodtype?._id || undefined,
               brand: product.brand?._id || undefined,
+              fishStatus: product.fishStatus?._id || undefined,
 
               sold: newSoldStatus,
               balance: newBalance,
