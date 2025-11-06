@@ -15,6 +15,12 @@ import {
 } from '../../../stores/product/food_brand'
 import type { ICategory } from '@/stores/product/category'
 import { useProductStore, type IUploadImageResponse } from '@/stores/product/product'
+import { getProductImageUrl } from '@/utils/imageUrl'
+import {
+  generateProductImageName,
+  ALLOWED_IMAGE_EXTENSIONS,
+  validateFileName
+} from '@/utils/fileNameGenerator'
 
 interface IApiResponse {
   data?: unknown
@@ -196,7 +202,7 @@ const getModalTitle = () => {
 }
 
 const getImageUrl = (image: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+  return getProductImageUrl(image)
 }
 
 const filteredFoodBrands = computed(() => {
@@ -213,11 +219,31 @@ const validateFileUpload = (file: File, maxSize: number = 1000000) => {
   return true
 }
 
-const handleImageUpload = (event: any) => {
-  const file = event.files[0] as File
-  if (file && validateFileUpload(file)) {
-    uploadImage(file)
+const handleImageUpload = (event: { files: File[] }) => {
+  const file = event.files[0]
+
+  if (!file) return
+
+  // Validate ประเภทไฟล์
+  if (!validateFileName(file.name, ALLOWED_IMAGE_EXTENSIONS)) {
+    toast.error(`ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ`)
+    return
   }
+
+  // Validate ขนาดไฟล์
+  if (!validateFileUpload(file)) {
+    return
+  }
+
+  // สร้างชื่อไฟล์ใหม่พร้อม timestamp
+  const newFileName = generateProductImageName(file.name)
+  console.log('Product image filename:', newFileName)
+
+  // สร้าง File object ใหม่
+  const renamedFile = new File([file], newFileName, { type: file.type })
+
+  // อัพโหลดไฟล์
+  uploadImage(renamedFile)
 }
 
 const productStore = useProductStore()
@@ -275,6 +301,9 @@ const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
               :src="getImageUrl(data.image)"
               alt="Food brand image"
               class="w-auto h-12 object-contain rounded"
+              loading="lazy"
+              fetchpriority="low"
+              crossorigin="anonymous"
             />
             <span v-else class="text-gray-400 text-xs">ไม่มีรูปภาพ</span>
           </template>
@@ -385,6 +414,9 @@ const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
               :src="getImageUrl(form.image)"
               alt="Food brand image"
               class="w-auto h-48 object-contain rounded pb-2"
+              loading="lazy"
+              fetchpriority="low"
+              crossorigin="anonymous"
             />
             <FileUpload
               mode="basic"
