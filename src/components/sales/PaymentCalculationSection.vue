@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 // Computed
 const netAmount = computed(() => {
-  const netAmount = (props.totalAmount + props.deliveryNo) - props.discount
+  const netAmount = props.totalAmount - props.deliveryNo - props.discount
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -102,20 +102,20 @@ const updateDeliveryNo = (value: number | null) => {
 
     <!-- Summary -->
     <div class="p-4 bg-green-50 border border-green-200 rounded-xl">
-      <div class="space-y-2">
+      <div class="space-y-1.5">
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-600">มูลค่าสินค้า:</span>
           <span class="text-sm font-medium text-gray-800">{{ formatCurrency(totalAmount) }}</span>
         </div>
 
-        <div v-if="deliveryNo > 0" class="flex items-center justify-between">
-          <span class="text-sm text-green-600">ค่าจัดส่ง:</span>
-          <span class="text-sm font-medium text-green-600">{{ formatCurrency(deliveryNo) }}</span>
-        </div>
-
-        <div v-if="discount > 0" class="flex items-center justify-between">
+        <div class="flex items-center justify-between">
           <span class="text-sm text-red-600">ส่วนลด:</span>
           <span class="text-sm font-medium text-red-600">{{ formatCurrency(discount) }}</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-blue-600">ค่าจัดส่ง:</span>
+          <span class="text-sm font-medium text-blue-600">{{ formatCurrency(deliveryNo) }}</span>
         </div>
 
         <div v-if="deposit > 0" class="flex items-center justify-between">

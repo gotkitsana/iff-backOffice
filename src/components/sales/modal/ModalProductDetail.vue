@@ -18,7 +18,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-product-detail-modal': []
 }>()
 
 // Stores
@@ -32,7 +32,7 @@ const totalAmount = computed(() => {
   const productTotal = products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0)
-  return productTotal - props.saleData.discount
+  return productTotal - props.saleData.discount - props.saleData.deliveryNo
 })
 
 const productTotal = computed(() => {
@@ -43,7 +43,7 @@ const productTotal = computed(() => {
 
 // Handlers
 const handleClose = () => {
-  emit('update:visible', false)
+  emit('close-product-detail-modal')
 }
 
 const categoryStore = useCategoryStore()
@@ -71,7 +71,7 @@ const getProductImage = (productId: string) => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '60rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"

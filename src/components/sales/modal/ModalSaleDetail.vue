@@ -19,7 +19,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-detail-modal': []
 }>()
 
 const salesStore = useSalesStore()
@@ -63,7 +63,7 @@ const totalAmount = computed(() => {
 })
 
 const finalAmount = computed(() => {
-  return totalAmount.value - props.saleData.discount
+  return totalAmount.value - props.saleData.discount - props.saleData.deliveryNo
 })
 
 const paymentMethodLabel = computed(() => {
@@ -79,7 +79,7 @@ const paymentMethodLabel = computed(() => {
 
 // Handlers
 const handleClose = () => {
-  emit('update:visible', false)
+  emit('close-detail-modal')
 }
 
 const handlePrintInvoice = () => {
@@ -306,7 +306,7 @@ const generateInvoiceHTML = () => {
               <th>รหัส</th>
               <th class="text-center">จำนวน</th>
               <th class="text-right">ราคา/หน่วย</th>
-              <th class="text-right">จำนวนเงิน</th>
+              <th class="text-right">รวม</th>
             </tr>
           </thead>
           <tbody>
@@ -433,7 +433,7 @@ const getProductImage = (productId: string): string | undefined => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '70rem' }"
     :breakpoints="{ '1199px': '95vw', '575px': '95vw' }"

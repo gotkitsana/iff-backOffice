@@ -112,7 +112,7 @@ const totalRevenue = computed(() => {
         const saleTotal = sale.products ? sale.products.reduce((productSum, product) => {
           return productSum + (product.price || 0) * product.quantity
         }, 0) : 0
-        return sum + (saleTotal - sale.discount)
+        return sum + (saleTotal - sale.discount - sale.deliveryNo)
       }, 0) || 0
   )
 })
@@ -205,15 +205,19 @@ const openEditModal = (sale: ISales) => {
   selectedSaleForEdit.value = sale
   showEditModal.value = true
 }
-
 const closeEditModal = () => {
   showEditModal.value = false
   selectedSaleForEdit.value = null
 }
 
+const selectedSaleForDetail = ref<ISales | null>(null)
 const openDetailModal = (sale: ISales) => {
-  selectedSale.value = sale
+  selectedSaleForDetail.value = sale
   showDetailModal.value = true
+}
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedSaleForDetail.value = null
 }
 
 const openStatusManager = (sale: ISales) => {
@@ -221,9 +225,15 @@ const openStatusManager = (sale: ISales) => {
   showStatusManager.value = true
 }
 
+const selectedSaleForProductDetail = ref<ISales | null>(null)
 const openProductDetailModal = (sale: ISales) => {
-  selectedSale.value = sale
+  selectedSaleForProductDetail.value = sale
   showProductDetailModal.value = true
+}
+
+const closeProductDetailModal = () => {
+  showProductDetailModal.value = false
+  selectedSaleForProductDetail.value = null
 }
 
 const showDeleteModal = ref(false)
@@ -840,9 +850,10 @@ const { data: admins } = useQuery<IAdmin[]>({
 
   <!-- รายละเอียดรายการขาย -->
   <ModalSaleDetail
-    v-if="selectedSale"
-    v-model:visible="showDetailModal"
-    :sale-data="selectedSale"
+    v-if="selectedSaleForDetail"
+    :visible="showDetailModal"
+    @close-detail-modal="closeDetailModal"
+    :sale-data="selectedSaleForDetail"
   />
 
   <!-- จัดการสถานะการขาย -->
@@ -856,9 +867,10 @@ const { data: admins } = useQuery<IAdmin[]>({
 
   <!-- รายละเอียดสินค้า -->
   <ModalProductDetail
-    v-if="selectedSale"
-    v-model:visible="showProductDetailModal"
-    :sale-data="selectedSale"
+    v-if="selectedSaleForProductDetail"
+    :visible="showProductDetailModal"
+    @close-product-detail-modal="closeProductDetailModal"
+    :sale-data="selectedSaleForProductDetail"
   />
 
   <!-- ลบรายการขาย -->

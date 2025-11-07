@@ -348,7 +348,7 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
 
       if (requiresBankSelection.value && data.data._id) {
         saleData.value._id = data.data._id
-        if(requiresSlipUpload.value){
+        if (requiresSlipUpload.value) {
           saleData.value.submit = true
         }
 
@@ -535,7 +535,7 @@ const { mutate: updateMember } = useMutation({
 })
 
 const { mutate: updateProduct } = useMutation({
-mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
 
 const isSubmitting = ref(false)
@@ -942,27 +942,42 @@ const updateBankCode = (bankCode: string) => {
         </div>
 
         <!-- Summary -->
-        <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-calculator text-green-600"></i>
-              <span class="font-semibold text-gray-800">สรุปยอดเงิน</span>
+        <div class="p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">มูลค่าสินค้า:</span>
+              <span class="text-sm font-medium text-gray-800">{{
+                formatCurrency(totalAmount || 0)
+              }}</span>
             </div>
-            <div class="text-right">
-              <div class="text-sm text-gray-600">
-                มูลค่าสินค้า: {{ formatCurrency(totalAmount || 0) }}
-              </div>
-              <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-1">
-                ส่วนลด: {{ formatCurrency(saleForm.discount) }}
-              </div>
-              <div v-if="saleForm.deliveryNo > 0" class="text-sm text-blue-600 my-1">
-                ค่าจัดส่ง: {{ formatCurrency(saleForm.deliveryNo) }}
-              </div>
-              <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
-                มัดจำ: {{ formatCurrency(saleForm.deposit) }}
-              </div>
-              <div class="font-[500]! text-green-600 border-t border-green-300 pt-1 mt-1">
-                ยอดสุทธิ: {{ formatCurrency(netAmount) }}
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-red-600">ส่วนลด:</span>
+              <span class="text-sm font-medium text-red-600">{{
+                formatCurrency(saleForm.discount || 0)
+              }}</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-blue-600">ค่าจัดส่ง:</span>
+              <span class="text-sm font-medium text-blue-600">{{
+                formatCurrency(saleForm.deliveryNo || 0)
+              }}</span>
+            </div>
+
+            <div v-if="saleForm.deposit > 0" class="flex items-center justify-between">
+              <span class="text-sm text-blue-600">มัดจำ:</span>
+              <span class="text-sm font-medium text-blue-600">{{
+                formatCurrency(saleForm.deposit || 0)
+              }}</span>
+            </div>
+
+            <div class="border-t border-green-300 pt-2">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-green-600">ยอดสุทธิ:</span>
+                <span class="font-bold text-lg text-green-600">{{
+                  formatCurrency(netAmount)
+                }}</span>
               </div>
             </div>
           </div>
