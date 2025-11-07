@@ -222,7 +222,7 @@ const totalAmount = computed(() => {
 })
 
 const netAmount = computed(() => {
-  const netAmount = ((totalAmount.value || 0) + (saleForm.value.deliveryNo || 0)) - (saleForm.value.discount || 0)
+  const netAmount = ((totalAmount.value || 0) - (saleForm.value.deliveryNo || 0)) - (saleForm.value.discount || 0)
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -355,7 +355,7 @@ const sellers = computed(() => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '70rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
@@ -679,13 +679,12 @@ const sellers = computed(() => {
               <div class="text-sm text-gray-600">
                 มูลค่าสินค้า: {{ formatCurrency(totalAmount || 0) }}
               </div>
-               <div v-if="saleForm.deliveryNo > 0" class="text-sm text-green-600 my-1">
-                ค่าจัดส่ง: {{ formatCurrency(saleForm.deliveryNo) }}
-              </div>
               <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-1">
                 ส่วนลด: {{ formatCurrency(saleForm.discount) }}
               </div>
-
+               <div v-if="saleForm.deliveryNo > 0" class="text-sm text-blue-600 my-1">
+                ค่าจัดส่ง: {{ formatCurrency(saleForm.deliveryNo) }}
+              </div>
               <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
                 มัดจำ: {{ formatCurrency(saleForm.deposit) }}
               </div>

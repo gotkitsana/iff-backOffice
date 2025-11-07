@@ -191,7 +191,7 @@ const getSaleTotalAmount = (sale: ISales) => {
   const productTotal = sale.products ? sale.products.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0) : 0
-  const netAmount = (productTotal + (sale.deliveryNo || 0)) - sale.discount
+  const netAmount = (productTotal - (sale.deliveryNo || 0)) - sale.discount
   return netAmount < 0 ? 0 : netAmount
 }
 

@@ -434,7 +434,7 @@ const sellers = computed(() => {
         </div>
         <div>
           <h3 class="text-lg font-semibold! text-gray-800">แก้ไขข้อมูลการขาย</h3>
-          <p class="text-sm text-gray-600">แก้ไขข้อมูลการขายให้ครบถ้วน</p>
+          <p class="text-sm text-gray-600">แก้ไขข้อมูลการขาย {{ props.saleData.item }}</p>
         </div>
       </div>
     </template>
