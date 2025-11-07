@@ -252,6 +252,7 @@ const { data: allSales } = useQuery<ISales[]>({
   queryFn: () => salesStore.onGetSales(),
 })
 
+const { statusWorkflow } = useSalesStore()
 const queryClient = useQueryClient()
 const { mutate: updateSalesStatus } = useMutation({
   mutationFn: (payload: IUpdateSalesPayload) => salesStore.onUpdateSales(payload),
@@ -260,7 +261,7 @@ const { mutate: updateSalesStatus } = useMutation({
       toast.success('เปลี่ยนสถานะการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
 
-      if (variables.status === 'paid_complete') {
+      if (statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >= statusWorkflow['paid_complete'].stepOrder) {
         // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
 
@@ -272,7 +273,7 @@ const { mutate: updateSalesStatus } = useMutation({
               ?.filter(
                 (s) =>
                   s.user._id === variables.user &&
-                  s.status === 'paid_complete' &&
+                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder &&
                   s._id !== variables._id
               )
               .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0

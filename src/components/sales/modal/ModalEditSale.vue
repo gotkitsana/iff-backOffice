@@ -5,14 +5,13 @@ import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { ISales, IUpdateSalesPayload } from '@/types/sales'
+import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
 import ProductManagementSection from '../ProductManagementSection.vue'
 import PaymentCalculationSection from '../PaymentCalculationSection.vue'
 import type { IAdmin } from '@/stores/admin/admin'
 import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
-
 // Props
 const props = defineProps<{
   visible: boolean
@@ -211,7 +210,7 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
 
-      if (variables.status === 'paid_complete') {
+      if (salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder) {
         // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
 
@@ -223,7 +222,7 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
               ?.filter(
                 (s) =>
                   s.user._id === variables.user &&
-                  s.status === 'paid_complete' &&
+                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder &&
                   s._id !== variables._id
               )
               .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Tag } from 'primevue'
+import { Dialog, Button, Tag, Galleria } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import type { ICategory } from '../../../stores/product/category'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { useQuery } from '@tanstack/vue-query'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -137,15 +138,15 @@ const formatFieldValue = (fieldKey: string) => {
 }
 
 const getCertificateUrl = (filename: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 
 const getImageUrl = (filename: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 
 const getVideoUrl = (filename: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${filename}`
+  return getProductImageUrl(filename)
 }
 
 const handleClose = () => {
@@ -181,22 +182,22 @@ const handleClose = () => {
 
     <div v-if="productData" class="space-y-8">
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Left Column - Product Information -->
         <div class="lg:col-span-2 space-y-4">
           <!-- Dynamic Form Fields Display -->
           <div
             v-if="selectedCategoryInfo"
-            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
-            <h5 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-3">
+            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-info-circle text-blue-600"></i>
               </div>
               ข้อมูลสินค้า
             </h5>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
               <template v-for="field in selectedCategoryInfo.fields" :key="field.key">
                 <div v-if="getFieldValue(field.key)" class="flex items-center gap-2">
                   <label class="text-sm font-semibold! text-gray-700 uppercase tracking-wide">
@@ -264,43 +265,34 @@ const handleClose = () => {
           <!-- Additional Information -->
           <div
             v-if="productData.detail || productData.youtube"
-            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
-            <h5 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-3">
+            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-file-edit text-gray-600"></i>
+                <i class="pi pi-video text-gray-600"></i>
               </div>
-              รายละเอียดเพิ่มเติม
+              วิดีโอสินค้า
             </h5>
-            <div class="space-y-4">
-              <div v-if="productData.detail">
-                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >รายละเอียด</label
+            <div v-if="productData.youtube">
+              <div class="bg-black rounded-lg py-0">
+                <video
+                  :src="getVideoUrl(productData.youtube)"
+                  class="w-full h-auto max-h-[55vh]"
+                  controls
                 >
-                <p class="text-base text-gray-900 whitespace-pre-wrap mt-2 leading-relaxed">
-                  {{ productData.detail }}
-                </p>
-              </div>
-              <div v-if="productData.youtube">
-                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >YouTube</label
-                >
-                <div class="bg-black rounded-lg pb-2">
-                  <video
-                    :src="getVideoUrl(productData.youtube)"
-                    class="w-full h-auto max-h-[60vh]"
-                    controls
-                  >
-                    <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
-                  </video>
-                </div>
+                  <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+                </video>
               </div>
             </div>
           </div>
+        </div>
 
+        <!-- Right Column - Price & Certificate -->
+        <div class="space-y-4">
+          <!-- Images -->
           <div
             v-if="productData.images.length > 0"
-            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -309,20 +301,53 @@ const handleClose = () => {
               รูปภาพสินค้า
             </h5>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              <img
-                v-for="image in productData.images"
-                :key="image.filename"
-                :src="getImageUrl(image.filename)"
-                alt="Certificate"
-                class="w-full h-40 object-contain rounded-lg border border-gray-200"
-              />
-            </div>
-          </div>
-        </div>
+            <Galleria
+              :value="
+                productData.images.map((image) => ({
+                  itemImageSrc: getImageUrl(image.filename),
+                  thumbnailImageSrc: getImageUrl(image.filename),
+                  alt: 'product image',
+                }))
+              "
+              :numVisible="productData.images.length"
+              :circular="true"
+              :showItemNavigators="true"
+              :showThumbnails="true"
+              :showItemNavigatorsOnHover="true"
+              :pt="{
+                root: { class: 'max-w-full' },
+                content: { class: 'bg-gray-50 rounded-lg' },
+                thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-1' },
+              }"
+            >
+              <template #item="{ item }">
+                <div class="flex justify-center items-center overflow-hidden">
+                  <img
+                    :src="item.itemImageSrc"
+                    :alt="item.alt"
+                    class="w-full h-auto max-h-[40vh] object-contain"
+                    loading="lazy"
+                    fetchpriority="low"
+                    crossorigin="anonymous"
+                  />
+                </div>
+              </template>
 
-        <!-- Right Column - Price & Certificate -->
-        <div class="space-y-4">
+              <template #thumbnail="{ item }">
+                <div class="p-1">
+                  <img
+                    :src="item.thumbnailImageSrc"
+                    :alt="item.alt"
+                    class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
+                    loading="lazy"
+                    fetchpriority="low"
+                    crossorigin="anonymous"
+                  />
+                </div>
+              </template>
+            </Galleria>
+          </div>
+
           <!-- Certificate -->
           <div
             v-if="productData.certificate"
@@ -338,13 +363,13 @@ const handleClose = () => {
               <img
                 :src="getCertificateUrl(productData.certificate)"
                 alt="Certificate"
-                class="w-full h-60 object-contain rounded-lg border border-gray-200 mb-3"
+                class="w-full h-auto max-h-[35vh] object-contain rounded-lg border border-gray-200"
               />
             </div>
           </div>
 
           <!-- System Information -->
-          <div class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-cog text-gray-600"></i>
