@@ -9,6 +9,8 @@ import type { SellingStatus } from '@/types/sales'
 // Props
 const props = defineProps<{
   saleId: string
+  uploadToSubmit?: boolean
+  isAddSale?: boolean
   selectedStatus: string
   isCurrentStatus: string
   isSubmitting: boolean
@@ -28,16 +30,16 @@ const previewImage = ref<string>('')
 const showUploadSection = ref<boolean>(false)
 
 // Computed
-  const statusSteps: SellingStatus[] = [
-    'wait_product',
-    'wait_confirm',
-    'wait_payment',
-    'paid_complete',
-    'preparing',
-    'shipping',
-    'received',
-    'damaged',
-  ]
+const statusSteps: SellingStatus[] = [
+  'wait_product',
+  'wait_confirm',
+  'wait_payment',
+  'paid_complete',
+  'preparing',
+  'shipping',
+  'received',
+  'damaged',
+]
 const requiresSlipUpload = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatus)
   const waitPaymentStepIndex = statusSteps.indexOf('paid_complete')
@@ -132,6 +134,9 @@ const onFileSelect = (event: { files: File[] }) => {
       previewImage.value = e.target?.result as string
     }
     reader.readAsDataURL(file)
+    if (props.isAddSale) {
+      emit('slip-status-changed', true)
+    }
   }
 }
 
@@ -160,10 +165,20 @@ const editSlip = () => {
   showUploadSection.value = true
 }
 
+watch(
+  () => props.uploadToSubmit,
+  (newUploadToSubmit) => {
+    if (!!newUploadToSubmit) {
+      confirmUploadSlip()
+    }
+  },
+  { immediate: true }
+)
 
 // Mutations
 const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
-  mutationFn: (payload: { id: string; file: File }) => salesStore.onUploadSlip(payload.id, payload.file),
+  mutationFn: (payload: { id: string; file: File }) =>
+    salesStore.onUploadSlip(payload.id, payload.file),
   onSuccess: (data: any) => {
     toast.success('อัปโหลดสลิปสำเร็จ')
     hasSlip.value = true
@@ -334,7 +349,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex items-center gap-3">
+          <div v-if="!isAddSale" class="flex items-center gap-3">
             <Button
               v-if="previewImage && !isUploadingSlip"
               :label="hasSlip ? 'อัปเดตสลิป' : 'ยืนยันการอัปโหลด'"

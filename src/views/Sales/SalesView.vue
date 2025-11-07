@@ -200,9 +200,15 @@ const openAddModal = () => {
   showAddModal.value = true
 }
 
+const selectedSaleForEdit = ref<ISales | null>(null)
 const openEditModal = (sale: ISales) => {
-  selectedSale.value = sale
+  selectedSaleForEdit.value = sale
   showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedSaleForEdit.value = null
 }
 
 const openDetailModal = (sale: ISales) => {
@@ -825,9 +831,10 @@ const { data: admins } = useQuery<IAdmin[]>({
 
   <!-- แก้ไขรายการขาย -->
   <ModalEditSale
-    v-if="selectedSale"
-    v-model:visible="showEditModal"
-    :sale-data="selectedSale"
+    v-if="selectedSaleForEdit"
+    :visible="showEditModal"
+    @close-edit-modal="closeEditModal"
+    :sale-data="selectedSaleForEdit"
     :admins="admins || []"
   />
 

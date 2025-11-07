@@ -21,7 +21,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
+  'close-edit-modal': []
 }>()
 
 // Stores
@@ -192,7 +192,7 @@ const handleSubmit = () => {
   updateSale(saleForm.value)
 }
 
-const { data: productsData } = useQuery<IProduct[]>({
+const { data: productsData, refetch: refetchProducts } = useQuery<IProduct[]>({
   queryKey: ['get_products'],
   queryFn: () => productStore.onGetProducts(),
 })
@@ -208,7 +208,6 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
 
       if (salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder) {
         // A. อัพเดทสถานะสมาชิก
@@ -314,6 +313,9 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           })
         }
       }
+
+      refetchProducts()
+      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
       handleClose()
     } else {
       toast.error('แก้ไขข้อมูลการขายไม่สำเร็จ')
@@ -358,24 +360,18 @@ const calculateSaleTotal = (sale: ISales, allProducts: IProduct[]): number => {
 
 const { mutate: mutateUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-  },
 })
 
 const productStore = useProductStore()
 const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-  },
 })
 
 
 const handleClose = () => {
   resetForm()
   isSubmitting.value = false
-  emit('update:visible', false)
+  emit('close-edit-modal')
 }
 
 const resetForm = () => {
@@ -416,7 +412,7 @@ const sellers = computed(() => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="handleClose"
     modal
     :style="{ width: '50rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '99vw' }"
@@ -523,6 +519,7 @@ const sellers = computed(() => {
 
         <!-- Slip Upload Section -->
         <SlipUploadSection
+          v-if="requiresSlipUpload"
           :sale-id="props.saleData._id || ''"
           :selected-status="saleForm.status"
           :is-current-status="props.saleData.status"

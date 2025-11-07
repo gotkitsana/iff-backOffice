@@ -1,17 +1,28 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Dialog, Textarea, Select, InputNumber, Button, Card, Tag } from 'primevue'
-import { useProductStore, type IProduct } from '@/stores/product/product'
-import { useMemberStore, type IMember } from '@/stores/member/member'
+import {
+  useProductStore,
+  type IProduct,
+  type IUpdateProductPayload,
+} from '@/stores/product/product'
+import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
-import type { ICreateSalesPayload } from '@/types/sales'
+import type {
+  ICreateSalesPayload,
+  ISales,
+  IUpdateSalesPayload,
+  StatusWorkflow,
+} from '@/types/sales'
 import CardProductList from '../CardProductList.vue'
 import { type IAdmin } from '@/stores/admin/admin'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import BankSelectionSection from '../BankSelectionSection.vue'
+import SlipUploadSection from '../SlipUploadSection.vue'
 
 // Props
 const props = defineProps<{
@@ -45,7 +56,7 @@ const saleForm = ref<ICreateSalesPayload>({
 })
 
 // Queries
-const { data: products } = useQuery<IProduct[]>({
+const { data: products, refetch: refetchProducts } = useQuery<IProduct[]>({
   queryKey: ['get_products'],
   queryFn: () => productStore.onGetProducts(),
 })
@@ -222,7 +233,8 @@ const totalAmount = computed(() => {
 })
 
 const netAmount = computed(() => {
-  const netAmount = ((totalAmount.value || 0) - (saleForm.value.deliveryNo || 0)) - (saleForm.value.discount || 0)
+  const netAmount =
+    (totalAmount.value || 0) - (saleForm.value.deliveryNo || 0) - (saleForm.value.discount || 0)
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -268,6 +280,18 @@ const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
 
+const requiresSlipUpload = computed(() => {
+  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  return currentStepIndex > waitPaymentStepIndex
+})
+
+const requiresBankSelection = computed(() => {
+  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  return currentStepIndex >= waitPaymentStepIndex
+})
+
 // Handlers
 const handleSubmit = () => {
   isSubmitting.value = true
@@ -285,6 +309,18 @@ const handleSubmit = () => {
 
   if (!saleForm.value.seller) {
     toast.error('กรุณาเลือกผู้ขาย')
+    return
+  }
+
+  // Check bank selection requirement
+  if (requiresBankSelection.value && !bankForm.value.bankCode) {
+    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
+    return
+  }
+
+  // Check slip upload requirement
+  if (requiresSlipUpload.value && !hasSlip.value) {
+    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
     return
   }
 
@@ -309,7 +345,22 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
     if (data.data) {
       toast.success('เพิ่มข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-      handleClose()
+
+      if (requiresBankSelection.value && data.data._id) {
+        saleData.value._id = data.data._id
+        if(requiresSlipUpload.value){
+          saleData.value.submit = true
+        }
+
+        updateSale({
+          ...data.data,
+          _id: saleData.value._id,
+          bankCode: bankForm.value.bankCode,
+          bankAccount: bankForm.value.bankAccount,
+        })
+      } else {
+        handleClose()
+      }
     } else {
       toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
     }
@@ -317,6 +368,174 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
   onError: () => {
     toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
   },
+})
+
+const { data: allSales } = useQuery<ISales[]>({
+  queryKey: ['get_sales'],
+  queryFn: () => salesStore.onGetSales(),
+})
+const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
+  mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
+  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
+    if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
+      if (
+        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
+        salesStore.statusWorkflow['paid_complete'].stepOrder
+      ) {
+        // A. อัพเดทสถานะสมาชิก
+        const member = members.value?.find((m) => m._id === variables.user)
+
+        if (member && member.status !== 'css') {
+          // คำนวณยอดซื้อรวมทั้งหมด (รายการปัจจุบัน + ยอดซื้อในอดีต)
+          const currentTotal = calculateOrderTotal(variables, products.value || [])
+          const previousTotal =
+            allSales.value
+              ?.filter(
+                (s) =>
+                  s.user._id === variables.user &&
+                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
+                    salesStore.statusWorkflow['paid_complete'].stepOrder &&
+                  s._id !== variables._id
+              )
+              .reduce((sum, s) => sum + calculateSaleTotal(s, products.value || []), 0) || 0
+
+          const totalSpending = currentTotal + previousTotal
+
+          const shouldBeCss = totalSpending >= 50000
+          const shouldBeCs = !shouldBeCss && member.status === 'ci'
+
+          if (shouldBeCss || shouldBeCs) {
+            const newStatus = shouldBeCss ? 'css' : 'cs'
+            const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
+
+            updateMember({
+              _id: member._id,
+              status: newStatus,
+              code: newCode,
+              contacts: member.contacts || [],
+              interests: member.interests || [],
+              displayName: member.displayName,
+              name: member.name,
+              address: member.address,
+              province: member.province,
+              phone: member.phone,
+              type: member.type,
+              username: member.username,
+              password: member.password,
+              bidder: member.bidder,
+              cat: member.cat,
+              uat: member.uat,
+            })
+          }
+        }
+
+        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
+        const productsList = products.value?.filter((p) =>
+          variables.products.some((product) => product.id === p._id)
+        )
+
+        if (productsList && productsList.length > 0) {
+          productsList.forEach((product) => {
+            const purchasedItem = variables.products.find((p) => p.id === product._id)
+            if (!purchasedItem) return
+
+            const quantity = purchasedItem.quantity
+            const isFish = product.category?.name === 'ปลา'
+
+            let newSoldStatus = product.sold
+            let newBalance = product.balance || 0
+
+            if (isFish) {
+              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
+              newSoldStatus = true
+              newBalance = product.balance || 0
+            } else {
+              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
+              const balance = product.balance || 0
+
+              if (balance >= quantity) {
+                // กรณีมีสต็อกเพียงพอ
+                newBalance = balance - quantity
+                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
+              } else {
+                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
+                newBalance = 0
+                newSoldStatus = true
+                console.warn(
+                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
+                )
+              }
+            }
+
+            updateProduct({
+              ...product,
+              fishpond: product.fishpond?._id || undefined,
+              species: product.species?._id || undefined,
+              farm: product.farm?._id || undefined,
+              quality: product.quality?._id || undefined,
+              lotNumber: product.lotNumber?._id || undefined,
+              seedSize: product.seedSize?._id || undefined,
+              foodtype: product.foodtype?._id || undefined,
+              brand: product.brand?._id || undefined,
+              fishStatus: product.fishStatus?._id || undefined,
+
+              sold: newSoldStatus,
+              balance: newBalance,
+            })
+          })
+        }
+      }
+
+      refetchProducts()
+      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
+      handleClose()
+    } else {
+      toast.error('แก้ไขข้อมูลการขายไม่สำเร็จ')
+    }
+  },
+})
+
+const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
+  const productsTotal = order.products.reduce((sum, item) => {
+    const product = allProducts.find((p) => p._id === item.id)
+    if (!product) return sum
+
+    if (product.category?.name === 'ปลา') {
+      const price = product.price || 0
+      return sum + price
+    } else {
+      const price = product.food?.customerPrice || 0
+      return sum + price * item.quantity
+    }
+  }, 0)
+
+  // ยอดสุทธิ = ยอดสินค้า - ส่วนลด
+  return productsTotal - (order.discount || 0)
+}
+
+const calculateSaleTotal = (sale: ISales, allProducts: IProduct[]): number => {
+  const productsTotal = sale.products?.reduce((sum, item) => {
+    const product = allProducts.find((p) => p._id === item.id)
+    if (!product) return sum
+
+    if (product.category?.name === 'ปลา') {
+      const price = product.price || 0
+      return sum + price
+    } else {
+      const price = product.food?.customerPrice || 0
+      return sum + price * item.quantity
+    }
+  }, 0)
+
+  return productsTotal ? productsTotal - (sale.discount || 0) : 0
+}
+
+const { mutate: updateMember } = useMutation({
+  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
+})
+
+const { mutate: updateProduct } = useMutation({
+mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
 
 const isSubmitting = ref(false)
@@ -339,6 +558,15 @@ const resetForm = () => {
     deliveryNo: 0,
     delivery: '',
   }
+  saleData.value = {
+    _id: '',
+    submit: false,
+  }
+  hasSlip.value = false
+  bankForm.value = {
+    bankCode: '',
+    bankAccount: '',
+  }
 }
 
 const sellers = computed(() => {
@@ -350,6 +578,26 @@ const sellers = computed(() => {
       value: admin._id,
     }))
 })
+
+const getStatusStepIndex = (status: string) => {
+  return salesStore.sellingStatusOptions.findIndex((option) => option.value === status)
+}
+
+const hasSlip = ref(false)
+const bankForm = ref({
+  bankCode: '',
+  bankAccount: '',
+})
+const saleData = ref({
+  _id: '',
+  submit: false,
+})
+const handleSlipStatusChanged = (status: boolean) => {
+  hasSlip.value = status
+}
+const updateBankCode = (bankCode: string) => {
+  bankForm.value.bankCode = bankCode
+}
 </script>
 
 <template>
@@ -466,6 +714,27 @@ const sellers = computed(() => {
             </div>
           </div>
         </div>
+
+        <!-- Bank Selection (if required) -->
+        <BankSelectionSection
+          v-if="requiresBankSelection"
+          :selected-bank-code="bankForm.bankCode || ''"
+          :is-submitting="isSubmitting"
+          :is-current-bank="''"
+          :is-current-status="''"
+          @update:selected-bank-code="updateBankCode"
+        />
+
+        <!-- Slip Upload Section -->
+        <SlipUploadSection
+          :sale-id="saleData._id || ''"
+          :upload-to-submit="saleData.submit"
+          :is-add-sale="true"
+          :selected-status="saleForm.status"
+          :is-current-status="''"
+          :is-submitting="isSubmitting"
+          @slip-status-changed="handleSlipStatusChanged"
+        />
       </div>
 
       <!-- Product Information -->
@@ -537,7 +806,8 @@ const sellers = computed(() => {
                         />
                         <i v-else class="pi pi-image text-gray-400 text-sm"></i>
                         <span :class="{ 'opacity-50': option.disabled }">
-                          {{ option.label }} <span class="text-xs text-gray-500 pl-1">รหัส ({{ option.sku }})</span>
+                          {{ option.label }}
+                          <span class="text-xs text-gray-500 pl-1">รหัส ({{ option.sku }})</span>
                         </span>
                       </div>
 
@@ -593,11 +863,14 @@ const sellers = computed(() => {
                   size="small"
                   placeholder="ระบุจำนวนสินค้า"
                   :invalid="!product.quantity && isSubmitting"
-                  :disabled="handleFindCategory(products?.find((p) => p._id === product.id)?.category?._id)?.value === 'fish'"
+                  :disabled="
+                    handleFindCategory(products?.find((p) => p._id === product.id)?.category?._id)
+                      ?.value === 'fish'
+                  "
                 />
                 <small v-if="!product.quantity && isSubmitting" class="text-red-500"
-                  >กรุณากรอกจำนวนสินค้า </small
-                >
+                  >กรุณากรอกจำนวนสินค้า
+                </small>
               </div>
             </div>
 
@@ -682,7 +955,7 @@ const sellers = computed(() => {
               <div v-if="saleForm.discount > 0" class="text-sm text-red-600 my-1">
                 ส่วนลด: {{ formatCurrency(saleForm.discount) }}
               </div>
-               <div v-if="saleForm.deliveryNo > 0" class="text-sm text-blue-600 my-1">
+              <div v-if="saleForm.deliveryNo > 0" class="text-sm text-blue-600 my-1">
                 ค่าจัดส่ง: {{ formatCurrency(saleForm.deliveryNo) }}
               </div>
               <div v-if="saleForm.deposit > 0" class="text-sm text-blue-600">
@@ -726,7 +999,7 @@ const sellers = computed(() => {
           label="บันทึกข้อมูล"
           icon="pi pi-check"
           @click="handleSubmit"
-          :loading="isCreatingSale"
+          :loading="isCreatingSale || isUpdatingSale"
           severity="success"
           size="small"
         />
