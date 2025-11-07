@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Dialog, Textarea, Select, InputNumber, Button, Card, Tag } from 'primevue'
+import { Dialog, Textarea, Select, InputNumber, Button, TreeSelect, Tag } from 'primevue'
 import {
   useProductStore,
   type IProduct,
@@ -116,7 +116,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     string,
     {
       label: string
-      items: Array<{
+      children: Array<{
         label: string
         value: string
         image?: string
@@ -136,7 +136,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 
     const group = groupsMap.get(catId) || {
       label: cat?.name || 'ไม่ระบุหมวดหมู่',
-      items: [],
+      children: [],
     }
 
     // เพิ่มรูปภาพจาก images[0]
@@ -147,7 +147,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 
     const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
 
-    group.items.push({
+    group.children.push({
       label: `${product.name || `${product.species?.name}`}`,
       sku: product.sku || '',
       value: product._id,
@@ -161,19 +161,47 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     groupsMap.set(catId, group)
   })
 
-  const sortedGroups = Array.from(groupsMap.values()).map((group) => ({
-    ...group,
-    items: group.items.sort((a, b) => {
-      // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง (return 1)
-      if (a.disabled && !b.disabled) return 1
-      // ถ้า a ไม่ disabled และ b disabled -> a ต้องขึ้นบน (return -1)
-      if (!a.disabled && b.disabled) return -1
-      // ถ้าเหมือนกัน เรียงตามชื่อ
-      return a.label.localeCompare(b.label)
-    }),
+  const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
+    key: `group-${groupIndex}`,
+    label: group.label,
+    selectable: false, // ไม่ให้เลือก category
+    children: group.children
+      .sort((a, b) => {
+        // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง
+        if (a.disabled && !b.disabled) return 1
+        if (!a.disabled && b.disabled) return -1
+        return a.label.localeCompare(b.label)
+      })
+      .map((item, itemIndex) => ({
+        key: item.value,
+        label: item.label,
+        value: item.value,
+        data: item, // เก็บข้อมูลเต็มไว้ใน data
+        selectable: !item.disabled,
+        disabled: item.disabled,
+        sku: item.sku,
+        image: item.image,
+        sold: item.sold,
+        balance: item.balance,
+        isFish: item.isFish,
+      })),
   }))
 
-  return sortedGroups
+  return treeNodes
+
+  // const sortedGroups = Array.from(groupsMap.values()).map((group) => ({
+  //   ...group,
+  //   items: group.items.sort((a, b) => {
+  //     // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง (return 1)
+  //     if (a.disabled && !b.disabled) return 1
+  //     // ถ้า a ไม่ disabled และ b disabled -> a ต้องขึ้นบน (return -1)
+  //     if (!a.disabled && b.disabled) return -1
+  //     // ถ้าเหมือนกัน เรียงตามชื่อ
+  //     return a.label.localeCompare(b.label)
+  //   }),
+  // }))
+
+  // return sortedGroups
 
   // return Array.from(groupsMap.values())
 
@@ -598,6 +626,10 @@ const handleSlipStatusChanged = (status: boolean) => {
 const updateBankCode = (bankCode: string) => {
   bankForm.value.bankCode = bankCode
 }
+
+const updateProducts = (index: number, value: string) => {
+  saleForm.value.products![index].id = Object.keys(value)[0]
+}
 </script>
 
 <template>
@@ -778,51 +810,84 @@ const updateBankCode = (bankCode: string) => {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <Select
-                  v-model="product.id"
+                <TreeSelect
+                  :modelValue="product.id"
+                  @update:modelValue="(value) => updateProducts(index, value)"
                   :options="getProductOptionsForIndex(index)"
-                  optionLabel="label"
-                  optionValue="value"
-                  optionGroupLabel="label"
-                  optionGroupChildren="items"
-                  :optionDisabled="(option: any) => option.disabled === true"
                   placeholder="เลือกสินค้าที่ต้องการขาย"
                   fluid
                   size="small"
                   filter
+                  filterBy="label,sku"
+                  :filterPlaceholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
                   :invalid="!product.id && isSubmitting"
+                  selectionMode="single"
+                  :pt="{
+                    label: 'flex items-center gap-2',
+                  }"
                 >
-                  <template #option="{ option }">
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value.length > 0" class="flex items-center gap-2">
+                      <img
+                        v-if="
+                          availableProducts?.find((p) => p._id === slotProps.value)?.images?.[0]
+                        "
+                        :src="
+                          getImageUrl(
+                            availableProducts?.find((p) => p._id === slotProps.value)?.images?.[0]
+                              .filename || ''
+                          )
+                        "
+                        alt="product"
+                        class="w-6 h-6 object-cover rounded"
+                        loading="lazy"
+                        fetchpriority="low"
+                        crossorigin="anonymous"
+                      />
+                      <span>
+                        {{ availableProducts?.find((p) => p._id === slotProps.value)?.name }}
+                        <span class="text-xs text-gray-500 pl-1">
+                          รหัส ({{
+                            availableProducts?.find((p) => p._id === slotProps.value)?.sku
+                          }})
+                        </span>
+                      </span>
+                    </div>
+                    <span v-else>{{ slotProps.placeholder }}</span>
+                  </template>
+
+                  <template #option="{ node }">
                     <div class="flex items-center justify-between gap-2 w-full">
                       <div class="flex items-center gap-2">
                         <img
-                          v-if="option.image"
-                          :src="option.image"
+                          v-if="node.image"
+                          :src="node.image"
                           alt="product"
                           class="w-6 h-6 object-cover rounded"
                           loading="lazy"
                           fetchpriority="low"
                           crossorigin="anonymous"
                         />
-                        <i v-else class="pi pi-image text-gray-400 text-sm"></i>
-                        <span :class="{ 'opacity-50': option.disabled }">
-                          {{ option.label }}
-                          <span class="text-xs text-gray-500 pl-1">รหัส ({{ option.sku }})</span>
+                        <span :class="{ 'opacity-50': node.disabled }">
+                          {{ node.label }}
+                          <span v-if="node.sku" class="text-xs text-gray-500 pl-1">
+                            รหัส ({{ node.sku }})
+                          </span>
                         </span>
                       </div>
 
                       <!-- Badge สถานะ -->
-                      <div v-if="option.value" class="flex-shrink-0">
+                      <div v-if="node.value" class="flex-shrink-0">
                         <!-- ปลา -->
                         <Tag
-                          v-if="option.isFish && option.sold"
+                          v-if="node.isFish && node.sold"
                           value="ขายแล้ว"
                           severity="danger"
                           size="small"
                           class="text-xs"
                         />
                         <Tag
-                          v-else-if="option.isFish && !option.sold"
+                          v-else-if="node.isFish && !node.sold"
                           value="พร้อมขาย"
                           severity="success"
                           size="small"
@@ -831,15 +896,15 @@ const updateBankCode = (bankCode: string) => {
 
                         <!-- สินค้าทั่วไป -->
                         <Tag
-                          v-else-if="!option.isFish && (option.sold || option.balance === 0)"
-                          :value="`คงเหลือ: ${option.balance || 0}`"
+                          v-else-if="!node.isFish && (node.sold || node.balance === 0)"
+                          :value="`คงเหลือ: ${node.balance || 0}`"
                           severity="danger"
                           size="small"
                           class="text-xs"
                         />
                         <Tag
-                          v-else-if="!option.isFish"
-                          :value="`คงเหลือ: ${option.balance || 0}`"
+                          v-else-if="!node.isFish"
+                          :value="`คงเหลือ: ${node.balance || 0}`"
                           severity="success"
                           size="small"
                           class="text-xs"
@@ -847,7 +912,7 @@ const updateBankCode = (bankCode: string) => {
                       </div>
                     </div>
                   </template>
-                </Select>
+                </TreeSelect>
 
                 <small v-if="!product.id && isSubmitting" class="text-red-500"
                   >กรุณาเลือกสินค้า</small
@@ -1029,4 +1094,25 @@ const updateBankCode = (bankCode: string) => {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+:deep(.p-treeselect-option[aria-disabled='true']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+:deep(.p-tree-node-content[aria-disabled='true']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 </style>
+
+<style>
+.p-tree-node-toggle-button[data-p-leaf='true'] {
+  display: none !important;
+  visibility: hidden !important;
+}
+</style>
+
+
