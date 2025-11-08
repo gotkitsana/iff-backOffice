@@ -107,6 +107,7 @@ export interface IProduct {
     _id: string
   } | null
   fishpond: {
+    name: string
     active: boolean
     cat: number
     code: string

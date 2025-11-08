@@ -97,6 +97,7 @@ const selectedMediaItems = ref<
 >([])
 const activeMediaIndex = ref(0)
 const isDownloadingZip = ref(false)
+const selectedProduct = ref<IProduct | null>(null)
 
 const openMediaGalleryModal = (
   product: IProduct,
@@ -140,6 +141,7 @@ const openMediaGalleryModal = (
 
   if (mediaItems.length > 0) {
     selectedMediaItems.value = mediaItems
+    selectedProduct.value = product
 
     // Set active index based on type
     if (startType === 'image') {
@@ -158,16 +160,16 @@ const closeMediaGalleryModal = () => {
   showMediaGalleryModal.value = false
   selectedMediaItems.value = []
   activeMediaIndex.value = 0
+  selectedProduct.value = null
 }
 
 const downloadAllAsZip = async () => {
-  if (selectedMediaItems.value.length === 0 || isDownloadingZip.value) return
+  if (selectedMediaItems.value.length === 0 || isDownloadingZip.value || !selectedProduct.value) return
 
   isDownloadingZip.value = true
 
   try {
     const zip = new JSZip()
-    const folder = zip.folder('product-media')
 
     // Download all files
     const downloadPromises = selectedMediaItems.value.map(async (item, index) => {
@@ -175,19 +177,14 @@ const downloadAllAsZip = async () => {
         const response = await fetch(item.url)
         const blob = await response.blob()
 
-        // Organize into folders by type
-        const folderName =
-          item.type === 'image' ? 'images' : item.type === 'certificate' ? 'certificates' : 'videos'
-        const subFolder = folder?.folder(folderName)
-
         // Generate filename
         let filename = item.filename
         if (!filename) {
-          const ext = item.type === 'video' ? 'mp4' : 'jpg'
+          const ext = item.type === 'video' ? 'mp4' : item.type === 'certificate' ? 'pdf' : 'jpg'
           filename = `${item.type}-${index + 1}.${ext}`
         }
 
-        subFolder?.file(filename, blob)
+        zip.file(filename, blob)
       } catch (error) {
         console.error(`Failed to download ${item.filename}:`, error)
       }
@@ -195,11 +192,19 @@ const downloadAllAsZip = async () => {
 
     await Promise.all(downloadPromises)
 
+     // สร้างชื่อไฟล์ ZIP จากชื่อสินค้าและ SKU
+    const productName = selectedProduct.value.species ? selectedProduct.value.species?.name : selectedProduct.value.name
+    const productSku = selectedProduct.value.sku || 'unknown'
+    const pondName = selectedProduct.value.fishpond?.name || 'pond'
+    const weightName = selectedProduct.value.weight || 'unknown'
+    // ทำความสะอาดชื่อไฟล์ (ลบอักขระพิเศษที่อาจทำให้เกิดปัญหา)
+    const safeName = `${productName}-${productSku}-${pondName}-${weightName}`.replace(/[<>:"/\\|?*]/g, '-')
+
     // Generate and download ZIP
     const content = await zip.generateAsync({ type: 'blob' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(content)
-    link.download = `product-media-${Date.now()}.zip`
+    link.download = `${safeName}.zip`
     link.click()
     URL.revokeObjectURL(link.href)
   } catch (error) {
@@ -1046,7 +1051,6 @@ const displayColumns = computed(() => {
         </div>
       </div>
     </template>
-
     <div class="px-4 pb-4">
       <Galleria
         v-model:activeIndex="activeMediaIndex"
@@ -1118,7 +1122,6 @@ const displayColumns = computed(() => {
               <div class="absolute inset-0 bg-black/30"></div>
               <i class="pi pi-play-circle text-white text-3xl relative z-10 drop-shadow-lg"></i>
             </div>
-
           </div>
         </template>
       </Galleria>
