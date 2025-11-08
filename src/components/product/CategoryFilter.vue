@@ -16,6 +16,7 @@ import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -224,7 +225,7 @@ const farmOptions = computed(() => {
 })
 
 const getImageUrl = (image: string) => {
-  return `${(import.meta as any).env.VITE_API_URL}/erp/download/product?name=${image}`
+  return getProductImageUrl(image)
 }
 const foodBrandStore = useFoodBrandStore()
 const { data: foodBrands } = useQuery<IFoodBrand[]>({

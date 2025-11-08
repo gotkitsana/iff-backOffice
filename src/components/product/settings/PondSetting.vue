@@ -351,7 +351,7 @@ const getModalTitle = () => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div>
     <!-- Content Header -->
     <div class="p-4 border-b border-gray-200">
       <div class="flex items-center justify-between">

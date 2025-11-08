@@ -262,7 +262,7 @@ const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div >
     <div class="p-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">

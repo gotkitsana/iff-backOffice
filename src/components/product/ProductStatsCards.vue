@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { Card } from 'primevue'
+import { Card, Button, Dialog, DataTable, Column, Select } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import type { ICategory } from '@/stores/product/category'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
+import { getProductImageUrl } from '@/utils/imageUrl'
+import { uniqBy } from 'lodash-es'
 
 const props = defineProps<{
   selectedCategory: ICategory | null
@@ -51,17 +54,6 @@ const getProductsByCategory = computed<{ price: number; count: number }>(() => {
   }
 })
 
-// Computed
-const getSaleProductsCount = (products: IProduct[]) =>
-  products.filter((p) => p.auctionOnly === 0).length
-
-const getAuctionProductsCount = (products: IProduct[]) =>
-  products.filter((p) => p.auctionOnly === 1).length
-
-const getAvailableProductsCount = (products: IProduct[]) => products.filter((p) => !p.sold).length
-
-const getSoldProductsCount = (products: IProduct[]) => products.filter((p) => p.sold).length
-
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
@@ -101,22 +93,65 @@ const getCategoryStats = (category: ICategory) => {
       'Rokusai (4-5ปี)': filteredProducts.filter((p) => p.age?.includes('rokusai')).length || 0,
     }
   }
-  if (category.value === 'food') {
-    // Food type statistics
-  }
 
   return {
     ageStats,
     seedSizeStats,
   }
 }
+
+const supplierStore = useSupplierStore()
+const { data: suppliers, isLoading: isLoadingSuppliers } = useQuery<ISupplier[]>({
+  queryKey: ['get_suppliers'],
+  queryFn: () => supplierStore.onGetSuppliers(),
+})
+
+const brandsWithCount = computed(() => {
+  if (!suppliers.value) return []
+
+  // สร้าง Map เพื่อนับจำนวนโดยใช้ brand._id เป็น key
+  const brandCountMap = new Map<string, { brandName: string; count: number; brandImage: string }>()
+
+  suppliers.value.forEach((supplier) => {
+    const brandId = supplier.brand?._id
+    const brandName = supplier.brand?.name || 'ไม่ระบุแบรนด์'
+    const brandImage = supplier.brand?.image || ''
+
+    if (brandId) {
+      if (brandCountMap.has(brandId)) {
+        const existing = brandCountMap.get(brandId)!
+        existing.count++
+      } else {
+        brandCountMap.set(brandId, { brandName, count: 1, brandImage })
+      }
+    }
+  })
+
+  // แปลง Map เป็น Array และเรียงตามจำนวน (มากไปน้อย)
+  return Array.from(brandCountMap.values()).sort((a, b) => b.count - a.count)
+})
+
+const showSupplierModal = ref(false)
+const openSupplierModal = () => {
+  showSupplierModal.value = true
+}
+const closeSupplierModal = () => {
+  showSupplierModal.value = false
+}
+const brandFilters = ref('')
+const handleBrandFilter = computed(() => {
+  if (brandFilters.value === '' || brandFilters.value === null) {
+    return suppliers.value
+  }
+  return suppliers.value?.filter((supplier) => supplier.brand?._id === brandFilters.value)
+})
 </script>
 
 <template>
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
     <Card
       :pt="{ body: 'p-3 md:p-4' }"
-      class="hover:shadow-lg transition-shadow duration-200 justify-center"
+      class="hover:shadow-lg transition-shadow duration-200 justify-start h-max"
     >
       <template #content>
         <div class="flex items-center justify-between">
@@ -138,7 +173,7 @@ const getCategoryStats = (category: ICategory) => {
 
     <Card
       :pt="{ body: 'p-3 md:p-4' }"
-      class="hover:shadow-lg transition-shadow duration-200 justify-center"
+      class="hover:shadow-lg transition-shadow duration-200 justify-start h-max"
     >
       <template #content>
         <div class="flex items-center justify-between">
@@ -171,6 +206,50 @@ const getCategoryStats = (category: ICategory) => {
             class="text-sm text-gray-600"
           >
             {{ age }} : {{ count }} ตัว
+          </div>
+        </div>
+      </template>
+    </Card>
+
+    <Card
+      v-if="
+        props.selectedCategory?.value === 'food' ||
+        props.selectedCategory?.value === 'microorganism'
+      "
+      :pt="{ body: 'p-3 md:p-4 w-full' }"
+      class="hover:shadow-lg transition-shadow duration-200 items-start col-span-2 lg:col-span-4"
+    >
+      <template #content>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div class="col-span-2 md:col-span-3 flex justify-between">
+            <p class="font-[600]! text-gray-700">ข้อมูลซัพพลายเออร์</p>
+            <Button
+              icon="pi pi-truck"
+              severity="info"
+              size="small"
+              label="ซัพพลายเออร์"
+              @click="openSupplierModal"
+            />
+          </div>
+
+          <div v-for="(item, index) in brandsWithCount" :key="index" class="flex flex-col">
+            <div class="flex items-center gap-1.5">
+              <img
+                v-if="item.brandImage"
+                :src="getProductImageUrl(item.brandImage)"
+                alt="brand image"
+                class="w-auto h-6 rounded object-contain"
+                loading="lazy"
+                fetchpriority="low"
+                crossorigin="anonymous"
+              />
+              <i v-else class="pi pi-image text-gray-500"></i>
+              <p class="truncate font-[600]! text-gray-900 text-sm">{{ item.brandName }}</p>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <p class="text-sm text-gray-500">จำนวนซัพพลายเออร์: {{ item.count }}</p>
+            </div>
           </div>
         </div>
       </template>
@@ -227,4 +306,98 @@ const getCategoryStats = (category: ICategory) => {
       </template>
     </Card> -->
   </div>
+
+  <Dialog
+    v-model:visible="showSupplierModal"
+    @update:visible="closeSupplierModal"
+    modal
+    :style="{ width: '60rem' }"
+    :pt="{
+      header: { class: '!p-3' },
+    }"
+  >
+    <template #header>
+      <div class="flex items-center justify-between w-full">
+        <p class="font-[600]! text-gray-700">ข้อมูลซัพพลายเออร์</p>
+      </div>
+    </template>
+
+    <div class="flex items-center justify-between w-full">
+      <DataTable
+        :value="handleBrandFilter"
+        :loading="isLoadingSuppliers"
+        :paginator="true"
+        :rows="25"
+        :rowsPerPageOptions="[25, 50, 100]"
+        class="!w-full"
+        :pt="{
+          header: { class: '!px-0 pt-0' },
+        }"
+      >
+        <template #header>
+          <div class="flex justify-end">
+            <Select
+              v-model="brandFilters"
+              :options="
+                uniqBy(suppliers?.map((supplier) => supplier.brand), '_id').map((brand) => ({
+                  label: brand?.name,
+                  value: brand?._id,
+                }))
+              "
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกแบรนด์"
+              size="small"
+              class="!w-60"
+              showClear
+            />
+          </div>
+        </template>
+
+        <Column field="name" header="ชื่อซัพพลายเออร์">
+          <template #body="{ data }">
+            <p class="text-sm text-gray-500">{{ data.name }}</p>
+          </template>
+        </Column>
+        <Column field="phoneNo" header="หมายเลขโทรศัพท์">
+          <template #body="{ data }">
+            <p class="text-sm text-gray-500">{{ data.phoneNo }}</p>
+          </template>
+        </Column>
+        <Column field="contact" header="ผู้ติดต่อ">
+          <template #body="{ data }">
+            <p class="text-sm text-gray-500">
+              {{
+                supplierStore.supplierContactOptions.find((option) => option.value === data.contact)
+                  ?.label
+              }}
+            </p>
+          </template>
+        </Column>
+        <Column field="brand" header="ยี่ห้อ">
+          <template #body="{ data }">
+            <div class="flex items-center gap-1.5">
+              <img
+                v-if="data.brand?.image"
+                :src="getProductImageUrl(data.brand.image)"
+                alt="brand image"
+                class="w-auto h-6 rounded object-contain"
+                loading="lazy"
+                fetchpriority="low"
+                crossorigin="anonymous"
+              />
+              <i v-else class="pi pi-image text-gray-500"></i>
+              <p class="text-sm text-gray-500">{{ data.brand?.name }}</p>
+            </div>
+          </template>
+        </Column>
+
+        <Column field="note" header="หมายเหตุ">
+          <template #body="{ data }">
+            <p class="text-sm text-gray-500">{{ data.note }}</p>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
+  </Dialog>
 </template>
