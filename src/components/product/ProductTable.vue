@@ -8,6 +8,7 @@ import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import JSZip from 'jszip'
 
 // Props
 const props = defineProps<{
@@ -85,66 +86,136 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryFn: () => greenhouseStore.onGetGreenhouses(),
 })
 
-const showVideoModal = ref(false)
-const selectedVideoUrl = ref<string | null>(null)
-
-// Video functions
-const openVideoModal = (videoFilename: string) => {
-  selectedVideoUrl.value = getVideoUrl(videoFilename)
-  showVideoModal.value = true
-}
-
-const closeVideoModal = () => {
-  showVideoModal.value = false
-  selectedVideoUrl.value = null
-}
-
 const getVideoUrl = (filename: string) => {
   if (!filename) return ''
   return getProductImageUrl(filename)
 }
 
-// Image gallery modal states
-const showImageGalleryModal = ref(false)
-const selectedImages = ref<IProductImage[]>([])
-const activeImageIndex = ref(0)
+const showMediaGalleryModal = ref(false)
+const selectedMediaItems = ref<
+  Array<{ url: string; type: 'image' | 'certificate' | 'video'; filename: string }>
+>([])
+const activeMediaIndex = ref(0)
+const isDownloadingZip = ref(false)
 
-// Image gallery functions
-const openImageGalleryModal = (images: IProductImage[], startIndex: number = 0) => {
-  if (images && images.length > 0) {
-    selectedImages.value = images
-    activeImageIndex.value = startIndex
-    showImageGalleryModal.value = true
+const openMediaGalleryModal = (
+  product: IProduct,
+  startType: 'image' | 'certificate' | 'video' = 'image',
+  imageIndex: number = 0
+) => {
+  const mediaItems: Array<{
+    url: string
+    type: 'image' | 'certificate' | 'video'
+    filename: string
+  }> = []
+
+  // Add images
+  if (product.images && product.images.length > 0) {
+    product.images.forEach((img, idx) => {
+      mediaItems.push({
+        url: getImageUrl(img),
+        type: 'image',
+        filename: img.filename || `image-${idx + 1}.jpg`,
+      })
+    })
+  }
+
+  // Add certificate
+  if (product.certificate) {
+    mediaItems.push({
+      url: getCertificateUrl(product.certificate),
+      type: 'certificate',
+      filename: product.certificate,
+    })
+  }
+
+  // Add video
+  if (product.youtube) {
+    mediaItems.push({
+      url: getVideoUrl(product.youtube),
+      type: 'video',
+      filename: product.youtube,
+    })
+  }
+
+  if (mediaItems.length > 0) {
+    selectedMediaItems.value = mediaItems
+
+    // Set active index based on type
+    if (startType === 'image') {
+      activeMediaIndex.value = imageIndex
+    } else if (startType === 'certificate') {
+      activeMediaIndex.value = product.images?.length || 0
+    } else if (startType === 'video') {
+      activeMediaIndex.value = (product.images?.length || 0) + (product.certificate ? 1 : 0)
+    }
+
+    showMediaGalleryModal.value = true
   }
 }
 
-const closeImageGalleryModal = () => {
-  showImageGalleryModal.value = false
-  selectedImages.value = []
-  activeImageIndex.value = 0
+const closeMediaGalleryModal = () => {
+  showMediaGalleryModal.value = false
+  selectedMediaItems.value = []
+  activeMediaIndex.value = 0
 }
 
-// Certificate modal states
-const showCertificateModal = ref(false)
-const selectedCertificateUrl = ref<string | null>(null)
+const downloadAllAsZip = async () => {
+  if (selectedMediaItems.value.length === 0 || isDownloadingZip.value) return
 
-// Certificate functions
-const openCertificateModal = (certificateFilename: string) => {
-  selectedCertificateUrl.value = getCertificateUrl(certificateFilename)
-  showCertificateModal.value = true
-}
+  isDownloadingZip.value = true
 
-const closeCertificateModal = () => {
-  showCertificateModal.value = false
-  selectedCertificateUrl.value = null
+  try {
+    const zip = new JSZip()
+    const folder = zip.folder('product-media')
+
+    // Download all files
+    const downloadPromises = selectedMediaItems.value.map(async (item, index) => {
+      try {
+        const response = await fetch(item.url)
+        const blob = await response.blob()
+
+        // Organize into folders by type
+        const folderName =
+          item.type === 'image' ? 'images' : item.type === 'certificate' ? 'certificates' : 'videos'
+        const subFolder = folder?.folder(folderName)
+
+        // Generate filename
+        let filename = item.filename
+        if (!filename) {
+          const ext = item.type === 'video' ? 'mp4' : 'jpg'
+          filename = `${item.type}-${index + 1}.${ext}`
+        }
+
+        subFolder?.file(filename, blob)
+      } catch (error) {
+        console.error(`Failed to download ${item.filename}:`, error)
+      }
+    })
+
+    await Promise.all(downloadPromises)
+
+    // Generate and download ZIP
+    const content = await zip.generateAsync({ type: 'blob' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(content)
+    link.download = `product-media-${Date.now()}.zip`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (error) {
+    console.error('Error creating ZIP:', error)
+  } finally {
+    isDownloadingZip.value = false
+  }
 }
 
 // Computed for Galleria
-const galleriaImages = computed(() => {
-  return selectedImages.value.map((img) => ({
-    itemImageSrc: getImageUrl(img),
-    thumbnailImageSrc: getImageUrl(img),
-    alt: 'Product image',
+const galleriaMediaItems = computed(() => {
+  return selectedMediaItems.value.map((item) => ({
+    itemSrc: item.url,
+    thumbnailSrc: item.url,
+    type: item.type,
+    alt: `${item.type} - ${item.filename}`,
   }))
 })
 
@@ -171,7 +242,7 @@ const foodColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -397,7 +468,7 @@ const fishColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -439,7 +510,7 @@ const fishColumns = ref([
                 severity: 'success',
                 size: 'small',
                 outlined: true,
-                onClick: () => openVideoModal(slotProps.data.youtube),
+                onClick: () => openMediaGalleryModal(slotProps.data, 'video'),
                 pt: {
                   root: { class: '!w-8 !h-8' },
                 },
@@ -469,7 +540,7 @@ const fishColumns = ref([
                   'hover:ring hover:ring-purple-500/75 duration-150 transition-all',
                   'hover:scale-110 transform',
                 ].join(' '),
-                onClick: () => openCertificateModal(slotProps.data?.certificate),
+                onClick: () => openMediaGalleryModal(slotProps.data, 'certificate'),
                 loading: 'lazy',
                 fetchpriority: 'low',
                 crossorigin: 'anonymous',
@@ -665,7 +736,7 @@ const microorganismColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openImageGalleryModal(slotProps.data.images, 0),
+                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -937,48 +1008,9 @@ const displayColumns = computed(() => {
     </DataTable>
   </div>
 
-  <Dialog
-    v-model:visible="showVideoModal"
-    modal
-    :dismissableMask="true"
-    :draggable="false"
-    :pt="{
-      root: { class: 'w-[90vw] max-w-4xl' },
-      content: { class: 'p-0' },
-    }"
-    @hide="closeVideoModal"
-  >
-    <template #header>
-      <div class="flex items-center gap-2">
-        <i class="pi pi-video text-green-600"></i>
-        <h3 class="text-lg font-semibold text-gray-800">วิดีโอสินค้า</h3>
-      </div>
-    </template>
-
-    <div v-if="selectedVideoUrl" class="relative px-4">
-      <div class="bg-black rounded-lg pb-2">
-        <video :src="selectedVideoUrl" class="w-full h-auto max-h-[60vh]" controls>
-          <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
-        </video>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-end gap-2 pt-4">
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeVideoModal"
-          size="small"
-        />
-      </div>
-    </template>
-  </Dialog>
-
   <!-- Image Gallery Modal with Carousel -->
   <Dialog
-    v-model:visible="showImageGalleryModal"
+    v-model:visible="showMediaGalleryModal"
     modal
     :dismissableMask="true"
     :draggable="false"
@@ -986,118 +1018,134 @@ const displayColumns = computed(() => {
       root: { class: 'w-[90vw] max-w-5xl' },
       content: { class: 'p-0' },
     }"
-    @hide="closeImageGalleryModal"
+    @hide="closeMediaGalleryModal"
   >
     <template #header>
-      <div class="flex items-center gap-2">
-        <i class="pi pi-images text-blue-600"></i>
-        <h3 class="text-lg font-semibold text-gray-800">
-          รูปภาพสินค้า
-          <span class="text-sm font-normal text-gray-500 ml-2">
-            ({{ activeImageIndex + 1 }}/{{ selectedImages.length }})
-          </span>
-        </h3>
+      <div class="flex items-center justify-between w-full pr-8">
+        <div class="flex items-center gap-2">
+          <i
+            :class="[
+              'pi',
+              galleriaMediaItems[activeMediaIndex]?.type === 'video'
+                ? 'pi-video text-green-600'
+                : galleriaMediaItems[activeMediaIndex]?.type === 'certificate'
+                ? 'pi-file-pdf text-purple-600'
+                : 'pi-images text-blue-600',
+            ]"
+          ></i>
+          <h3 class="text-lg font-semibold text-gray-800">
+            <span v-if="galleriaMediaItems[activeMediaIndex]?.type === 'image'">รูปภาพสินค้า</span>
+            <span v-else-if="galleriaMediaItems[activeMediaIndex]?.type === 'certificate'"
+              >ใบรับรอง</span
+            >
+            <span v-else>วิดีโอสินค้า</span>
+            <span class="text-sm font-normal text-gray-500 ml-2">
+              ({{ activeMediaIndex + 1 }}/{{ selectedMediaItems.length }})
+            </span>
+          </h3>
+        </div>
       </div>
     </template>
 
     <div class="px-4 pb-4">
       <Galleria
-        v-model:activeIndex="activeImageIndex"
-        :value="galleriaImages"
+        v-model:activeIndex="activeMediaIndex"
+        :value="galleriaMediaItems"
         :numVisible="5"
         :circular="true"
         :showItemNavigators="true"
         :showThumbnails="true"
-        :showItemNavigatorsOnHover="true"
+        :showItemNavigatorsOnHover="false"
+        :transitionInterval="0"
         :pt="{
           root: { class: 'max-w-full' },
-          content: { class: 'bg-gray-50 rounded-lg' },
+          itemsContainer: { class: 'relative' },
+          items: { class: 'flex items-center justify-center' },
+          item: { class: 'w-full flex items-center justify-center' },
+          content: { class: 'bg-gray-900 rounded-lg overflow-hidden' },
           thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-3' },
+          thumbnailItems: { class: 'flex items-center justify-center !gap-1' },
+          thumbnailItem: { class: '!flex-none !flex-shrink-0 !flex-grow-0' },
         }"
       >
         <template #item="{ item }">
-          <div class="flex justify-center items-center overflow-hidden">
+          <div
+            class="flex justify-center items-center w-full h-full min-h-[400px] transition-all duration-300 ease-in-out"
+          >
+            <!-- Image -->
             <img
-              :src="item.itemImageSrc"
+              v-if="item.type === 'image' || item.type === 'certificate'"
+              :src="item.itemSrc"
               :alt="item.alt"
-              class="w-full h-auto min-h-[320px] max-h-[55vh] object-contain"
+              class="max-w-full min-h-[55vh] max-h-[55vh] object-contain transition-transform duration-300 ease-in-out"
               loading="lazy"
               fetchpriority="low"
               crossorigin="anonymous"
             />
+
+            <!-- Video -->
+            <div v-else-if="item.type === 'video'" class="w-full max-w-4xl mx-auto">
+              <video
+                :src="item.itemSrc"
+                class="w-full h-auto min-h-[55vh] max-h-[55vh] rounded-lg"
+                controls
+                :key="item.itemSrc"
+              >
+                <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+              </video>
+            </div>
           </div>
         </template>
 
         <template #thumbnail="{ item }">
-          <div class="p-1">
+          <div class="p-1 relative flex">
+            <!-- Image/Certificate Thumbnail -->
             <img
-              :src="item.thumbnailImageSrc"
+              v-if="item.type === 'image' || item.type === 'certificate'"
+              :src="item.thumbnailSrc"
               :alt="item.alt"
-              class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
+              class="w-auto h-20 object-contain rounded-lg cursor-pointer hover:ring hover:ring-blue-500 duration-150 transition-all"
               loading="lazy"
               fetchpriority="low"
               crossorigin="anonymous"
             />
+
+            <!-- Video Thumbnail -->
+            <div
+              v-if="item.type === 'video'"
+              class="w-20 h-20 bg-gradient-to-br from-gray-800 to-black rounded-lg cursor-pointer hover:ring hover:ring-blue-500 duration-150 transition-all flex items-center justify-center relative overflow-hidden"
+            >
+              <div class="absolute inset-0 bg-black/30"></div>
+              <i class="pi pi-play-circle text-white text-3xl relative z-10 drop-shadow-lg"></i>
+            </div>
+
           </div>
         </template>
       </Galleria>
     </div>
 
     <template #footer>
-      <div class="flex justify-end items-center">
+      <div class="flex justify-between items-center gap-2">
         <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeImageGalleryModal"
+          label="ดาวน์โหลดทั้งหมด (ZIP)"
+          icon="pi pi-download"
+          severity="success"
+          @click="downloadAllAsZip"
           size="small"
+          :loading="isDownloadingZip"
+          :disabled="isDownloadingZip || selectedMediaItems.length === 0"
         />
-      </div>
-    </template>
-  </Dialog>
-
-  <!-- Certificate Modal (Single Image) -->
-  <Dialog
-    v-model:visible="showCertificateModal"
-    modal
-    :dismissableMask="true"
-    :draggable="false"
-    :pt="{
-      root: { class: 'w-[90vw] max-w-3xl' },
-      content: { class: 'p-0' },
-    }"
-    @hide="closeCertificateModal"
-  >
-    <template #header>
-      <div class="flex items-center gap-2">
-        <i class="pi pi-file-pdf text-purple-600"></i>
-        <h3 class="text-lg font-semibold text-gray-800">ใบเซอร์</h3>
-      </div>
-    </template>
-
-    <div v-if="selectedCertificateUrl" class="relative px-4 pb-4">
-      <div class="bg-gray-50 rounded-lg p-4 flex justify-center items-center">
-        <img
-          :src="selectedCertificateUrl"
-          alt="Certificate"
-          class="w-full h-auto max-h-[60vh] object-contain rounded-lg shadow-md"
-          loading="lazy"
-          fetchpriority="low"
-          crossorigin="anonymous"
-        />
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-end items-center">
         <Button
           label="ปิด"
           icon="pi pi-times"
           severity="secondary"
-          @click="closeCertificateModal"
+          @click="closeMediaGalleryModal"
           size="small"
         />
       </div>
     </template>
   </Dialog>
 </template>
+
+
+
