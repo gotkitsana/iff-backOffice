@@ -8,11 +8,12 @@ import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhous
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
 import { useQualityStore, type IQuality } from '@/stores/product/quality'
+import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { useQuery } from '@tanstack/vue-query'
-import { InputText, InputNumber, Select, Textarea, DatePicker, Checkbox } from 'primevue'
-import { computed } from 'vue'
+import { InputText, InputNumber, Select, Textarea, DatePicker, Checkbox, Message } from 'primevue'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
   fields: IFields[]
@@ -24,6 +25,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update-field': [key: IFieldsKey, value: string | number | Date | null]
+  'validation-error': [message: string]
 }>()
 
 const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
@@ -31,6 +33,66 @@ const updateField = (key: IFieldsKey, value: string | number | Date | null) => {
 }
 
 const productStore = useProductStore()
+
+const salePercentStore = useSalePercentStore()
+const { data: salePercents } = useQuery<ISalePercent[]>({
+  queryKey: ['get_sale_percents'],
+  queryFn: () => salePercentStore.onGetSalePercents(),
+})
+const customerPricePercent = computed(() => {
+  if (!salePercents.value || !props.categoryId) return null
+  return salePercents.value.find(
+    (sp) => sp.name === 'customerPrice' && sp.category._id === props.categoryId?._id
+  )
+})
+const dealerPricePercent = computed(() => {
+  if (!salePercents.value || !props.categoryId) return null
+  return salePercents.value.find(
+    (sp) => sp.name === 'dealerPrice' && sp.category._id === props.categoryId?._id
+  )
+})
+const hasMissingPercent = computed(() => {
+  if (!props.categoryId) return false
+  const hasCustomerPercent = !!customerPricePercent.value
+  const hasDealerPercent = !!dealerPricePercent.value
+  return !hasCustomerPercent || !hasDealerPercent
+})
+
+const missingPercentMessage = computed(() => {
+  const missing: string[] = []
+  if (!customerPricePercent.value) missing.push('ราคาลูกค้า')
+  if (!dealerPricePercent.value) missing.push('ราคาพ่อค้า')
+
+  if (missing.length > 0) {
+    return `กรุณาตั้งค่าเปอร์เซ็นต์กำไรสำหรับ: ${missing.join(', ')}`
+  }
+  return ''
+})
+
+watch(
+  () => props.formData.costPrice,
+  (newCostPrice) => {
+    if (typeof newCostPrice === 'number' && newCostPrice > 0) {
+      // คำนวณ customerPrice
+      if (customerPricePercent.value) {
+        const customerPrice = newCostPrice * (1 + customerPricePercent.value.percent / 100)
+        emit('update-field', 'customerPrice', Math.round(customerPrice * 100) / 100)
+      }
+
+      // คำนวณ dealerPrice
+      if (dealerPricePercent.value) {
+        const dealerPrice = newCostPrice * (1 + dealerPricePercent.value.percent / 100)
+        emit('update-field', 'dealerPrice', Math.round(dealerPrice * 100) / 100)
+      }
+    }
+  }
+)
+
+const getProfitPercentage = (price: number | null, costPrice: number | null): string => {
+  if (!price || !costPrice || costPrice === 0) return '-'
+  const profit = ((price - costPrice) / costPrice) * 100
+  return `${Math.round(profit * 100) / 100}%`
+}
 
 const greenhouseStore = useGreenhouseStore()
 const { data: greenhousesData } = useQuery<IGreenhouse[]>({
@@ -251,6 +313,20 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
 
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+
+    <Message
+      v-if="
+        hasMissingPercent && (categoryId?.value === 'food' || categoryId?.value === 'microorganism')
+      "
+      severity="warn"
+      :closable="false"
+      class="mb-4"
+    >
+      {{ missingPercentMessage }}
+      <br />
+      <small>กรุณาไปที่ ตั้งค่าเปอร์เซ็นต์กำไร เพื่อตั้งค่า</small>
+    </Message>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
         v-for="field in fields"
@@ -260,6 +336,20 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
         <label class="text-sm font-medium text-gray-700 mb-1 block">
           {{ field.label }}
           <span v-if="field.required" class="text-red-500 ml-1">*</span>
+
+          <!-- แสดง % กำไร สำหรับ customerPrice และ dealerPrice -->
+          <span
+            v-if="field.key === 'customerPrice' && customerPricePercent"
+            class="ml-2 text-xs text-green-600 font-semibold"
+          >
+            (กำไร {{ customerPricePercent.percent }}%)
+          </span>
+          <span
+            v-if="field.key === 'dealerPrice' && dealerPricePercent"
+            class="ml-2 text-xs text-green-600 font-semibold"
+          >
+            (กำไร {{ dealerPricePercent.percent }}%)
+          </span>
         </label>
 
         <!-- Text Input -->
@@ -273,19 +363,34 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
           :invalid="field.required && !formData[field.key] && isSubmitting"
         />
 
-        <!-- Number Input -->
-        <InputNumber
-          v-else-if="field.type === 'number'"
-          :model-value="(formData[field.key] as number | null)"
-          @update:model-value="updateField(field.key, $event)"
-          :placeholder="`กรอก${field.label}`"
-          :min="field.key === 'balance' || field.key === 'weight' ? 0 : 1"
-          :minFractionDigits="1"
-          :maxFractionDigits="5"
-          fluid
-          size="small"
-          :invalid="field.required && formData[field.key] == null && isSubmitting"
-        />
+        <div v-else-if="field.type === 'number'">
+          <InputNumber
+            :model-value="(formData[field.key] as number | null)"
+            @update:model-value="updateField(field.key, $event)"
+            :placeholder="`กรอก${field.label}`"
+            :min="field.key === 'balance' || field.key === 'weight' ? 0 : 1"
+            :minFractionDigits="1"
+            :maxFractionDigits="5"
+            :disabled="(field.key === 'customerPrice' || field.key === 'dealerPrice') && !!formData.costPrice"
+            fluid
+            size="small"
+            :invalid="field.required && formData[field.key] == null && isSubmitting"
+          />
+
+          <!-- แสดงกำไรที่คำนวณได้ -->
+          <small
+            v-if="field.key === 'customerPrice' && formData.customerPrice && formData.costPrice"
+            class="text-green-600 text-xs mt-1"
+          >
+            กำไร: {{ getProfitPercentage(formData.customerPrice as number, formData.costPrice as number) }}
+          </small>
+          <small
+            v-if="field.key === 'dealerPrice' && formData.dealerPrice && formData.costPrice"
+            class="text-green-600 text-xs mt-1"
+          >
+            กำไร: {{ getProfitPercentage(formData.dealerPrice as number, formData.costPrice as number) }}
+          </small>
+        </div>
 
         <Select
           v-else-if="field.key === 'brand' && field.type === 'select'"
@@ -302,7 +407,8 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
         >
           <template #option="slotProps">
             <div class="flex items-center gap-2">
-              <img v-if="slotProps.option.image"
+              <img
+                v-if="slotProps.option.image"
                 :src="slotProps.option.image"
                 alt="Brand Image"
                 class="w-auto h-8 rounded"

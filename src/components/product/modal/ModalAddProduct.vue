@@ -21,6 +21,7 @@ import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
 import { usePondStore } from '@/stores/product/pond'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
+import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 
 // Props
 const props = defineProps<{
@@ -230,7 +231,7 @@ const mapDynamicFormToProductForm = () => {
         productForm.value.species = value as string
         break
       case 'fishStatus':
-        productForm.value.fishStatus = value as string || undefined
+        productForm.value.fishStatus = (value as string) || undefined
         break
       case 'price':
         productForm.value.price = value as number
@@ -251,7 +252,7 @@ const validateForm = () => {
     //   continue;
     // }
     if (field.key === 'weight' && dynamicFormData.value![field.key] != null) {
-      continue;
+      continue
     }
     if (field.required && !dynamicFormData.value![field.key]) {
       toast.error(`กรุณากรอก${field.label}`)
@@ -274,6 +275,12 @@ const { data: brandData } = useQuery<IFoodBrand[]>({
 })
 const handleSubmit = async () => {
   isSubmitting.value = true
+
+  if (!validatePricePercent()) {
+    isSubmitting.value = false
+    return
+  }
+  
   if (!validateForm()) {
     return
   }
@@ -420,6 +427,33 @@ const updateCertificateFile = (filename: string | undefined) => {
 
 const handleUpdateVideoFile = (filename: string | undefined) => {
   productForm.value.youtube = filename || ''
+}
+
+const salePercentStore = useSalePercentStore()
+const { data: salePercents } = useQuery<ISalePercent[]>({
+  queryKey: ['get_sale_percents'],
+  queryFn: () => salePercentStore.onGetSalePercents(),
+})
+const validatePricePercent = (): boolean => {
+  if (selectedCategory.value?.value === 'food' || selectedCategory.value?.value === 'microorganism') {
+    const hasCustomerPercent = salePercents.value?.some(
+      sp => sp.name === 'customerPrice' &&
+           sp.category._id === selectedCategory.value?._id &&
+           sp.active
+    )
+
+    const hasDealerPercent = salePercents.value?.some(
+      sp => sp.name === 'dealerPrice' &&
+           sp.category._id === selectedCategory.value?._id &&
+           sp.active
+    )
+
+    if (!hasCustomerPercent || !hasDealerPercent) {
+      toast.error('กรุณาตั้งค่าเปอร์เซ็นต์กำไรก่อนเพิ่มสินค้า')
+      return false
+    }
+  }
+  return true
 }
 </script>
 

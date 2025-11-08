@@ -233,7 +233,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
         { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
         { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
-        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
+        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true},
         { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: false },
       ],
     },

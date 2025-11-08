@@ -14,6 +14,7 @@ import BrandSetting from '@/components/product/settings/BrandSetting.vue'
 import SeedSizeSetting from '@/components/product/settings/SeedSizeSetting.vue'
 import FishStatusSetting from '@/components/product/settings/FishStatus.vue'
 import SupplierSetting from '@/components/product/settings/SupplierSetting.vue'
+import SalePercentSetting from '@/components/product/settings/SalePercentSetting.vue'
 import { useQuery } from '@tanstack/vue-query'
 
 interface ISettingCategory {
@@ -117,6 +118,14 @@ const settingCategories = ref<ISettingCategory[]>([
     icon: 'pi pi-truck',
     color: 'from-green-500 to-emerald-600',
     description: 'จัดการซัพพลายเออร์',
+    type: ['food', 'microorganism'],
+  },
+  {
+    id: 'salePercent',
+    name: 'เปอร์เซ็นต์กำไร',
+    icon: 'pi pi-percentage',
+    color: 'from-amber-500 to-orange-600',
+    description: 'จัดการเปอร์เซ็นต์กำไร',
     type: ['food', 'microorganism'],
   },
 ])
@@ -251,6 +260,13 @@ const categoryOptions = computed(() => {
 
       <!-- Supplier Setting -->
       <SupplierSetting v-if="activeCategory === 'supplier'" />
+
+      <!-- Sell Percent Setting -->
+      <SalePercentSetting
+        v-if="activeCategory === 'salePercent' && selectedCategory"
+        :selectedCategory="selectedCategory"
+        :categoryOptions="categoryOptions"
+      />
     </div>
   </div>
 </template>
