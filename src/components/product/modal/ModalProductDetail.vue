@@ -12,6 +12,7 @@ import type { ICategory } from '../../../stores/product/category'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
 
 // Props
 const props = defineProps<{
@@ -152,6 +153,16 @@ const getVideoUrl = (filename: string) => {
 const handleClose = () => {
   emit('close-detail-modal')
 }
+
+const supplierStore = useSupplierStore()
+const { data: suppliers } = useQuery<ISupplier[]>({
+  queryKey: ['get_suppliers'],
+  queryFn: () => supplierStore.onGetSuppliers(),
+})
+const selectedSupplier = computed(() => {
+  return suppliers.value?.find((supplier) => supplier.brand._id === props.productData?.brand?._id)
+})
+
 </script>
 
 <template>
@@ -259,6 +270,195 @@ const handleClose = () => {
                   </div>
                 </div>
               </template>
+            </div>
+          </div>
+
+          <div
+            v-if="!!selectedSupplier"
+            class="bg-gradient-to-br from-blue-50/50 via-white to-purple-50/30 rounded-2xl p-6 shadow-sm border border-blue-100/50 backdrop-blur-sm"
+          >
+            <!-- Header Section -->
+            <div class="flex items-center justify-between mb-6">
+              <h5 class="font-bold text-gray-900 flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30"
+                >
+                  <i class="pi pi-truck text-white"></i>
+                </div>
+                <span
+                  class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                >
+                  ข้อมูลซัพพลายเออร์
+                </span>
+              </h5>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Left Column: Supplier Info -->
+
+              <!-- Brand Card -->
+              <div
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div class="flex items-start gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div v-if="selectedSupplier.brand" class="flex items-center gap-3">
+                      <!-- Brand Image -->
+                      <div
+                        class="w-auto h-10 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0"
+                      >
+                        <img
+                          v-if="selectedSupplier.brand.image"
+                          :src="getProductImageUrl(selectedSupplier.brand.image)"
+                          :alt="selectedSupplier.brand.name"
+                          class="w-full h-full object-contain"
+                          loading="lazy"
+                        />
+                        <i v-else class="pi pi-image text-gray-400 text-2xl"></i>
+                      </div>
+
+                      <!-- Brand Info -->
+                      <div class="flex-1 min-w-0">
+                        <label
+                          class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
+                        >
+                          แบรนด์/ยี่ห้อ
+                        </label>
+                        <p class="text-base font-bold text-gray-900 truncate mb-0.5">
+                          {{ selectedSupplier.brand.name }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p v-else class="text-sm text-gray-500 italic">ไม่ระบุแบรนด์</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Supplier Name Card -->
+              <div
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="pi pi-building text-blue-600 text-lg"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <label
+                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
+                    >
+                      ชื่อซัพพลายเออร์
+                    </label>
+                    <p class="text-base font-bold text-gray-900 truncate">
+                      {{ selectedSupplier.name || '-' }}
+                    </p>
+                    <p v-if="selectedSupplier.company" class="text-sm text-gray-600 mt-1 truncate">
+                      {{ selectedSupplier.company }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phone Number Card -->
+              <div
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="pi pi-phone text-green-600 text-lg"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <label
+                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
+                    >
+                      เบอร์โทรศัพท์
+                    </label>
+                    <a
+                      :href="`tel:${selectedSupplier.phoneNo}`"
+                      class="text-base font-semibold text-green-600 hover:text-green-700 transition-colors inline-flex items-center gap-2 group"
+                    >
+                      {{ selectedSupplier.phoneNo || '-' }}
+                      <i
+                        class="pi pi-external-link text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      ></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Method Card -->
+              <div
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i
+                      :class="[
+                        'text-purple-600 text-lg',
+                        selectedSupplier.contact === 'facebook'
+                          ? 'pi pi-facebook'
+                          : selectedSupplier.contact === 'line'
+                          ? 'pi pi-comments'
+                          : selectedSupplier.contact === 'tiktok'
+                          ? 'pi pi-video'
+                          : selectedSupplier.contact === 'email'
+                          ? 'pi pi-envelope'
+                          : selectedSupplier.contact === 'phone'
+                          ? 'pi pi-phone'
+                          : 'pi pi-at',
+                      ]"
+                    ></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <label
+                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
+                    >
+                      ช่องทางติดต่อ
+                    </label>
+                    <p class="text-base font-semibold text-gray-900">
+                      {{
+                        supplierStore.supplierContactOptions.find(
+                          (opt) => opt.value === selectedSupplier?.contact
+                        )?.label || '-'
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes Card -->
+              <div
+                class="lg:col-span-2 bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="pi pi-file-edit text-amber-600 text-lg"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <label
+                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block"
+                    >
+                      หมายเหตุ
+                    </label>
+                    <p
+                      v-if="selectedSupplier.note"
+                      class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"
+                    >
+                      {{ selectedSupplier.note }}
+                    </p>
+                    <p v-else class="text-sm text-gray-400 italic">ไม่มีหมายเหตุ</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

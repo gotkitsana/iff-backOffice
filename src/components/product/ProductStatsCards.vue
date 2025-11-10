@@ -4,9 +4,9 @@ import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import type { ICategory } from '@/stores/product/category'
 import { computed, ref } from 'vue'
-import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
-import { getProductImageUrl } from '@/utils/imageUrl'
-import { uniqBy } from 'lodash-es'
+// import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
+// import { getProductImageUrl } from '@/utils/imageUrl'
+// import { uniqBy } from 'lodash-es'
 
 const props = defineProps<{
   selectedCategory: ICategory | null
@@ -100,51 +100,51 @@ const getCategoryStats = (category: ICategory) => {
   }
 }
 
-const supplierStore = useSupplierStore()
-const { data: suppliers, isLoading: isLoadingSuppliers } = useQuery<ISupplier[]>({
-  queryKey: ['get_suppliers'],
-  queryFn: () => supplierStore.onGetSuppliers(),
-})
+// const supplierStore = useSupplierStore()
+// const { data: suppliers, isLoading: isLoadingSuppliers } = useQuery<ISupplier[]>({
+//   queryKey: ['get_suppliers'],
+//   queryFn: () => supplierStore.onGetSuppliers(),
+// })
 
-const brandsWithCount = computed(() => {
-  if (!suppliers.value) return []
+// const brandsWithCount = computed(() => {
+//   if (!suppliers.value) return []
 
-  // สร้าง Map เพื่อนับจำนวนโดยใช้ brand._id เป็น key
-  const brandCountMap = new Map<string, { brandName: string; count: number; brandImage: string }>()
+//   // สร้าง Map เพื่อนับจำนวนโดยใช้ brand._id เป็น key
+//   const brandCountMap = new Map<string, { brandName: string; count: number; brandImage: string }>()
 
-  suppliers.value.forEach((supplier) => {
-    const brandId = supplier.brand?._id
-    const brandName = supplier.brand?.name || 'ไม่ระบุแบรนด์'
-    const brandImage = supplier.brand?.image || ''
+//   suppliers.value.forEach((supplier) => {
+//     const brandId = supplier.brand?._id
+//     const brandName = supplier.brand?.name || 'ไม่ระบุแบรนด์'
+//     const brandImage = supplier.brand?.image || ''
 
-    if (brandId) {
-      if (brandCountMap.has(brandId)) {
-        const existing = brandCountMap.get(brandId)!
-        existing.count++
-      } else {
-        brandCountMap.set(brandId, { brandName, count: 1, brandImage })
-      }
-    }
-  })
+//     if (brandId) {
+//       if (brandCountMap.has(brandId)) {
+//         const existing = brandCountMap.get(brandId)!
+//         existing.count++
+//       } else {
+//         brandCountMap.set(brandId, { brandName, count: 1, brandImage })
+//       }
+//     }
+//   })
 
-  // แปลง Map เป็น Array และเรียงตามจำนวน (มากไปน้อย)
-  return Array.from(brandCountMap.values()).sort((a, b) => b.count - a.count)
-})
+//   // แปลง Map เป็น Array และเรียงตามจำนวน (มากไปน้อย)
+//   return Array.from(brandCountMap.values()).sort((a, b) => b.count - a.count)
+// })
 
-const showSupplierModal = ref(false)
-const openSupplierModal = () => {
-  showSupplierModal.value = true
-}
-const closeSupplierModal = () => {
-  showSupplierModal.value = false
-}
-const brandFilters = ref('')
-const handleBrandFilter = computed(() => {
-  if (brandFilters.value === '' || brandFilters.value === null) {
-    return suppliers.value
-  }
-  return suppliers.value?.filter((supplier) => supplier.brand?._id === brandFilters.value)
-})
+// const showSupplierModal = ref(false)
+// const openSupplierModal = () => {
+//   showSupplierModal.value = true
+// }
+// const closeSupplierModal = () => {
+//   showSupplierModal.value = false
+// }
+// const brandFilters = ref('')
+// const handleBrandFilter = computed(() => {
+//   if (brandFilters.value === '' || brandFilters.value === null) {
+//     return suppliers.value
+//   }
+//   return suppliers.value?.filter((supplier) => supplier.brand?._id === brandFilters.value)
+// })
 </script>
 
 <template>
@@ -211,7 +211,7 @@ const handleBrandFilter = computed(() => {
       </template>
     </Card>
 
-    <Card
+    <!-- <Card
       v-if="
         props.selectedCategory?.value === 'food' ||
         props.selectedCategory?.value === 'microorganism'
@@ -253,7 +253,7 @@ const handleBrandFilter = computed(() => {
           </div>
         </div>
       </template>
-    </Card>
+    </Card> -->
 
     <!-- <Card :pt="{ body: 'p-3 md:p-4' }" class="hover:shadow-lg transition-shadow duration-200">
       <template #content>
@@ -307,7 +307,7 @@ const handleBrandFilter = computed(() => {
     </Card> -->
   </div>
 
-  <Dialog
+  <!-- <Dialog
     v-model:visible="showSupplierModal"
     @update:visible="closeSupplierModal"
     modal
@@ -399,5 +399,5 @@ const handleBrandFilter = computed(() => {
         </Column>
       </DataTable>
     </div>
-  </Dialog>
+  </Dialog> -->
 </template>

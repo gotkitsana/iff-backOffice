@@ -162,6 +162,7 @@ const updateCategorySelector = () => {
   />
 
   <ModalProductDetail
+    v-if="selectedProduct"
     v-model:visible="showDetailModal"
     :product-data="selectedProduct"
     :selected-category="selectedCategory"
