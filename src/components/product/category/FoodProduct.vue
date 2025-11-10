@@ -6,9 +6,11 @@ import { useProductFilters } from '@/composables/useProductFilters'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
 import type { ICategory } from '@/stores/product/category'
+import type { SaleFoodType } from '@/types/query'
 
 const props = defineProps<{
   selectedCategory: ICategory
+  saleType: SaleFoodType
 }>()
 
 const emit = defineEmits<{
@@ -33,16 +35,14 @@ const filteredProducts = computed(() => {
   if (!products.value) return []
   return applyFoodFilters(products.value)
 })
-
-
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div v-if="saleType === 'wholesale'" class="space-y-4">
     <CategoryFilter
       :selected-category="selectedCategory"
       :food-filters="foodFilters"
-      
+
       @open-add-modal="emit('open-add-modal')"
       @open-export-modal="emit('open-export-modal')"
       @update-food-filters="(filters) => (foodFilters = filters)"
@@ -57,5 +57,19 @@ const filteredProducts = computed(() => {
       @open-detail-modal="emit('open-detail-modal', $event)"
       @open-delete-modal="emit('open-delete-modal', $event)"
     />
+  </div>
+
+  <div v-else-if="saleType === 'retail'" class="space-y-4">
+    <CategoryFilter
+      :selected-category="selectedCategory"
+      :food-filters="foodFilters"
+
+      @open-add-modal="emit('open-add-modal')"
+      @open-export-modal="emit('open-export-modal')"
+      @update-food-filters="(filters) => (foodFilters = filters)"
+      @update-category-selector="emit('update-category-selector')"
+    />
+
+    อาหารแบ่งขาย
   </div>
 </template>

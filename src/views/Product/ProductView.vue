@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/product/category'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { useProductQuery } from '@/composables/useProductQuery'
+
 import { useProductModals } from '@/composables/useProductModals'
 import { useCategoryFields } from '@/composables/useCategoryFields'
 
@@ -17,7 +19,7 @@ import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vu
 import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
 import ModalDeleteProduct from '@/components/product/modal/ModalDeleteProduct.vue'
-import { useRoute, useRouter } from 'vue-router'
+import type { SaleFoodType } from '@/types/query'
 
 // Router & Stores
 const categoryStore = useCategoryStore()
@@ -47,39 +49,42 @@ const {
   closeDeleteModal,
 } = useProductModals()
 
+const { categoryFromQuery, saleTypeFromQuery, updateQuery, clearAllQuery } = useProductQuery()
+
 const selectedCategory = ref<ICategory | null>(null)
 const showCategorySelector = ref(true)
 
-const handleInitialCategorySelect = (category: ICategory) => {
-  selectedCategory.value = category
-  showCategorySelector.value = false
-}
-
-const updateCategorySelector = () => {
-  showCategorySelector.value = true
-  selectedCategory.value = null
-  router.push({ query: { type: undefined } })
-}
-
-const router = useRouter()
-const route = useRoute()
-const selectedType = computed<ICategoryValue | null>(
-  () => route.query.type as ICategoryValue | null
-)
-
+// Sync category จาก query string กับ local state
 watch(
-  [selectedType, categories],
-  ([newType, newCategories]) => {
-    if (newType && newCategories) {
-      const foundCategory = newCategories.find((category) => category.value === newType)
-      if (foundCategory) {
-        selectedCategory.value = foundCategory
+  [categoryFromQuery, categories],
+  ([categoryValue, categoriesList]) => {
+    if (categoryValue && categoriesList) {
+      const found = categoriesList.find((c) => c.value === categoryValue)
+      if (found) {
+        selectedCategory.value = found
         showCategorySelector.value = false
       }
+    } else {
+      selectedCategory.value = null
+      showCategorySelector.value = true
     }
   },
   { immediate: true }
 )
+
+// ฟังก์ชันเลือก category
+const handleCategorySelect = (category: ICategory, type: SaleFoodType) => {
+  selectedCategory.value = category
+  showCategorySelector.value = false
+  updateQuery({category: category.value, saleType: type })
+}
+
+// ฟังก์ชันกลับไปหน้าเลือก category
+const updateCategorySelector = () => {
+  showCategorySelector.value = true
+  selectedCategory.value = null
+  clearAllQuery() // ลบ query ทั้งหมด
+}
 </script>
 
 <template>
@@ -93,16 +98,15 @@ watch(
 
         <CategorySelectionStep
           :category-options="categoryOptionsUI"
-          :selected-category="selectedCategory"
-          @select-category="handleInitialCategorySelect"
+          @select-category="handleCategorySelect"
           show-count
         />
       </div>
     </div>
 
-    <template v-else>
+    <template v-else-if="selectedCategory">
       <FishProductContent
-        v-if="(selectedCategory?.value === 'fish' || selectedType === 'fish') && selectedCategory"
+        v-if="selectedCategory?.value === 'fish'"
         :selected-category="selectedCategory"
         @open-edit-modal="openEditModal"
         @open-detail-modal="openDetailModal"
@@ -113,8 +117,9 @@ watch(
       />
 
       <FoodProductContent
-        v-if="(selectedCategory?.value === 'food' || selectedType === 'food') && selectedCategory"
+        v-if="selectedCategory?.value === 'food'"
         :selected-category="selectedCategory"
+        :sale-type="saleTypeFromQuery || 'wholesale'"
         @open-edit-modal="openEditModal"
         @open-detail-modal="openDetailModal"
         @open-delete-modal="openDeleteModal"
@@ -124,7 +129,7 @@ watch(
       />
 
       <MicroorganismProductContent
-        v-if="(selectedCategory?.value === 'microorganism' || selectedType === 'microorganism') && selectedCategory"
+        v-if="selectedCategory?.value === 'microorganism'"
         :selected-category="selectedCategory"
         @open-edit-modal="openEditModal"
         @open-detail-modal="openDetailModal"

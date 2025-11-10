@@ -136,7 +136,7 @@ const { data: categories } = useQuery<ICategory[]>({
   queryFn: () => categoryStore.onGetCategory(0),
 })
 
-const selectedType = computed(() => (route.query.type as ICategoryValue) || null)
+const selectedType = computed(() => (route.query.category as ICategoryValue) || null)
 const filteredSettingCategories = computed(() => {
   if (!selectedType.value) return settingCategories.value
   return settingCategories.value.filter((category) => category.type.includes(selectedType.value))
@@ -153,7 +153,7 @@ watch(
 )
 
 const goBack = () => {
-  router.push('/product?type=' + selectedType.value)
+  router.back()
 }
 
 const selectedCategory = computed(() => {

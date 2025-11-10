@@ -17,6 +17,7 @@ import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import { useProductQuery } from '@/composables/useProductQuery'
 
 // Props
 const props = defineProps<{
@@ -293,6 +294,9 @@ const formatCurrency = (value: number) => {
 const formatSize = (value: number) => {
   return `${value.toFixed(1)} ซม.`
 }
+
+const { navigateWithQuery } = useProductQuery()
+
 </script>
 
 <template>
@@ -328,7 +332,7 @@ const formatSize = (value: number) => {
             icon="pi pi-cog"
             severity="info"
             size="small"
-            @click="$router.push(`/product/options-settings?type=${props.selectedCategory?.value}`)"
+            @click="navigateWithQuery('/product/options-settings')"
           />
 
           <Button
