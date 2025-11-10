@@ -17,6 +17,7 @@ import {
   validateFileName
 } from '@/utils/fileNameGenerator'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import { useUploadFileStore, type IGetFirebaseStorageResponse } from '@/stores/product/upload_file';
 
 const props = defineProps<{
   showCertificate: boolean
@@ -77,7 +78,8 @@ const removeVideo = () => {
   emit('update-video-file', undefined)
 }
 
-const productStore = useProductStore()
+
+const uploadFileStore = useUploadFileStore()
 
 const onProductImageSelect = (event: { files: File[] }) => {
   const files = event.files
@@ -105,7 +107,7 @@ const onProductImageSelect = (event: { files: File[] }) => {
   }
 }
 const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
+  mutationFn: (file: File) => uploadFileStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
     const filename = data.filename
 
@@ -154,7 +156,7 @@ const onCertificateSelect = (event: { files: File[] }) => {
   uploadCertificate(renamedFile)
 }
 const { mutate: uploadCertificate, isPending: isUploadingCertificate } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
+  mutationFn: (file: File) => uploadFileStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
     const filename = data.filename
 
@@ -195,11 +197,10 @@ const onVideoSelect = (event: { files: File[] }) => {
   uploadVideo(renamedFile)
 }
 const { mutate: uploadVideo, isPending: isUploadingVideo } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
-  onSuccess: (data: IUploadImageResponse) => {
-    const filename = data.filename
-
-    emit('update-video-file', filename)
+  mutationFn: (file: File) => uploadFileStore.onUploadVideo(file),
+  onSuccess: (data: {data:IGetFirebaseStorageResponse}) => {
+    const url = data.data.url
+    emit('update-video-file', url)
     toast.success('อัปโหลดวิดีโอสำเร็จ')
   },
   onError: (error: any) => {
@@ -207,10 +208,6 @@ const { mutate: uploadVideo, isPending: isUploadingVideo } = useMutation({
     toast.error(error.response?.data?.message || 'อัปโหลดวิดีโอไม่สำเร็จ')
   },
 })
-
-const getVideoPreview = (filename: string) => {
-  return getProductImageUrl(filename)
-}
 
 const getImagePreview = (filename: string) => {
   return getProductImageUrl(filename)
@@ -273,7 +270,7 @@ const getImagePreview = (filename: string) => {
       <div v-if="videoFile" class="mb-4">
         <div class="relative">
           <video
-            :src="getVideoPreview(videoFile)"
+            :src="videoFile"
             class="w-full h-60 rounded-lg border border-gray-200"
             controls
           />

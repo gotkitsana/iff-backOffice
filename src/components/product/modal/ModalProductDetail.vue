@@ -146,10 +146,6 @@ const getImageUrl = (filename: string) => {
   return getProductImageUrl(filename)
 }
 
-const getVideoUrl = (filename: string) => {
-  return getProductImageUrl(filename)
-}
-
 const handleClose = () => {
   emit('close-detail-modal')
 }
@@ -476,7 +472,7 @@ const selectedSupplier = computed(() => {
             <div v-if="productData.youtube">
               <div class="bg-black rounded-lg py-0">
                 <video
-                  :src="getVideoUrl(productData.youtube)"
+                  :src="productData.youtube"
                   class="w-full h-auto max-h-[55vh]"
                   controls
                 >

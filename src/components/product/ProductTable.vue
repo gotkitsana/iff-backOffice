@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { getProductImageUrl } from '@/utils/imageUrl'
-import JSZip from 'jszip'
+import JSZip, { type JSZipFileOptions } from 'jszip'
 
 // Props
 const props = defineProps<{
@@ -86,11 +86,6 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryFn: () => greenhouseStore.onGetGreenhouses(),
 })
 
-const getVideoUrl = (filename: string) => {
-  if (!filename) return ''
-  return getProductImageUrl(filename)
-}
-
 const showMediaGalleryModal = ref(false)
 const selectedMediaItems = ref<
   Array<{ url: string; type: 'image' | 'certificate' | 'video'; filename: string }>
@@ -133,7 +128,7 @@ const openMediaGalleryModal = (
   // Add video
   if (product.youtube) {
     mediaItems.push({
-      url: getVideoUrl(product.youtube),
+      url: product.youtube,
       type: 'video',
       filename: product.youtube,
     })
@@ -171,13 +166,21 @@ const downloadAllAsZip = async () => {
   try {
     const zip = new JSZip()
 
-    // Download all files
     const downloadPromises = selectedMediaItems.value.map(async (item, index) => {
       try {
-        const response = await fetch(item.url)
+        // สำหรับ Firebase URLs ใช้ fetch พร้อม error handling
+        const response = await fetch(item.url, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit',
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
         const blob = await response.blob()
 
-        // Generate filename
         let filename = item.filename
         if (!filename) {
           const ext = item.type === 'video' ? 'mp4' : item.type === 'certificate' ? 'pdf' : 'jpg'
@@ -187,17 +190,28 @@ const downloadAllAsZip = async () => {
         zip.file(filename, blob)
       } catch (error) {
         console.error(`Failed to download ${item.filename}:`, error)
+
+        // ถ้าเป็นวิดีโอที่ดาวน์โหลดไม่ได้ ให้ดาวน์โหลดแยก
+        if (item.type === 'video') {
+          console.log('Downloading video separately...')
+          const link = document.createElement('a')
+          link.href = item.url
+          link.download = item.filename || 'video.mp4'
+          link.target = '_blank'
+          link.click()
+        }
       }
     })
 
     await Promise.all(downloadPromises)
 
-     // สร้างชื่อไฟล์ ZIP จากชื่อสินค้าและ SKU
-    const productName = selectedProduct.value.species ? selectedProduct.value.species?.name : selectedProduct.value.name
+    // สร้างชื่อไฟล์ ZIP
+    const productName = selectedProduct.value.species
+      ? selectedProduct.value.species?.name
+      : selectedProduct.value.name
     const productSku = selectedProduct.value.sku || 'unknown'
     const pondName = selectedProduct.value.fishpond?.name || 'pond'
     const weightName = selectedProduct.value.weight || 'unknown'
-    // ทำความสะอาดชื่อไฟล์ (ลบอักขระพิเศษที่อาจทำให้เกิดปัญหา)
     const safeName = `${productName}-${productSku}-${pondName}-${weightName}`.replace(/[<>:"/\\|?*]/g, '-')
 
     // Generate and download ZIP
@@ -209,6 +223,7 @@ const downloadAllAsZip = async () => {
     URL.revokeObjectURL(link.href)
   } catch (error) {
     console.error('Error creating ZIP:', error)
+    alert('เกิดข้อผิดพลาดในการดาวน์โหลด')
   } finally {
     isDownloadingZip.value = false
   }

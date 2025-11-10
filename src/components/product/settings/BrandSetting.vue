@@ -21,6 +21,7 @@ import {
   ALLOWED_IMAGE_EXTENSIONS,
   validateFileName
 } from '@/utils/fileNameGenerator'
+import { useUploadFileStore } from '@/stores/product/upload_file'
 
 interface IApiResponse {
   data?: unknown
@@ -246,9 +247,9 @@ const handleImageUpload = (event: { files: File[] }) => {
   uploadImage(renamedFile)
 }
 
-const productStore = useProductStore()
+const uploadFileStore = useUploadFileStore()
 const { mutate: uploadImage, isPending: isUploadingImage } = useMutation({
-  mutationFn: (file: File) => productStore.onUploadImage(file),
+  mutationFn: (file: File) => uploadFileStore.onUploadImage(file),
   onSuccess: (data: IUploadImageResponse) => {
     const filename = data.filename
     form.value.image = filename

@@ -33,17 +33,6 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
-  async function onUploadImage(image: File) {
-    const formData = new FormData()
-    formData.append('imageFile', image)
-
-    const { data } = await api.post(`/storage/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return data
-  }
 
   const seedTypeOptions = [
     {
@@ -78,7 +67,6 @@ export const useProductStore = defineStore('product', () => {
     onCreateProduct,
     onUpdateProduct,
     onDeleteProduct,
-    onUploadImage,
     seedTypeOptions,
     genderOptions,
     ageOptions,
