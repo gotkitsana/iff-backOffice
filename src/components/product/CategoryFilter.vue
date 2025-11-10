@@ -21,7 +21,6 @@ import { getProductImageUrl } from '@/utils/imageUrl'
 // Props
 const props = defineProps<{
   selectedCategory: ICategory | null
-  productsCategory: IProduct[]
 
   foodFilters?: IFoodFilters
   fishFilters?: IFishFilters

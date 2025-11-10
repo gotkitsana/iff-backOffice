@@ -153,7 +153,7 @@ watch(
 )
 
 const goBack = () => {
-  router.push('/product')
+  router.push('/product?type=' + selectedType.value)
 }
 
 const selectedCategory = computed(() => {
