@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
+import type { IFieldsOptions, IFieldsRequired, IFieldsType, IProduct } from './product'
+import type { ICategory } from './category'
 
 export const useFoodSaleStore = defineStore('foodSale', () => {
   async function onGetFoodSales() {
@@ -32,27 +34,45 @@ export const useFoodSaleStore = defineStore('foodSale', () => {
 
 export interface IFoodSale {
   _id: string
-  name: string
-  product: {
-    _id: string
-    name: string
-  }
+  product: IProduct
   priceKilo: number
   costPriceKilo: number
-  active: boolean
-  note: string
+  customerPriceKilo: number
+  dealerPriceKilo: number
+  kilo: number
+  
   cat: number
   uat: number
 }
 
 export interface ICreateFoodSalePayload {
-  name: string
-  note: string
   product: string
-  priceKilo: number
-  costPriceKilo: number
+  priceKilo: number //ราคาท้องตลาดต่อกิโล
+  costPriceKilo: number //ราคาทุนต่อกิโล
+  customerPriceKilo: number //ราคาลูกค้าต่อกิโล
+  dealerPriceKilo: number //ราคาพ่อค้าต่อกิโล
+  kilo: number //น้ำหนักต่อกิโล
 }
 
 export interface IUpdateFoodSalePayload extends ICreateFoodSalePayload {
   _id: string
+}
+
+export type IFieldsKeyRetail =
+  | 'product'
+  | 'priceKilo'
+  | 'costPriceKilo'
+  | 'customerPriceKilo'
+  | 'dealerPriceKilo'
+
+export interface IFieldsRetail {
+  key: IFieldsKeyRetail
+  label: string
+  type: IFieldsType
+  required: IFieldsRequired
+  options?: IFieldsOptions
+}
+
+export interface IFieldsRetailUI extends ICategory {
+  fields: IFieldsRetail[]
 }

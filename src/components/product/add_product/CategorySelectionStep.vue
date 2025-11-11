@@ -36,7 +36,7 @@ const getCategoryCount = (category: ICategoryOption) => {
 
 const foodSaleStore = useFoodSaleStore()
 const { data: foodSales } = useQuery<IFoodSale[]>({
-  queryKey: ['foodSales'],
+  queryKey: ['get_food_sales'],
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 

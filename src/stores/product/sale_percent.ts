@@ -25,8 +25,8 @@ export const useSalePercentStore = defineStore('salePercent', () => {
   const PercentNameOptions = [
     { label: 'ราคาลูกค้า', value: 'customerPrice' },
     { label: 'ราคาพ่อค้า', value: 'dealerPrice' },
-    { label: 'ราคาลูกค้าแบ่งขาย', value: 'customerSalePrice' },
-    { label: 'ราคาพ่อค้าแบ่งขาย', value: 'dealerSalePrice' },
+    { label: 'ราคาลูกค้าแบ่งขาย', value: 'customerPriceKilo' },
+    { label: 'ราคาพ่อค้าแบ่งขาย', value: 'dealerPriceKilo' },
   ]
 
   return {

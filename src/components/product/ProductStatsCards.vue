@@ -4,6 +4,8 @@ import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import type { ICategory } from '@/stores/product/category'
 import { computed, ref } from 'vue'
+import { useProductQuery } from '@/composables/useProductQuery'
+import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 // import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
 // import { getProductImageUrl } from '@/utils/imageUrl'
 // import { uniqBy } from 'lodash-es'
@@ -100,6 +102,33 @@ const getCategoryStats = (category: ICategory) => {
   }
 }
 
+const { saleTypeFromQuery } = useProductQuery()
+const foodSaleStore = useFoodSaleStore()
+const { data: foodSales } = useQuery<IFoodSale[]>({
+  queryKey: ['get_food_sales'],
+  queryFn: () => foodSaleStore.onGetFoodSales(),
+  enabled: computed(
+    () => saleTypeFromQuery.value === 'retail' && props.selectedCategory?.value === 'food'
+  ),
+})
+
+const getProductSalesByCategory = computed(() => {
+  if (props.selectedCategory?.value === 'food') {
+    const price =
+      foodSales.value?.reduce((sum, fs) => sum + fs?.costPriceKilo * (fs?.kilo || 0), 0) || 0
+    const balanceKilo =
+      foodSales.value?.reduce((sum, fs) => sum + (fs?.kilo || 0), 0) || 0
+    return {
+      price,
+      count: balanceKilo,
+    }
+  }
+  return {
+    price: 0,
+    count: 0,
+  }
+})
+
 // const supplierStore = useSupplierStore()
 // const { data: suppliers, isLoading: isLoadingSuppliers } = useQuery<ISupplier[]>({
 //   queryKey: ['get_suppliers'],
@@ -150,15 +179,19 @@ const getCategoryStats = (category: ICategory) => {
 <template>
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
     <Card
-      :pt="{ body: 'p-3 md:p-4' }"
-      class="hover:shadow-lg transition-shadow duration-200 justify-start h-max"
+      :pt="{ body: 'p-3 md:p-4 h-full' }"
+      class="hover:shadow-lg transition-shadow duration-200 justify-start"
     >
       <template #content>
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-[600]! text-gray-600 mb-1">{{ totalLabel }}</p>
-            <p class="text-lg md:text-xl text-green-600">
-              {{ formatCurrency(getProductsByCategory?.price || 0) }}
+            <p class="text-lg md:text-xl text-green-600 mt-auto">
+              {{
+                saleTypeFromQuery === 'retail'
+                  ? formatCurrency(getProductSalesByCategory.price || 0)
+                  : formatCurrency(getProductsByCategory?.price || 0)
+              }}
             </p>
             <!-- <p class="text-xs text-gray-500">บาท</p> -->
           </div>
@@ -172,6 +205,30 @@ const getCategoryStats = (category: ICategory) => {
     </Card>
 
     <Card
+      v-if="saleTypeFromQuery === 'retail'"
+      :pt="{ body: 'p-3 md:p-4' }"
+      class="hover:shadow-lg transition-shadow duration-200 justify-start h-max"
+    >
+      <template #content>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-[600]! text-gray-600 mb-1">{{`จำนวน${ props.selectedCategory?.name }แบ่งขาย`}}</p>
+            <p class="text-lg md:text-xl text-blue-600">
+              {{ getProductSalesByCategory.count || 0 }}
+            </p>
+            <p class="text-xs text-gray-500">กิโลกรัม</p>
+          </div>
+          <div
+            class="hidden md:flex w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl items-center justify-center shadow-lg"
+          >
+            <i class="pi pi-box text-white text-xl"></i>
+          </div>
+        </div>
+      </template>
+    </Card>
+
+    <Card
+      v-else
       :pt="{ body: 'p-3 md:p-4' }"
       class="hover:shadow-lg transition-shadow duration-200 justify-start h-max"
     >

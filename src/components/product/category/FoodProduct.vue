@@ -7,6 +7,7 @@ import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
 import type { ICategory } from '@/stores/product/category'
 import type { SaleFoodType } from '@/types/query'
+import FoodRetail from './food-retail/FoodRetail.vue'
 
 const props = defineProps<{
   selectedCategory: ICategory
@@ -42,7 +43,6 @@ const filteredProducts = computed(() => {
     <CategoryFilter
       :selected-category="selectedCategory"
       :food-filters="foodFilters"
-
       @open-add-modal="emit('open-add-modal')"
       @open-export-modal="emit('open-export-modal')"
       @update-food-filters="(filters) => (foodFilters = filters)"
@@ -59,17 +59,9 @@ const filteredProducts = computed(() => {
     />
   </div>
 
-  <div v-else-if="saleType === 'retail'" class="space-y-4">
-    <CategoryFilter
-      :selected-category="selectedCategory"
-      :food-filters="foodFilters"
-
-      @open-add-modal="emit('open-add-modal')"
-      @open-export-modal="emit('open-export-modal')"
-      @update-food-filters="(filters) => (foodFilters = filters)"
-      @update-category-selector="emit('update-category-selector')"
-    />
-
-    อาหารแบ่งขาย
-  </div>
+  <FoodRetail
+    v-else-if="saleType === 'retail'"
+    :selected-category="selectedCategory"
+    @update-category-selector="emit('update-category-selector')"
+  />
 </template>

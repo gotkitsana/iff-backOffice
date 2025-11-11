@@ -16,6 +16,7 @@ import FishStatusSetting from '@/components/product/settings/FishStatus.vue'
 import SupplierSetting from '@/components/product/settings/SupplierSetting.vue'
 import SalePercentSetting from '@/components/product/settings/SalePercentSetting.vue'
 import { useQuery } from '@tanstack/vue-query'
+import type { SaleFoodType } from '@/types/query'
 
 interface ISettingCategory {
   id: string
@@ -24,6 +25,7 @@ interface ISettingCategory {
   color: string
   description: string
   type: ICategoryValue[]
+  isRetail: boolean
 }
 
 const router = useRouter()
@@ -39,6 +41,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-indigo-500 to-blue-600',
     description: 'จัดการหมายเลขล็อต',
     type: ['fish', 'food', 'microorganism'],
+    isRetail: true,
   },
   {
     id: 'species',
@@ -47,6 +50,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-blue-500 to-cyan-600',
     description: 'จัดการสายพันธุ์ปลาคาร์ฟ',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'greenhouse',
@@ -55,6 +59,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-yellow-500 to-orange-600',
     description: 'จัดการกรีนเฮ้า',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'pond',
@@ -63,6 +68,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-green-500 to-emerald-600',
     description: 'จัดการบ่อปลาและกรีนเฮ้า',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'farm',
@@ -71,6 +77,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-orange-500 to-red-600',
     description: 'จัดการข้อมูลฟาร์ม',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'quality',
@@ -79,6 +86,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-purple-500 to-pink-600',
     description: 'จัดการคุณภาพสินค้า',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'fishStatus',
@@ -87,6 +95,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-blue-500 to-indigo-600',
     description: 'จัดการสถานะปลา',
     type: ['fish'],
+    isRetail: false,
   },
   {
     id: 'foodType',
@@ -95,6 +104,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-red-500 to-pink-600',
     description: 'จัดการประเภทอาหาร',
     type: ['food'],
+    isRetail: true,
   },
   {
     id: 'brand',
@@ -103,6 +113,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-gray-500 to-gray-600',
     description: 'จัดการชื่อแบรนด์',
     type: ['food', 'microorganism'],
+    isRetail: true,
   },
   {
     id: 'seedSize',
@@ -111,6 +122,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-teal-500 to-cyan-600',
     description: 'จัดการขนาดเม็ด',
     type: ['food'],
+    isRetail: true,
   },
   {
     id: 'supplier',
@@ -119,6 +131,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-green-500 to-emerald-600',
     description: 'จัดการซัพพลายเออร์',
     type: ['food', 'microorganism'],
+    isRetail: true,
   },
   {
     id: 'salePercent',
@@ -127,6 +140,7 @@ const settingCategories = ref<ISettingCategory[]>([
     color: 'from-amber-500 to-orange-600',
     description: 'จัดการเปอร์เซ็นต์กำไร',
     type: ['food', 'microorganism'],
+    isRetail: true,
   },
 ])
 
@@ -137,8 +151,14 @@ const { data: categories } = useQuery<ICategory[]>({
 })
 
 const selectedType = computed(() => (route.query.category as ICategoryValue) || null)
+const selectedSaleType = computed(() => (route.query.saleType as SaleFoodType) || null)
 const filteredSettingCategories = computed(() => {
   if (!selectedType.value) return settingCategories.value
+  if (selectedSaleType.value == 'retail') {
+    return settingCategories.value.filter(
+      (category) => category.type.includes(selectedType.value) && category.isRetail === true
+    )
+  }
   return settingCategories.value.filter((category) => category.type.includes(selectedType.value))
 })
 

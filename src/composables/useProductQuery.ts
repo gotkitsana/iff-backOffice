@@ -29,8 +29,6 @@ export function useProductQuery() {
   const updateQuery = (updates: Record<string, any>) => {
     const newQuery = { ...route.query }
 
-    console.log('updateQuery', updates)
-
     Object.keys(updates).forEach((key) => {
       if (updates[key] === null || updates[key] === undefined || updates[key] === '') {
         delete newQuery[key]

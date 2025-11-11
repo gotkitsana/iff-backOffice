@@ -19,6 +19,17 @@ export function useProductFilters() {
     priceMax: 50000,
   })
 
+  const foodRetailFilters = ref<IFoodFilters>({
+    sku: '',
+    brandName: '',
+    lotNumber: '',
+    foodtype: '',
+    seedType: '',
+    seedSize: '',
+    priceMin: 0,
+    priceMax: 5000,
+  })
+
   const microorganismFilters = ref<IMicroorganismFilters>({
     sku: '',
     brandName: '',
@@ -135,12 +146,23 @@ export function useProductFilters() {
     return filtered
   }
 
+  const applyFoodRetailFilters = (products: IProduct[]) => {
+    let filtered = [...products]
+    if (foodRetailFilters.value.sku) {
+      filtered = filtered.filter((p) => p.sku?.toLowerCase().includes(foodRetailFilters.value.sku.toLowerCase()),
+      )
+    }
+    return filtered
+  }
+
   return {
     foodFilters,
     fishFilters,
+    foodRetailFilters,
     microorganismFilters,
     applyFoodFilters,
     applyFishFilters,
     applyMicroorganismFilters,
+    applyFoodRetailFilters,
   }
 }
