@@ -397,7 +397,7 @@ const foodColumns = ref([
       h('div', { class: 'flex flex-col gap-0.5 text-sm' }, [
         slotProps.data?.customerPriceKilo
           ? h('div', { class: 'flex items-center gap-1.5' }, [
-              h('span', { class: 'text-gray-500' }, 'ลูกค้า:'),
+              h('span', { class: 'text-gray-500' }, 'ราคาลูกค้า:'),
               h(
                 'span',
                 { class: 'text-gray-900 font-medium' },
@@ -407,7 +407,7 @@ const foodColumns = ref([
           : null,
         slotProps.data?.dealerPriceKilo
           ? h('div', { class: 'flex items-center gap-1.5' }, [
-              h('span', { class: 'text-gray-500' }, 'พ่อค้า:'),
+              h('span', { class: 'text-gray-500' }, 'ราคาพ่อค้า:'),
               h(
                 'span',
                 { class: 'text-gray-900 font-medium' },

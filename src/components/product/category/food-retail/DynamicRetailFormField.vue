@@ -110,6 +110,7 @@ const productOptions = computed(() => {
       label: product.name,
       value: product._id,
       image: product.images[0]?.filename,
+      sku: product.sku,
     }))
 })
 
@@ -180,6 +181,8 @@ const formatCurrency = (amount: number | null) => {
           size="small"
           :invalid="field.required && !formData[field.key] && isSubmitting"
           filter
+          :filter-by="['label', 'sku']"
+          :filter-placeholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
         >
           <template #option="slotProps">
             <div class="flex items-center gap-2">
@@ -187,10 +190,13 @@ const formatCurrency = (amount: number | null) => {
                 v-if="slotProps.option.image"
                 :src="getImageUrl(slotProps.option.image)"
                 alt="Brand Image"
-                class="w-auto h-8 rounded"
+                class="w-auto h-6 rounded"
               />
               <i v-else class="pi pi-image text-gray-400 text-lg"></i>
-              <span>{{ slotProps.option.label }}</span>
+              <p class="text-sm">
+                {{ slotProps.option.label }}
+                <span class="text-xs text-gray-500 pl-1.5"> รหัส: {{ slotProps.option.sku }}</span>
+              </p>
             </div>
           </template>
         </Select>
@@ -412,9 +418,7 @@ const formatCurrency = (amount: number | null) => {
           class="mt-4 w-full bg-gray-50 rounded-lg border border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
         >
           <div>
-            <p class="text-xs text-gray-500">
-              วันผลิต
-            </p>
+            <p class="text-xs text-gray-500">วันผลิต</p>
             <p class="text-gray-800 text-sm">
               {{
                 productDetail.food?.produceDate
@@ -425,9 +429,7 @@ const formatCurrency = (amount: number | null) => {
           </div>
 
           <div>
-            <p class="text-xs text-gray-500">
-              วันหมดอายุ:
-            </p>
+            <p class="text-xs text-gray-500">วันหมดอายุ:</p>
             <p class="text-gray-800 text-sm">
               {{
                 productDetail.food?.expireDate
@@ -438,9 +440,7 @@ const formatCurrency = (amount: number | null) => {
           </div>
 
           <div>
-            <p class="text-xs text-gray-500">
-              ราคาท้องตลาด
-            </p>
+            <p class="text-xs text-gray-500">ราคาท้องตลาด</p>
             <p class="text-gray-800 text-sm">
               {{
                 productDetail.food?.marketPrice
@@ -451,9 +451,7 @@ const formatCurrency = (amount: number | null) => {
           </div>
 
           <div>
-            <p class="text-xs text-gray-500">
-              ราคาทุน
-            </p>
+            <p class="text-xs text-gray-500">ราคาทุน</p>
             <p class="text-gray-800 text-sm">
               {{
                 productDetail.food?.costPrice ? formatCurrency(productDetail.food?.costPrice) : '-'

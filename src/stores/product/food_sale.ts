@@ -40,6 +40,7 @@ export interface IFoodSale {
   customerPriceKilo: number
   dealerPriceKilo: number
   kilo: number
+  name: string
 
   cat: number
   uat: number
@@ -86,6 +87,7 @@ export interface IFoodSaleProduct {
 }
 
 export interface ICreateFoodSalePayload {
+  name: string
   product: string
   priceKilo: number //ราคาท้องตลาดต่อกิโล
   costPriceKilo: number //ราคาทุนต่อกิโล

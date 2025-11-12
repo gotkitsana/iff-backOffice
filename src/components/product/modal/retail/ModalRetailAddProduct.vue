@@ -4,6 +4,7 @@ import { Dialog } from 'primevue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { type ICategory } from '@/stores/product/category'
+import dayjs from 'dayjs'
 
 // Import components
 import DynamicRetailFormField from '@/components/product/category/food-retail/DynamicRetailFormField.vue'
@@ -15,7 +16,7 @@ import {
   type IFieldsKeyRetail,
   type IFieldsRetailUI,
 } from '@/stores/product/food_sale'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
 
 // Props
 const props = defineProps<{
@@ -40,6 +41,7 @@ const productForm = ref<ICreateFoodSalePayload>({
   customerPriceKilo: 0,
   dealerPriceKilo: 0,
   kilo: 0,
+  name: '',
 })
 
 const dynamicFormData = ref<Record<IFieldsKeyRetail, string | number | Date | null> | null>(null)
@@ -135,6 +137,11 @@ const handleSubmit = async () => {
     return
   }
 
+  if (!product.balance || product.balance <= 0) {
+    toast.error('สินค้านี้มีคงเหลือไม่เพียงพอ')
+    return
+  }
+
   if (!product.weight) {
     toast.error('กรุณาตั้งค่าน้ำหนักสินค้า')
     return
@@ -148,6 +155,7 @@ const handleSubmit = async () => {
     customerPriceKilo: productForm.value.customerPriceKilo,
     dealerPriceKilo: productForm.value.dealerPriceKilo,
     kilo: product.weight,
+    name: `${product.name}-${dayjs().unix()}`,
   }
 
   createFoodSale(payload)
@@ -157,11 +165,30 @@ const queryClient = useQueryClient()
 const foodSaleStore = useFoodSaleStore()
 const { mutate: createFoodSale, isPending: isCreatingFoodSale } = useMutation({
   mutationFn: (payload: ICreateFoodSalePayload) => foodSaleStore.onCreateFoodSale(payload),
-  onSuccess: (data: any) => {
+  onSuccess: (data: any, variables: ICreateFoodSalePayload) => {
+    console.log(data, variables)
     if (data.data) {
       toast.success('เพิ่มอาหารแบ่งขายเรียบร้อย')
       queryClient.invalidateQueries({ queryKey: ['get_food_sales'] })
-      handleClose()
+      if(variables.product) {
+        const findProduct = products?.value?.find((p) => p._id === variables.product)
+        if(findProduct && findProduct.balance && findProduct.balance > 0) {
+          updateProduct({
+            ...findProduct,
+            _id: findProduct._id,
+            fishpond: findProduct.fishpond?._id,
+            species: findProduct.species?._id,
+            farm: findProduct.farm?._id,
+            quality: findProduct.quality?._id,
+            lotNumber: findProduct.lotNumber?._id,
+            seedSize: findProduct.seedSize?._id,
+            foodtype: findProduct.foodtype?._id,
+            brand: findProduct.brand?._id,
+            fishStatus: findProduct.fishStatus?._id,
+            balance: findProduct.balance - 1,
+          })
+        }
+      }
     } else {
       toast.error(data.error.message || 'เพิ่มอาหารแบ่งขายไม่สำเร็จ')
       isSubmitting.value = false
@@ -170,6 +197,29 @@ const { mutate: createFoodSale, isPending: isCreatingFoodSale } = useMutation({
   onError: (error: any) => {
     console.log(error)
     toast.error(error.response?.data?.message || 'เพิ่มอาหารแบ่งขายไม่สำเร็จ')
+    isSubmitting.value = false
+  },
+})
+
+const selectedCategoryById = computed(() => props.selectedCategory?._id)
+const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+  onSuccess: (data: any) => {
+    if (data.data.modifiedCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ['get_products'] })
+      queryClient.invalidateQueries({
+        queryKey: ['get_products_by_category', selectedCategoryById],
+      })
+      handleClose()
+      isSubmitting.value = false
+    } else {
+      toast.error(data.error?.message || 'อัปเดตสินค้าไม่สำเร็จ')
+      isSubmitting.value = false
+    }
+  },
+  onError: (error: any) => {
+    console.error('Update error:', error)
+    toast.error(error.response?.data?.message || 'อัปเดตสินค้าไม่สำเร็จ')
     isSubmitting.value = false
   },
 })
@@ -188,6 +238,7 @@ const resetForm = () => {
     customerPriceKilo: 0,
     dealerPriceKilo: 0,
     kilo: 0,
+    name: '',
   }
 
   dynamicFormData.value = null
@@ -258,7 +309,7 @@ const validatePricePercent = (): boolean => {
 
     <template #footer>
       <ModalFooter
-        :is-submitting="isCreatingFoodSale"
+        :is-submitting="isCreatingFoodSale || isUpdatingProduct"
         @close="handleClose"
         @submit="handleSubmit"
       />
