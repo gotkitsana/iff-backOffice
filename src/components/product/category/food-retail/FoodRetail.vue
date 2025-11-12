@@ -3,6 +3,8 @@ import type { ICategory } from '@/stores/product/category'
 import FoodRetailFilter from './FoodRetailFilter.vue'
 import { ref } from 'vue'
 import ModalRetailAddProduct from '@/components/product/modal/retail/ModalRetailAddProduct.vue'
+import ModalRetailDeleteProduct from '@/components/product/modal/retail/ModalRetailDeleteProduct.vue'
+import ModalRetailDetailProduct from '@/components/product/modal/retail/ModalRetailDetailProduct.vue'
 import RetailTable from './RetailTable.vue'
 import { useFoodSaleStore, type IFieldsRetailUI, type IFoodSale } from '@/stores/product/food_sale'
 import { useQuery } from '@tanstack/vue-query'
@@ -103,30 +105,29 @@ const { data: foodSales, isLoading } = useQuery<IFoodSale[]>({
     :selected-category="selectedCategory"
   />
 
-  <!-- <ModalExportProduct v-if="!showCategorySelector" v-model:visible="showExportModal" />
+  <ModalRetailExportProduct v-if="showExportModal" v-model:visible="showExportModal" />
 
-  <ModalEditProduct
-    v-if="!showCategorySelector"
+  <ModalRetailEditProduct
+    v-if="showEditModal"
     v-model:visible="showEditModal"
-    :product-data="selectedProduct"
-    :categoryOptionsUI="categoryOptionsUI"
+    :product-data="selectedFoodSale"
     :selected-category="selectedCategory"
-    @close-edit-modal="closeEditModal"
+    @close-edit-modal="closeShowEditModal"
   />
 
-  <ModalProductDetail
-    v-if="selectedProduct"
+  <ModalRetailDetailProduct
+    v-if="selectedFoodSale"
     v-model:visible="showDetailModal"
-    :product-data="selectedProduct"
+    :product-data="selectedFoodSale"
     :selected-category="selectedCategory"
-    :categoryOptionsUI="categoryOptionsUI"
-    @close-detail-modal="closeDetailModal"
+    :fieldsRetailUI="foodRetailUI"
+    @close-detail-modal="closeShowDetailModal"
   />
 
-  <ModalDeleteProduct
-    v-if="selectedProduct"
+  <ModalRetailDeleteProduct
+    v-if="selectedFoodSale"
     v-model:visible="showDeleteModal"
-    :product-data="selectedProduct"
-    @close-delete-modal="closeDeleteModal"
-  /> -->
+    :product-data="selectedFoodSale"
+    @close-delete-modal="closeShowDeleteModal"
+  />
 </template>

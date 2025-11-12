@@ -34,15 +34,55 @@ export const useFoodSaleStore = defineStore('foodSale', () => {
 
 export interface IFoodSale {
   _id: string
-  product: IProduct
+  product: IFoodSaleProduct
   priceKilo: number
   costPriceKilo: number
   customerPriceKilo: number
   dealerPriceKilo: number
   kilo: number
-  
+
   cat: number
   uat: number
+}
+export interface IFoodSaleProduct {
+  _id: string
+  type: number
+  name: string
+  lotNumber: string
+  code: string
+  size: number
+  birth: string
+  age: string
+  gender: string
+  weight: number
+  breeders: string
+  brand: string
+  pond: string
+  seedType: string
+  seedSize: string
+  balance: number
+  price: number
+  detail: string
+  category: string
+  sku: string
+  sold: boolean
+  rate: number
+  youtube: string
+  certificate: string
+  images: { filename: string; type: string }[]
+  food: {
+    produceDate: number
+    expireDate: number
+    marketPrice: number
+    costPrice: number
+    customerPrice: number
+    dealerPrice: number
+  }
+  auctionOnly: number
+  cat: number
+  uat: number
+  __v: number
+  foodtype: string
 }
 
 export interface ICreateFoodSalePayload {
@@ -64,6 +104,7 @@ export type IFieldsKeyRetail =
   | 'costPriceKilo'
   | 'customerPriceKilo'
   | 'dealerPriceKilo'
+  | 'kilo'
 
 export interface IFieldsRetail {
   key: IFieldsKeyRetail
