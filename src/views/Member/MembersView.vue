@@ -131,10 +131,116 @@ const statusOptions = computed(() => {
     })),
   ]
 })
+
+const inquiryCustomersCount = computed(() => {
+  return data.value?.filter((member) => member.status === 'ci').length || 0
+})
+
+// KPI Cards - นับจำนวนลูกค้าตามประเภท
+const generalCustomersCount = computed(() => {
+  return data.value?.filter((member) => member.status === 'cs').length || 0
+})
+
+const importantCustomersCount = computed(() => {
+  return data.value?.filter((member) => member.status === 'css').length || 0
+})
+
+const incompleteDataCustomersCount = computed(() => {
+  return (
+    data.value?.filter((member) => {
+      // ตรวจสอบว่าขาดข้อมูลใดข้อมูลหนึ่งใน 4 อย่างนี้
+      const missingName = !member.name || member.name.trim() === ''
+      const missingAddress = !member.address || member.address.trim() === ''
+      const missingProvince = !member.province || member.province.trim() === ''
+      const missingPhone = !member.phone || member.phone.trim() === ''
+
+      return missingName || missingAddress || missingProvince || missingPhone
+    }).length || 0
+  )
+})
 </script>
 
 <template>
   <div class="space-y-4">
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- ลูกค้าทสอบถาม -->
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+        <template #content>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">ลูกค้าทสอบถาม</p>
+              <p class="text-lg md:text-xl font-medium! text-blue-600">
+                {{ inquiryCustomersCount }}
+              </p>
+            </div>
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg"
+            >
+              <i class="pi pi-users text-white text-xl"></i>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <!-- ลูกค้าทั่วไป -->
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+        <template #content>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">ลูกค้าทั่วไป</p>
+              <p class="text-lg md:text-xl font-medium! text-green-600">
+                {{ generalCustomersCount }}
+              </p>
+            </div>
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
+            >
+              <i class="pi pi-tag text-white text-xl"></i>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <!-- ลูกค้าสำคัญ -->
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+        <template #content>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">ลูกค้าสำคัญ</p>
+              <p class="text-lg md:text-xl font-medium! text-amber-600">
+                {{ importantCustomersCount }}
+              </p>
+            </div>
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg"
+            >
+              <i class="pi pi-star text-white text-xl"></i>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <!-- ลูกค้ายังมีข้อมูลไม่ครบ -->
+      <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
+        <template #content>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">ลูกค้ายังมีข้อมูลไม่ครบ</p>
+              <p class="text-lg md:text-xl font-medium! text-red-600">
+                {{ incompleteDataCustomersCount }}
+              </p>
+            </div>
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg"
+            >
+              <i class="pi pi-exclamation-triangle text-white text-xl"></i>
+            </div>
+          </div>
+        </template>
+      </Card>
+    </div>
+
     <Card class="rounded-2xl bg-white/80">
       <template #header>
         <div class="flex items-center justify-between flex-wrap gap-2 p-5 pb-0">
