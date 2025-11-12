@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ICategory } from '@/stores/product/category'
 import FoodRetailFilter from './FoodRetailFilter.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ModalRetailAddProduct from '@/components/product/modal/retail/ModalRetailAddProduct.vue'
 import ModalRetailDeleteProduct from '@/components/product/modal/retail/ModalRetailDeleteProduct.vue'
 import ModalRetailDetailProduct from '@/components/product/modal/retail/ModalRetailDetailProduct.vue'
@@ -9,6 +9,7 @@ import ModalRetailEditProduct from '@/components/product/modal/retail/ModalRetai
 import RetailTable from './RetailTable.vue'
 import { useFoodSaleStore, type IFieldsRetailUI, type IFoodSale } from '@/stores/product/food_sale'
 import { useQuery } from '@tanstack/vue-query'
+import { useProductFilters } from '@/composables/useProductFilters'
 
 const props = defineProps<{
   selectedCategory: ICategory
@@ -78,19 +79,27 @@ const { data: foodSales, isLoading } = useQuery<IFoodSale[]>({
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 
+const { applyFoodRetailFilters, foodRetailFilters } = useProductFilters()
+const filteredProducts = computed(() => {
+  if (!foodSales.value) return []
+  return applyFoodRetailFilters(foodSales.value)
+})
+
 </script>
 
 <template>
   <div class="space-y-4">
     <FoodRetailFilter
       :selected-category="selectedCategory"
+      :food-retail-filters="foodRetailFilters"
+      @update-food-retail-filters="(filters) => (foodRetailFilters = filters)"
       @open-add-modal="showAddModal = true"
       @open-export-modal="showExportModal = true"
       @update-category-selector="updateCategorySelector"
     />
 
     <RetailTable
-      :filtered-products="foodSales || []"
+      :filtered-products="filteredProducts"
       :is-loading-products="isLoading"
       :selected-category="selectedCategory"
       @open-edit-modal="openShowEditModal"

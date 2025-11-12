@@ -1,3 +1,4 @@
+import type { IFoodSale } from '@/stores/product/food_sale'
 import type {
   IFishFilters,
   IFoodFilters,
@@ -27,7 +28,7 @@ export function useProductFilters() {
     seedType: '',
     seedSize: '',
     priceMin: 0,
-    priceMax: 5000,
+    priceMax: 1000,
   })
 
   const microorganismFilters = ref<IMicroorganismFilters>({
@@ -146,10 +147,33 @@ export function useProductFilters() {
     return filtered
   }
 
-  const applyFoodRetailFilters = (products: IProduct[]) => {
+  const applyFoodRetailFilters = (products: IFoodSale[]) => {
     let filtered = [...products]
     if (foodRetailFilters.value.sku) {
-      filtered = filtered.filter((p) => p.sku?.toLowerCase().includes(foodRetailFilters.value.sku.toLowerCase()),
+      filtered = filtered.filter((p) => p.product.sku?.toLowerCase().includes(foodRetailFilters.value.sku.toLowerCase()),
+      )
+    }
+    if (foodRetailFilters.value.lotNumber) {
+      filtered = filtered.filter((p) => p.product.lotNumber === foodRetailFilters.value.lotNumber)
+    }
+    if (foodRetailFilters.value.brandName) {
+      filtered = filtered.filter((p) => p.product.brand === foodRetailFilters.value.brandName)
+    }
+    if (foodRetailFilters.value.foodtype) {
+      filtered = filtered.filter((p) => p.product.foodtype === foodRetailFilters.value.foodtype)
+    }
+    if (foodRetailFilters.value.seedType) {
+      filtered = filtered.filter((p) => p.product.seedType === foodRetailFilters.value.seedType)
+    }
+    if (foodRetailFilters.value.seedSize) {
+      filtered = filtered.filter((p) => p.product.seedSize === foodRetailFilters.value.seedSize)
+    }
+    if (foodRetailFilters.value.priceMin && foodRetailFilters.value.priceMax) {
+      filtered = filtered.filter(
+        (p) =>
+          p.priceKilo &&
+          p.priceKilo >= foodRetailFilters.value.priceMin &&
+          p.priceKilo <= foodRetailFilters.value.priceMax,
       )
     }
     return filtered

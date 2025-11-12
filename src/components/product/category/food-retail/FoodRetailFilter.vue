@@ -12,11 +12,11 @@ import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useProductQuery } from '@/composables/useProductQuery'
-import { useProductFilters } from '@/composables/useProductFilters'
 
 // Props
 const props = defineProps<{
   selectedCategory: ICategory | null
+  foodRetailFilters: IFoodFilters
 }>()
 
 // Emits
@@ -24,6 +24,7 @@ const emit = defineEmits<{
   'open-add-modal': []
   'open-export-modal': []
   'update-category-selector': []
+  'update-food-retail-filters': [filters: IFoodFilters]
 }>()
 
 const foodSeedTypeOptions = [
@@ -31,19 +32,18 @@ const foodSeedTypeOptions = [
   { label: 'จม', value: 'จม' },
 ]
 
-const { foodRetailFilters } = useProductFilters()
 
-const maxProductPrice = 5000
+const maxProductPrice = 1000
 
 const localFoodRetailFilters = ref<IFoodFilters>({
-  sku: foodRetailFilters.value.sku || '',
-  lotNumber: foodRetailFilters.value.lotNumber || '',
-  brandName: foodRetailFilters.value.brandName || '',
-  foodtype: foodRetailFilters.value.foodtype || '',
-  seedType: foodRetailFilters.value.seedType || '',
-  seedSize: foodRetailFilters.value.seedSize || '',
-  priceMin: foodRetailFilters.value.priceMin || 0,
-  priceMax: foodRetailFilters.value.priceMax || maxProductPrice,
+  sku: props.foodRetailFilters.sku || '',
+  lotNumber: props.foodRetailFilters.lotNumber || '',
+  brandName: props.foodRetailFilters.brandName || '',
+  foodtype: props.foodRetailFilters.foodtype || '',
+  seedType: props.foodRetailFilters.seedType || '',
+  seedSize: props.foodRetailFilters.seedSize || '',
+  priceMin: props.foodRetailFilters.priceMin || 0,
+  priceMax: props.foodRetailFilters.priceMax || maxProductPrice,
 })
 
 const foodPriceRange = computed({
@@ -59,7 +59,7 @@ const foodPriceRange = computed({
 
 const updateFoodFilter = (key: string, value: any) => {
   localFoodRetailFilters.value[key as keyof typeof localFoodRetailFilters.value] = value as never
-  foodRetailFilters.value[key as keyof typeof foodRetailFilters.value] = value as never
+  emit('update-food-retail-filters', { ...localFoodRetailFilters.value })
 }
 
 const clearFilters = () => {
@@ -73,16 +73,7 @@ const clearFilters = () => {
       priceMin: 0,
       priceMax: maxProductPrice,
     }
-    foodRetailFilters.value = {
-      sku: '',
-      lotNumber: '',
-      brandName: '',
-      foodtype: '',
-      seedType: '',
-      seedSize: '',
-      priceMin: 0,
-      priceMax: maxProductPrice,
-    }
+    emit('update-food-retail-filters', { ...localFoodRetailFilters.value })
 }
 
 const getImageUrl = (image: string) => {
@@ -164,7 +155,7 @@ const { navigateWithQuery } = useProductQuery()
       <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
           <h3 class="text-lg font-[600]! text-gray-800">
-            หมวดหมู่: อาหารแบ่งขาย
+            หมวดหมู่: อาหารแบ่งขาย {{ localFoodRetailFilters }}
           </h3>
         </div>
 
@@ -317,10 +308,10 @@ const { navigateWithQuery } = useProductQuery()
             <div class="px-2 py-1.5">
               <Slider
                 v-model="foodPriceRange"
-                @update:model-value="foodRetailFilters = { ...localFoodRetailFilters }"
+                @update:model-value="emit('update-food-retail-filters', { ...localFoodRetailFilters })"
                 :min="0"
                 :max="maxProductPrice"
-                :step="500"
+                :step="50"
                 range
                 fluid
                 class="px-2"
