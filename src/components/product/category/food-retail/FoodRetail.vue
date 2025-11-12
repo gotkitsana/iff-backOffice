@@ -3,7 +3,9 @@ import type { ICategory } from '@/stores/product/category'
 import FoodRetailFilter from './FoodRetailFilter.vue'
 import { ref } from 'vue'
 import ModalRetailAddProduct from '@/components/product/modal/retail/ModalRetailAddProduct.vue'
-import type { IFieldsRetailUI } from '@/stores/product/food_sale'
+import RetailTable from './RetailTable.vue'
+import { useFoodSaleStore, type IFieldsRetailUI, type IFoodSale } from '@/stores/product/food_sale'
+import { useQuery } from '@tanstack/vue-query'
 
 const props = defineProps<{
   selectedCategory: ICategory
@@ -13,8 +15,44 @@ const emit = defineEmits<{
   'update-category-selector': []
 }>()
 
-const showFoodModal = ref(false)
+const showAddModal = ref(false)
 const showExportModal = ref(false)
+const showDetailModal = ref(false)
+const showDeleteModal = ref(false)
+const showEditModal = ref(false)
+
+const selectedFoodSale = ref<IFoodSale | null>(null)
+
+const openShowDetailModal = (foodSale: IFoodSale) => {
+  selectedFoodSale.value = foodSale
+  showDetailModal.value = true
+}
+
+const openShowDeleteModal = (foodSale: IFoodSale) => {
+  selectedFoodSale.value = foodSale
+  showDeleteModal.value = true
+}
+
+const openShowEditModal = (foodSale: IFoodSale) => {
+  selectedFoodSale.value = foodSale
+  showEditModal.value = true
+}
+
+const closeShowDetailModal = () => {
+  showDetailModal.value = false
+  selectedFoodSale.value = null
+}
+
+const closeShowEditModal = () => {
+  showEditModal.value = false
+  selectedFoodSale.value = null
+}
+
+const closeShowDeleteModal = () => {
+  showDeleteModal.value = false
+  selectedFoodSale.value = null
+}
+
 
 const updateCategorySelector = () => {
   emit('update-category-selector')
@@ -30,23 +68,37 @@ const foodRetailUI:IFieldsRetailUI = {
     { key: 'dealerPriceKilo', label: 'ราคาพ่อค้าต่อกิโล', type: 'number', required: true },
   ],
 }
+
+const foodSaleStore = useFoodSaleStore()
+const { data: foodSales, isLoading } = useQuery<IFoodSale[]>({
+  queryKey: ['get_food_sales'],
+  queryFn: () => foodSaleStore.onGetFoodSales(),
+})
+
 </script>
 
 <template>
   <div class="space-y-4">
     <FoodRetailFilter
       :selected-category="selectedCategory"
-      @open-add-modal="showFoodModal = true"
+      @open-add-modal="showAddModal = true"
       @open-export-modal="showExportModal = true"
       @update-category-selector="updateCategorySelector"
     />
 
-    อาหารแบ่งขาย
+    <RetailTable
+      :filtered-products="foodSales || []"
+      :is-loading-products="isLoading"
+      :selected-category="selectedCategory"
+      @open-edit-modal="openShowEditModal"
+      @open-detail-modal="openShowDetailModal"
+      @open-delete-modal="openShowDeleteModal"
+    />
   </div>
 
   <ModalRetailAddProduct
-    v-if="showFoodModal"
-    v-model:visible="showFoodModal"
+    v-if="showAddModal"
+    v-model:visible="showAddModal"
     :fieldsRetailUI="foodRetailUI"
     :selected-category="selectedCategory"
   />

@@ -7,6 +7,11 @@ import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import type { IFoodSale } from '@/stores/product/food_sale'
+import { useQuery } from '@tanstack/vue-query'
+import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
+import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
+import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
+import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 
 // Props
 const props = defineProps<{
@@ -137,6 +142,39 @@ const closeMediaGalleryModal = () => {
   selectedProduct.value = null
 }
 
+const lotNumberStore = useLotNumberStore()
+const { data: lotNumberData } = useQuery<ILotNumber[]>({
+  queryKey: ['get_lot_numbers'],
+  queryFn: () => lotNumberStore.onGetLotNumbers(),
+})
+
+const foodBrandStore = useFoodBrandStore()
+const { data: foodBrandData } = useQuery<IFoodBrand[]>({
+  queryKey: ['get_food_brands'],
+  queryFn: () => foodBrandStore.onGetFoodBrands(),
+})
+const findFoodBrand = (id: string) => {
+  return foodBrandData.value?.find((p) => p._id === id)
+}
+
+const foodTypeStore = useFoodTypeStore()
+const { data: foodTypeData } = useQuery<IFoodType[]>({
+  queryKey: ['get_food_types'],
+  queryFn: () => foodTypeStore.onGetFoodTypes(),
+})
+const findFoodType = (id: string) => {
+  return foodTypeData.value?.find((p) => p._id === id)
+}
+
+const seedSizeStore = useSeedSizeStore()
+const { data: seedSizeData } = useQuery<ISeedSize[]>({
+  queryKey: ['get_seed_sizes'],
+  queryFn: () => seedSizeStore.onGetSeedSizes(),
+})
+const findSeedSize = (id: string) => {
+  return seedSizeData.value?.find((p) => p._id === id)
+}
+
 // Computed for Galleria
 const galleriaMediaItems = computed(() => {
   return selectedMediaItems.value.map((item) => ({
@@ -150,7 +188,7 @@ const galleriaMediaItems = computed(() => {
 const foodColumns = ref([
   {
     field: 'images',
-    header: 'รูปสินค้า',
+    header: 'รูป',
     headCell: '!min-w-[3rem] justify-center',
     bodyCell: ' text-center',
     render: (slotProps: any) =>
@@ -166,7 +204,7 @@ const foodColumns = ref([
                   src: getImageUrl(slotProps.data.product.images[0]),
                   alt: 'product image',
                   class: [
-                    'w-auto h-10 object-contain rounded cursor-pointer',
+                    'w-auto h-14 object-contain rounded cursor-pointer',
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
@@ -182,184 +220,202 @@ const foodColumns = ref([
                       {
                         class: [
                           'absolute -top-1 -right-1 bg-blue-600 text-white',
-                          'text-[10px] font-semibold rounded-full',
-                          'w-4 h-4 flex items-center justify-center',
+                          'text-[9px] font-semibold rounded-full',
+                          'w-3.5 h-3.5 flex items-center justify-center',
                         ].join(' '),
                       },
                       slotProps.data.product.images.length
                     )
                   : null,
               ])
-            : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
+            : h('i', { class: 'pi pi-image text-gray-500 !text-lg' }),
         ]
       ),
-  },
-  {
-    field: 'sku',
-    header: 'รหัสอาหาร',
-    render: (slotProps: any) =>
-      slotProps.data.product.sku
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.product.sku)
-        : h('span', '-'),
-  },
-  {
-    field: 'lotNumber',
-    header: 'เลขล็อต',
-    headCell: '!min-w-[6rem]',
-    render: (slotProps: any) =>
-      h('span', { class: 'text-sm text-gray-900' }, slotProps.data?.product?.lotNumber?.name || '-'),
-  },
-  {
-    field: 'kilo',
-    header: 'สินค้าคงเหลือ (กิโลกรัม)',
-    headCell: '!min-w-[5rem] justify-end',
-    bodyCell: 'text-end',
-    render: (slotProps: any) =>
-      slotProps.data.kilo
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.kilo)
-        : h('span', { class: 'text-sm text-red-600' }, 'หมด'),
   },
   {
     field: 'brand',
-    header: 'ชื่อแบรนด์',
-    headCell: '!min-w-[7.5rem]',
+    header: 'ยี่ห้อ',
     render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center gap-1.5'],
-        },
-        [
-          slotProps.data.product.brand.image
-            ? h('img', {
-                src: getImageBrand(slotProps.data.product.brand.image),
-                alt: 'product image',
-                class: 'w-auto h-8 object-contain rounded',
-                loading: 'lazy',
-                fetchpriority: 'low',
-                crossorigin: 'anonymous',
-              })
-            : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
-          h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.product?.brand?.name),
-        ]
-      ),
+      h('div', { class: 'flex items-center gap-1.5' }, [
+        findFoodBrand(slotProps.data?.product.brand)?.image
+          ? h('img', {
+              src: getImageBrand(findFoodBrand(slotProps.data?.product.brand)?.image || ''),
+              alt: 'brand',
+              class: 'w-auto h-6 object-contain rounded',
+              loading: 'lazy',
+              fetchpriority: 'low',
+              crossorigin: 'anonymous',
+            })
+          : null,
+        h(
+          'span',
+          { class: 'text-gray-700' },
+          findFoodBrand(slotProps.data?.product.brand)?.name || '-'
+        ),
+      ]),
   },
   {
-    field: 'foodtype',
-    header: 'ประเภทอาหาร',
-    headCell: '!min-w-[6.5rem]',
+    field: 'productInfo',
+    header: 'ข้อมูลสินค้า',
+    headCell: '!min-w-[12rem]',
     render: (slotProps: any) =>
-      slotProps.data?.product?.foodtype
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.product.foodtype.name)
-        : h('span', '-'),
-  },
-  {
-    field: 'seedType',
-    header: 'ชนิดเม็ด',
-    headCell: ' justify-center',
-    bodyCell: ' text-center',
-    render: (slotProps: any) =>
-      h(Tag, {
-        value: getSeedTypeLabel(slotProps.data.product.seedType).label,
-        severity: getSeedTypeLabel(slotProps.data.product.seedType)?.severity,
-        size: 'small',
-        class: 'text-xs',
-      }),
-  },
-  {
-    field: 'seedSize',
-    header: 'ขนาดเม็ด',
-    headCell: ' justify-center',
-    bodyCell: ' text-center',
-    render: (slotProps: any) =>
-      h(Tag, {
-        value: getSeedSizeLabel(slotProps.data?.product?.seedSize)?.label,
-        severity: getSeedSizeLabel(slotProps.data?.product?.seedSize)?.severity,
-        size: 'small',
-        class: 'text-xs',
-      }),
-  },
-  {
-    field: 'food.produceDate',
-    header: 'วันผลิต',
-    headCell: '!min-w-[6rem]',
-    render: (slotProps: any) =>
-      slotProps.data?.product?.food?.produceDate
-        ? h(
+      h('div', { class: 'flex flex-col gap-0.5' }, [
+        // SKU
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'รหัสสินค้า:'),
+          h(
             'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.product?.food?.produceDate).format('DD/MM/YYYY')
-          )
-        : h('span', '-'),
+            { class: 'text-xs font-medium text-gray-900' },
+            slotProps.data.product.sku || '-'
+          ),
+        ]),
+
+        // Lot Number
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'เลขล็อต:'),
+          h(
+            'span',
+            { class: 'text-xs font-medium text-gray-900' },
+            lotNumberData.value?.find((p) => p._id === slotProps.data?.product.lotNumber)?.name ||
+              '-'
+          ),
+        ]),
+
+        // Food Type
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'ประเภทอาหาร:'),
+          h(
+            'span',
+            { class: 'text-xs font-medium text-gray-900' },
+            findFoodType(slotProps.data?.product.foodtype)?.name || '-'
+          ),
+        ]),
+      ]),
   },
   {
-    field: 'food.expireDate',
-    header: 'วันหมดอายุ',
-    headCell: '!min-w-[6rem]',
+    field: 'lotAndStock',
+    header: 'คงเหลือ/ข้อมูลเม็ด',
+    headCell: '!min-w-[7rem]',
     render: (slotProps: any) =>
-      slotProps.data?.product?.food?.expireDate
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.product?.food?.expireDate).format('DD/MM/YYYY')
-          )
-        : h('span', '-'),
+      h('div', { class: 'flex flex-col gap-0.5' }, [
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'คงเหลือ:'),
+          slotProps.data.kilo
+            ? h(
+                'span',
+                { class: 'text-xs font-medium text-gray-900' },
+                slotProps.data.kilo + ' กก.'
+              )
+            : h('span', { class: 'text-xs text-red-600 font-medium' }, 'หมด'),
+        ]),
+
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'ประเภทเม็ด:'),
+          h(Tag, {
+            value: getSeedTypeLabel(slotProps.data.product.seedType).label,
+            severity: getSeedTypeLabel(slotProps.data.product.seedType)?.severity,
+            size: 'small',
+            class: 'text-xs px-1.5 py-0.5',
+          }),
+        ]),
+
+        h('div', { class: 'flex items-center gap-1.5' }, [
+          h('span', { class: 'text-xs text-gray-600' }, 'ขนาดเม็ด:'),
+          h(Tag, {
+            value: getSeedSizeLabel(findSeedSize(slotProps.data?.product?.seedSize))?.label,
+            severity: getSeedSizeLabel(findSeedSize(slotProps.data?.product?.seedSize))?.severity,
+            size: 'small',
+            class: 'text-xs px-1.5 py-0.5',
+          }),
+        ]),
+      ]),
   },
+
   {
-    field: 'priceKilo',
-    header: 'ราคาท้องตลาดต่อกิโล',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
+    field: 'dates',
+    header: 'วันที่',
+    headCell: '!min-w-[7rem]',
     render: (slotProps: any) =>
-      slotProps.data?.priceKilo
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.priceKilo)
-          )
-        : h('span', '-'),
+      h('div', { class: 'flex flex-col gap-0.5' }, [
+        slotProps.data?.product?.food?.produceDate
+          ? h('div', { class: 'flex items-center gap-1' }, [
+              h('span', { class: 'text-xs text-gray-600' }, 'ผลิต:'),
+              h(
+                'span',
+                { class: 'text-xs text-gray-900' },
+                dayjs(slotProps.data?.product?.food?.produceDate).format('DD/MM/YY')
+              ),
+            ])
+          : null,
+        slotProps.data?.product?.food?.expireDate
+          ? h('div', { class: 'flex items-center gap-1' }, [
+              h('span', { class: 'text-xs text-gray-600' }, 'หมดอายุ:'),
+              h(
+                'span',
+                { class: 'text-xs text-gray-900' },
+                dayjs(slotProps.data?.product?.food?.expireDate).format('DD/MM/YY')
+              ),
+            ])
+          : null,
+      ]),
   },
+
   {
-    field: 'costPriceKilo',
-    header: 'ราคาทุนต่อกิโล',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
+    field: 'prices',
+    header: 'ราคาทุน/ตลาด',
+    headCell: '!min-w-[10rem]',
     render: (slotProps: any) =>
-      slotProps.data?.costPriceKilo
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.costPriceKilo)
-          )
-        : h('span', '-'),
+      h('div', { class: 'flex flex-col gap-0.5 text-sm' }, [
+        slotProps.data?.costPriceKilo
+          ? h('div', { class: 'flex items-center gap-1.5' }, [
+              h('span', { class: 'text-gray-600' }, 'ราคาทุน:'),
+              h(
+                'span',
+                { class: 'text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.costPriceKilo)
+              ),
+            ])
+          : null,
+        slotProps.data?.priceKilo
+          ? h('div', { class: 'flex items-center gap-1.5' }, [
+              h('span', { class: 'text-gray-600' }, 'ราคาตลาด:'),
+              h(
+                'span',
+                { class: 'text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.priceKilo)
+              ),
+            ])
+          : null,
+      ]),
   },
+
   {
-    field: 'customerPriceKilo',
-    header: 'ราคาลูกค้าต่อกิโล',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
+    field: 'prices-sell',
+    header: 'ราคาลูกค้า/พ่อค้า',
+    headCell: '!min-w-[10rem]',
     render: (slotProps: any) =>
-      slotProps.data?.customerPriceKilo
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.customerPriceKilo)
-          )
-        : h('span', '-'),
-  },
-  {
-    field: 'dealerPriceKilo',
-    header: 'ราคาพ่อค้า',
-    headCell: '!min-w-[6rem] justify-end',
-    bodyCell: 'text-end',
-    render: (slotProps: any) =>
-      slotProps.data?.dealerPriceKilo
-        ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.dealerPriceKilo)
-          )
-        : h('span', '-'),
+      h('div', { class: 'flex flex-col gap-0.5 text-sm' }, [
+        slotProps.data?.customerPriceKilo
+          ? h('div', { class: 'flex items-center gap-1.5' }, [
+              h('span', { class: 'text-gray-500' }, 'ลูกค้า:'),
+              h(
+                'span',
+                { class: 'text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.customerPriceKilo)
+              ),
+            ])
+          : null,
+        slotProps.data?.dealerPriceKilo
+          ? h('div', { class: 'flex items-center gap-1.5' }, [
+              h('span', { class: 'text-gray-500' }, 'พ่อค้า:'),
+              h(
+                'span',
+                { class: 'text-gray-900 font-medium' },
+                formatCurrency(slotProps.data?.dealerPriceKilo)
+              ),
+            ])
+          : null,
+      ]),
   },
 ])
 </script>
@@ -582,7 +638,6 @@ const foodColumns = ref([
       </div>
     </template>
   </Dialog>
-
 </template>
 
 
