@@ -8,7 +8,6 @@ import {
 } from '@/stores/product/food_sale'
 import formatCurrency from '@/utils/formatCurrency'
 import dayjs from 'dayjs'
-import type { ICategory } from '@/stores/product/category'
 import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
@@ -20,7 +19,6 @@ import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 const props = defineProps<{
   visible: boolean
   productData: IFoodSale | null
-  selectedCategory: ICategory | null
   fieldsRetailUI: IFieldsRetailUI
 }>()
 

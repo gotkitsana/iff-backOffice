@@ -253,7 +253,7 @@ const validatePricePercent = (): boolean => {
       :form-data="dynamicFormData"
       :is-submitting="isSubmitting"
       @update-field="updateDynamicField"
-      :category-id="selectedCategory"
+      :category-id="props.selectedCategory"
     />
 
     <template #footer>

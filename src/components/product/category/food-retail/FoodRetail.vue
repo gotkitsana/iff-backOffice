@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import ModalRetailAddProduct from '@/components/product/modal/retail/ModalRetailAddProduct.vue'
 import ModalRetailDeleteProduct from '@/components/product/modal/retail/ModalRetailDeleteProduct.vue'
 import ModalRetailDetailProduct from '@/components/product/modal/retail/ModalRetailDetailProduct.vue'
+import ModalRetailEditProduct from '@/components/product/modal/retail/ModalRetailEditProduct.vue'
 import RetailTable from './RetailTable.vue'
 import { useFoodSaleStore, type IFieldsRetailUI, type IFoodSale } from '@/stores/product/food_sale'
 import { useQuery } from '@tanstack/vue-query'
@@ -105,13 +106,14 @@ const { data: foodSales, isLoading } = useQuery<IFoodSale[]>({
     :selected-category="selectedCategory"
   />
 
-  <ModalRetailExportProduct v-if="showExportModal" v-model:visible="showExportModal" />
+  <!-- <ModalRetailExportProduct v-if="showExportModal" v-model:visible="showExportModal" /> -->
 
   <ModalRetailEditProduct
-    v-if="showEditModal"
+    v-if="selectedFoodSale"
     v-model:visible="showEditModal"
     :product-data="selectedFoodSale"
     :selected-category="selectedCategory"
+    :fieldsRetailUI="foodRetailUI"
     @close-edit-modal="closeShowEditModal"
   />
 
@@ -119,7 +121,6 @@ const { data: foodSales, isLoading } = useQuery<IFoodSale[]>({
     v-if="selectedFoodSale"
     v-model:visible="showDetailModal"
     :product-data="selectedFoodSale"
-    :selected-category="selectedCategory"
     :fieldsRetailUI="foodRetailUI"
     @close-detail-modal="closeShowDetailModal"
   />

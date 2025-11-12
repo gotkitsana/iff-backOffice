@@ -94,8 +94,13 @@ export interface ICreateFoodSalePayload {
   kilo: number //น้ำหนักต่อกิโล
 }
 
-export interface IUpdateFoodSalePayload extends ICreateFoodSalePayload {
+export interface IUpdateFoodSalePayload {
   _id: string
+  priceKilo: number //ราคาท้องตลาดต่อกิโล
+  costPriceKilo: number //ราคาทุนต่อกิโล
+  customerPriceKilo: number //ราคาลูกค้าต่อกิโล
+  dealerPriceKilo: number //ราคาพ่อค้าต่อกิโล
+  kilo: number //น้ำหนักต่อกิโล
 }
 
 export type IFieldsKeyRetail =
