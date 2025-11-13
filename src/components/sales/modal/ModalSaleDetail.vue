@@ -11,6 +11,7 @@ import type { IAdmin } from '@/stores/admin/admin'
 import { useAdminStore } from '../../../stores/admin/admin'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import logoIcon from '@/assets/images/icon/icon.png'
+import jsPDF from 'jspdf'
 
 // Props
 const props = defineProps<{
@@ -92,6 +93,123 @@ const handlePrintInvoice = () => {
   printWindow.document.write(invoiceContent)
   printWindow.document.close()
   printWindow.print()
+}
+
+const handleDownloadPDF = async () => {
+  try {
+    const invoiceContent = generateInvoiceHTML()
+
+    // สร้าง iframe แบบซ่อนเพื่อ render HTML
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '800px'
+    iframe.style.height = '1200px'
+    iframe.style.border = 'none'
+    iframe.style.opacity = '0'
+    iframe.style.pointerEvents = 'none'
+    document.body.appendChild(iframe)
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!iframeDoc) {
+      document.body.removeChild(iframe)
+      throw new Error('Cannot access iframe document')
+    }
+
+    // เขียน HTML ลงใน iframe
+    iframeDoc.open()
+    iframeDoc.write(invoiceContent)
+    iframeDoc.close()
+
+    // รอให้ content และ images โหลดเสร็จ
+    await new Promise((resolve) => {
+      iframe.onload = resolve
+      setTimeout(resolve, 1000) // รอให้ images โหลด
+    })
+
+    // รอให้ images โหลดเสร็จ
+    const images = iframeDoc.querySelectorAll('img')
+    const imagePromises = Array.from(images).map((img) => {
+      return new Promise((resolve) => {
+        if (img.complete) {
+          resolve(true)
+        } else {
+          img.onload = () => resolve(true)
+          img.onerror = () => resolve(true) // continue even if image fails
+          setTimeout(() => resolve(true), 2000) // timeout after 2s
+        }
+      })
+    })
+    await Promise.all(imagePromises)
+
+    // ใช้ html2canvas ถ้ามี หรือใช้ jsPDF html() method
+    try {
+      // Dynamic import html2canvas
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(iframeDoc.body, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: 800,
+        height: iframeDoc.body.scrollHeight,
+      })
+
+      // สร้าง PDF จาก canvas
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgData = canvas.toDataURL('image/png')
+      const imgWidth = 210 // A4 width in mm
+      const pageHeight = 297 // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+      let position = 0
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      // ดาวน์โหลด PDF
+      pdf.save(`Invoice-${props.saleData.item}.pdf`)
+
+      // Cleanup
+      document.body.removeChild(iframe)
+    } catch {
+      // Fallback: ใช้ jsPDF html() method ถ้า html2canvas ไม่มี
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      await pdf.html(iframeDoc.body, {
+        callback: (doc) => {
+          doc.save(`Invoice-${props.saleData.item}.pdf`)
+          document.body.removeChild(iframe)
+        },
+        x: 10,
+        y: 10,
+        width: 190,
+        windowWidth: 800,
+        html2canvas: {
+          scale: 0.5,
+          useCORS: true,
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Error generating PDF:', error)
+    // Fallback: เปิดหน้าต่างใหม่แล้วให้ user print manually
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      const invoiceContent = generateInvoiceHTML()
+      printWindow.document.write(invoiceContent)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
 }
 
 const { data: members } = useQuery<IMember[]>({
@@ -869,6 +987,15 @@ const getProductImage = (productId: string): string | undefined => {
 
     <template #footer>
       <div class="flex justify-between items-center gap-3">
+        <Button
+          label="ดาวน์โหลดไฟล์"
+          icon="pi pi-file-pdf"
+          @click="handleDownloadPDF"
+          severity="info"
+          size="small"
+          :disabled="!saleData.products || saleData.products.length === 0"
+        />
+
         <Button
           label="พิมพ์ใบแจ้งหนี้"
           icon="pi pi-print"
