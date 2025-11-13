@@ -2,7 +2,15 @@ export type ICreateSalesPayload = {
   item: string // เลขรายการ
   status: string // สถานะรายการ
   user: string // ผู้ซื้อ
-  products: { id: string; quantity: number }[] | null // สินค้า
+  products: {
+    id: string
+    category: string
+    price: number
+    quantity: number
+    retailID?: string
+    name?: string
+    unit?: string
+  }[] | null // สินค้า
   deposit: number // มัดจำ
   discount: number // ส่วนลด
   seller: string // ผู้ขาย
@@ -16,7 +24,15 @@ export type IUpdateSalesPayload = {
   item: string // เลขรายการ
   status: string // สถานะรายการ
   user: string // ผู้ซื้อ
-  products: { id: string; quantity: number }[] // สินค้า
+  products: {
+    id: string
+    category: string
+    price: number
+    quantity: number
+    retailID?: string
+    name?: string
+    unit?: string
+  }[] // สินค้า
   deposit: number // มัดจำ
   discount: number // ส่วนลด
   seller: string // ผู้ขาย
@@ -44,16 +60,16 @@ export type ISales = {
     status: 'ci' | 'cs' | 'css'
     type: string
   }
-  products:
-    | {
-        name?: string
-        price?: number | null
-        type?: number
-        category?: string | null
-        id: string
-        quantity: number
-      }[]
-    | null
+  products: {
+    name?: string
+    price?: number | null
+    type?: number
+    category?: string | null
+    id: string
+    quantity: number
+    retailID?: string
+    unit?: string
+  }[]
   deposit: number
   discount: number
   seller: string
@@ -100,6 +116,3 @@ export type SellingLabel =
   | 'ระหว่างขนส่ง'
   | 'ได้รับสินค้าแล้ว'
   | 'สินค้าเสียหาย'
-
-
-

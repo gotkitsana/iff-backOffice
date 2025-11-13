@@ -38,7 +38,7 @@ const saleForm = ref<IUpdateSalesPayload>({
   item: '',
   status: '',
   user: '',
-  products: [{ id: '', quantity: 1 }],
+  products: [{ id: '', quantity: 1, category: '', price: 0 }],
   deposit: 0,
   discount: 0,
   seller: '',
@@ -90,7 +90,7 @@ const statusOptionsForSelect = computed(() => {
 // Product management functions
 const addProduct = () => {
   if (saleForm.value.products.length < 10) {
-    saleForm.value.products.push({ id: '', quantity: 1 })
+    saleForm.value.products.push({ id: '', quantity: 1, category: '', price: 0 })
   } else {
     toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
   }
@@ -104,7 +104,7 @@ const removeProduct = (index: number) => {
   }
 }
 
-const updateProducts = (products: Array<{ id: string; quantity: number }>) => {
+const updateProducts = (products: Array<{ id: string; quantity: number, category: string, price: number }>) => {
   saleForm.value.products = products
 }
 
@@ -145,7 +145,9 @@ const populateForm = (saleData: ISales) => {
     products: saleData.products?.map((p) => ({
       id: p.id || '',
       quantity: p.quantity || 1,
-    })) || [{ id: '', quantity: 1 }],
+      category: p.category || '',
+      price: p.price || 0,
+    })) || [{ id: '', quantity: 1, category: '', price: 0 }],
     deposit: saleData.deposit || 0,
     discount: saleData.discount || 0,
     seller: saleData.seller || '',
@@ -384,7 +386,7 @@ const resetForm = () => {
     item: '',
     status: '',
     user: '',
-    products: [{ id: '', quantity: 1 }],
+    products: [{ id: '', quantity: 1, category: '', price: 0 }],
     deposit: 0,
     discount: 0,
     seller: '',

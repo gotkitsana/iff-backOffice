@@ -10,6 +10,7 @@ import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import type { IAdmin } from '@/stores/admin/admin'
 import { useAdminStore } from '../../../stores/admin/admin'
 import { useProductStore, type IProduct } from '@/stores/product/product'
+import logoIcon from '@/assets/images/icon/icon.png'
 
 // Props
 const props = defineProps<{
@@ -30,7 +31,7 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
     currency: 'THB',
-  }).format(value)
+  }).format(Math.round(value))
 }
 
 const formatDate = (date: Date) => {
@@ -57,7 +58,7 @@ const currentStatusInfo = computed(() => {
 const totalAmount = computed(() => {
   return props.saleData.products
     ? props.saleData.products.reduce((total, product) => {
-        return total + (product.price || 0) * (product.quantity || 0)
+        return total + (product.price || 0) * (product.quantity || 1)
       }, 0)
     : 0
 })
@@ -104,6 +105,8 @@ const findMemberData = (id: string) => {
 
 const generateInvoiceHTML = () => {
   const currentDate = formatDateForInvoice(new Date())
+  // ใช้ logo ที่ import มา (Vite จะแปลงเป็น URL)
+  const logoPath = logoIcon
 
   return `
     <!DOCTYPE html>
@@ -113,82 +116,123 @@ const generateInvoiceHTML = () => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>ใบแจ้งหนี้ - ${props.saleData.item}</title>
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
         body {
           font-family: 'Sarabun', sans-serif;
           margin: 0;
           padding: 20px;
           background: white;
+          font-size: 14px;
         }
         .invoice-container {
           max-width: 800px;
           margin: 0 auto;
-          border: 1px solid #ddd;
           padding: 20px;
         }
         .header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 30px;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
           border-bottom: 2px solid #007bff;
-          padding-bottom: 20px;
         }
         .logo-section {
-          text-align: left;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #007bff;
-          margin-bottom: 5px;
+        .logo-img {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
         }
-        .company-name {
-          font-size: 14px;
+        .logo-text {
+          display: flex;
+          flex-direction: column;
+        }
+        .logo-text .company-name-en {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 2px;
+        }
+        .logo-text .company-name-th {
+          font-size: 12px;
           color: #666;
         }
         .invoice-title {
           background: #e3f2fd;
-          padding: 10px 20px;
-          border-radius: 5px;
+          padding: 8px 16px;
+          border-radius: 4px;
           text-align: center;
-          font-weight: bold;
+          font-weight: 600;
           color: #1976d2;
+          font-size: 16px;
+          margin: 0 auto;
         }
         .invoice-info {
           text-align: right;
+          font-size: 13px;
+        }
+        .invoice-info .company-name {
+          font-weight: 600;
+          margin-bottom: 3px;
+        }
+        .invoice-info .company-name-en {
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 10px;
+        }
+        .invoice-info .invoice-number {
+          margin-top: 10px;
+          font-size: 13px;
+        }
+        .invoice-info .invoice-date {
+          font-size: 13px;
         }
         .customer-section {
-          margin-bottom: 30px;
+          margin-bottom: 20px;
           background: #f8f9fa;
-          padding: 15px;
-          border-radius: 5px;
+          padding: 12px 15px;
+          border-radius: 4px;
         }
         .customer-title {
-          font-weight: bold;
-          margin-bottom: 10px;
+          font-weight: 600;
+          margin-bottom: 8px;
           color: #333;
+          font-size: 14px;
         }
         .customer-details {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          font-size: 14px;
+          gap: 8px 15px;
+          font-size: 13px;
+        }
+        .customer-details div {
+          color: #555;
         }
         .items-table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 20px;
+          font-size: 13px;
         }
         .items-table th,
         .items-table td {
           border: 1px solid #ddd;
-          padding: 10px;
+          padding: 8px;
           text-align: left;
-          font-size: 14px;
         }
         .items-table th {
           background: #f8f9fa;
-          font-weight: bold;
+          font-weight: 600;
+          color: #333;
         }
         .items-table .text-center {
           text-align: center;
@@ -199,27 +243,36 @@ const generateInvoiceHTML = () => {
         .summary-section {
           margin-top: 20px;
           text-align: right;
+          font-size: 14px;
         }
         .summary-row {
           display: flex;
           justify-content: space-between;
+          margin-bottom: 8px;
+          padding: 0 5px;
+        }
+        .summary-row.deposit-row {
           margin-bottom: 5px;
         }
         .summary-total {
-          font-weight: bold;
-          font-size: 18px;
+          font-weight: 600;
+          font-size: 16px;
           border-top: 2px solid #333;
           padding-top: 10px;
           margin-top: 10px;
         }
         .footer {
-          margin-top: 40px;
-          text-align: center;
+          margin-top: 30px;
+        }
+        .footer-notes {
+          margin-bottom: 25px;
+          font-size: 13px;
+          font-weight: 600;
         }
         .signature-section {
           display: flex;
           justify-content: space-around;
-          margin-top: 30px;
+          margin-top: 20px;
           align-items: flex-end;
         }
         .signature-box {
@@ -227,34 +280,33 @@ const generateInvoiceHTML = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
+          width: 200px;
         }
-        .signature-dots {
+        .signature-line {
           border-bottom: 1px dotted #333;
-          width: 150px;
-          height: 15px;
-          margin-bottom: 8px;
-        }
-        .signature-parentheses {
-          font-size: 16px;
-          color: #333;
-          margin-bottom: 8px;
-          font-weight: normal;
-          min-width: 150px;
-          text-align: center;
+          width: 100%;
+          height: 20px;
+          margin-bottom: 5px;
         }
         .signature-label {
-          font-weight: bold;
+          font-weight: 600;
           color: #333;
-          font-size: 14px;
+          font-size: 13px;
+          margin-top: 5px;
         }
         @media print {
-          body { margin: 0; }
-          .invoice-container { border: none; }
+          body {
+            margin: 0;
+            padding: 15px;
+          }
+          .invoice-container {
+            border: none;
+            padding: 0;
+          }
         }
-
         .product-image {
           width: auto;
-          height: 48px;
+          height: 40px;
           object-fit: contain;
         }
       </style>
@@ -264,49 +316,52 @@ const generateInvoiceHTML = () => {
         <!-- Header -->
         <div class="header">
           <div class="logo-section">
-            <div class="logo">iff</div>
-            <div class="company-name">INTER FISH FARM</div>
-            <div class="company-name">อินเตอร์ พิชฟาร์ม</div>
+            <img src="${logoPath}" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+            <div class="logo-text">
+              <div class="company-name-en">INTER FISH FARM</div>
+              <div class="company-name-th">อินเตอร์ ฟิชฟาร์ม</div>
+            </div>
           </div>
           <div class="invoice-title">INVOICE/ใบแจ้งหนี้</div>
           <div class="invoice-info">
-            <div><strong>ห้างหุ้นส่วนจำกัด อินเตอร์ ฟิช ฟาร์ม</strong></div>
-            <div>Inter Fish Farm Part., Ltd (HEAD OFFICE)</div>
-            <div style="margin-top: 15px;">
-              <div>รหัสใบแจ้งหนี้: <strong>${props.saleData.item}</strong></div>
-              <div>วันที่ออกใบแจ้งหนี้: <strong>${currentDate}</strong></div>
-            </div>
+            <div class="company-name">ห้างหุ้นส่วนจำกัด อินเตอร์ ฟิช ฟาร์ม</div>
+            <div class="company-name-en">Inter Fish Farm Part., Ltd (HEAD OFFICE)</div>
+            <div class="invoice-number">รหัสใบแจ้งหนี้: <strong>${
+              props.saleData.item
+            }</strong></div>
+            <div class="invoice-date">วันที่ออกใบแจ้งหนี้: <strong>${currentDate}</strong></div>
           </div>
         </div>
 
         <!-- Customer Information -->
         <div class="customer-section">
-            <div class="customer-title">ข้อมูลลูกค้า</div>
-            <div class="customer-details">
-              <div>ชื่อลูกค้า: ${props.saleData.user.name || props.saleData.user.displayName}</div>
-              <div>รหัสลูกค้า: ${
-                props.saleData.user.code.charAt(0).toUpperCase() + props.saleData.user.code.slice(1)
-              }</div>
-              <div>ที่อยู่: ${findMemberData(props.saleData.user._id)?.address}, ${
+          <div class="customer-title">ข้อมูลลูกค้า</div>
+          <div class="customer-details">
+            <div><strong>ชื่อลูกค้า:</strong> ${
+              props.saleData.user.name || props.saleData.user.displayName
+            }</div>
+            <div><strong>ที่อยู่:</strong> ${
+              findMemberData(props.saleData.user._id)?.address || '-'
+            }, ${
     memberStore.provinceOptions.find(
       (option) => option.value === findMemberData(props.saleData.user._id)?.province
     )?.label || '-'
   }</div>
-              <div>เบอร์โทร: ${findMemberData(props.saleData.user._id)?.phone}</div>
-            </div>
+
+            <div><strong>เลขประจำตัวผู้เสียภาษี / Tax ID.:</strong> -</div>
+          </div>
         </div>
 
         <!-- Items Table -->
         <table class="items-table">
           <thead>
             <tr>
-              <th>ลำดับที่</th>
-              <th style="text-align: center;">รูปสินค้า</th>
+              <th style="width: 50px;">ลำดับที่</th>
+              <th style="text-align: center; width: 80px;">รูปสินค้า</th>
               <th>รายการ</th>
-              <th>รหัส</th>
-              <th class="text-center">จำนวน</th>
-              <th class="text-right">ราคา/หน่วย</th>
-              <th class="text-right">รวม</th>
+              <th class="text-center" style="width: 80px;">จำนวน</th>
+              <th class="text-right" style="width: 120px;">ราคา/หน่วย</th>
+              <th class="text-right" style="width: 120px;">จำนวนเงิน</th>
             </tr>
           </thead>
           <tbody>
@@ -323,12 +378,11 @@ const generateInvoiceHTML = () => {
                      : ``
                  }
                 </td>
-                <td>${product.name}</td>
-                <td>${products.value?.find((p) => p._id === product.id)?.sku || '-'}</td>
-                <td class="text-center">${product.quantity}</td>
+                <td>${product.name || '-'}</td>
+                <td class="text-center">${product.quantity || 1}</td>
                 <td class="text-right">${formatCurrency(product.price || 0)}</td>
                 <td class="text-right">${formatCurrency(
-                  (product.price || 0) * product.quantity
+                  (product.price || 0) * (product.quantity || 1)
                 )}</td>
               </tr>
             `
@@ -343,17 +397,17 @@ const generateInvoiceHTML = () => {
             <span>ยอดรวม:</span>
             <span>${formatCurrency(totalAmount.value)}</span>
           </div>
-          <div class="summary-row">
-            <span>มัดจำ:</span>
-            <span>${formatCurrency(props.saleData.deposit)}</span>
+          <div class="summary-row deposit-row">
+            <span>มัดจำ...............%</span>
+            <span>Receive a deposit: ${formatCurrency(props.saleData.deposit || 0)}</span>
           </div>
           <div class="summary-row">
-            <span>ค่าจัดส่ง:</span>
+            <span>ค่าส่ง:</span>
             <span>${formatCurrency(props.saleData?.deliveryNo || 0)}</span>
           </div>
           <div class="summary-row">
             <span>ส่วนลด:</span>
-            <span>${formatCurrency(props.saleData.discount)}</span>
+            <span>${formatCurrency(props.saleData.discount || 0)}</span>
           </div>
           <div class="summary-row summary-total">
             <span>จำนวนเงินรวมทั้งสิ้น:</span>
@@ -363,23 +417,23 @@ const generateInvoiceHTML = () => {
 
         <!-- Footer -->
         <div class="footer">
-          <div style="margin-bottom: 20px;">
-            <strong>หมายเหตุ: เงื่อนไขการสั่งซื้อและชำระเงิน</strong>
+          <div class="footer-notes">
+            <strong style="padding-bottom: 20px;">หมายเหตุ : เงื่อนไขการสั่งซื้อและชำระเงิน</strong>
           </div>
           <div class="signature-section">
             <div class="signature-box">
-              <div class="signature-dots"></div>
-              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
+              <div class="signature-line"></div>
+              <div >(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</div>
               <div class="signature-label">ผู้รับสินค้า</div>
             </div>
             <div class="signature-box">
-              <div class="signature-dots"></div>
-              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
+              <div class="signature-line"></div>
+              <div >(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</div>
               <div class="signature-label">ผู้ชำระเงิน</div>
             </div>
             <div class="signature-box">
-              <div class="signature-dots"></div>
-              <div class="signature-parentheses">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
+              <div class="signature-line"></div>
+              <div >(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</div>
               <div class="signature-label">ผู้รับเงิน</div>
             </div>
           </div>
@@ -594,14 +648,16 @@ const getProductImage = (productId: string): string | undefined => {
                   </div>
                 </td>
                 <td class="px-4 py-2 text-center text-sm text-gray-900">
-                  {{ product.quantity }}
+                  {{ product.quantity || 1 }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
                   {{ product.price ? formatCurrency(product.price || 0) : '-' }}
                 </td>
                 <td class="px-4 py-2 text-right text-sm text-gray-900">
                   {{
-                    product.price ? formatCurrency((product.price || 0) * product.quantity) : '-'
+                    product.price
+                      ? formatCurrency((product.price || 0) * (product.quantity || 1))
+                      : '-'
                   }}
                 </td>
               </tr>

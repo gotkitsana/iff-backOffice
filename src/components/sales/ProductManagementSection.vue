@@ -9,14 +9,14 @@ import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
-  products: Array<{ id: string; quantity: number }>
+  products: Array<{ id: string; quantity: number, category: string, price: number }>
   isSubmitting: boolean
   readOnly?: boolean
 }>()
 
 // Emits
 const emit = defineEmits<{
-  'update:products': [products: Array<{ id: string; quantity: number }>]
+  'update:products': [products: Array<{ id: string; quantity: number, category: string, price: number }>]
   'add-product': []
   'remove-product': [index: number]
   'update:total-amount': [amount: number]

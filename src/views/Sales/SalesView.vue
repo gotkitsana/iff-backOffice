@@ -109,9 +109,11 @@ const totalRevenue = computed(() => {
     salesData.value
       ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
-        const saleTotal = sale.products ? sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0) : 0
+        const saleTotal = sale.products
+          ? sale.products.reduce((productSum, product) => {
+              return productSum + (product.price || 0) * product.quantity
+            }, 0)
+          : 0
         return sum + (saleTotal - sale.discount - sale.deliveryNo)
       }, 0) || 0
   )
@@ -132,9 +134,11 @@ const totalDeposit = computed(() => {
     salesData.value
       ?.filter((s) => getStatusStepOrder(s.status) === getStatusStepOrder('wait_payment'))
       .reduce((sum, sale) => {
-        const saleTotal = sale.products ? sale.products.reduce((productSum, product) => {
-          return productSum + (product.price || 0) * product.quantity
-        }, 0) : 0
+        const saleTotal = sale.products
+          ? sale.products.reduce((productSum, product) => {
+              return productSum + (product.price || 0) * product.quantity
+            }, 0)
+          : 0
         return sum + (saleTotal - sale.discount)
       }, 0) || 0
   )
@@ -156,14 +160,16 @@ const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
       ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
-        const categoryProductsTotal = sale.products ? sale.products
-          .filter(
-            (product) =>
-              categories.value?.find((c) => c._id === product.category)?.value === categoryName
-          )
-          .reduce((productSum, product) => {
-            return productSum + (product.price || 0) * product.quantity
-          }, 0) : 0
+        const categoryProductsTotal = sale.products
+          ? sale.products
+              .filter(
+                (product) =>
+                  categories.value?.find((c) => c._id === product.category)?.value === categoryName
+              )
+              .reduce((productSum, product) => {
+                return productSum + (product.price || 0) * product.quantity
+              }, 0)
+          : 0
         return sum + categoryProductsTotal
       }, 0) || 0
   )
@@ -188,10 +194,12 @@ const formatDate = (date: Date) => {
 
 // Helper functions for sales data
 const getSaleTotalAmount = (sale: ISales) => {
-  const productTotal = sale.products ? sale.products.reduce((sum, product) => {
-    return sum + (product.price || 0) * product.quantity
-  }, 0) : 0
-  const netAmount = (productTotal - (sale.deliveryNo || 0)) - sale.discount
+  const productTotal = sale.products
+    ? sale.products.reduce((sum, product) => {
+        return sum + (product.price || 0) * product.quantity
+      }, 0)
+    : 0
+  const netAmount = productTotal - (sale.deliveryNo || 0) - sale.discount
   return netAmount < 0 ? 0 : netAmount
 }
 
@@ -743,7 +751,7 @@ const { data: admins } = useQuery<IAdmin[]>({
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-medium! text-green-600 text-sm">
-                  {{ formatCurrency(slotProps.data.deliveryNo || 0)}}
+                  {{ formatCurrency(slotProps.data.deliveryNo || 0) }}
                 </div>
               </div>
             </template>

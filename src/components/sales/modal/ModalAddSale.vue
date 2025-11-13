@@ -23,6 +23,7 @@ import { type IAdmin } from '@/stores/admin/admin'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
+import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 
 // Props
 const props = defineProps<{
@@ -46,7 +47,7 @@ const saleForm = ref<ICreateSalesPayload>({
   item: '',
   status: '',
   user: '',
-  products: [{ id: '', quantity: 1 }],
+  products: [{ id: '', category: '', price: 0, quantity: 1 }],
   deposit: 0,
   discount: 0,
   seller: '',
@@ -98,6 +99,13 @@ const getImageUrl = (filename: string): string => {
   imageUrlCache.set(filename, url)
   return url
 }
+
+const foodSaleStore = useFoodSaleStore()
+const { data: foodSales } = useQuery<IFoodSale[]>({
+  queryKey: ['get_food_sales'],
+  queryFn: () => foodSaleStore.onGetFoodSales(),
+})
+
 const getProductOptionsForIndex = (currentIndex: number) => {
   if (!availableProducts.value) return []
 
@@ -109,6 +117,11 @@ const getProductOptionsForIndex = (currentIndex: number) => {
   // กรองสินค้าที่ยังไม่ได้เลือก
   const unselectedProducts = availableProducts.value.filter(
     (product) => !selectedProductIds?.includes(product._id)
+  )
+
+  // กรอง food sales ที่ยังไม่ได้เลือก
+  const unselectedFoodSales = (foodSales.value || []).filter(
+    (foodSale) => !selectedProductIds?.includes(foodSale.product?._id)
   )
 
   // group by category._id
@@ -125,6 +138,9 @@ const getProductOptionsForIndex = (currentIndex: number) => {
         balance?: number
         isFish?: boolean
         sku?: string
+        isFoodSale?: boolean
+        kilo?: number
+        customerPriceKilo?: number
       }>
     }
   >()
@@ -133,9 +149,11 @@ const getProductOptionsForIndex = (currentIndex: number) => {
     const catId = product.category?._id || 'unknown'
     const cat = handleFindCategory(product.category?._id)
     const isFish = cat?.value === 'fish'
+    const isFood = cat?.value === 'food'
 
+    const groupLabel = isFood ? 'อาหาร (กระสอบ)' : cat?.name || 'ไม่ระบุหมวดหมู่'
     const group = groupsMap.get(catId) || {
-      label: cat?.name || 'ไม่ระบุหมวดหมู่',
+      label: groupLabel,
       children: [],
     }
 
@@ -156,10 +174,48 @@ const getProductOptionsForIndex = (currentIndex: number) => {
       sold: product.sold,
       balance: product.balance,
       isFish: isFish,
+      isFoodSale: false,
     })
 
     groupsMap.set(catId, group)
   })
+
+  // unselectedFoodSales.forEach((foodSale) => {
+  //   const product = foodSale.product
+  //   const catId = 'food_sale'
+  //   const cat = handleFindCategory(product?.category)
+
+  //   // สร้าง group สำหรับอาหารแบ่งขาย หรือใช้ category เดิม
+  //   const groupLabel = 'อาหาร (แบ่งขาย)'
+  //   const group = groupsMap.get(catId) || {
+  //     label: groupLabel,
+  //     children: [],
+  //   }
+
+  //   const imageUrl =
+  //     product?.images && product.images.length > 0
+  //       ? getImageUrl(product.images[0].filename)
+  //       : undefined
+
+  //   // ตรวจสอบว่าขายหมดหรือยัง (ใช้ kilo เป็น balance)
+  //   const isSold = (foodSale.kilo || 0) === 0
+
+  //   group.children.push({
+  //     label: `${foodSale.name || product?.name || ''}`,
+  //     sku: product?.sku || '',
+  //     value: foodSale._id, // ใช้ _id ของ food sale
+  //     image: imageUrl,
+  //     disabled: isSold,
+  //     sold: isSold,
+  //     balance: foodSale.kilo || 0,
+  //     isFish: false,
+  //     isFoodSale: true,
+  //     kilo: foodSale.kilo,
+  //     customerPriceKilo: foodSale.customerPriceKilo,
+  //   })
+
+  //   groupsMap.set(catId, group)
+  // })
 
   const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
     key: `group-${groupIndex}`,
@@ -172,7 +228,7 @@ const getProductOptionsForIndex = (currentIndex: number) => {
         if (!a.disabled && b.disabled) return -1
         return a.label.localeCompare(b.label)
       })
-      .map((item, itemIndex) => ({
+      .map((item) => ({
         key: item.value,
         label: item.label,
         value: item.value,
@@ -184,39 +240,49 @@ const getProductOptionsForIndex = (currentIndex: number) => {
         sold: item.sold,
         balance: item.balance,
         isFish: item.isFish,
+        isFoodSale: item.isFoodSale,
+        kilo: item.kilo,
+        customerPriceKilo: item.customerPriceKilo,
       })),
   }))
 
   return treeNodes
-
-  // const sortedGroups = Array.from(groupsMap.values()).map((group) => ({
-  //   ...group,
-  //   items: group.items.sort((a, b) => {
-  //     // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง (return 1)
-  //     if (a.disabled && !b.disabled) return 1
-  //     // ถ้า a ไม่ disabled และ b disabled -> a ต้องขึ้นบน (return -1)
-  //     if (!a.disabled && b.disabled) return -1
-  //     // ถ้าเหมือนกัน เรียงตามชื่อ
-  //     return a.label.localeCompare(b.label)
-  //   }),
-  // }))
-
-  // return sortedGroups
-
-  // return Array.from(groupsMap.values())
-
-  // return unselectedProducts.map((product) => ({
-  //   label: `${product.name || product.species?.name} (รหัสสินค้า: ${product.sku})`,
-  //   value: product._id,
-  //   product: product,
-  // }))
 }
 
 const selectedProductDetails = computed(() => {
-  return saleForm.value.products?.map((product: { id: string; quantity: number }) => {
-    if (!product.id || !availableProducts.value) return null
+  return saleForm.value.products?.map((product: { id: string; quantity: number; category: string }) => {
+    if (!product.id) return null
 
+    // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
+    const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
+
+    console.log(foodSale, product)
+
+    if (foodSale) {
+      // กรณีเป็น food sale
+      const productDetail = foodSale.product
+      const imageUrl =
+        productDetail?.images && productDetail?.images.length > 0
+          ? getProductImageUrl(productDetail.images[0].filename)
+          : undefined
+
+      return {
+        ...productDetail,
+        quantity: product.quantity,
+        productId: foodSale._id,
+        isMissing: false,
+        category: handleFindCategory(productDetail?.category),
+        image: imageUrl,
+        isFoodSale: true,
+        kilo: foodSale.kilo,
+        customerPriceKilo: foodSale.customerPriceKilo,
+        price: foodSale.customerPriceKilo, // ใช้ราคาต่อกิโล
+      }
+    }
+
+    if (!availableProducts.value) return null
     const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
     const category = handleFindCategory(productDetail?.category?._id)
     const imageUrl =
       productDetail?.images && productDetail?.images.length > 0
@@ -250,9 +316,16 @@ const selectedProductDetails = computed(() => {
 
 const totalAmount = computed(() => {
   return saleForm.value.products?.reduce((sum, product) => {
-    if (!product.id || !availableProducts.value) return 0
-    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    if (!product.id) return 0
 
+    // ตรวจสอบว่าเป็น food sale
+    const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
+    if (foodSale) {
+      return sum + (foodSale.customerPriceKilo || 0) * (product.quantity || 0)
+    }
+
+    // กรณี product ปกติ
+    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
     if (productDetail && productDetail.price) {
       return sum + (productDetail.price || 0) * product.quantity
     }
@@ -285,12 +358,12 @@ const selectedMemberDetails = computed(() => {
 // Product management functions
 const addProduct = () => {
   if (!saleForm.value.products) {
-    saleForm.value.products = [{ id: '', quantity: 1 }]
+    saleForm.value.products = [{ id: '', category: '', price: 0, quantity: 1 }]
     return
   }
 
   if (saleForm.value.products.length < 20) {
-    saleForm.value.products.push({ id: '', quantity: 1 })
+    saleForm.value.products.push({ id: '', category: '', price: 0, quantity: 1 })
   } else {
     toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 20 รายการ')
   }
@@ -359,9 +432,49 @@ const handleSubmit = () => {
     return
   }
 
+  let formattedProducts: {
+        id: string
+        category: string
+        price: number
+        quantity: number
+        retailID?: string
+        name?: string
+        unit?: string
+      }[] | null = null
+
+  if (saleForm.value.status !== 'wait_product' && saleForm.value.products) {
+    formattedProducts = saleForm.value.products.map((product) => {
+      const retailSale = foodSales.value?.find((fs) => fs._id === product.id)
+
+      if (retailSale) {
+        // ถ้าเป็นอาหารแบ่งขาย: เก็บ foodSale._id ใน retailID และ product._id ใน id
+        return {
+          id: retailSale.product._id,
+          category: retailSale.product.category || '',
+          price: retailSale.customerPriceKilo, // ราคาต่อกก.
+          quantity: product.quantity, // จำนวนกก.
+          retailID: retailSale._id,
+          name: retailSale.name || retailSale.product.name || '',
+          unit: 'kilo', // ระบุหน่วย
+        }
+      } else {
+        return {
+          id: product.id,
+          category: product.category,
+          price: product.price, // ราคาต่อกระสอบ
+          quantity: product.quantity || 1, // จำนวนกระสอบ
+          name: product.name || '',
+          unit: 'piece', // ระบุหน่วย
+        }
+      }
+    })
+  }
+
+  console.log(formattedProducts)
+
   createSale({
     ...saleForm.value,
-    products: saleForm.value.status == 'wait_product' ? null : saleForm.value.products,
+    products: formattedProducts,
     item: `SALE-${Date.now().toString().slice(-8)}`,
   })
 }
@@ -578,7 +691,7 @@ const resetForm = () => {
     item: '',
     status: '',
     user: '',
-    products: [{ id: '', quantity: 1 }],
+    products: [{ id: '', category: '', price: 0, quantity: 1 }],
     deposit: 0,
     discount: 0,
     seller: '',
@@ -628,7 +741,48 @@ const updateBankCode = (bankCode: string) => {
 }
 
 const updateProducts = (index: number, value: string) => {
-  saleForm.value.products![index].id = Object.keys(value)[0]
+  // TreeSelect ส่ง value เป็น string (id)
+  const selectedId = Object.keys(value)[0]
+  console.log(selectedId)
+  if (!selectedId) return
+
+  // ตรวจสอบว่าเป็น foodSale หรือ product ปกติ
+  const foodSale = foodSales.value?.find((fs) => fs._id === selectedId)
+  console.log(foodSale)
+  if (foodSale) {
+    // กรณีอาหารแบ่งขาย
+    const productData = foodSale.product
+    saleForm.value.products![index] = {
+      id: productData._id, // เก็บ product._id
+      category: productData.category || '',
+      price: foodSale.customerPriceKilo, // ราคาต่อกก.
+      quantity: saleForm.value.products![index].quantity || 1, // คงค่า quantity เดิม
+      retailID: foodSale._id, // เก็บ foodSale._id
+      name: foodSale.name || productData.name || '',
+      unit: 'kilo'
+    }
+  } else {
+    // กรณีสินค้าปกติ
+    const product = availableProducts.value?.find((p) => p._id === selectedId)
+
+    if (!product) return
+
+    // หาราคาตาม category
+    let price = product.price || 0
+    if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
+      price = product.food.customerPrice
+    }
+
+    saleForm.value.products![index] = {
+      id: product._id,
+      category: product.category?._id || '',
+      price: price, // ราคาต่อกระสอบ
+      quantity: saleForm.value.products![index].quantity || 1, // คงค่า quantity เดิม
+      // ไม่มี retailID
+      name: product.name || '',
+      unit: 'piece'
+    }
+  }
 }
 </script>
 
@@ -810,8 +964,9 @@ const updateProducts = (index: number, value: string) => {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
+
                 <TreeSelect
-                  :modelValue="product.id"
+                  v-model="product.id"
                   @update:modelValue="(value) => updateProducts(index, value)"
                   :options="getProductOptionsForIndex(index)"
                   placeholder="เลือกสินค้าที่ต้องการขาย"
@@ -894,17 +1049,35 @@ const updateProducts = (index: number, value: string) => {
                           class="text-xs"
                         />
 
-                        <!-- สินค้าทั่วไป -->
+                        <!-- สินค้าทั่วไป (อาหารกระสอบ) -->
                         <Tag
-                          v-else-if="!node.isFish && (node.sold || node.balance === 0)"
+                          v-else-if="
+                            !node.isFish && !node.isFoodSale && (node.sold || node.balance === 0)
+                          "
                           :value="`คงเหลือ: ${node.balance || 0}`"
                           severity="danger"
                           size="small"
                           class="text-xs"
                         />
                         <Tag
-                          v-else-if="!node.isFish"
+                          v-else-if="!node.isFish && !node.isFoodSale"
                           :value="`คงเหลือ: ${node.balance || 0}`"
+                          severity="success"
+                          size="small"
+                          class="text-xs"
+                        />
+
+                        <!-- อาหารแบ่งขาย -->
+                        <Tag
+                          v-else-if="node.isFoodSale && (node.sold || node.balance === 0)"
+                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
+                          severity="danger"
+                          size="small"
+                          class="text-xs"
+                        />
+                        <Tag
+                          v-else-if="node.isFoodSale"
+                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
                           severity="success"
                           size="small"
                           class="text-xs"

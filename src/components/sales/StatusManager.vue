@@ -226,7 +226,12 @@ const handleSubmit = () => {
     bankAccount: props.currentData.bankAccount,
     item: props.currentData.item,
     user: props.currentData.user._id,
-    products: props.currentData.products,
+    products: props.currentData.products?.map((p) => ({
+      id: p.id || '',
+      category: p.category || '',
+      price: p.price || 0,
+      quantity: p.quantity || 1,
+    })),
     deposit: props.currentData.deposit,
     discount: props.currentData.discount,
     seller: props.currentData.seller,
@@ -632,9 +637,11 @@ const availableNextSteps = computed(() => {
       <ProductManagementSection
         :products="
           props.currentData.products?.map((product) => ({
-            id: product.id,
-            quantity: product.quantity,
-          })) || []
+            id: product.id || '',
+            quantity: product.quantity || 1,
+            category: product.category || '',
+            price: product.price || 0,
+          }))
         "
         :is-submitting="false"
         :read-only="true"
