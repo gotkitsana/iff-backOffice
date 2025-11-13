@@ -256,8 +256,6 @@ const selectedProductDetails = computed(() => {
     // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
     const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
 
-    console.log(foodSale, product)
-
     if (foodSale) {
       // กรณีเป็น food sale
       const productDetail = foodSale.product
@@ -470,7 +468,6 @@ const handleSubmit = () => {
     })
   }
 
-  console.log(formattedProducts)
 
   createSale({
     ...saleForm.value,
@@ -743,12 +740,12 @@ const updateBankCode = (bankCode: string) => {
 const updateProducts = (index: number, value: string) => {
   // TreeSelect ส่ง value เป็น string (id)
   const selectedId = Object.keys(value)[0]
-  console.log(selectedId)
+
   if (!selectedId) return
 
   // ตรวจสอบว่าเป็น foodSale หรือ product ปกติ
   const foodSale = foodSales.value?.find((fs) => fs._id === selectedId)
-  console.log(foodSale)
+
   if (foodSale) {
     // กรณีอาหารแบ่งขาย
     const productData = foodSale.product
