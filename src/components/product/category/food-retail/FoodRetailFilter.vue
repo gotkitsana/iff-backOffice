@@ -155,7 +155,7 @@ const { navigateWithQuery } = useProductQuery()
       <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
         <div class="flex items-center gap-2">
           <h3 class="text-lg font-[600]! text-gray-800">
-            หมวดหมู่: อาหารแบ่งขาย {{ localFoodRetailFilters }}
+            หมวดหมู่: อาหารแบ่งขาย
           </h3>
         </div>
 
