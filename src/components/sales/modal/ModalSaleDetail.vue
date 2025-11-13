@@ -220,7 +220,6 @@ const generateInvoiceHTML = () => {
         .items-table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 20px;
           font-size: 13px;
         }
         .items-table th,
@@ -237,17 +236,49 @@ const generateInvoiceHTML = () => {
         .items-table .text-center {
           text-align: center;
         }
-        .items-table .text-right {
-          text-align: right;
-        }
-        .summary-section {
-          margin-top: 20px;
+         .items-table .text-right {
+           text-align: right;
+         }
+         .product-detail {
+           line-height: 1.6;
+         }
+         .product-name {
+           font-weight: 600;
+           color: #333;
+           margin-bottom: 4px;
+           font-size: 14px;
+         }
+         .product-info {
+           font-size: 12px;
+           color: #666;
+           margin-top: 4px;
+           line-height: 1.5;
+         }
+         .product-info-item {
+           display: inline-block;
+           margin-right: 12px;
+           margin-bottom: 2px;
+         }
+         .product-info-label {
+           color: #888;
+           margin-right: 4px;
+         }
+         .product-info-value {
+           color: #333;
+           font-weight: 500;
+         }
+         .summary-section {
           text-align: right;
           font-size: 14px;
+          width: 240px;
+          margin-left: auto;
+          padding: 12px;
+          background: #fff;
         }
         .summary-row {
           display: flex;
           justify-content: space-between;
+          gap: 10px;
           margin-bottom: 8px;
           padding: 0 5px;
         }
@@ -259,10 +290,9 @@ const generateInvoiceHTML = () => {
           font-size: 16px;
           border-top: 2px solid #333;
           padding-top: 10px;
-          margin-top: 10px;
         }
         .footer {
-          margin-top: 30px;
+          margin-top: 20px;
         }
         .footer-notes {
           margin-bottom: 25px;
@@ -368,6 +398,83 @@ const generateInvoiceHTML = () => {
             ${props.saleData.products
               ?.map((product, index) => {
                 const productImage = getProductImage(product.id)
+                const productData = products.value?.find((p) => p._id === product.id)
+                const category = handleFindCategory(product.category)
+                const isFish = category?.value === 'fish'
+                const isFood = category?.value === 'food'
+                const isMicroorganism = category?.value === 'microorganism'
+
+                // สร้างรายละเอียดสินค้า
+                const productDetails: string[] = []
+
+                if (isFish && productData) {
+                  // สำหรับปลา: แสดง สายพันธุ์, น้ำหนัก, ขนาด, อายุ
+                  if (productData.species?.name) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">สายพันธุ์:</span><span class="product-info-value">${productData.species.name}</span></span>`
+                    )
+                  }
+                  if (productData.weight) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">น้ำหนัก:</span><span class="product-info-value">${productData.weight} กก.</span></span>`
+                    )
+                  }
+                  if (productData.size) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">ขนาด:</span><span class="product-info-value">${productData.size} ซม.</span></span>`
+                    )
+                  }
+                  if (productData.age) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">อายุ:</span><span class="product-info-value">${productData.age.toUpperCase()}</span></span>`
+                    )
+                  }
+                }
+                if (productData && isFood) {
+                  // สำหรับสินค้าอื่นๆ: แสดง รหัส, หมวดหมู่, ยี่ห้อ, ประเภทอาหาร (ถ้ามี)
+                  if (productData.sku) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">รหัส:</span><span class="product-info-value">${productData.sku}</span></span>`
+                    )
+                  }
+                  if (category?.name) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">หมวดหมู่:</span><span class="product-info-value">${category.name}</span></span>`
+                    )
+                  }
+                  if (productData.brand?.name) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">ยี่ห้อ:</span><span class="product-info-value">${productData.brand.name}</span></span>`
+                    )
+                  }
+                  if (productData.foodtype?.name) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">ประเภท:</span><span class="product-info-value">${productData.foodtype.name}</span></span>`
+                    )
+                  }
+                  if (productData.seedType) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">ชนิดเม็ด:</span><span class="product-info-value">${productData.seedType}</span></span>`
+                    )
+                  }
+                  if (productData.seedSize) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">ขนาดเม็ด:</span><span class="product-info-value">${productData.seedSize.name}</span></span>`
+                    )
+                  }
+                }
+                if (isMicroorganism && productData) {
+                  // ถ้าไม่พบข้อมูล product ให้แสดงรหัสจาก products array
+                  const sku = products.value?.find((p) => p._id === product.id)?.sku
+                  if (sku) {
+                    productDetails.push(
+                      `<span class="product-info-item"><span class="product-info-label">รหัส:</span><span class="product-info-value">${sku}</span></span>`
+                    )
+                  }
+                }
+
+                const unit = product.retailID ? 'กก.' : 'กระสอบ'
+
                 return `
               <tr>
                 <td>${index + 1}</td>
@@ -378,8 +485,17 @@ const generateInvoiceHTML = () => {
                      : ``
                  }
                 </td>
-                <td>${product.name || '-'}</td>
-                <td class="text-center">${product.quantity || 1}</td>
+                <td>
+                  <div class="product-detail">
+
+                    ${
+                      productDetails.length > 0
+                        ? `<div class="product-info">${productDetails.join('')}</div>`
+                        : ''
+                    }
+                  </div>
+                </td>
+                <td class="text-center">${product.quantity || 1} ${unit}</td>
                 <td class="text-right">${formatCurrency(product.price || 0)}</td>
                 <td class="text-right">${formatCurrency(
                   (product.price || 0) * (product.quantity || 1)
@@ -392,14 +508,18 @@ const generateInvoiceHTML = () => {
         </table>
 
         <!-- Summary -->
+        <div style="display: grid; grid-template-columns: 1fr 240px;">
+        <div style="padding-top: 10px;">
+          <strong >หมายเหตุ: เงื่อนไขการสั่งซื้อและชำระเงิน</strong>
+        </div>
         <div class="summary-section">
           <div class="summary-row">
             <span>ยอดรวม:</span>
             <span>${formatCurrency(totalAmount.value)}</span>
           </div>
           <div class="summary-row deposit-row">
-            <span>มัดจำ...............%</span>
-            <span>Receive a deposit: ${formatCurrency(props.saleData.deposit || 0)}</span>
+            <span>มัดจำ:</span>
+            <span> ${formatCurrency(props.saleData.deposit || 0)}</span>
           </div>
           <div class="summary-row">
             <span>ค่าส่ง:</span>
@@ -409,17 +529,16 @@ const generateInvoiceHTML = () => {
             <span>ส่วนลด:</span>
             <span>${formatCurrency(props.saleData.discount || 0)}</span>
           </div>
-          <div class="summary-row summary-total">
+          <div class="summary-row" style="font-weight: 600;margin-bottom: 0px;">
             <span>จำนวนเงินรวมทั้งสิ้น:</span>
             <span>${formatCurrency(finalAmount.value)}</span>
           </div>
         </div>
 
+        </div>
+
         <!-- Footer -->
         <div class="footer">
-          <div class="footer-notes">
-            <strong style="padding-bottom: 20px;">หมายเหตุ : เงื่อนไขการสั่งซื้อและชำระเงิน</strong>
-          </div>
           <div class="signature-section">
             <div class="signature-box">
               <div class="signature-line"></div>
