@@ -250,66 +250,68 @@ const getProductOptionsForIndex = (currentIndex: number) => {
 }
 
 const selectedProductDetails = computed(() => {
-  return saleForm.value.products?.map((product: { id: string; quantity: number; category: string }) => {
-    if (!product.id) return null
+  return saleForm.value.products?.map(
+    (product: { id: string; quantity: number; category: string }) => {
+      if (!product.id) return null
 
-    // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
-    const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
+      // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
+      const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
 
-    if (foodSale) {
-      // กรณีเป็น food sale
-      const productDetail = foodSale.product
+      if (foodSale) {
+        // กรณีเป็น food sale
+        const productDetail = foodSale.product
+        const imageUrl =
+          productDetail?.images && productDetail?.images.length > 0
+            ? getProductImageUrl(productDetail.images[0].filename)
+            : undefined
+
+        return {
+          ...productDetail,
+          quantity: product.quantity,
+          productId: foodSale._id,
+          isMissing: false,
+          category: handleFindCategory(productDetail?.category),
+          image: imageUrl,
+          isFoodSale: true,
+          kilo: foodSale.kilo,
+          customerPriceKilo: foodSale.customerPriceKilo,
+          price: foodSale.customerPriceKilo, // ใช้ราคาต่อกิโล
+        }
+      }
+
+      if (!availableProducts.value) return null
+      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
+      const category = handleFindCategory(productDetail?.category?._id)
       const imageUrl =
         productDetail?.images && productDetail?.images.length > 0
-          ? getProductImageUrl(productDetail.images[0].filename)
+          ? getProductImageUrl(productDetail?.images[0].filename)
           : undefined
+
+      if (!productDetail) {
+        return {
+          name: '',
+          price: 0,
+          productId: product.id,
+          quantity: product.quantity,
+          isMissing: true,
+          category: undefined,
+          image: undefined,
+          sku: '',
+          balance: 0,
+        }
+      }
 
       return {
         ...productDetail,
         quantity: product.quantity,
-        productId: foodSale._id,
-        isMissing: false,
-        category: handleFindCategory(productDetail?.category),
-        image: imageUrl,
-        isFoodSale: true,
-        kilo: foodSale.kilo,
-        customerPriceKilo: foodSale.customerPriceKilo,
-        price: foodSale.customerPriceKilo, // ใช้ราคาต่อกิโล
-      }
-    }
-
-    if (!availableProducts.value) return null
-    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
-
-    const category = handleFindCategory(productDetail?.category?._id)
-    const imageUrl =
-      productDetail?.images && productDetail?.images.length > 0
-        ? getProductImageUrl(productDetail?.images[0].filename)
-        : undefined
-
-    if (!productDetail) {
-      return {
-        name: '',
-        price: 0,
         productId: product.id,
-        quantity: product.quantity,
-        isMissing: true,
-        category: undefined,
-        image: undefined,
-        sku: '',
-        balance: 0,
+        isMissing: false,
+        category: category,
+        image: imageUrl,
       }
     }
-
-    return {
-      ...productDetail,
-      quantity: product.quantity,
-      productId: product.id,
-      isMissing: false,
-      category: category,
-      image: imageUrl,
-    }
-  })
+  )
 })
 
 const totalAmount = computed(() => {
@@ -430,7 +432,8 @@ const handleSubmit = () => {
     return
   }
 
-  let formattedProducts: {
+  let formattedProducts:
+    | {
         id: string
         category: string
         price: number
@@ -438,21 +441,19 @@ const handleSubmit = () => {
         retailID?: string
         name?: string
         unit?: string
-      }[] | null = null
+      }[]
+    | null = null
 
   if (saleForm.value.status !== 'wait_product' && saleForm.value.products) {
     formattedProducts = saleForm.value.products.map((product) => {
-      const retailSale = foodSales.value?.find((fs) => fs._id === product.id)
-
-      if (retailSale) {
-        // ถ้าเป็นอาหารแบ่งขาย: เก็บ foodSale._id ใน retailID และ product._id ใน id
+      if (product.retailID) {
         return {
-          id: retailSale.product._id,
-          category: retailSale.product.category || '',
-          price: retailSale.customerPriceKilo, // ราคาต่อกก.
-          quantity: product.quantity, // จำนวนกก.
-          retailID: retailSale._id,
-          name: retailSale.name || retailSale.product.name || '',
+          id: product.id,
+          category: product.category || '',
+          price: product.price, // ราคาต่อกก.
+          quantity: product.quantity || 1, // จำนวนกก.
+          retailID: product.retailID,
+          name: product.name,
           unit: 'kilo', // ระบุหน่วย
         }
       } else {
@@ -467,8 +468,6 @@ const handleSubmit = () => {
       }
     })
   }
-
-
   createSale({
     ...saleForm.value,
     products: formattedProducts,
@@ -756,7 +755,7 @@ const updateProducts = (index: number, value: string) => {
       quantity: saleForm.value.products![index].quantity || 1, // คงค่า quantity เดิม
       retailID: foodSale._id, // เก็บ foodSale._id
       name: foodSale.name || productData.name || '',
-      unit: 'kilo'
+      unit: 'kilo',
     }
   } else {
     // กรณีสินค้าปกติ
@@ -777,9 +776,13 @@ const updateProducts = (index: number, value: string) => {
       quantity: saleForm.value.products![index].quantity || 1, // คงค่า quantity เดิม
       // ไม่มี retailID
       name: product.name || '',
-      unit: 'piece'
+      unit: 'piece',
     }
   }
+}
+
+const getSelectedProduct = (id: string) => {
+  return availableProducts.value?.find((p) => p._id === id)
 }
 </script>
 
@@ -961,7 +964,6 @@ const updateProducts = (index: number, value: string) => {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-
                 <TreeSelect
                   v-model="product.id"
                   @update:modelValue="(value) => updateProducts(index, value)"
@@ -978,18 +980,13 @@ const updateProducts = (index: number, value: string) => {
                     label: 'flex items-center gap-2',
                   }"
                 >
-                  <template #value="slotProps">
-                    <div v-if="slotProps.value.length > 0" class="flex items-center gap-2">
+                  <template #value="slotProps" >
+                    <div v-if="!!product.id" class="flex items-center gap-2">
                       <img
                         v-if="
-                          availableProducts?.find((p) => p._id === slotProps.value)?.images?.[0]
+                          getSelectedProduct(product.id)?.images?.[0]
                         "
-                        :src="
-                          getImageUrl(
-                            availableProducts?.find((p) => p._id === slotProps.value)?.images?.[0]
-                              .filename || ''
-                          )
-                        "
+                        :src="getImageUrl(getSelectedProduct(product.id)?.images?.[0]?.filename || '')"
                         alt="product"
                         class="w-6 h-6 object-cover rounded"
                         loading="lazy"
@@ -997,10 +994,10 @@ const updateProducts = (index: number, value: string) => {
                         crossorigin="anonymous"
                       />
                       <span>
-                        {{ availableProducts?.find((p) => p._id === slotProps.value)?.name }}
+                        {{ product.name }}
                         <span class="text-xs text-gray-500 pl-1">
                           รหัส ({{
-                            availableProducts?.find((p) => p._id === slotProps.value)?.sku
+                            getSelectedProduct(product.id)?.sku
                           }})
                         </span>
                       </span>
