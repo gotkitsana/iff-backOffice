@@ -93,7 +93,7 @@ const selectedProductDetail = computed(() => {
 </script>
 
 <template>
-  <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+  <div v-if="!isReadOnly" class="p-3 bg-gray-50 border border-gray-200 rounded-xl">
     <div class="flex items-center justify-between mb-2">
       <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
       <Button
@@ -121,7 +121,6 @@ const selectedProductDetail = computed(() => {
           filterBy="label,sku"
           :filterPlaceholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
           :invalid="!product.id && isSubmitting"
-          :disabled="isReadOnly"
           selectionMode="single"
           :pt="{
             label: 'flex items-center gap-2',
@@ -258,5 +257,20 @@ const selectedProductDetail = computed(() => {
       :balance="selectedProductDetail?.balance"
     />
   </div>
+
+  <template v-else>
+    <CardProductList
+      v-if="selectedProductDetail"
+      :name="selectedProductDetail?.name"
+      :quantity="selectedProductDetail?.quantity || product.quantity"
+      :price="selectedProductDetail?.price"
+      :detail="''"
+      :category="selectedProductDetail?.category"
+      :is-missing="!selectedProductDetail"
+      :image="selectedProductDetail?.image"
+      :sku="selectedProductDetail?.sku"
+      :balance="selectedProductDetail?.balance"
+    />
+  </template>
 </template>
 

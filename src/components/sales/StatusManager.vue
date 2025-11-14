@@ -27,6 +27,7 @@ import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import BankData from '@/config/BankData'
 import logoIcon from '@/assets/images/icon/icon.png'
 import { useProductSelection } from '@/composables/useProductSelection'
+import { validateStatusForStatusChange, getAvailableStatuses } from '@/utils/salesStatusValidation'
 
 // Props
 const props = defineProps<{
@@ -153,50 +154,19 @@ const isStepCurrent = (stepIndex: number) => {
   return stepIndex === currentStepIndex.value
 }
 
-// Available next status options for wait_product and wait_confirm
+// Available next status options based on current status
 const availableNextStatusOptions = computed(() => {
-  const currentStepOrder =
-    salesStore.statusWorkflow[props.currentStatus as keyof StatusWorkflow]?.stepOrder || 0
-  return salesStore.sellingStatusOptions.filter(
-    (opt) =>
-      opt.value !== 'received' &&
-      opt.value !== 'damaged' &&
-      (salesStore.statusWorkflow[opt.value as keyof StatusWorkflow]?.stepOrder || 0) >
-        currentStepOrder
+  const availableStatuses = getAvailableStatuses(
+    props.currentStatus as SellingStatus,
+    'status-change'
+  )
+  return salesStore.sellingStatusOptions.filter((opt) =>
+    availableStatuses.includes(opt.value as SellingStatus)
   )
 })
 
-// Determine target status based on current status and uploads
-const getTargetStatus = (): SellingStatus => {
-  const currentStatus = props.currentStatus as SellingStatus
-
-  // wait_payment: ถ้าอัพสลิปแล้ว -> preparing, ถ้าอัพสลิป+ใบขนส่ง -> shipping
-  if (currentStatus === 'wait_payment') {
-    if (hasSlip.value && hasShippingSlip.value) {
-      return 'shipping'
-    }
-    if (hasSlip.value) {
-      return 'preparing'
-    }
-    return 'wait_payment'
-  }
-
-  // preparing: ถ้าอัพใบขนส่งแล้ว -> shipping
-  if (currentStatus === 'preparing') {
-    if (hasShippingSlip.value) {
-      return 'shipping'
-    }
-    return 'preparing'
-  }
-
-  // shipping: ใช้ status ที่เลือก (received หรือ damaged)
-  if (currentStatus === 'shipping') {
-    return (saleForm.value.status as SellingStatus) || 'shipping'
-  }
-
-  // wait_product, wait_confirm: ใช้ status ที่เลือก
-  return (saleForm.value.status as SellingStatus) || currentStatus
-}
+// Note: getTargetStatus logic is now handled in validateStatusForStatusChange
+// This function is kept for backward compatibility but validation uses utility function
 
 // Handlers
 const handleSlipStatusChanged = (status: boolean) => {
@@ -414,73 +384,36 @@ watch(
 const handleSubmit = () => {
   isSubmitting.value = true
 
-  // Validation based on current status
   const currentStatus = props.currentStatus as SellingStatus
+  const selectedStatus = (saleForm.value.status as SellingStatus) || currentStatus
 
-  // wait_product: need to select next status
-  if (currentStatus === 'wait_product') {
-    if (!saleForm.value.status || saleForm.value.status === currentStatus) {
-      toast.error('กรุณาเลือกขั้นตอนถัดไป')
-      isSubmitting.value = false
-      return
-    }
+  // Check if all products are valid
+  const hasValidProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
+
+  // Use utility function for status validation
+  const validationResult = validateStatusForStatusChange({
+    selectedStatus,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!saleForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: hasShippingSlip.value,
+    currentStatus,
+    mode: 'status-change',
+  })
+
+  // Show validation errors
+  if (!validationResult.isValid) {
+    validationResult.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
+    return
   }
 
-  // wait_confirm: need products and next status
-  if (currentStatus === 'wait_confirm') {
-    if (!saleForm.value.products || saleForm.value.products.length === 0) {
-      toast.error('กรุณาเลือกสินค้า')
-      isSubmitting.value = false
-      return
-    }
-    if (!saleForm.value.status || saleForm.value.status === currentStatus) {
-      toast.error('กรุณาเลือกขั้นตอนถัดไป')
-      isSubmitting.value = false
-      return
-    }
-  }
-
-  // wait_payment: need bank and slip (mandatory)
-  if (currentStatus === 'wait_payment') {
-    if (!saleForm.value.bankCode) {
-      toast.error('กรุณาเลือกบัญชีธนาคาร')
-      isSubmitting.value = false
-      return
-    }
-    if (!hasSlip.value) {
-      toast.error('กรุณาอัปโหลดสลิปการโอนเงิน (บังคับ)')
-      isSubmitting.value = false
-      return
-    }
-    // Shipping slip is optional, but if uploaded will go to shipping
-  }
-
-  // preparing: need shipping slip (mandatory)
-  if (currentStatus === 'preparing') {
-    if (!hasShippingSlip.value) {
-      toast.error('กรุณาอัปโหลดใบเสร็จการขนส่ง (บังคับ)')
-      isSubmitting.value = false
-      return
-    }
-  }
-
-  // shipping: need to select received or damaged
-  if (currentStatus === 'shipping') {
-    if (
-      !saleForm.value.status ||
-      (saleForm.value.status !== 'received' && saleForm.value.status !== 'damaged')
-    ) {
-      toast.error('กรุณาเลือกสถานะ: ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย')
-      isSubmitting.value = false
-      return
-    }
-  }
-
-  const finalStatus = getTargetStatus()
-
+  // Use final status from validation result
   updateSalesStatus({
     ...saleForm.value,
-    status: finalStatus,
+    status: validationResult.finalStatus,
   })
 }
 
@@ -571,7 +504,7 @@ const { mutate: updateSalesStatus } = useMutation({
   },
 })
 
-// Helper functions
+// Helper functions (reuse from ModalEditSale)
 const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
   const productsTotal = order.products.reduce((sum, item) => {
     const product = allProducts.find((p) => p._id === item.id)
@@ -1022,24 +955,36 @@ const showReportView = computed(() => {
     :visible="visible"
     @update:visible="handleClose"
     modal
-    :style="{ width: showReportView ? '70rem' : '60rem' }"
+    :style="{ width: showReportView ? '70rem' : '65rem' }"
     :breakpoints="{ '1199px': '95vw', '575px': '95vw' }"
     :pt="{
-      header: 'p-4',
-      footer: 'p-4',
+      header: 'px-6 py-5',
+      footer: 'px-6 py-4',
+      content: 'px-6 py-5',
     }"
+    class="status-manager-dialog"
   >
     <template #header>
-      <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
-          <i class="pi pi-info-circle text-white text-lg"></i>
+      <div class="flex items-center justify-between w-full">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
+          >
+            <i class="pi pi-sync text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">เปลี่ยนขั้นตอนการขาย</h3>
+            <p class="text-sm text-gray-500 mt-0.5">
+              รายการ: <span class="font-semibold text-gray-700">{{ orderNumber }}</span>
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 class="text-lg font-semibold! text-gray-800">สรุปการขาย</h3>
-          <p class="text-sm text-gray-600">รายการ: {{ orderNumber }}</p>
-        </div>
+        <Tag
+          :value="currentStatusInfo?.label"
+          :severity="currentStatusInfo?.color"
+          size="large"
+          class="font-semibold"
+        />
       </div>
     </template>
 
@@ -1144,60 +1089,110 @@ const showReportView = computed(() => {
       </div>
     </div>
 
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-5">
+      <!-- Current Status Card -->
+      <div
+        class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 shadow-sm"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center shadow-md"
+            >
+              <i :class="`${currentStatusInfo?.icon} text-white text-2xl`"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-gray-900">ขั้นตอนปัจจุบัน</h4>
+              <p class="text-sm text-gray-600 mt-0.5">{{ currentStatusInfo?.label }}</p>
+            </div>
+          </div>
+          <Tag
+            :value="currentStatusInfo?.label"
+            :severity="currentStatusInfo?.color"
+            size="large"
+            class="font-semibold"
+          />
+        </div>
+      </div>
+
       <!-- Sale Detail Summary -->
-      <SaleDetailSummary
-        :sale-data="currentData"
-        :member="members?.find((m) => m._id === currentData.user._id)"
-      />
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="pi pi-info-circle text-gray-600"></i>
+            ข้อมูลการขาย
+          </h4>
+        </div>
+        <div class="p-5">
+          <SaleDetailSummary
+            :sale-data="currentData"
+            :member="members?.find((m) => m._id === currentData.user._id)"
+          />
+        </div>
+      </div>
 
       <!-- Status Selection for wait_product and wait_confirm -->
       <div
         v-if="currentStatus === 'wait_product' || currentStatus === 'wait_confirm'"
-        class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+        class="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
       >
-        <h5 class="font-semibold text-gray-900 mb-2 flex items-center gap-2">เลือกขั้นตอนถัดไป</h5>
-        <Select
-          v-model="saleForm.status"
-          :options="availableNextStatusOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="เลือกขั้นตอนถัดไป"
-          fluid
-          size="small"
-          :invalid="!saleForm.status && isSubmitting"
-        />
-        <small v-if="!saleForm.status && isSubmitting" class="text-red-500 mt-1 block"
-          >กรุณาเลือกขั้นตอนถัดไป</small
-        >
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-blue-200">
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="pi pi-arrow-right text-blue-600"></i>
+            เลือกขั้นตอนถัดไป
+          </h4>
+        </div>
+        <div class="p-5">
+          <Select
+            v-model="saleForm.status"
+            :options="availableNextStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="เลือกขั้นตอนถัดไป"
+            fluid
+            size="small"
+            :invalid="!saleForm.status && isSubmitting"
+            class="mt-2"
+          />
+          <small v-if="!saleForm.status && isSubmitting" class="text-red-500 mt-2 block"
+            >กรุณาเลือกขั้นตอนถัดไป</small
+          >
+        </div>
       </div>
 
       <!-- Form Section based on current status -->
-      <div v-if="showFormForCurrentStatus" class="space-y-4">
+      <div v-if="showFormForCurrentStatus" class="space-y-5">
         <!-- wait_product: Product selection (optional) -->
         <div
           v-if="currentStatus === 'wait_product' || currentStatus === 'wait_confirm'"
-          class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
-          <div class="flex items-center justify-between mb-4">
-            <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <i class="pi pi-box text-blue-600"></i>
-              รายการสินค้า
-              <span v-if="currentStatus === 'wait_confirm'" class="text-red-500 text-sm"
-                >(บังคับ)</span
-              >
-            </h4>
-            <Button
-              label="เพิ่มสินค้า"
-              icon="pi pi-plus"
-              severity="success"
-              size="small"
-              @click="addProduct"
-              :disabled="saleForm.products.length >= 10"
-            />
+          <div
+            class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-gray-200"
+          >
+            <div class="flex items-center justify-between">
+              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+                <i class="pi pi-box text-blue-600"></i>
+                รายการสินค้า
+                <Tag
+                  v-if="currentStatus === 'wait_confirm'"
+                  value="บังคับ"
+                  severity="danger"
+                  size="small"
+                  class="ml-2"
+                />
+              </h4>
+              <Button
+                label="เพิ่มสินค้า"
+                icon="pi pi-plus"
+                severity="success"
+                size="small"
+                @click="addProduct"
+                :disabled="saleForm.products.length >= 10"
+              />
+            </div>
           </div>
-
-          <div class="space-y-4">
+          <div class="p-5 space-y-4">
             <ProductItemForm
               v-for="(product, index) in saleForm.products"
               :key="index"
@@ -1218,61 +1213,105 @@ const showReportView = computed(() => {
         </div>
 
         <!-- wait_payment: Bank selection + Slip upload (mandatory) + Shipping slip (optional) -->
-        <div v-if="currentStatus === 'wait_payment'" class="space-y-4">
-          <BankSelectionSection
-            :selected-bank-code="saleForm.bankCode || currentData.bankCode"
-            :is-submitting="isSubmitting"
-            :is-current-bank="currentData.bankCode"
-            :is-current-status="currentStatus"
-            @update:selected-bank-code="updateBankCode"
-          />
+        <div v-if="currentStatus === 'wait_payment'" class="space-y-5">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div
+              class="bg-gradient-to-r from-green-50 to-emerald-50 px-5 py-3 border-b border-gray-200"
+            >
+              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+                <i class="pi pi-credit-card text-green-600"></i>
+                ข้อมูลการชำระเงิน
+              </h4>
+            </div>
+            <div class="p-5 space-y-5">
+              <BankSelectionSection
+                :selected-bank-code="saleForm.bankCode || currentData.bankCode"
+                :is-submitting="isSubmitting"
+                :is-current-bank="currentData.bankCode"
+                :is-current-status="currentStatus"
+                @update:selected-bank-code="updateBankCode"
+              />
 
-          <SlipUploadSection
-            :sale-id="currentData._id"
-            :selected-status="currentStatus"
-            :is-current-status="currentStatus"
-            :is-submitting="isSubmitting"
-            @slip-status-changed="handleSlipStatusChanged"
-            @slip-uploaded="handleSlipUploaded"
-          />
+              <div class="border-t border-gray-200 pt-5">
+                <SlipUploadSection
+                  :sale-id="currentData._id"
+                  :selected-status="currentStatus"
+                  :is-current-status="currentStatus"
+                  :is-submitting="isSubmitting"
+                  @slip-status-changed="handleSlipStatusChanged"
+                  @slip-uploaded="handleSlipUploaded"
+                />
+              </div>
 
-          <ShippingSlipUploadSection
-            :sale-id="currentData._id"
-            :selected-status="currentStatus"
-            :is-current-status="currentStatus"
-            :is-submitting="isSubmitting"
-            @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-          />
+              <div class="border-t border-gray-200 pt-5">
+                <ShippingSlipUploadSection
+                  :sale-id="currentData._id"
+                  :selected-status="currentStatus"
+                  :is-current-status="currentStatus"
+                  :is-submitting="isSubmitting"
+                  @shipping-slip-status-changed="handleShippingSlipStatusChanged"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- preparing: Shipping slip upload (mandatory) -->
-        <div v-if="currentStatus === 'preparing'" class="space-y-4">
-          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div class="flex items-center gap-3 mb-2">
-              <i class="pi pi-info-circle text-blue-600"></i>
-              <h4 class="font-semibold text-blue-900">สลิปการโอนเงินยืนยันแล้ว</h4>
+        <div v-if="currentStatus === 'preparing'" class="space-y-5">
+          <div
+            class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
+              >
+                <i class="pi pi-check-circle text-white text-lg"></i>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
+                <p class="text-sm text-green-700">
+                  กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
+                </p>
+              </div>
             </div>
-            <p class="text-sm text-blue-700">
-              กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
-            </p>
           </div>
 
-          <ShippingSlipUploadSection
-            :sale-id="currentData._id"
-            :selected-status="currentStatus"
-            :is-current-status="currentStatus"
-            :is-submitting="isSubmitting"
-            @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-          />
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div
+              class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-gray-200"
+            >
+              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+                <i class="pi pi-truck text-blue-600"></i>
+                ใบเสร็จการขนส่ง
+                <Tag value="บังคับ" severity="danger" size="small" class="ml-2" />
+              </h4>
+            </div>
+            <div class="p-5">
+              <ShippingSlipUploadSection
+                :sale-id="currentData._id"
+                :selected-status="currentStatus"
+                :is-current-status="currentStatus"
+                :is-submitting="isSubmitting"
+                @shipping-slip-status-changed="handleShippingSlipStatusChanged"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- shipping: Select received or damaged -->
         <div
           v-if="currentStatus === 'shipping'"
-          class="bg-white rounded-lg p-4 border border-gray-200"
+          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
-          <h4 class="font-semibold text-gray-900 mb-4">สถานะการจัดส่ง</h4>
-          <div class="space-y-3">
+          <div
+            class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-gray-200"
+          >
+            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+              <i class="pi pi-send text-purple-600"></i>
+              สถานะการจัดส่ง
+            </h4>
+          </div>
+          <div class="p-5 space-y-3">
             <div
               v-for="option in [
                 {
@@ -1280,52 +1319,50 @@ const showReportView = computed(() => {
                   label: 'ได้รับสินค้าแล้ว',
                   icon: 'pi-check-circle',
                   color: 'success',
+                  description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
                 },
                 {
                   value: 'damaged',
                   label: 'สินค้าเสียหาย',
                   icon: 'pi-times-circle',
                   color: 'danger',
+                  description: 'สินค้าเสียหายระหว่างการขนส่ง',
                 },
               ]"
               :key="option.value"
-              :class="`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
                 saleForm.status === option.value
                   ? option.color === 'success'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-red-500 bg-red-50'
+                    ? 'border-green-500 bg-green-50 shadow-sm'
+                    : 'border-red-500 bg-red-50 shadow-sm'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`"
               @click="saleForm.status = option.value"
             >
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-4">
                 <div
-                  :class="`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  :class="`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                     option.color === 'success' ? 'bg-green-100' : 'bg-red-100'
                   }`"
                 >
                   <i
-                    :class="`pi ${option.icon} ${
+                    :class="`pi ${option.icon} text-xl ${
                       option.color === 'success' ? 'text-green-600' : 'text-red-600'
                     }`"
                   ></i>
                 </div>
                 <div class="flex-1">
-                  <div class="font-semibold text-gray-900">{{ option.label }}</div>
-                  <div class="text-sm text-gray-600">
-                    {{
-                      option.value === 'received'
-                        ? 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว'
-                        : 'สินค้าเสียหายระหว่างการขนส่ง'
-                    }}
-                  </div>
+                  <div class="font-bold text-gray-900 text-lg">{{ option.label }}</div>
+                  <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
                 </div>
-                <i
+                <div
                   v-if="saleForm.status === option.value"
-                  :class="`pi pi-check-circle text-xl ${
-                    option.color === 'success' ? 'text-green-600' : 'text-red-600'
+                  :class="`w-8 h-8 rounded-full flex items-center justify-center ${
+                    option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
                   }`"
-                ></i>
+                >
+                  <i class="pi pi-check text-white text-sm"></i>
+                </div>
               </div>
             </div>
           </div>
@@ -1338,40 +1375,68 @@ const showReportView = computed(() => {
             currentStatus === 'wait_confirm' ||
             currentStatus === 'wait_payment'
           "
+          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
-          <PaymentCalculationSection
-            :total-amount="totalAmount"
-            :deposit="saleForm.deposit"
-            :discount="saleForm.discount"
-            :delivery-no="saleForm.deliveryNo"
-            :is-submitting="isSubmitting"
-            :read-only="false"
-            @update:deposit="updateDeposit"
-            @update:discount="updateDiscount"
-            @update:delivery-no="updateDeliveryNo"
-          />
+          <div
+            class="bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-3 border-b border-gray-200"
+          >
+            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+              <i class="pi pi-calculator text-amber-600"></i>
+              การคำนวณราคา
+            </h4>
+          </div>
+          <div class="p-5">
+            <PaymentCalculationSection
+              :total-amount="totalAmount"
+              :deposit="saleForm.deposit"
+              :discount="saleForm.discount"
+              :delivery-no="saleForm.deliveryNo"
+              :is-submitting="isSubmitting"
+              :read-only="false"
+              @update:deposit="updateDeposit"
+              @update:discount="updateDiscount"
+              @update:delivery-no="updateDeliveryNo"
+            />
+          </div>
         </div>
 
         <!-- Notes -->
-        <div class="bg-white rounded-lg p-4 border border-gray-200">
-          <h4 class="font-semibold text-gray-900 mb-3">หมายเหตุ</h4>
-          <Textarea
-            v-model="saleForm.note"
-            placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
-            rows="3"
-            fluid
-            size="small"
-          />
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
+            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+              <i class="pi pi-file-edit text-gray-600"></i>
+              หมายเหตุ
+            </h4>
+          </div>
+          <div class="p-5">
+            <Textarea
+              v-model="saleForm.note"
+              placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
+              rows="3"
+              fluid
+              size="small"
+            />
+          </div>
         </div>
       </div>
 
       <!-- Data Summary -->
-      <SaleDataSummary
-        :sale-data="currentData"
-        :has-slip="hasSlip"
-        :has-shipping-slip="hasShippingSlip"
-        :current-status="currentStatus"
-      />
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="pi pi-list-check text-gray-600"></i>
+            สรุปข้อมูล
+          </h4>
+        </div>
+        <div class="p-5">
+          <SaleDataSummary
+            :sale-data="currentData"
+            :has-slip="hasSlip"
+            :has-shipping-slip="hasShippingSlip"
+            :current-status="currentStatus"
+          />
+        </div>
+      </div>
     </div>
 
     <template #footer>
@@ -1383,6 +1448,7 @@ const showReportView = computed(() => {
           @click="handleDownloadPDF"
           severity="info"
           size="small"
+          class="font-semibold"
         />
 
         <div class="flex gap-3 ml-auto">
@@ -1392,17 +1458,19 @@ const showReportView = computed(() => {
             severity="secondary"
             @click="handleClose"
             size="small"
+            outlined
           />
 
           <Button
             v-if="showFormForCurrentStatus"
-            label="บันทึก"
+            label="บันทึกการเปลี่ยนแปลง"
             icon="pi pi-check"
             severity="success"
             @click="handleSubmit"
             size="small"
             :loading="isSubmitting"
             :disabled="isSubmitting"
+            class="font-semibold shadow-md"
           />
         </div>
       </div>

@@ -16,6 +16,7 @@ import type {
   ICreateSalesPayload,
   ISales,
   IUpdateSalesPayload,
+  SellingStatus,
   StatusWorkflow,
 } from '@/types/sales'
 import ProductItemForm from '../ProductItemForm.vue'
@@ -26,6 +27,10 @@ import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
+import {
+  validateStatusForCreate,
+  getAvailableStatuses,
+} from '@/utils/salesStatusValidation'
 
 // Props
 const props = defineProps<{
@@ -162,8 +167,9 @@ const isProductValid = (product: { id: string; quantity: number }) => {
 
 // Filter status options - remove received and damaged
 const availableStatusOptions = computed(() => {
-  return salesStore.sellingStatusOptions.filter(
-    (opt) => opt.value !== 'received' && opt.value !== 'damaged'
+  const availableStatuses = getAvailableStatuses(undefined, 'create')
+  return salesStore.sellingStatusOptions.filter((opt) =>
+    availableStatuses.includes(opt.value as SellingStatus)
   )
 })
 
@@ -173,11 +179,7 @@ const requiresSlipUpload = computed(() => {
   return status === 'preparing' || status === 'shipping'
 })
 
-const requiresSlipUploadMandatory = computed(() => {
-  const status = saleForm.value.status
-  // preparing and shipping require mandatory slip upload
-  return status === 'preparing' || status === 'shipping'
-})
+// Note: Slip upload requirement is now handled in validateStatusForCreate
 
 const requiresBankSelection = computed(() => {
   const currentStepIndex = getStatusStepIndex(saleForm.value.status)
@@ -195,7 +197,7 @@ const requiresShippingSlipUpload = computed(() => {
 const handleSubmit = () => {
   isSubmitting.value = true
 
-  // Validation
+  // Basic validation
   if (!saleForm.value.user) {
     toast.error('กรุณาเลือกลูกค้า')
     return
@@ -211,25 +213,29 @@ const handleSubmit = () => {
     return
   }
 
-  // Check bank selection requirement
-  if (requiresBankSelection.value && !bankForm.value.bankCode) {
-    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
-    return
-  }
-
-  // Check slip upload requirement (mandatory for preparing and shipping)
-  if (requiresSlipUploadMandatory.value && !hasSlip.value) {
-    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
-    return
-  }
-
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products?.filter((p) => !isProductValid(p)) || []
-  if (invalidProducts.length > 0 && saleForm.value.status !== 'wait_product') {
-    toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
+  const hasValidProducts = saleForm.value.products?.some((p) => isProductValid(p)) || false
+
+  // Use utility function for status validation
+  const validationResult = validateStatusForCreate({
+    selectedStatus: saleForm.value.status as SellingStatus,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!bankForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: hasShippingSlip.value,
+    mode: 'create',
+  })
+
+  // Show validation errors
+  if (!validationResult.isValid) {
+    validationResult.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
     return
   }
 
+  // Format products
   let formattedProducts:
     | {
         id: string
@@ -267,21 +273,8 @@ const handleSubmit = () => {
     })
   }
 
-  // Determine final status based on slip uploads
-  let finalStatus = saleForm.value.status
-  if (saleForm.value.status === 'wait_payment' && hasSlip.value) {
-    // If wait_payment and slip uploaded, change to preparing
-    finalStatus = 'preparing'
-  } else if (saleForm.value.status === 'preparing') {
-    // If preparing and shipping slip uploaded, change to shipping
-    if (hasShippingSlip.value) {
-      finalStatus = 'shipping'
-    }
-    // Otherwise stay as preparing
-  } else if (saleForm.value.status === 'shipping') {
-    // Stay as shipping
-    finalStatus = 'shipping'
-  }
+  // Use utility function to calculate final status
+  const finalStatus = validationResult.finalStatus
 
   createSale({
     ...saleForm.value,

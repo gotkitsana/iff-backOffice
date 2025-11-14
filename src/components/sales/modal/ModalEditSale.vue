@@ -5,7 +5,7 @@ import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
+import type { ISales, IUpdateSalesPayload, SellingStatus, StatusWorkflow } from '@/types/sales'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
 import ProductItemForm from '../ProductItemForm.vue'
@@ -19,6 +19,11 @@ import {
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
+import {
+  validateStatusForEdit,
+  getAvailableStatuses,
+  canEditField,
+} from '@/utils/salesStatusValidation'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -110,11 +115,28 @@ const requiresSlipUpload = computed(() => {
 
 // Disable selecting steps that are earlier than current persisted status
 const statusOptionsForSelect = computed(() => {
-  const baseIndex = getStatusStepIndex(props.saleData.status)
+  const availableStatuses = getAvailableStatuses(props.saleData.status as SellingStatus, 'edit')
   return salesStore.sellingStatusOptions.map((opt) => ({
     ...opt,
-    disabled: getStatusStepIndex(opt.value) < baseIndex,
+    disabled: !availableStatuses.includes(opt.value as SellingStatus),
   }))
+})
+
+// Check if can edit fields based on current status
+const canEditProducts = computed(() => {
+  return canEditField('products', props.saleData.status as SellingStatus)
+})
+
+const canEditBankInfo = computed(() => {
+  return canEditField('bankInfo', props.saleData.status as SellingStatus)
+})
+
+const canEditSlip = computed(() => {
+  return canEditField('slip', props.saleData.status as SellingStatus)
+})
+
+const canEditShippingSlip = computed(() => {
+  return canEditField('shippingSlip', props.saleData.status as SellingStatus)
 })
 
 // Product management functions
@@ -223,25 +245,33 @@ const handleSubmit = () => {
   isSubmitting.value = true
 
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products.filter((p) => !(p.id && p.quantity > 0))
-  if (invalidProducts.length > 0) {
-    toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
+  const hasValidProducts = saleForm.value.products.some((p) => p.id && p.quantity > 0)
+
+  // Use utility function for status validation
+  const validationResult = validateStatusForEdit({
+    selectedStatus: saleForm.value.status as SellingStatus,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!saleForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: false, // Edit mode doesn't have shipping slip check
+    currentStatus: props.saleData.status as SellingStatus,
+    mode: 'edit',
+  })
+
+  // Show validation errors
+  if (!validationResult.isValid) {
+    validationResult.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
     return
   }
 
-  // Check bank selection requirement
-  if (requiresBankSelection.value && !saleForm.value.bankCode) {
-    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
-    return
-  }
-
-  // Check slip upload requirement
-  if (requiresSlipUpload.value && !hasSlip.value) {
-    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
-    return
-  }
-
-  updateSale(saleForm.value)
+  // Use final status from validation result
+  updateSale({
+    ...saleForm.value,
+    status: validationResult.finalStatus,
+  })
 }
 
 const { data: allSales } = useQuery<ISales[]>({
@@ -548,7 +578,7 @@ const sellers = computed(() => {
 
         <!-- Bank Selection (if required) -->
         <BankSelectionSection
-          v-if="requiresBankSelection"
+          v-if="requiresBankSelection && canEditBankInfo"
           :selected-bank-code="saleForm.bankCode || ''"
           :is-submitting="isSubmitting"
           :is-current-bank="props.saleData.bankCode"
@@ -558,7 +588,7 @@ const sellers = computed(() => {
 
         <!-- Slip Upload Section -->
         <SlipUploadSection
-          v-if="requiresSlipUpload"
+          v-if="requiresSlipUpload && canEditSlip"
           :sale-id="props.saleData._id || ''"
           :selected-status="saleForm.status"
           :is-current-status="props.saleData.status"
@@ -576,7 +606,7 @@ const sellers = computed(() => {
             รายการสินค้า
           </h4>
           <Button
-            v-if="getStatusStepIndex(props.saleData.status) < getStatusStepIndex('preparing')"
+            v-if="canEditProducts"
             label="เพิ่มสินค้า"
             icon="pi pi-plus"
             severity="success"
@@ -594,13 +624,8 @@ const sellers = computed(() => {
             :index="index"
             :is-submitting="isSubmitting"
             :products-data="productsData"
-            :can-remove="
-              saleForm.products.length > 1 &&
-              getStatusStepIndex(props.saleData.status) < getStatusStepIndex('preparing')
-            "
-            :is-read-only="
-              getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')
-            "
+            :can-remove="saleForm.products.length > 1 && canEditProducts"
+            :is-read-only="!canEditProducts"
             @update:product="updateProductForIndex"
             @update:quantity="(idx, qty) => (saleForm.products[idx].quantity = qty)"
             @remove="removeProduct"
@@ -615,7 +640,7 @@ const sellers = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
-        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')"
+        :read-only="!canEditProducts"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"
