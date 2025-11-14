@@ -8,10 +8,17 @@ import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
-import ProductManagementSection from '../ProductManagementSection.vue'
+import ProductItemForm from '../ProductItemForm.vue'
 import PaymentCalculationSection from '../PaymentCalculationSection.vue'
 import type { IAdmin } from '@/stores/admin/admin'
-import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
+import {
+  useProductStore,
+  type IProduct,
+  type IUpdateProductPayload,
+} from '@/stores/product/product'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { getProductImageUrl } from '@/utils/imageUrl'
+import { executeStockDeduction } from '@/utils/stockDeduction'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -27,6 +34,8 @@ const emit = defineEmits<{
 // Stores
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
+const productStore = useProductStore()
+const categoryStore = useCategoryStore()
 
 // Form data - ใช้โครงสร้างเดียวกับ ModalAddSale
 const saleForm = ref<IUpdateSalesPayload>({
@@ -51,6 +60,11 @@ const saleForm = ref<IUpdateSalesPayload>({
 const { data: members } = useQuery<IMember[]>({
   queryKey: ['get_members'],
   queryFn: () => memberStore.onGetMembers(),
+})
+
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(0),
 })
 
 // Computed
@@ -104,8 +118,190 @@ const removeProduct = (index: number) => {
   }
 }
 
-const updateProducts = (products: Array<{ id: string; quantity: number, category: string, price: number }>) => {
+const updateProducts = (
+  products: Array<{ id: string; quantity: number; category: string; price: number }>
+) => {
   saleForm.value.products = products
+}
+
+// Helper functions for ProductItemForm
+const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
+  if (!id) return undefined
+  return categories.value?.find((category) => category._id === id)
+}
+
+const imageUrlCache = new Map<string, string>()
+const getImageUrl = (filename: string): string => {
+  if (imageUrlCache.has(filename)) {
+    return imageUrlCache.get(filename)!
+  }
+  const url = getProductImageUrl(filename)
+  imageUrlCache.set(filename, url)
+  return url
+}
+
+const availableProducts = computed(() => {
+  if (!productsData.value) return []
+  return productsData.value.filter((p) => p.auctionOnly === 0)
+})
+
+const getProductOptionsForIndex = (currentIndex: number) => {
+  if (!availableProducts.value) return []
+
+  const selectedProductIds = saleForm.value.products
+    ?.map((p, index) => (index !== currentIndex ? p.id : ''))
+    .filter((id) => id !== '')
+
+  const unselectedProducts = availableProducts.value.filter(
+    (product) => !selectedProductIds?.includes(product._id)
+  )
+
+  const groupsMap = new Map<
+    string,
+    {
+      label: string
+      children: Array<{
+        label: string
+        value: string
+        image?: string
+        disabled?: boolean
+        sold?: boolean
+        balance?: number
+        isFish?: boolean
+        sku?: string
+      }>
+    }
+  >()
+
+  unselectedProducts.forEach((product) => {
+    const catId = product.category?._id || 'unknown'
+    const cat = handleFindCategory(product.category?._id)
+    const isFish = cat?.value === 'fish'
+    const isFood = cat?.value === 'food'
+
+    const groupLabel = isFood ? 'อาหาร (กระสอบ)' : cat?.name || 'ไม่ระบุหมวดหมู่'
+    const group = groupsMap.get(catId) || {
+      label: groupLabel,
+      children: [],
+    }
+
+    const imageUrl =
+      product.images && product.images.length > 0
+        ? getImageUrl(product.images[0].filename)
+        : undefined
+
+    const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
+
+    group.children.push({
+      label: `${product.name || `${product.species?.name}`}`,
+      sku: product.sku || '',
+      value: product._id,
+      image: imageUrl,
+      disabled: isSold,
+      sold: product.sold,
+      balance: product.balance,
+      isFish: isFish,
+    })
+
+    groupsMap.set(catId, group)
+  })
+
+  const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
+    key: `group-${groupIndex}`,
+    label: group.label,
+    selectable: false,
+    children: group.children
+      .sort((a, b) => {
+        if (a.disabled && !b.disabled) return 1
+        if (!a.disabled && b.disabled) return -1
+        return a.label.localeCompare(b.label)
+      })
+      .map((item) => ({
+        key: item.value,
+        label: item.label,
+        value: item.value,
+        data: item,
+        selectable: !item.disabled,
+        disabled: item.disabled,
+        sku: item.sku,
+        image: item.image,
+        sold: item.sold,
+        balance: item.balance,
+        isFish: item.isFish,
+      })),
+  }))
+
+  return treeNodes
+}
+
+const selectedProductDetails = computed(() => {
+  return saleForm.value.products?.map(
+    (product: { id: string; quantity: number; category: string; price: number }) => {
+      if (!product.id) return null
+
+      if (!availableProducts.value) return null
+      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+
+      const category = handleFindCategory(productDetail?.category?._id)
+      const imageUrl =
+        productDetail?.images && productDetail?.images.length > 0
+          ? getProductImageUrl(productDetail?.images[0].filename)
+          : undefined
+
+      if (!productDetail) {
+        return {
+          name: '',
+          price: 0,
+          quantity: product.quantity,
+          isMissing: true,
+          category: undefined,
+          image: undefined,
+          sku: '',
+          balance: 0,
+        }
+      }
+
+      return {
+        ...productDetail,
+        quantity: product.quantity,
+        isMissing: false,
+        category: category,
+        image: imageUrl,
+      }
+    }
+  )
+})
+
+const updateProductForIndex = (index: number, value: string | Record<string, any>) => {
+  let selectedId: string
+  if (typeof value === 'string') {
+    selectedId = value
+  } else if (value && typeof value === 'object') {
+    selectedId = Object.keys(value)[0] || ''
+  } else {
+    return
+  }
+
+  if (!selectedId) return
+
+  const product = availableProducts.value?.find((p) => p._id === selectedId)
+  if (!product) return
+
+  let price = product.price || 0
+  if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
+    price = product.food.customerPrice
+  }
+
+  saleForm.value.products[index] = {
+    id: product._id,
+    category: product.category?._id || '',
+    price: price,
+    quantity: saleForm.value.products[index].quantity || 1,
+  }
+}
+
+const getSelectedProduct = (id: string) => {
+  return availableProducts.value?.find((p) => p._id === id)
 }
 
 const updateDeposit = (deposit: number) => {
@@ -207,11 +403,14 @@ const { data: allSales } = useQuery<ISales[]>({
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
+  onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
 
-      if (salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder) {
+      if (
+        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
+        salesStore.statusWorkflow['preparing'].stepOrder
+      ) {
         // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
 
@@ -223,7 +422,8 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
               ?.filter(
                 (s) =>
                   s.user._id === variables.user &&
-                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder &&
+                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
+                    salesStore.statusWorkflow['preparing'].stepOrder &&
                   s._id !== variables._id
               )
               .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0
@@ -258,61 +458,12 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           }
         }
 
-        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
-        const products = productsData.value?.filter((p) =>
-          variables.products.some((product) => product.id === p._id)
-        )
+        // B. ตัดสต็อกสินค้า - ใช้ utility function
+        if (productsData.value) {
 
-        if (products && products.length > 0) {
-          products.forEach((product) => {
-            const purchasedItem = variables.products.find((p) => p.id === product._id)
-            if (!purchasedItem) return
-
-            const quantity = purchasedItem.quantity
-            const isFish = product.category?.name === 'ปลา'
-
-            let newSoldStatus = product.sold
-            let newBalance = product.balance || 0
-
-            if (isFish) {
-              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
-              newSoldStatus = true
-              newBalance = product.balance || 0
-            } else {
-              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
-              const balance = product.balance || 0
-
-              if (balance >= quantity) {
-                // กรณีมีสต็อกเพียงพอ
-                newBalance = balance - quantity
-                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
-              } else {
-                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
-                newBalance = 0
-                newSoldStatus = true
-                console.warn(
-                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
-                )
-              }
-            }
-
-            updateProduct({
-              ...product,
-              fishpond: product.fishpond?._id || undefined,
-              species: product.species?._id || undefined,
-              farm: product.farm?._id || undefined,
-              quality: product.quality?._id || undefined,
-              lotNumber: product.lotNumber?._id || undefined,
-              seedSize: product.seedSize?._id || undefined,
-              foodtype: product.foodtype?._id || undefined,
-              brand: product.brand?._id || undefined,
-              fishStatus: product.fishStatus?._id || undefined,
-
-              sold: newSoldStatus,
-              balance: newBalance,
-
-            })
-          })
+          executeStockDeduction(variables, productsData.value, updateProduct, (warning) =>
+            toast.warning(warning)
+          )
         }
       }
 
@@ -364,11 +515,9 @@ const { mutate: mutateUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
 })
 
-const productStore = useProductStore()
 const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
-
 
 const handleClose = () => {
   resetForm()
@@ -402,12 +551,52 @@ const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
 }
 
+// Auto-update status to preparing when slip is uploaded and current status < preparing
+const handleSlipUploaded = async (saleId: string) => {
+  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
+
+  const currentStepIndex = getStatusStepIndex(props.saleData.status)
+  const preparingStepIndex = getStatusStepIndex('preparing')
+
+  // Only auto-change if current status < preparing
+  if (currentStepIndex < preparingStepIndex) {
+    // Update status to preparing
+    const updatedPayload: IUpdateSalesPayload = {
+      _id: props.saleData._id,
+      status: 'preparing',
+      bankCode: saleForm.value.bankCode || props.saleData.bankCode,
+      bankAccount: props.saleData.bankAccount,
+      item: props.saleData.item,
+      user: props.saleData.user._id,
+      products:
+        props.saleData.products?.map((p) => ({
+          id: p.id || '',
+          category: p.category || '',
+          price: p.price || 0,
+          quantity: p.quantity || 1,
+        })) || [],
+      deposit: props.saleData.deposit,
+      discount: props.saleData.discount,
+      seller: props.saleData.seller,
+      note: props.saleData.note,
+      payment: props.saleData.payment,
+      cat: props.saleData.cat,
+      deliveryNo: props.saleData.deliveryNo,
+      delivery: props.saleData.delivery,
+    }
+
+    updateSale(updatedPayload)
+  }
+}
+
 const sellers = computed(() => {
   if (!props.admins) return []
-  return props.admins?.filter((admin) => admin.role === 1).map((admin) => ({
-    label: admin.name,
-    value: admin._id,
-  }))
+  return props.admins
+    ?.filter((admin) => admin.role === 1)
+    .map((admin) => ({
+      label: admin.name,
+      value: admin._id,
+    }))
 })
 </script>
 
@@ -527,21 +716,51 @@ const sellers = computed(() => {
           :is-current-status="props.saleData.status"
           :is-submitting="isSubmitting"
           @slip-status-changed="handleSlipStatusChanged"
+          @slip-uploaded="handleSlipUploaded"
         />
       </div>
 
       <!-- Product Management -->
-      <ProductManagementSection
-        :products="saleForm.products"
-        :is-submitting="isSubmitting"
-        :read-only="
-          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
-        "
-        @update:products="updateProducts"
-        @add-product="addProduct"
-        @remove-product="removeProduct"
-        @update:total-amount="updateTotalAmount"
-      />
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-box text-blue-600"></i>
+            รายการสินค้า
+          </h4>
+          <Button
+            v-if="getStatusStepIndex(props.saleData.status) < getStatusStepIndex('preparing')"
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addProduct"
+            :disabled="saleForm.products.length >= 10"
+          />
+        </div>
+
+        <div class="space-y-4">
+          <ProductItemForm
+            v-for="(product, index) in saleForm.products"
+            :key="index"
+            :product="product"
+            :index="index"
+            :is-submitting="isSubmitting"
+            :product-options="getProductOptionsForIndex(index)"
+            :selected-product-details="selectedProductDetails?.[index]"
+            :available-products="availableProducts"
+            :products-data="productsData"
+            :categories="categories"
+            :can-remove="saleForm.products.length > 1 && getStatusStepIndex(props.saleData.status) < getStatusStepIndex('preparing')"
+            :handle-find-category="handleFindCategory"
+            :get-image-url="getImageUrl"
+            :get-selected-product="getSelectedProduct"
+            :is-read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')"
+            @update:product="updateProductForIndex"
+            @update:quantity="(idx, qty) => (saleForm.products[idx].quantity = qty)"
+            @remove="removeProduct"
+          />
+        </div>
+      </div>
 
       <!-- Payment Calculation -->
       <PaymentCalculationSection
@@ -550,9 +769,7 @@ const sellers = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
-        :read-only="
-          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
-        "
+        :read-only="getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('preparing')"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"

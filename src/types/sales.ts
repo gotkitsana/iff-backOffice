@@ -97,21 +97,18 @@ export type StatusWorkflow = Record<
 >
 
 export type SellingStatus =
-  | 'wait_product'
-  | 'wait_confirm'
-  | 'wait_payment'
-  | 'paid_complete'
-  | 'preparing'
-  | 'shipping'
-  | 'received'
-  | 'damaged'
+  | 'wait_product' // 1 ระหว่างจัดหา
+  | 'wait_confirm' // 2 รอตัดสินใจ
+  | 'wait_payment' // 3 รอชำระเงิน
+  | 'preparing' // 4 แพ็คจัดเตรียมสินค้า
+  | 'shipping' // 5 ระหว่างขนส่ง
+  | 'received' // 6 ได้รับสินค้าแล้ว
+  | 'damaged' // 7 สินค้าเสียหาย
 
 export type SellingLabel =
   | 'ระหว่างจัดหา'
   | 'รอตัดสินใจ'
   | 'รอชำระเงิน'
-  | 'ชำระเงินเรียบร้อย'
-  | 'จัดเตรียมสินค้า'
   | 'แพ็คจัดเตรียมสินค้า'
   | 'ระหว่างขนส่ง'
   | 'ได้รับสินค้าแล้ว'

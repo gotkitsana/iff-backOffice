@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Dialog, Textarea, Select, InputNumber, Button, TreeSelect, Tag } from 'primevue'
+import { Dialog, Textarea, Select, InputNumber, Button } from 'primevue'
 import {
   useProductStore,
   type IProduct,
@@ -18,12 +18,14 @@ import type {
   IUpdateSalesPayload,
   StatusWorkflow,
 } from '@/types/sales'
-import CardProductList from '../CardProductList.vue'
+import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
+import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
+import { executeStockDeduction } from '@/utils/stockDeduction'
 
 // Props
 const props = defineProps<{
@@ -83,13 +85,6 @@ const availableProducts = computed(() => {
   return products.value.filter((p) => p.auctionOnly === 0)
 })
 
-const productOptions = computed(() => {
-  return availableProducts.value.map((product) => ({
-    label: `${product.name} (รหัส: ${product.sku})`,
-    value: product._id,
-  }))
-})
-
 const imageUrlCache = new Map<string, string>()
 const getImageUrl = (filename: string): string => {
   if (imageUrlCache.has(filename)) {
@@ -117,11 +112,6 @@ const getProductOptionsForIndex = (currentIndex: number) => {
   // กรองสินค้าที่ยังไม่ได้เลือก
   const unselectedProducts = availableProducts.value.filter(
     (product) => !selectedProductIds?.includes(product._id)
-  )
-
-  // กรอง food sales ที่ยังไม่ได้เลือก
-  const unselectedFoodSales = (foodSales.value || []).filter(
-    (foodSale) => !selectedProductIds?.includes(foodSale.product?._id)
   )
 
   // group by category._id
@@ -381,16 +371,35 @@ const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
 
+// Filter status options - remove received and damaged
+const availableStatusOptions = computed(() => {
+  return salesStore.sellingStatusOptions.filter(
+    (opt) => opt.value !== 'received' && opt.value !== 'damaged'
+  )
+})
+
 const requiresSlipUpload = computed(() => {
-  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
-  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-  return currentStepIndex > waitPaymentStepIndex
+  const status = saleForm.value.status
+  // wait_payment: optional, preparing: mandatory, shipping: mandatory
+  return status === 'preparing' || status === 'shipping'
+})
+
+const requiresSlipUploadMandatory = computed(() => {
+  const status = saleForm.value.status
+  // preparing and shipping require mandatory slip upload
+  return status === 'preparing' || status === 'shipping'
 })
 
 const requiresBankSelection = computed(() => {
   const currentStepIndex = getStatusStepIndex(saleForm.value.status)
   const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
   return currentStepIndex >= waitPaymentStepIndex
+})
+
+const requiresShippingSlipUpload = computed(() => {
+  const status = saleForm.value.status
+  // preparing and shipping can have shipping slip (optional)
+  return status === 'preparing' || status === 'shipping'
 })
 
 // Handlers
@@ -419,8 +428,8 @@ const handleSubmit = () => {
     return
   }
 
-  // Check slip upload requirement
-  if (requiresSlipUpload.value && !hasSlip.value) {
+  // Check slip upload requirement (mandatory for preparing and shipping)
+  if (requiresSlipUploadMandatory.value && !hasSlip.value) {
     toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
     return
   }
@@ -468,8 +477,26 @@ const handleSubmit = () => {
       }
     })
   }
+
+  // Determine final status based on slip uploads
+  let finalStatus = saleForm.value.status
+  if (saleForm.value.status === 'wait_payment' && hasSlip.value) {
+    // If wait_payment and slip uploaded, change to preparing
+    finalStatus = 'preparing'
+  } else if (saleForm.value.status === 'preparing') {
+    // If preparing and shipping slip uploaded, change to shipping
+    if (hasShippingSlip.value) {
+      finalStatus = 'shipping'
+    }
+    // Otherwise stay as preparing
+  } else if (saleForm.value.status === 'shipping') {
+    // Stay as shipping
+    finalStatus = 'shipping'
+  }
+
   createSale({
     ...saleForm.value,
+    status: finalStatus,
     products: formattedProducts,
     item: `SALE-${Date.now().toString().slice(-8)}`,
   })
@@ -513,11 +540,11 @@ const { data: allSales } = useQuery<ISales[]>({
 })
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
+  onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       if (
         salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
-        salesStore.statusWorkflow['paid_complete'].stepOrder
+        salesStore.statusWorkflow['preparing'].stepOrder
       ) {
         // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
@@ -531,7 +558,7 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
                 (s) =>
                   s.user._id === variables.user &&
                   salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
-                    salesStore.statusWorkflow['paid_complete'].stepOrder &&
+                    salesStore.statusWorkflow['preparing'].stepOrder &&
                   s._id !== variables._id
               )
               .reduce((sum, s) => sum + calculateSaleTotal(s, products.value || []), 0) || 0
@@ -566,60 +593,11 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           }
         }
 
-        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
-        const productsList = products.value?.filter((p) =>
-          variables.products.some((product) => product.id === p._id)
-        )
-
-        if (productsList && productsList.length > 0) {
-          productsList.forEach((product) => {
-            const purchasedItem = variables.products.find((p) => p.id === product._id)
-            if (!purchasedItem) return
-
-            const quantity = purchasedItem.quantity
-            const isFish = product.category?.name === 'ปลา'
-
-            let newSoldStatus = product.sold
-            let newBalance = product.balance || 0
-
-            if (isFish) {
-              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
-              newSoldStatus = true
-              newBalance = product.balance || 0
-            } else {
-              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
-              const balance = product.balance || 0
-
-              if (balance >= quantity) {
-                // กรณีมีสต็อกเพียงพอ
-                newBalance = balance - quantity
-                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
-              } else {
-                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
-                newBalance = 0
-                newSoldStatus = true
-                console.warn(
-                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
-                )
-              }
-            }
-
-            updateProduct({
-              ...product,
-              fishpond: product.fishpond?._id || undefined,
-              species: product.species?._id || undefined,
-              farm: product.farm?._id || undefined,
-              quality: product.quality?._id || undefined,
-              lotNumber: product.lotNumber?._id || undefined,
-              seedSize: product.seedSize?._id || undefined,
-              foodtype: product.foodtype?._id || undefined,
-              brand: product.brand?._id || undefined,
-              fishStatus: product.fishStatus?._id || undefined,
-
-              sold: newSoldStatus,
-              balance: newBalance,
-            })
-          })
+        // B. ตัดสต็อกสินค้า - ใช้ utility function
+        if (products.value) {
+          executeStockDeduction(variables, products.value, updateProduct, (warning) =>
+            toast.warning(warning)
+          )
         }
       }
 
@@ -699,7 +677,12 @@ const resetForm = () => {
     _id: '',
     submit: false,
   }
+  shippingSlipData.value = {
+    _id: '',
+    submit: false,
+  }
   hasSlip.value = false
+  hasShippingSlip.value = false
   bankForm.value = {
     bankCode: '',
     bankAccount: '',
@@ -721,6 +704,7 @@ const getStatusStepIndex = (status: string) => {
 }
 
 const hasSlip = ref(false)
+const hasShippingSlip = ref(false)
 const bankForm = ref({
   bankCode: '',
   bankAccount: '',
@@ -729,16 +713,30 @@ const saleData = ref({
   _id: '',
   submit: false,
 })
+const shippingSlipData = ref({
+  _id: '',
+  submit: false,
+})
 const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
+}
+const handleShippingSlipStatusChanged = (status: boolean) => {
+  hasShippingSlip.value = status
 }
 const updateBankCode = (bankCode: string) => {
   bankForm.value.bankCode = bankCode
 }
 
-const updateProducts = (index: number, value: string) => {
-  // TreeSelect ส่ง value เป็น string (id)
-  const selectedId = Object.keys(value)[0]
+const updateProducts = (index: number, value: string | Record<string, any>) => {
+  // TreeSelect ส่ง value เป็น string หรือ object
+  let selectedId: string
+  if (typeof value === 'string') {
+    selectedId = value
+  } else if (value && typeof value === 'object') {
+    selectedId = Object.keys(value)[0] || ''
+  } else {
+    return
+  }
 
   if (!selectedId) return
 
@@ -837,7 +835,7 @@ const getSelectedProduct = (id: string) => {
           <div>
             <Select
               v-model="saleForm.status"
-              :options="salesStore.sellingStatusOptions"
+              :options="availableStatusOptions"
               optionLabel="label"
               optionValue="value"
               fluid
@@ -913,6 +911,7 @@ const getSelectedProduct = (id: string) => {
 
         <!-- Slip Upload Section -->
         <SlipUploadSection
+          v-if="requiresSlipUpload || saleForm.status === 'wait_payment'"
           :sale-id="saleData._id || ''"
           :upload-to-submit="saleData.submit"
           :is-add-sale="true"
@@ -920,6 +919,18 @@ const getSelectedProduct = (id: string) => {
           :is-current-status="''"
           :is-submitting="isSubmitting"
           @slip-status-changed="handleSlipStatusChanged"
+        />
+
+        <!-- Shipping Slip Upload Section -->
+        <ShippingSlipUploadSection
+          v-if="requiresShippingSlipUpload"
+          :sale-id="shippingSlipData._id || saleData._id || ''"
+          :upload-to-submit="shippingSlipData.submit"
+          :is-add-sale="true"
+          :selected-status="saleForm.status"
+          :is-current-status="''"
+          :is-submitting="isSubmitting"
+          @shipping-slip-status-changed="handleShippingSlipStatusChanged"
         />
       </div>
 
@@ -943,182 +954,25 @@ const getSelectedProduct = (id: string) => {
         </div>
 
         <div class="space-y-4">
-          <div
+          <ProductItemForm
             v-for="(product, index) in saleForm.products"
             :key="index"
-            class="p-3 bg-gray-50 border border-gray-200 rounded-xl"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
-              <Button
-                v-if="saleForm.products && saleForm.products.length > 1"
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                text
-                rounded
-                @click="removeProduct(index)"
-                v-tooltip.top="'ลบสินค้านี้'"
-              />
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <TreeSelect
-                  v-model="product.id"
-                  @update:modelValue="(value) => updateProducts(index, value)"
-                  :options="getProductOptionsForIndex(index)"
-                  placeholder="เลือกสินค้าที่ต้องการขาย"
-                  fluid
-                  size="small"
-                  filter
-                  filterBy="label,sku"
-                  :filterPlaceholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
-                  :invalid="!product.id && isSubmitting"
-                  selectionMode="single"
-                  :pt="{
-                    label: 'flex items-center gap-2',
-                  }"
-                >
-                  <template #value="slotProps" >
-                    <div v-if="!!product.id" class="flex items-center gap-2">
-                      <img
-                        v-if="
-                          getSelectedProduct(product.id)?.images?.[0]
-                        "
-                        :src="getImageUrl(getSelectedProduct(product.id)?.images?.[0]?.filename || '')"
-                        alt="product"
-                        class="w-6 h-6 object-cover rounded"
-                        loading="lazy"
-                        fetchpriority="low"
-                        crossorigin="anonymous"
-                      />
-                      <span>
-                        {{ product.name }}
-                        <span class="text-xs text-gray-500 pl-1">
-                          รหัส ({{
-                            getSelectedProduct(product.id)?.sku
-                          }})
-                        </span>
-                      </span>
-                    </div>
-                    <span v-else>{{ slotProps.placeholder }}</span>
-                  </template>
-
-                  <template #option="{ node }">
-                    <div class="flex items-center justify-between gap-2 w-full">
-                      <div class="flex items-center gap-2">
-                        <img
-                          v-if="node.image"
-                          :src="node.image"
-                          alt="product"
-                          class="w-6 h-6 object-cover rounded"
-                          loading="lazy"
-                          fetchpriority="low"
-                          crossorigin="anonymous"
-                        />
-                        <span :class="{ 'opacity-50': node.disabled }">
-                          {{ node.label }}
-                          <span v-if="node.sku" class="text-xs text-gray-500 pl-1">
-                            รหัส ({{ node.sku }})
-                          </span>
-                        </span>
-                      </div>
-
-                      <!-- Badge สถานะ -->
-                      <div v-if="node.value" class="flex-shrink-0">
-                        <!-- ปลา -->
-                        <Tag
-                          v-if="node.isFish && node.sold"
-                          value="ขายแล้ว"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="node.isFish && !node.sold"
-                          value="พร้อมขาย"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-
-                        <!-- สินค้าทั่วไป (อาหารกระสอบ) -->
-                        <Tag
-                          v-else-if="
-                            !node.isFish && !node.isFoodSale && (node.sold || node.balance === 0)
-                          "
-                          :value="`คงเหลือ: ${node.balance || 0}`"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="!node.isFish && !node.isFoodSale"
-                          :value="`คงเหลือ: ${node.balance || 0}`"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-
-                        <!-- อาหารแบ่งขาย -->
-                        <Tag
-                          v-else-if="node.isFoodSale && (node.sold || node.balance === 0)"
-                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="node.isFoodSale"
-                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-                      </div>
-                    </div>
-                  </template>
-                </TreeSelect>
-
-                <small v-if="!product.id && isSubmitting" class="text-red-500"
-                  >กรุณาเลือกสินค้า</small
-                >
-              </div>
-
-              <div>
-                <InputNumber
-                  v-model="product.quantity"
-                  :min="1"
-                  :max="products?.find((p) => p._id === product.id)?.balance || 100"
-                  fluid
-                  size="small"
-                  placeholder="ระบุจำนวนสินค้า"
-                  :invalid="!product.quantity && isSubmitting"
-                  :disabled="
-                    handleFindCategory(products?.find((p) => p._id === product.id)?.category?._id)
-                      ?.value === 'fish'
-                  "
-                />
-                <small v-if="!product.quantity && isSubmitting" class="text-red-500"
-                  >กรุณากรอกจำนวนสินค้า
-                </small>
-              </div>
-            </div>
-
-            <CardProductList
-              v-if="selectedProductDetails && selectedProductDetails[index]"
-              :name="selectedProductDetails[index]?.name"
-              :quantity="selectedProductDetails[index]?.quantity || product.quantity"
-              :price="selectedProductDetails[index]?.price"
-              :detail="''"
-              :category="selectedProductDetails[index]?.category"
-              :is-missing="!selectedProductDetails[index]"
-              :image="selectedProductDetails[index]?.image"
-              :sku="selectedProductDetails[index]?.sku"
-              :balance="selectedProductDetails[index]?.balance"
-            />
-          </div>
+            :product="product"
+            :index="index"
+            :is-submitting="isSubmitting"
+            :product-options="getProductOptionsForIndex(index)"
+            :selected-product-details="selectedProductDetails?.[index]"
+            :available-products="availableProducts"
+            :products-data="products"
+            :categories="categories"
+            :can-remove="!!saleForm.products && saleForm.products.length > 1"
+            :handle-find-category="handleFindCategory"
+            :get-image-url="getImageUrl"
+            :get-selected-product="getSelectedProduct"
+            @update:product="(idx, value) => updateProducts(idx, value)"
+            @update:quantity="(idx, qty) => (saleForm.products ? saleForm.products[idx].quantity = qty : 1)"
+            @remove="removeProduct"
+          />
         </div>
 
         <div

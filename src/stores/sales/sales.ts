@@ -47,6 +47,18 @@ export const useSalesStore = defineStore('sales', () => {
     return data
   }
 
+  async function onUploadShippingSlip(id: string, slip: File) {
+    const formData = new FormData()
+    formData.append('imageFile', slip)
+
+    const { data } = await api.post(`/sale/shipping-slip?saleId=${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return data
+  }
+
   const paymentMethods = [
     { label: 'เงินสด', value: 'cash' },
     { label: 'โอน', value: 'transfer' },
@@ -66,7 +78,6 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'ระหว่างจัดหา', value: 'wait_product' },
     { label: 'รอตัดสินใจ', value: 'wait_confirm' },
     { label: 'รอชำระเงิน', value: 'wait_payment' },
-    { label: 'ชำระเงินเรียบร้อย', value: 'paid_complete' },
     { label: 'แพ็คจัดเตรียมสินค้า', value: 'preparing' },
     { label: 'ระหว่างขนส่ง', value: 'shipping' },
     { label: 'ได้รับสินค้าแล้ว', value: 'received' },
@@ -78,15 +89,7 @@ export const useSalesStore = defineStore('sales', () => {
       label: 'ระหว่างจัดหา',
       color: 'warning',
       icon: 'pi pi-clock',
-      nextSteps: [
-        'wait_confirm',
-        'wait_payment',
-        'paid_complete',
-        'preparing',
-        'shipping',
-        'received',
-        'damaged',
-      ],
+      nextSteps: ['wait_confirm', 'wait_payment', 'preparing', 'shipping', 'received', 'damaged'],
       description: 'กำลังจัดหาสินค้าตามที่ลูกค้าต้องการ',
       stepOrder: 1,
     },
@@ -94,15 +97,7 @@ export const useSalesStore = defineStore('sales', () => {
       label: 'รอตัดสินใจ',
       color: 'info',
       icon: 'pi pi-check-circle',
-      nextSteps: [
-        'wait_payment',
-        'paid_complete',
-        'preparing',
-        'shipping',
-        'received',
-        'damaged',
-        'wait_product',
-      ],
+      nextSteps: ['wait_payment', 'preparing', 'shipping', 'received', 'damaged', 'wait_product'],
       description: 'รอการยืนยันรายการขาย',
       stepOrder: 2,
     },
@@ -110,17 +105,9 @@ export const useSalesStore = defineStore('sales', () => {
       label: 'รอชำระเงิน',
       color: 'warning',
       icon: 'pi pi-credit-card',
-      nextSteps: ['paid_complete', 'preparing', 'shipping', 'received', 'damaged', 'wait_confirm'],
+      nextSteps: ['preparing', 'shipping', 'received', 'damaged', 'wait_confirm'],
       description: 'รอการชำระเงินจากลูกค้า',
       stepOrder: 3,
-    },
-    paid_complete: {
-      label: 'ชำระเงินเรียบร้อย',
-      color: 'success',
-      icon: 'pi pi-check',
-      nextSteps: ['preparing', 'shipping', 'received', 'damaged'],
-      description: 'การชำระเงินเสร็จสิ้นแล้ว',
-      stepOrder: 4,
     },
     preparing: {
       label: 'แพ็คจัดเตรียมสินค้า',
@@ -128,7 +115,7 @@ export const useSalesStore = defineStore('sales', () => {
       icon: 'pi pi-box',
       nextSteps: ['shipping', 'received', 'damaged'],
       description: 'กำลังแพ็คและเตรียมสินค้าสำหรับจัดส่ง',
-      stepOrder: 5,
+      stepOrder: 4,
     },
     shipping: {
       label: 'ระหว่างขนส่ง',
@@ -136,7 +123,7 @@ export const useSalesStore = defineStore('sales', () => {
       icon: 'pi pi-truck',
       nextSteps: ['received', 'damaged'],
       description: 'สินค้าอยู่ระหว่างการขนส่ง',
-      stepOrder: 6,
+      stepOrder: 5,
     },
     received: {
       label: 'ได้รับสินค้าแล้ว',
@@ -144,7 +131,7 @@ export const useSalesStore = defineStore('sales', () => {
       icon: 'pi pi-check-circle',
       nextSteps: [],
       description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
-      stepOrder: 7,
+      stepOrder: 6,
     },
     damaged: {
       label: 'สินค้าเสียหาย',
@@ -152,7 +139,7 @@ export const useSalesStore = defineStore('sales', () => {
       icon: 'pi pi-times-circle',
       nextSteps: ['wait_product', 'wait_confirm', 'wait_payment'],
       description: 'สินค้าเสียหายระหว่างการขนส่ง',
-      stepOrder: 8,
+      stepOrder: 7,
     },
   }
 
@@ -166,8 +153,6 @@ export const useSalesStore = defineStore('sales', () => {
         return { label: 'รอตัดสินใจ', severity: 'warning' }
       case 'wait_payment':
         return { label: 'รอชำระเงิน', severity: 'warning' }
-      case 'paid_complete':
-        return { label: 'ชำระเงินเรียบร้อย', severity: 'success' }
       case 'preparing':
         return { label: 'แพ็คจัดเตรียมสินค้า', severity: 'info' }
       case 'shipping':
@@ -263,5 +248,6 @@ export const useSalesStore = defineStore('sales', () => {
     getCategoryBorderColor,
     getCategoryIcon,
     onUploadSlip,
+    onUploadShippingSlip,
   }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SalebankData from '@/config/Salebank_data'
-import type { SellingStatus } from '@/types/sales';
+import type { SellingStatus } from '@/types/sales'
 
 // Props
 const props = defineProps<{
@@ -19,7 +19,10 @@ const emit = defineEmits<{
 // Computed
 const bankOptions = computed(() => {
   return Object.entries(
-    SalebankData as Record<string, { name: string; icon: string; color: string; fullname: string, account: string }>
+    SalebankData as Record<
+      string,
+      { name: string; icon: string; color: string; fullname: string; account: string }
+    >
   ).map(([key, bank]) => ({
     value: key,
     label: bank.name,
@@ -44,7 +47,6 @@ const statusSteps: SellingStatus[] = [
   'wait_product',
   'wait_confirm',
   'wait_payment',
-  'paid_complete',
   'preparing',
   'shipping',
   'received',
@@ -52,8 +54,8 @@ const statusSteps: SellingStatus[] = [
 ]
 const closeEditBank = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
-  const waitPaymentStepIndex = statusSteps.indexOf('paid_complete')
-  return currentStepIndex >= waitPaymentStepIndex
+  const preparingStepIndex = statusSteps.indexOf('preparing')
+  return currentStepIndex >= preparingStepIndex
 })
 </script>
 
@@ -72,7 +74,10 @@ const closeEditBank = computed(() => {
     </div>
 
     <!-- Bank Selection Grid -->
-    <div v-if="selectedBank && !!closeEditBank" class="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
+    <div
+      v-if="selectedBank && !!closeEditBank"
+      class="bg-white border border-gray-200 rounded-lg p-3 md:p-4"
+    >
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
           <img :src="selectedBank.icon" :alt="selectedBank.label" class="w-8 h-8 object-contain" />
@@ -81,7 +86,7 @@ const closeEditBank = computed(() => {
           <h5 class="text-sm md:text-base font-[500]! text-gray-900">
             {{ selectedBank.fullname }}
           </h5>
-          <p class="text-xs text-gray-600">เลขบัญชี: {{selectedBank.account}}</p>
+          <p class="text-xs text-gray-600">เลขบัญชี: {{ selectedBank.account }}</p>
         </div>
       </div>
     </div>
