@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { TreeSelect, InputNumber, Button, Tag } from 'primevue'
 import CardProductList from './CardProductList.vue'
 import type { IProduct } from '@/stores/product/product'
 import type { ICategory } from '@/stores/product/category'
-import { getProductImageUrl } from '@/utils/imageUrl'
 
 const props = defineProps<{
   product: { id: string; quantity: number; category: string; price: number; name?: string }
   index: number
   isSubmitting: boolean
-  productOptions: any[] // TreeSelect options
-  selectedProductDetails?: any
-  availableProducts?: IProduct[]
   productsData?: IProduct[]
-  categories?: ICategory[]
   canRemove?: boolean
-  handleFindCategory?: (id: string | null | undefined) => ICategory | undefined
-  getImageUrl?: (filename: string) => string
-  getSelectedProduct?: (id: string) => IProduct | undefined
+  isReadOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +19,47 @@ const emit = defineEmits<{
   'update:quantity': [index: number, value: number]
   remove: [index: number]
 }>()
+
+// Inject composable functions from parent
+const productSelection = inject<{
+  getImageUrl: (filename: string) => string
+  handleFindCategory: (id: string | null | undefined) => ICategory | undefined
+  getSelectedProduct: (id: string) => IProduct | undefined
+  getProductOptionsForIndex: (index: number) => Array<{
+    key: string
+    label: string
+    selectable: boolean
+    children: Array<{
+      key: string
+      label: string
+      value: string
+      data: any
+      selectable: boolean
+      disabled: boolean
+      sku?: string
+      image?: string
+      sold?: boolean
+      balance?: number
+      isFish?: boolean
+    }>
+  }>
+  selectedProductDetails: {
+    value: Array<{
+      name?: string
+      price?: number
+      quantity?: number
+      isMissing?: boolean
+      category?: ICategory
+      image?: string
+      sku?: string
+      balance?: number
+    } | null>
+  }
+}>(Symbol.for('productSelection'))
+
+if (!productSelection) {
+  throw new Error('ProductItemForm must be used within a component that provides productSelection')
+}
 
 const handleProductChange = (value: string | Record<string, any>) => {
   emit('update:product', props.index, value)
@@ -39,32 +73,22 @@ const handleRemove = () => {
   emit('remove', props.index)
 }
 
-const getImageUrl = (filename: string): string => {
-  if (props.getImageUrl) {
-    return props.getImageUrl(filename)
-  }
-  return getProductImageUrl(filename)
-}
-
 const getProduct = (id: string) => {
-  if (props.getSelectedProduct) {
-    return props.getSelectedProduct(id)
-  }
-  return props.availableProducts?.find((p) => p._id === id)
-}
-
-const findCategory = (id: string | null | undefined) => {
-  if (props.handleFindCategory) {
-    return props.handleFindCategory(id)
-  }
-  if (!id || !props.categories) return undefined
-  return props.categories.find((category) => category._id === id)
+  return productSelection.getSelectedProduct(id)
 }
 
 const isFishCategory = computed(() => {
   const product = getProduct(props.product.id)
-  const category = findCategory(product?.category?._id)
+  const category = productSelection.handleFindCategory(product?.category?._id)
   return category?.value === 'fish'
+})
+
+const productOptions = computed(() => {
+  return productSelection.getProductOptionsForIndex(props.index)
+})
+
+const selectedProductDetail = computed(() => {
+  return productSelection.selectedProductDetails.value[props.index]
 })
 </script>
 
@@ -97,6 +121,7 @@ const isFishCategory = computed(() => {
           filterBy="label,sku"
           :filterPlaceholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
           :invalid="!product.id && isSubmitting"
+          :disabled="isReadOnly"
           selectionMode="single"
           :pt="{
             label: 'flex items-center gap-2',
@@ -106,7 +131,9 @@ const isFishCategory = computed(() => {
             <div v-if="!!product.id" class="flex items-center gap-2">
               <img
                 v-if="getProduct(product.id)?.images?.[0]"
-                :src="getImageUrl(getProduct(product.id)?.images?.[0]?.filename || '')"
+                :src="
+                  productSelection.getImageUrl(getProduct(product.id)?.images?.[0]?.filename || '')
+                "
                 alt="product"
                 class="w-6 h-6 object-cover rounded"
                 loading="lazy"
@@ -114,7 +141,7 @@ const isFishCategory = computed(() => {
                 crossorigin="anonymous"
               />
               <span>
-                {{ product.name || selectedProductDetails?.name || product.id }}
+                {{ product.name || selectedProductDetail?.name || product.id }}
                 <span v-if="getProduct(product.id)?.sku" class="text-xs text-gray-500 pl-1">
                   รหัส ({{ getProduct(product.id)?.sku }})
                 </span>
@@ -210,7 +237,7 @@ const isFishCategory = computed(() => {
           size="small"
           placeholder="ระบุจำนวนสินค้า"
           :invalid="!product.quantity && isSubmitting"
-          :disabled="isFishCategory"
+          :disabled="isFishCategory || isReadOnly"
         />
         <small v-if="!product.quantity && isSubmitting" class="text-red-500"
           >กรุณากรอกจำนวนสินค้า
@@ -219,16 +246,16 @@ const isFishCategory = computed(() => {
     </div>
 
     <CardProductList
-      v-if="selectedProductDetails"
-      :name="selectedProductDetails?.name"
-      :quantity="selectedProductDetails?.quantity || product.quantity"
-      :price="selectedProductDetails?.price"
+      v-if="selectedProductDetail"
+      :name="selectedProductDetail?.name"
+      :quantity="selectedProductDetail?.quantity || product.quantity"
+      :price="selectedProductDetail?.price"
       :detail="''"
-      :category="selectedProductDetails?.category"
-      :is-missing="!selectedProductDetails"
-      :image="selectedProductDetails?.image"
-      :sku="selectedProductDetails?.sku"
-      :balance="selectedProductDetails?.balance"
+      :category="selectedProductDetail?.category"
+      :is-missing="!selectedProductDetail"
+      :image="selectedProductDetail?.image"
+      :sku="selectedProductDetail?.sku"
+      :balance="selectedProductDetail?.balance"
     />
   </div>
 </template>

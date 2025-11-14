@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, provide } from 'vue'
 import { Dialog, Textarea, Select, InputNumber, Button } from 'primevue'
 import {
   useProductStore,
@@ -20,12 +20,12 @@ import type {
 } from '@/types/sales'
 import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
-import { getProductImageUrl } from '@/utils/imageUrl'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
 import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { executeStockDeduction } from '@/utils/stockDeduction'
+import { useProductSelection } from '@/composables/useProductSelection'
 
 // Props
 const props = defineProps<{
@@ -74,235 +74,22 @@ const { data: categories } = useQuery<ICategory[]>({
   queryFn: () => categoryStore.onGetCategory(0),
 })
 
-const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
-  if (!id) return undefined
-  return categories.value?.find((category) => category._id === id)
-}
-
-// Computed
-const availableProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => p.auctionOnly === 0)
-})
-
-const imageUrlCache = new Map<string, string>()
-const getImageUrl = (filename: string): string => {
-  if (imageUrlCache.has(filename)) {
-    return imageUrlCache.get(filename)!
-  }
-  const url = getProductImageUrl(filename)
-  imageUrlCache.set(filename, url)
-  return url
-}
-
 const foodSaleStore = useFoodSaleStore()
 const { data: foodSales } = useQuery<IFoodSale[]>({
   queryKey: ['get_food_sales'],
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 
-const getProductOptionsForIndex = (currentIndex: number) => {
-  if (!availableProducts.value) return []
+// Use composable for product selection
+const productSelection = useProductSelection(
+  products,
+  categories,
+  foodSales,
+  computed(() => saleForm.value.products || [])
+)
 
-  // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
-  const selectedProductIds = saleForm.value.products
-    ?.map((p, index) => (index !== currentIndex ? p.id : ''))
-    .filter((id) => id !== '')
-
-  // กรองสินค้าที่ยังไม่ได้เลือก
-  const unselectedProducts = availableProducts.value.filter(
-    (product) => !selectedProductIds?.includes(product._id)
-  )
-
-  // group by category._id
-  const groupsMap = new Map<
-    string,
-    {
-      label: string
-      children: Array<{
-        label: string
-        value: string
-        image?: string
-        disabled?: boolean
-        sold?: boolean
-        balance?: number
-        isFish?: boolean
-        sku?: string
-        isFoodSale?: boolean
-        kilo?: number
-        customerPriceKilo?: number
-      }>
-    }
-  >()
-
-  unselectedProducts.forEach((product) => {
-    const catId = product.category?._id || 'unknown'
-    const cat = handleFindCategory(product.category?._id)
-    const isFish = cat?.value === 'fish'
-    const isFood = cat?.value === 'food'
-
-    const groupLabel = isFood ? 'อาหาร (กระสอบ)' : cat?.name || 'ไม่ระบุหมวดหมู่'
-    const group = groupsMap.get(catId) || {
-      label: groupLabel,
-      children: [],
-    }
-
-    // เพิ่มรูปภาพจาก images[0]
-    const imageUrl =
-      product.images && product.images.length > 0
-        ? getImageUrl(product.images[0].filename) // ใช้ function แทน
-        : undefined
-
-    const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
-
-    group.children.push({
-      label: `${product.name || `${product.species?.name}`}`,
-      sku: product.sku || '',
-      value: product._id,
-      image: imageUrl,
-      disabled: isSold, // disable ถ้าขายแล้ว
-      sold: product.sold,
-      balance: product.balance,
-      isFish: isFish,
-      isFoodSale: false,
-    })
-
-    groupsMap.set(catId, group)
-  })
-
-  // unselectedFoodSales.forEach((foodSale) => {
-  //   const product = foodSale.product
-  //   const catId = 'food_sale'
-  //   const cat = handleFindCategory(product?.category)
-
-  //   // สร้าง group สำหรับอาหารแบ่งขาย หรือใช้ category เดิม
-  //   const groupLabel = 'อาหาร (แบ่งขาย)'
-  //   const group = groupsMap.get(catId) || {
-  //     label: groupLabel,
-  //     children: [],
-  //   }
-
-  //   const imageUrl =
-  //     product?.images && product.images.length > 0
-  //       ? getImageUrl(product.images[0].filename)
-  //       : undefined
-
-  //   // ตรวจสอบว่าขายหมดหรือยัง (ใช้ kilo เป็น balance)
-  //   const isSold = (foodSale.kilo || 0) === 0
-
-  //   group.children.push({
-  //     label: `${foodSale.name || product?.name || ''}`,
-  //     sku: product?.sku || '',
-  //     value: foodSale._id, // ใช้ _id ของ food sale
-  //     image: imageUrl,
-  //     disabled: isSold,
-  //     sold: isSold,
-  //     balance: foodSale.kilo || 0,
-  //     isFish: false,
-  //     isFoodSale: true,
-  //     kilo: foodSale.kilo,
-  //     customerPriceKilo: foodSale.customerPriceKilo,
-  //   })
-
-  //   groupsMap.set(catId, group)
-  // })
-
-  const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
-    key: `group-${groupIndex}`,
-    label: group.label,
-    selectable: false, // ไม่ให้เลือก category
-    children: group.children
-      .sort((a, b) => {
-        // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง
-        if (a.disabled && !b.disabled) return 1
-        if (!a.disabled && b.disabled) return -1
-        return a.label.localeCompare(b.label)
-      })
-      .map((item) => ({
-        key: item.value,
-        label: item.label,
-        value: item.value,
-        data: item, // เก็บข้อมูลเต็มไว้ใน data
-        selectable: !item.disabled,
-        disabled: item.disabled,
-        sku: item.sku,
-        image: item.image,
-        sold: item.sold,
-        balance: item.balance,
-        isFish: item.isFish,
-        isFoodSale: item.isFoodSale,
-        kilo: item.kilo,
-        customerPriceKilo: item.customerPriceKilo,
-      })),
-  }))
-
-  return treeNodes
-}
-
-const selectedProductDetails = computed(() => {
-  return saleForm.value.products?.map(
-    (product: { id: string; quantity: number; category: string }) => {
-      if (!product.id) return null
-
-      // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
-      const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
-
-      if (foodSale) {
-        // กรณีเป็น food sale
-        const productDetail = foodSale.product
-        const imageUrl =
-          productDetail?.images && productDetail?.images.length > 0
-            ? getProductImageUrl(productDetail.images[0].filename)
-            : undefined
-
-        return {
-          ...productDetail,
-          quantity: product.quantity,
-          productId: foodSale._id,
-          isMissing: false,
-          category: handleFindCategory(productDetail?.category),
-          image: imageUrl,
-          isFoodSale: true,
-          kilo: foodSale.kilo,
-          customerPriceKilo: foodSale.customerPriceKilo,
-          price: foodSale.customerPriceKilo, // ใช้ราคาต่อกิโล
-        }
-      }
-
-      if (!availableProducts.value) return null
-      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
-
-      const category = handleFindCategory(productDetail?.category?._id)
-      const imageUrl =
-        productDetail?.images && productDetail?.images.length > 0
-          ? getProductImageUrl(productDetail?.images[0].filename)
-          : undefined
-
-      if (!productDetail) {
-        return {
-          name: '',
-          price: 0,
-          productId: product.id,
-          quantity: product.quantity,
-          isMissing: true,
-          category: undefined,
-          image: undefined,
-          sku: '',
-          balance: 0,
-        }
-      }
-
-      return {
-        ...productDetail,
-        quantity: product.quantity,
-        productId: product.id,
-        isMissing: false,
-        category: category,
-        image: imageUrl,
-      }
-    }
-  )
-})
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productSelection)
 
 const totalAmount = computed(() => {
   return saleForm.value.products?.reduce((sum, product) => {
@@ -315,7 +102,9 @@ const totalAmount = computed(() => {
     }
 
     // กรณี product ปกติ
-    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    const productDetail = productSelection.availableProducts.value?.find(
+      (p) => p._id === product.id
+    )
     if (productDetail && productDetail.price) {
       return sum + (productDetail.price || 0) * product.quantity
     }
@@ -757,7 +546,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
     }
   } else {
     // กรณีสินค้าปกติ
-    const product = availableProducts.value?.find((p) => p._id === selectedId)
+    const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
 
     if (!product) return
 
@@ -777,10 +566,6 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
       unit: 'piece',
     }
   }
-}
-
-const getSelectedProduct = (id: string) => {
-  return availableProducts.value?.find((p) => p._id === id)
 }
 </script>
 
@@ -960,17 +745,12 @@ const getSelectedProduct = (id: string) => {
             :product="product"
             :index="index"
             :is-submitting="isSubmitting"
-            :product-options="getProductOptionsForIndex(index)"
-            :selected-product-details="selectedProductDetails?.[index]"
-            :available-products="availableProducts"
             :products-data="products"
-            :categories="categories"
             :can-remove="!!saleForm.products && saleForm.products.length > 1"
-            :handle-find-category="handleFindCategory"
-            :get-image-url="getImageUrl"
-            :get-selected-product="getSelectedProduct"
             @update:product="(idx, value) => updateProducts(idx, value)"
-            @update:quantity="(idx, qty) => (saleForm.products ? saleForm.products[idx].quantity = qty : 1)"
+            @update:quantity="
+              (idx, qty) => (saleForm.products ? (saleForm.products[idx].quantity = qty) : 1)
+            "
             @remove="removeProduct"
           />
         </div>

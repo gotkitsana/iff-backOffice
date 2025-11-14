@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, provide } from 'vue'
 import { Dialog, Button, Tag, Textarea, Select } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { StatusWorkflow, SellingStatus, ISales, IUpdateSalesPayload } from '@/types/sales'
@@ -24,9 +24,9 @@ import jsPDF from 'jspdf'
 // import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
-import { getProductImageUrl } from '@/utils/imageUrl'
 import BankData from '@/config/BankData'
 import logoIcon from '@/assets/images/icon/icon.png'
+import { useProductSelection } from '@/composables/useProductSelection'
 
 // Props
 const props = defineProps<{
@@ -112,27 +112,16 @@ const { data: foodSales } = useQuery<IFoodSale[]>({
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 
-// Helper functions
-const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
-  if (!id) return undefined
-  return categories.value?.find((category) => category._id === id)
-}
+// Use composable for product selection
+const productSelection = useProductSelection(
+  productsData,
+  categories,
+  foodSales,
+  computed(() => saleForm.value.products || [])
+)
 
-const imageUrlCache = new Map<string, string>()
-const getImageUrl = (filename: string): string => {
-  if (imageUrlCache.has(filename)) {
-    return imageUrlCache.get(filename)!
-  }
-  const url = getProductImageUrl(filename)
-  imageUrlCache.set(filename, url)
-  return url
-}
-
-// Computed
-const availableProducts = computed(() => {
-  if (!productsData.value) return []
-  return productsData.value.filter((p) => p.auctionOnly === 0)
-})
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productSelection)
 
 const currentStatusInfo = computed(() => {
   return salesStore.statusWorkflow[props.currentStatus as keyof StatusWorkflow]
@@ -227,137 +216,6 @@ const updateBankCode = (bankCode: string) => {
   saleForm.value.bankCode = bankCode
 }
 
-const getProductOptionsForIndex = (currentIndex: number) => {
-  if (!availableProducts.value) return []
-
-  // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
-  const selectedProductIds = saleForm.value.products
-    ?.map((p, index) => (index !== currentIndex ? p.id : ''))
-    .filter((id) => id !== '')
-
-  // กรองสินค้าที่ยังไม่ได้เลือก
-  const unselectedProducts = availableProducts.value.filter(
-    (product) => !selectedProductIds?.includes(product._id)
-  )
-
-  // group by category._id
-  const groupsMap = new Map<
-    string,
-    {
-      label: string
-      children: Array<{
-        label: string
-        value: string
-        image?: string
-        disabled?: boolean
-        sold?: boolean
-        balance?: number
-        isFish?: boolean
-        sku?: string
-      }>
-    }
-  >()
-
-  unselectedProducts.forEach((product) => {
-    const catId = product.category?._id || 'unknown'
-    const cat = handleFindCategory(product.category?._id)
-    const isFish = cat?.value === 'fish'
-    const isFood = cat?.value === 'food'
-
-    const groupLabel = isFood ? 'อาหาร (กระสอบ)' : cat?.name || 'ไม่ระบุหมวดหมู่'
-    const group = groupsMap.get(catId) || {
-      label: groupLabel,
-      children: [],
-    }
-
-    // เพิ่มรูปภาพจาก images[0]
-    const imageUrl =
-      product.images && product.images.length > 0
-        ? getImageUrl(product.images[0].filename)
-        : undefined
-
-    const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
-
-    group.children.push({
-      label: `${product.name || `${product.species?.name}`}`,
-      sku: product.sku || '',
-      value: product._id,
-      image: imageUrl,
-      disabled: isSold,
-      sold: product.sold,
-      balance: product.balance,
-      isFish: isFish,
-    })
-
-    groupsMap.set(catId, group)
-  })
-
-  const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
-    key: `group-${groupIndex}`,
-    label: group.label,
-    selectable: false,
-    children: group.children
-      .sort((a, b) => {
-        if (a.disabled && !b.disabled) return 1
-        if (!a.disabled && b.disabled) return -1
-        return a.label.localeCompare(b.label)
-      })
-      .map((item) => ({
-        key: item.value,
-        label: item.label,
-        value: item.value,
-        data: item,
-        selectable: !item.disabled,
-        disabled: item.disabled,
-        sku: item.sku,
-        image: item.image,
-        sold: item.sold,
-        balance: item.balance,
-        isFish: item.isFish,
-      })),
-  }))
-
-  return treeNodes
-}
-
-const selectedProductDetails = computed(() => {
-  return saleForm.value.products?.map(
-    (product: { id: string; quantity: number; category: string; price: number }) => {
-      if (!product.id) return null
-
-      if (!availableProducts.value) return null
-      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
-
-      const category = handleFindCategory(productDetail?.category?._id)
-      const imageUrl =
-        productDetail?.images && productDetail?.images.length > 0
-          ? getProductImageUrl(productDetail?.images[0].filename)
-          : undefined
-
-      if (!productDetail) {
-        return {
-          name: '',
-          price: 0,
-          quantity: product.quantity,
-          isMissing: true,
-          category: undefined,
-          image: undefined,
-          sku: '',
-          balance: 0,
-        }
-      }
-
-      return {
-        ...productDetail,
-        quantity: product.quantity,
-        isMissing: false,
-        category: category,
-        image: imageUrl,
-      }
-    }
-  )
-})
-
 const updateProductForIndex = (index: number, value: string | Record<string, any>) => {
   // TreeSelect ส่ง value เป็น string หรือ object
   let selectedId: string
@@ -385,7 +243,7 @@ const updateProductForIndex = (index: number, value: string | Record<string, any
     }
   } else {
     // กรณีสินค้าปกติ
-    const product = availableProducts.value?.find((p) => p._id === selectedId)
+    const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
 
     if (!product) return
 
@@ -402,10 +260,6 @@ const updateProductForIndex = (index: number, value: string | Record<string, any
       quantity: saleForm.value.products[index].quantity || 1,
     }
   }
-}
-
-const getSelectedProduct = (id: string) => {
-  return availableProducts.value?.find((p) => p._id === id)
 }
 
 const addProduct = () => {
@@ -430,7 +284,9 @@ const totalAmountComputed = computed(() => {
     saleForm.value.products?.reduce((sum, product) => {
       if (!product.id) return 0
 
-      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+      const productDetail = productSelection.availableProducts.value?.find(
+        (p) => p._id === product.id
+      )
       if (productDetail && productDetail.price) {
         return sum + (productDetail.price || 0) * product.quantity
       }
@@ -1348,17 +1204,14 @@ const showReportView = computed(() => {
               :product="product"
               :index="index"
               :is-submitting="isSubmitting"
-              :product-options="getProductOptionsForIndex(index)"
-              :selected-product-details="selectedProductDetails?.[index]"
-              :available-products="availableProducts"
               :products-data="productsData"
-              :categories="categories"
               :can-remove="saleForm.products.length > 1"
-              :handle-find-category="handleFindCategory"
-              :get-image-url="getImageUrl"
-              :get-selected-product="getSelectedProduct"
               @update:product="updateProductForIndex"
-              @update:quantity="(idx, qty) => (saleForm.products![idx].quantity = qty)"
+              @update:quantity="
+                (idx, qty) => {
+                  if (saleForm.products) saleForm.products[idx].quantity = qty
+                }
+              "
               @remove="removeProduct"
             />
           </div>
