@@ -936,8 +936,7 @@ const handleDownloadPDF = async () => {
 const showFormForCurrentStatus = computed(() => {
   const status = props.currentStatus
   return (
-    status === 'wait_product' ||
-    status === 'wait_confirm' ||
+    status === 'order' ||
     status === 'wait_payment' ||
     status === 'preparing' ||
     status === 'shipping'
@@ -1091,9 +1090,9 @@ const showReportView = computed(() => {
         :member="members?.find((m) => m._id === currentData.user._id)"
       />
 
-      <!-- Status Selection for wait_product and wait_confirm -->
+      <!-- Status Selection for order -->
       <div
-        v-if="currentStatus === 'wait_product' || currentStatus === 'wait_confirm'"
+        v-if="currentStatus === 'order'"
         class="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
       >
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-blue-200">
@@ -1119,9 +1118,9 @@ const showReportView = computed(() => {
 
       <!-- Form Section based on current status -->
       <div v-if="showFormForCurrentStatus" class="space-y-5">
-        <!-- wait_product: Product selection (optional) -->
+        <!-- order: Product selection (optional) -->
         <div
-          v-if="currentStatus === 'wait_product' || currentStatus === 'wait_confirm'"
+          v-if="currentStatus === 'order'"
           class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
           <div
@@ -1131,13 +1130,6 @@ const showReportView = computed(() => {
               <h4 class="font-semibold text-gray-900 flex items-center gap-2">
                 <i class="pi pi-box text-blue-600"></i>
                 รายการสินค้า
-                <Tag
-                  v-if="currentStatus === 'wait_confirm'"
-                  value="บังคับ"
-                  severity="danger"
-                  size="small"
-                  class="ml-2"
-                />
               </h4>
               <Button
                 label="เพิ่มสินค้า"
@@ -1157,7 +1149,7 @@ const showReportView = computed(() => {
               :index="index"
               :is-submitting="isSubmitting"
               :products-data="productsData"
-              :is-read-only="currentStatus !== 'wait_product'"
+              :is-read-only="false"
               :can-remove="saleForm.products.length > 1"
               @update:product="updateProductForIndex"
               @update:quantity="
@@ -1326,13 +1318,9 @@ const showReportView = computed(() => {
           </div>
         </div>
 
-        <!-- Payment Calculation (for wait_product, wait_confirm, wait_payment) -->
+        <!-- Payment Calculation (for order, wait_payment) -->
         <div
-          v-if="
-            currentStatus === 'wait_product' ||
-            currentStatus === 'wait_confirm' ||
-            currentStatus === 'wait_payment'
-          "
+          v-if="currentStatus === 'order' || currentStatus === 'wait_payment'"
           class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
           <div

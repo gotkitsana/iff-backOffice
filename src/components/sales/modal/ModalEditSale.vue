@@ -5,7 +5,14 @@ import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { ISales, IUpdateSalesPayload, SellingStatus, StatusWorkflow } from '@/types/sales'
+import type {
+  ISales,
+  IUpdateSalesPayload,
+  SellingStatus,
+  StatusWorkflow,
+  PaymentMethod,
+  DeliveryStatus,
+} from '@/types/sales'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
 import ProductItemForm from '../ProductItemForm.vue'
@@ -46,6 +53,7 @@ const categoryStore = useCategoryStore()
 const saleForm = ref<IUpdateSalesPayload>({
   _id: '',
   payment: 'cash',
+  paymentMethod: undefined,
   bankCode: '',
   bankAccount: '',
   cat: 0,
@@ -59,6 +67,11 @@ const saleForm = ref<IUpdateSalesPayload>({
   note: '',
   deliveryNo: 0,
   delivery: '',
+  deliveryStatus: undefined,
+  paymentDueDate: undefined,
+  shippingAddress: undefined,
+  shippingProvince: undefined,
+  customProducts: undefined,
 })
 
 // Queries
@@ -204,10 +217,11 @@ const updateBankCode = (bankCode: string) => {
 const populateForm = (saleData: ISales) => {
   if (!saleData) return
 
-  // แปลงข้อมูลจาก ISales เป็น ICreateSalesPayload
+  // แปลงข้อมูลจาก ISales เป็น IUpdateSalesPayload
   saleForm.value = {
     _id: saleData._id || '',
     payment: saleData.payment || 'cash',
+    paymentMethod: saleData.paymentMethod,
     bankCode: saleData.bankCode || '',
     bankAccount: saleData.bankAccount || '',
     cat: saleData.cat || 0,
@@ -226,6 +240,11 @@ const populateForm = (saleData: ISales) => {
     note: saleData.note || '',
     deliveryNo: saleData.deliveryNo || 0,
     delivery: saleData.delivery || '',
+    deliveryStatus: saleData.deliveryStatusForCash,
+    paymentDueDate: saleData.paymentDueDate,
+    shippingAddress: saleData.shippingAddress,
+    shippingProvince: saleData.shippingProvince,
+    customProducts: saleData.customProducts,
   }
 }
 
@@ -411,6 +430,7 @@ const resetForm = () => {
   saleForm.value = {
     _id: '',
     payment: 'cash',
+    paymentMethod: undefined,
     bankCode: '',
     bankAccount: '',
     cat: 0,
@@ -424,6 +444,11 @@ const resetForm = () => {
     note: '',
     deliveryNo: 0,
     delivery: '',
+    deliveryStatus: undefined,
+    paymentDueDate: undefined,
+    shippingAddress: undefined,
+    shippingProvince: undefined,
+    customProducts: undefined,
   }
 }
 

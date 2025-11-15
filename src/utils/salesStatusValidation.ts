@@ -1,4 +1,4 @@
-import type { SellingStatus } from '@/types/sales'
+import type { SellingStatus, PaymentMethod, DeliveryStatus } from '@/types/sales'
 
 export type ValidationMode = 'create' | 'edit' | 'status-change'
 
@@ -10,6 +10,18 @@ export type StatusValidationInput = {
   hasShippingSlip: boolean
   currentStatus?: SellingStatus
   mode: ValidationMode
+}
+
+export type PaymentMethodValidationInput = {
+  paymentMethod: PaymentMethod
+  hasProducts: boolean
+  hasBankInfo: boolean
+  hasSlip: boolean
+  hasShippingSlip: boolean
+  hasShippingAddress: boolean
+  deliveryStatus?: DeliveryStatus
+  hasPaymentDueDate?: boolean
+  hasCustomProducts?: boolean
 }
 
 export type RequiredFields = {
@@ -70,11 +82,7 @@ export function canEditField(
   currentStatus: SellingStatus,
 ): boolean {
   switch (currentStatus) {
-    case 'wait_product':
-      // แก้ไขสินค้าได้
-      return field === 'products'
-
-    case 'wait_confirm':
+    case 'order':
       // แก้ไขสินค้าได้
       return field === 'products'
 
@@ -108,8 +116,8 @@ export function getAvailableStatuses(
   mode: ValidationMode,
 ): SellingStatus[] {
   if (mode === 'create') {
-    // สร้างรายการ: เลือกได้ step 1-5
-    return ['wait_product', 'wait_confirm', 'wait_payment', 'preparing', 'shipping']
+    // สร้างรายการ: เลือกได้ step 1-5 (ใช้ payment method แทน)
+    return ['order', 'wait_payment', 'preparing', 'shipping']
   }
 
   if (!currentStatus) {
@@ -119,20 +127,17 @@ export function getAvailableStatuses(
   if (mode === 'edit') {
     // แก้ไขรายการ: ขึ้นอยู่กับ currentStatus
     switch (currentStatus) {
-      case 'wait_product':
+      case 'order':
         // เปลี่ยน step 2-5 ได้
-        return ['wait_product', 'wait_confirm', 'wait_payment', 'preparing', 'shipping']
-      case 'wait_confirm':
-        // เปลี่ยน step 3-5 ได้
-        return ['wait_confirm', 'wait_payment', 'preparing', 'shipping']
+        return ['order', 'wait_payment', 'preparing', 'shipping']
       case 'wait_payment':
-        // เปลี่ยน step 4-5 ได้ (auto)
+        // เปลี่ยน step 3-4 ได้ (auto)
         return ['wait_payment', 'preparing', 'shipping']
       case 'preparing':
-        // เปลี่ยน step 5 ได้ (auto)
+        // เปลี่ยน step 4 ได้ (auto)
         return ['preparing', 'shipping']
       case 'shipping':
-        // เปลี่ยน step 6-7 ได้
+        // เปลี่ยน step 5-6 ได้
         return ['shipping', 'received', 'damaged']
       case 'received':
       case 'damaged':
@@ -146,25 +151,23 @@ export function getAvailableStatuses(
   if (mode === 'status-change') {
     // เปลี่ยนขั้นตอน: ขึ้นอยู่กับ currentStatus
     switch (currentStatus) {
-      case 'wait_product':
-        // เปลี่ยน step 2-5 ได้
-        return ['wait_confirm', 'wait_payment', 'preparing', 'shipping']
-      case 'wait_confirm':
-        // เปลี่ยน step 3-5 ได้
+      case 'order':
+        // เปลี่ยน step 2-4 ได้
         return ['wait_payment', 'preparing', 'shipping']
       case 'wait_payment':
-        // เปลี่ยน step 4-5 ได้ (auto)
+        // เปลี่ยน step 3-4 ได้ (auto)
         return ['preparing', 'shipping']
       case 'preparing':
-        // เปลี่ยน step 5 ได้ (auto)
+        // เปลี่ยน step 4 ได้ (auto)
         return ['shipping']
       case 'shipping':
-        // เปลี่ยน step 6-7 ได้
+        // เปลี่ยน step 5-6 ได้
         return ['received', 'damaged']
       case 'received':
       case 'damaged':
         // ไม่สามารถเปลี่ยนได้
         return []
+
       default:
         return []
     }
@@ -187,23 +190,12 @@ export function validateStatusForCreate(input: StatusValidationInput): StatusVal
 
   // ตรวจสอบเงื่อนไขตาม selectedStatus
   switch (input.selectedStatus) {
-    case 'wait_product':
+    case 'order':
       // ไม่บังคับสินค้า
       requiredFields.products = false
       requiredFields.bankInfo = false
       requiredFields.slip = false
       requiredFields.shippingSlip = false
-      break
-
-    case 'wait_confirm':
-      // บังคับสินค้า
-      requiredFields.products = true
-      requiredFields.bankInfo = false
-      requiredFields.slip = false
-      requiredFields.shippingSlip = false
-      if (!input.hasProducts) {
-        errors.push('กรุณาเลือกสินค้า')
-      }
       break
 
     case 'wait_payment':
@@ -305,32 +297,13 @@ export function validateStatusForEdit(input: StatusValidationInput): StatusValid
 
   // ตรวจสอบเงื่อนไขการแก้ไขข้อมูลตาม currentStatus
   switch (input.currentStatus) {
-    case 'wait_product':
-      // แก้ไขสินค้าได้, เปลี่ยน step 2-5 ได้
-      // ถ้าเลือก wait_product = ไม่เปลี่ยน status (แค่แก้ไขสินค้า)
-      if (input.selectedStatus === 'wait_product') {
-        // ไม่ต้องตรวจสอบอะไร เพียงแค่แก้ไขสินค้า
-        requiredFields.products = false
-      } else {
-        // เปลี่ยน status ต้องตรวจสอบเงื่อนไขของ status ใหม่
-        const createValidation = validateStatusForCreate({
-          ...input,
-          mode: 'create',
-        })
-        errors.push(...createValidation.errors)
-        requiredFields.products = createValidation.requiredFields.products
-        requiredFields.bankInfo = createValidation.requiredFields.bankInfo
-        requiredFields.slip = createValidation.requiredFields.slip
-        requiredFields.shippingSlip = createValidation.requiredFields.shippingSlip
-      }
-      break
-
-    case 'wait_confirm':
-      // แก้ไขสินค้าได้, เปลี่ยน step 3-5 ได้
-      if (input.selectedStatus === 'wait_confirm') {
+    case 'order':
+      // แก้ไขสินค้าได้, เปลี่ยน step 2-4 ได้
+      if (input.selectedStatus === 'order') {
         // ไม่เปลี่ยน status (แค่แก้ไขสินค้า)
         requiredFields.products = false
       } else {
+        // เปลี่ยน status ต้องตรวจสอบเงื่อนไขของ status ใหม่
         const createValidation = validateStatusForCreate({
           ...input,
           mode: 'create',
@@ -449,32 +422,8 @@ export function validateStatusForStatusChange(
 
   // ตรวจสอบเงื่อนไขตาม currentStatus
   switch (input.currentStatus) {
-    case 'wait_product':
-      // เปลี่ยน step 2-5 ได้, ต้องเลือก step เอง
-      if (input.selectedStatus === 'wait_confirm') {
-        requiredFields.products = true
-        if (!input.hasProducts) {
-          errors.push('กรุณาเลือกสินค้า')
-        }
-      } else if (
-        input.selectedStatus === 'wait_payment' ||
-        input.selectedStatus === 'preparing' ||
-        input.selectedStatus === 'shipping'
-      ) {
-        const createValidation = validateStatusForCreate({
-          ...input,
-          mode: 'create',
-        })
-        errors.push(...createValidation.errors)
-        requiredFields.products = createValidation.requiredFields.products
-        requiredFields.bankInfo = createValidation.requiredFields.bankInfo
-        requiredFields.slip = createValidation.requiredFields.slip
-        requiredFields.shippingSlip = createValidation.requiredFields.shippingSlip
-      }
-      break
-
-    case 'wait_confirm':
-      // เปลี่ยน step 3-5 ได้, ต้องเลือก step เอง
+    case 'order':
+      // เปลี่ยน step 2-4 ได้
       if (
         input.selectedStatus === 'wait_payment' ||
         input.selectedStatus === 'preparing' ||
@@ -554,6 +503,7 @@ export function validateStatusForStatusChange(
       // ไม่สามารถเปลี่ยนได้
       errors.push('ไม่สามารถเปลี่ยนสถานะจากรายการที่เสร็จสิ้นแล้วได้')
       break
+
   }
 
   // คำนวณ finalStatus
@@ -567,6 +517,107 @@ export function validateStatusForStatusChange(
     isValid: errors.length === 0,
     errors,
     finalStatus,
+    requiredFields,
+  }
+}
+
+/**
+ * Validation สำหรับ payment method ใหม่
+ */
+export function validatePaymentMethod(input: PaymentMethodValidationInput): {
+  isValid: boolean
+  errors: string[]
+  requiredFields: {
+    products: boolean
+    bankInfo: boolean
+    slip: boolean
+    shippingSlip: boolean
+    shippingAddress: boolean
+    paymentDueDate: boolean
+    customProducts: boolean
+  }
+} {
+  const errors: string[] = []
+  const requiredFields = {
+    products: false,
+    bankInfo: false,
+    slip: false,
+    shippingSlip: false,
+    shippingAddress: false,
+    paymentDueDate: false,
+    customProducts: false,
+  }
+
+  switch (input.paymentMethod) {
+    case 'order':
+      // ออเดอร์: ไม่บังคับอะไร
+      break
+
+    case 'cash':
+      // เงินสด: บังคับสินค้า, deliveryStatus
+      requiredFields.products = true
+      if (!input.hasProducts) {
+        errors.push('กรุณาเลือกสินค้า')
+      }
+      if (!input.deliveryStatus) {
+        errors.push('กรุณาเลือกสถานะการส่ง')
+      }
+      // ถ้าเลือก "แพ็ครอจัดส่ง" ต้องเลือกที่อยู่
+      if (input.deliveryStatus === 'preparing' && !input.hasShippingAddress) {
+        requiredFields.shippingAddress = true
+        errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+      }
+      break
+
+    case 'credit':
+      // เครดิต: บังคับสินค้า, paymentDueDate, shippingAddress
+      requiredFields.products = true
+      requiredFields.paymentDueDate = true
+      requiredFields.shippingAddress = true
+      if (!input.hasProducts) {
+        errors.push('กรุณาเลือกสินค้า')
+      }
+      if (!input.hasPaymentDueDate) {
+        errors.push('กรุณาระบุวันชำระเงิน')
+      }
+      if (!input.hasShippingAddress) {
+        errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+      }
+      break
+
+    case 'transfer':
+    case 'card':
+      // โอน/บัตร: บังคับสินค้า, bankInfo, shippingAddress
+      requiredFields.products = true
+      requiredFields.bankInfo = true
+      requiredFields.shippingAddress = true
+      if (!input.hasProducts) {
+        errors.push('กรุณาเลือกสินค้า')
+      }
+      if (!input.hasBankInfo) {
+        errors.push('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
+      }
+      if (!input.hasShippingAddress) {
+        errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+      }
+      break
+
+    case 'cod':
+      // ปลายทาง: บังคับสินค้า, shippingAddress
+      requiredFields.products = true
+      requiredFields.shippingAddress = true
+      if (!input.hasProducts) {
+        errors.push('กรุณาเลือกสินค้า')
+      }
+      if (!input.hasShippingAddress) {
+        errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+      }
+      break
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
     requiredFields,
   }
 }

@@ -67,30 +67,40 @@ const bankName = computed(() => {
   return BankData[props.saleData.bankCode]?.fullname || props.saleData.bankCode
 })
 
+const paymentMethodLabel = computed(() => {
+  if (!props.saleData.paymentMethod) return '-'
+  const method = salesStore.paymentMethods.find((m) => m.value === props.saleData.paymentMethod)
+  return method?.label || props.saleData.paymentMethod
+})
 
+const shippingAddressDisplay = computed(() => {
+  if (props.saleData.shippingAddress && props.saleData.shippingProvince) {
+    const provinceLabel = memberStore.provinceOptions.find(
+      (opt) => opt.value === props.saleData.shippingProvince
+    )?.label
+    return `${props.saleData.shippingAddress}, ${provinceLabel || props.saleData.shippingProvince}`
+  }
+  return memberAddress.value
+})
 </script>
 
 <template>
   <div class="space-y-3">
-      <div
-        v-if="member || saleData.user"
-        class="p-3 bg-green-50 border border-green-200 rounded-lg"
-      >
-        <div class="flex items-center gap-3">
-          <div class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center">
-            <i class="pi pi-user text-green-600 text-xl"></i>
-          </div>
-          <div class="flex-1">
-            <h5 class="font-semibold text-gray-900">{{ memberName }}</h5>
-            <p class="text-sm text-gray-600">
-              รหัส: <span class="capitalize">{{ memberCode }}</span> | ชื่อเล่น:
-              {{ saleData.user.displayName || '-' }} | เบอร์: {{ memberPhone }}
-            </p>
-            <p class="text-xs text-gray-500 mt-0.5">ที่อยู่: {{ memberAddress }}</p>
-          </div>
+    <div v-if="member || saleData.user" class="p-3 bg-green-50 border border-green-200 rounded-lg">
+      <div class="flex items-center gap-3">
+        <div class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center">
+          <i class="pi pi-user text-green-600 text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <h5 class="font-semibold text-gray-900">{{ memberName }}</h5>
+          <p class="text-sm text-gray-600">
+            รหัส: <span class="capitalize">{{ memberCode }}</span> | ชื่อเล่น:
+            {{ saleData.user.displayName || '-' }} | เบอร์: {{ memberPhone }}
+          </p>
+          <p class="text-xs text-gray-500 mt-0.5">ที่อยู่: {{ memberAddress }}</p>
         </div>
       </div>
-
+    </div>
 
     <!-- Order Information -->
     <div class="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
@@ -108,14 +118,24 @@ const bankName = computed(() => {
           />
         </div>
         <div>
+          <div class="text-sm text-gray-600">วิธีชำระเงิน</div>
+          <div class="font-medium text-gray-900">{{ paymentMethodLabel }}</div>
+        </div>
+        <div>
           <div class="text-sm text-gray-600">ผู้ขาย</div>
-          <div class="font-medium text-gray-900">{{ handleFindAdmin(saleData.seller)?.name || '-' }}</div>
+          <div class="font-medium text-gray-900">
+            {{ handleFindAdmin(saleData.seller)?.name || '-' }}
+          </div>
         </div>
         <div>
           <div class="text-sm text-gray-600">วันที่สั่งซื้อ</div>
           <div class="font-medium text-gray-900">
             {{ new Date(saleData.cat).toLocaleDateString('th-TH') }}
           </div>
+        </div>
+        <div v-if="saleData.shippingAddress || saleData.shippingProvince">
+          <div class="text-sm text-gray-600">ที่อยู่จัดส่ง</div>
+          <div class="font-medium text-gray-900">{{ shippingAddressDisplay }}</div>
         </div>
       </div>
     </div>
@@ -146,7 +166,6 @@ const bankName = computed(() => {
         </div>
       </div>
     </div> -->
-
   </div>
 </template>
 

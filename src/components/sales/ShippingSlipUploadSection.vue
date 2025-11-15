@@ -31,8 +31,7 @@ const showUploadSection = ref<boolean>(false)
 
 // Computed
 const statusSteps: SellingStatus[] = [
-  'wait_product',
-  'wait_confirm',
+  'order',
   'wait_payment',
   'preparing',
   'shipping',

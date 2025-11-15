@@ -18,6 +18,8 @@ import type {
   IUpdateSalesPayload,
   SellingStatus,
   StatusWorkflow,
+  PaymentMethod,
+  DeliveryStatus,
 } from '@/types/sales'
 import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
@@ -27,10 +29,11 @@ import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
-import {
-  validateStatusForCreate,
-  getAvailableStatuses,
-} from '@/utils/salesStatusValidation'
+import { validatePaymentMethod } from '@/utils/salesStatusValidation'
+import { calculateInitialStatus } from '@/utils/salesStatusCalculation'
+import {DatePicker} from 'primevue'
+import InputText from 'primevue/inputtext'
+import { watch } from 'vue'
 
 // Props
 const props = defineProps<{
@@ -52,8 +55,8 @@ const categoryStore = useCategoryStore()
 // Form data
 const saleForm = ref<ICreateSalesPayload>({
   item: '',
-  status: '',
   user: '',
+  paymentMethod: 'order' as PaymentMethod,
   products: [{ id: '', category: '', price: 0, quantity: 1 }],
   deposit: 0,
   discount: 0,
@@ -61,6 +64,11 @@ const saleForm = ref<ICreateSalesPayload>({
   note: '',
   deliveryNo: 0,
   delivery: '',
+  deliveryStatus: undefined,
+  paymentDueDate: undefined,
+  shippingAddress: undefined,
+  shippingProvince: undefined,
+  customProducts: undefined,
 })
 
 // Queries
@@ -165,33 +173,55 @@ const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
 
-// Filter status options - remove received and damaged
-const availableStatusOptions = computed(() => {
-  const availableStatuses = getAvailableStatuses(undefined, 'create')
-  return salesStore.sellingStatusOptions.filter((opt) =>
-    availableStatuses.includes(opt.value as SellingStatus)
-  )
+// Computed สำหรับการแสดงผลตาม payment method
+const showProductSelection = computed(() => {
+  return saleForm.value.paymentMethod !== 'order'
 })
 
-const requiresSlipUpload = computed(() => {
-  const status = saleForm.value.status
-  // wait_payment: optional, preparing: mandatory, shipping: mandatory
-  return status === 'preparing' || status === 'shipping'
+const showCustomProducts = computed(() => {
+  return saleForm.value.paymentMethod === 'order'
 })
 
-// Note: Slip upload requirement is now handled in validateStatusForCreate
-
-const requiresBankSelection = computed(() => {
-  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
-  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-  return currentStepIndex >= waitPaymentStepIndex
+const showDeliveryStatus = computed(() => {
+  return saleForm.value.paymentMethod === 'cash'
 })
 
-const requiresShippingSlipUpload = computed(() => {
-  const status = saleForm.value.status
-  // preparing and shipping can have shipping slip (optional)
-  return status === 'preparing' || status === 'shipping'
+const showPaymentDueDate = computed(() => {
+  return saleForm.value.paymentMethod === 'credit'
 })
+
+const showBankSelection = computed(() => {
+  return saleForm.value.paymentMethod === 'transfer' || saleForm.value.paymentMethod === 'card'
+})
+
+const showShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+const requiresShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+// Custom products management
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+
+const addCustomProduct = () => {
+  customProducts.value.push({ name: '', quantity: 1, description: '' })
+}
+
+const removeCustomProduct = (index: number) => {
+  customProducts.value.splice(index, 1)
+}
 
 // Handlers
 const handleSubmit = () => {
@@ -200,40 +230,54 @@ const handleSubmit = () => {
   // Basic validation
   if (!saleForm.value.user) {
     toast.error('กรุณาเลือกลูกค้า')
+    isSubmitting.value = false
     return
   }
 
-  if (!saleForm.value.status) {
-    toast.error('กรุณาเลือกสถานะรายการขาย')
+  if (!saleForm.value.paymentMethod) {
+    toast.error('กรุณาเลือกวิธีชำระเงิน')
+    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.seller) {
     toast.error('กรุณาเลือกผู้ขาย')
+    isSubmitting.value = false
     return
   }
 
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products?.some((p) => isProductValid(p)) || false
+  const hasCustomProducts = customProducts.value.some((p) => p.name && p.quantity > 0)
 
-  // Use utility function for status validation
-  const validationResult = validateStatusForCreate({
-    selectedStatus: saleForm.value.status as SellingStatus,
+  // Validate payment method
+  const paymentValidation = validatePaymentMethod({
+    paymentMethod: saleForm.value.paymentMethod,
     hasProducts: hasValidProducts,
     hasBankInfo: !!bankForm.value.bankCode,
     hasSlip: hasSlip.value,
     hasShippingSlip: hasShippingSlip.value,
-    mode: 'create',
+    hasShippingAddress: !!(saleForm.value.shippingAddress && saleForm.value.shippingProvince),
+    deliveryStatus: saleForm.value.deliveryStatus,
+    hasPaymentDueDate: !!saleForm.value.paymentDueDate,
+    hasCustomProducts: hasCustomProducts,
   })
 
   // Show validation errors
-  if (!validationResult.isValid) {
-    validationResult.errors.forEach((error) => {
+  if (!paymentValidation.isValid) {
+    paymentValidation.errors.forEach((error) => {
       toast.error(error)
     })
     isSubmitting.value = false
     return
   }
+
+  // Calculate initial status from payment method
+  const initialStatus = calculateInitialStatus(
+    saleForm.value.paymentMethod,
+    saleForm.value.deliveryStatus,
+    hasValidProducts
+  )
 
   // Format products
   let formattedProducts:
@@ -248,148 +292,124 @@ const handleSubmit = () => {
       }[]
     | null = null
 
-  if (saleForm.value.status !== 'wait_product' && saleForm.value.products) {
+  if (saleForm.value.paymentMethod !== 'order' && saleForm.value.products) {
     formattedProducts = saleForm.value.products.map((product) => {
       if (product.retailID) {
         return {
           id: product.id,
           category: product.category || '',
-          price: product.price, // ราคาต่อกก.
-          quantity: product.quantity || 1, // จำนวนกก.
+          price: product.price,
+          quantity: product.quantity || 1,
           retailID: product.retailID,
           name: product.name,
-          unit: 'kilo', // ระบุหน่วย
+          unit: 'kilo',
         }
       } else {
         return {
           id: product.id,
           category: product.category,
-          price: product.price, // ราคาต่อกระสอบ
-          quantity: product.quantity || 1, // จำนวนกระสอบ
+          price: product.price,
+          quantity: product.quantity || 1,
           name: product.name || '',
-          unit: 'piece', // ระบุหน่วย
+          unit: 'piece',
         }
       }
     })
   }
 
-  // Use utility function to calculate final status
-  const finalStatus = validationResult.finalStatus
-
-  createSale({
+  // Prepare payload
+  const payload: ICreateSalesPayload = {
     ...saleForm.value,
-    status: finalStatus,
     products: formattedProducts,
+    customProducts: saleForm.value.paymentMethod === 'order' ? customProducts.value : undefined,
     item: `SALE-${Date.now().toString().slice(-8)}`,
-  })
+    payment:
+      saleForm.value.paymentMethod === 'cash'
+        ? 'cash'
+        : saleForm.value.paymentMethod === 'transfer'
+        ? 'transfer'
+        : saleForm.value.paymentMethod === 'card'
+        ? 'credit'
+        : saleForm.value.paymentMethod === 'credit'
+        ? 'credit'
+        : 'other',
+    bankCode: bankForm.value.bankCode || undefined,
+    bankAccount: bankForm.value.bankAccount || undefined,
+  }
+
+  // Add status field (calculated)
+  ;(payload as any).status = initialStatus
+
+  createSale(payload)
 }
 
 const queryClient = useQueryClient()
 const { mutate: createSale, isPending: isCreatingSale } = useMutation({
   mutationFn: (sale: ICreateSalesPayload) => salesStore.onCreateSales(sale),
-  onSuccess: (data: any) => {
+  onSuccess: async (data: any, variables: ICreateSalesPayload) => {
     if (data.data) {
       toast.success('เพิ่มข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
 
-      if (requiresBankSelection.value && data.data._id) {
-        saleData.value._id = data.data._id
-        if (requiresSlipUpload.value) {
-          saleData.value.submit = true
+      const createdSale = data.data
+      const initialStatus = calculateInitialStatus(
+        variables.paymentMethod!,
+        variables.deliveryStatus,
+        !!variables.products && variables.products.length > 0
+      )
+
+      // Check if should deduct stock (status = preparing or received)
+      if (initialStatus === 'preparing' || initialStatus === 'received') {
+        // Update member status if needed
+        if (variables.products) {
+          const { useMemberStatusUpdate } = await import('@/composables/useMemberStatusUpdate')
+          const memberStatusUpdate = useMemberStatusUpdate()
+
+          const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
+          memberStatusUpdate.updateMemberStatusIfNeeded(
+            {
+              ...variables,
+              _id: createdSale._id,
+              status: initialStatus,
+            } as IUpdateSalesPayload,
+            members.value,
+            allSales.value,
+            products.value || [],
+            preparingStepOrder
+          )
         }
 
-        updateSale({
-          ...data.data,
-          _id: saleData.value._id,
-          bankCode: bankForm.value.bankCode,
-          bankAccount: bankForm.value.bankAccount,
-        })
-      } else {
-        handleClose()
+        // Deduct stock
+        if (variables.products && products.value) {
+          executeStockDeduction(
+            {
+              ...variables,
+              _id: createdSale._id,
+              status: initialStatus,
+            } as IUpdateSalesPayload,
+            products.value,
+            updateProduct,
+            (warning) => toast.warning(warning)
+          )
+        }
       }
+
+      refetchProducts()
+      handleClose()
     } else {
       toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+      isSubmitting.value = false
     }
   },
   onError: () => {
     toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+    isSubmitting.value = false
   },
 })
 
 const { data: allSales } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
-})
-const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
-  mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
-    if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
-      if (
-        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
-        salesStore.statusWorkflow['preparing'].stepOrder
-      ) {
-        // A. อัพเดทสถานะสมาชิก
-        const member = members.value?.find((m) => m._id === variables.user)
-
-        if (member && member.status !== 'css') {
-          // คำนวณยอดซื้อรวมทั้งหมด (รายการปัจจุบัน + ยอดซื้อในอดีต)
-          const currentTotal = calculateOrderTotal(variables, products.value || [])
-          const previousTotal =
-            allSales.value
-              ?.filter(
-                (s) =>
-                  s.user._id === variables.user &&
-                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
-                    salesStore.statusWorkflow['preparing'].stepOrder &&
-                  s._id !== variables._id
-              )
-              .reduce((sum, s) => sum + calculateSaleTotal(s, products.value || []), 0) || 0
-
-          const totalSpending = currentTotal + previousTotal
-
-          const shouldBeCss = totalSpending >= 50000
-          const shouldBeCs = !shouldBeCss && member.status === 'ci'
-
-          if (shouldBeCss || shouldBeCs) {
-            const newStatus = shouldBeCss ? 'css' : 'cs'
-            const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
-
-            updateMember({
-              _id: member._id,
-              status: newStatus,
-              code: newCode,
-              contacts: member.contacts || [],
-              interests: member.interests || [],
-              displayName: member.displayName,
-              name: member.name,
-              address: member.address,
-              province: member.province,
-              phone: member.phone,
-              type: member.type,
-              username: member.username,
-              password: member.password,
-              bidder: member.bidder,
-              cat: member.cat,
-              uat: member.uat,
-            })
-          }
-        }
-
-        // B. ตัดสต็อกสินค้า - ใช้ utility function
-        if (products.value) {
-          executeStockDeduction(variables, products.value, updateProduct, (warning) =>
-            toast.warning(warning)
-          )
-        }
-      }
-
-      refetchProducts()
-      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-      handleClose()
-    } else {
-      toast.error('แก้ไขข้อมูลการขายไม่สำเร็จ')
-    }
-  },
 })
 
 const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
@@ -445,8 +465,8 @@ const handleClose = () => {
 const resetForm = () => {
   saleForm.value = {
     item: '',
-    status: '',
     user: '',
+    paymentMethod: 'order' as PaymentMethod,
     products: [{ id: '', category: '', price: 0, quantity: 1 }],
     deposit: 0,
     discount: 0,
@@ -454,7 +474,13 @@ const resetForm = () => {
     note: '',
     deliveryNo: 0,
     delivery: '',
+    deliveryStatus: undefined,
+    paymentDueDate: undefined,
+    shippingAddress: undefined,
+    shippingProvince: undefined,
+    customProducts: undefined,
   }
+  customProducts.value = []
   saleData.value = {
     _id: '',
     submit: false,
@@ -481,9 +507,23 @@ const sellers = computed(() => {
     }))
 })
 
-const getStatusStepIndex = (status: string) => {
-  return salesStore.sellingStatusOptions.findIndex((option) => option.value === status)
+// Update shipping address from member
+const updateShippingAddressFromMember = () => {
+  if (selectedMemberDetails.value) {
+    saleForm.value.shippingAddress = selectedMemberDetails.value.address || ''
+    saleForm.value.shippingProvince = selectedMemberDetails.value.province || ''
+  }
 }
+
+// Watch member change to auto-fill shipping address
+watch(
+  () => saleForm.value.user,
+  () => {
+    if (saleForm.value.user && !saleForm.value.shippingAddress) {
+      updateShippingAddressFromMember()
+    }
+  }
+)
 
 const hasSlip = ref(false)
 const hasShippingSlip = ref(false)
@@ -593,6 +633,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลือกลูกค้า</label>
             <Select
               v-model="saleForm.user"
               :options="memberOptions"
@@ -611,22 +652,24 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           </div>
 
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">วิธีชำระเงิน</label>
             <Select
-              v-model="saleForm.status"
-              :options="availableStatusOptions"
+              v-model="saleForm.paymentMethod"
+              :options="salesStore.paymentMethods"
               optionLabel="label"
               optionValue="value"
               fluid
               size="small"
-              placeholder="เลือกสถานะรายการขาย"
-              :invalid="!saleForm.status && isSubmitting"
+              placeholder="เลือกวิธีชำระเงิน"
+              :invalid="!saleForm.paymentMethod && isSubmitting"
             />
-            <small v-if="!saleForm.status && isSubmitting" class="text-red-500"
-              >กรุณาเลือกสถานะรายการขาย</small
+            <small v-if="!saleForm.paymentMethod && isSubmitting" class="text-red-500"
+              >กรุณาเลือกวิธีชำระเงิน</small
             >
           </div>
 
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
             <Select
               v-model="saleForm.seller"
               :options="sellers"
@@ -677,44 +720,175 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           </div>
         </div>
 
-        <!-- Bank Selection (if required) -->
-        <BankSelectionSection
-          v-if="requiresBankSelection"
-          :selected-bank-code="bankForm.bankCode || ''"
-          :is-submitting="isSubmitting"
-          :is-current-bank="''"
-          :is-current-status="''"
-          @update:selected-bank-code="updateBankCode"
-        />
+        <!-- Delivery Status (for cash) -->
+        <div v-if="showDeliveryStatus" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
+          <Select
+            v-model="saleForm.deliveryStatus"
+            :options="[
+              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            fluid
+            size="small"
+            placeholder="เลือกสถานะการส่ง"
+            :invalid="!saleForm.deliveryStatus && isSubmitting"
+          />
+          <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
+            >กรุณาเลือกสถานะการส่ง</small
+          >
+        </div>
 
-        <!-- Slip Upload Section -->
-        <SlipUploadSection
-          v-if="requiresSlipUpload || saleForm.status === 'wait_payment'"
-          :sale-id="saleData._id || ''"
-          :upload-to-submit="saleData.submit"
-          :is-add-sale="true"
-          :selected-status="saleForm.status"
-          :is-current-status="''"
-          :is-submitting="isSubmitting"
-          @slip-status-changed="handleSlipStatusChanged"
-        />
+        <!-- Payment Due Date (for credit) -->
+        <div v-if="showPaymentDueDate" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
+          <DatePicker
+            v-model="saleForm.paymentDueDate as Date | undefined"
+            dateFormat="dd/mm/yy"
+            showIcon
+            iconDisplay="input"
+            fluid
+            size="small"
+            :invalid="!saleForm.paymentDueDate && isSubmitting"
+          />
+          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500"
+            >กรุณาระบุวันชำระเงิน</small
+          >
+        </div>
 
-        <!-- Shipping Slip Upload Section -->
-        <ShippingSlipUploadSection
-          v-if="requiresShippingSlipUpload"
-          :sale-id="shippingSlipData._id || saleData._id || ''"
-          :upload-to-submit="shippingSlipData.submit"
-          :is-add-sale="true"
-          :selected-status="saleForm.status"
-          :is-current-status="''"
-          :is-submitting="isSubmitting"
-          @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-        />
+        <!-- Bank Selection (for transfer/card) -->
+        <div v-if="showBankSelection" class="mt-4">
+          <BankSelectionSection
+            :selected-bank-code="bankForm.bankCode || ''"
+            :is-submitting="isSubmitting"
+            :is-current-bank="''"
+            :is-current-status="''"
+            @update:selected-bank-code="updateBankCode"
+          />
+        </div>
+
+        <!-- Shipping Address -->
+        <div v-if="showShippingAddress" class="mt-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
+            <Button
+              v-if="selectedMemberDetails"
+              label="ใช้ที่อยู่เดิม"
+              icon="pi pi-refresh"
+              severity="secondary"
+              size="small"
+              outlined
+              @click="updateShippingAddressFromMember"
+            />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <InputText
+                v-model="saleForm.shippingAddress"
+                placeholder="ที่อยู่"
+                fluid
+                size="small"
+                :invalid="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+              />
+              <small
+                v-if="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+                class="text-red-500"
+                >กรุณากรอกที่อยู่จัดส่ง</small
+              >
+            </div>
+            <div>
+              <Select
+                v-model="saleForm.shippingProvince"
+                :options="memberStore.provinceOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกจังหวัด"
+                fluid
+                size="small"
+                :invalid="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+              />
+              <small
+                v-if="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+                class="text-red-500"
+                >กรุณาเลือกจังหวัด</small
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Products (for order) -->
+      <div
+        v-if="showCustomProducts"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-shopping-cart text-orange-600"></i>
+            สินค้านอกเหนือรายการ
+          </h4>
+          <Button
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addCustomProduct"
+          />
+        </div>
+        <div class="space-y-3">
+          <div
+            v-for="(product, index) in customProducts"
+            :key="index"
+            class="p-3 bg-gray-50 rounded-lg space-y-3"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
+                <InputText v-model="product.name" placeholder="ชื่อสินค้า" fluid size="small" />
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
+                <InputNumber
+                  v-model="product.quantity"
+                  :min="1"
+                  placeholder="จำนวน"
+                  fluid
+                  size="small"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
+              <Textarea
+                v-model="product.description"
+                placeholder="รายละเอียดสินค้า"
+                rows="3"
+                fluid
+                size="small"
+              />
+            </div>
+            <div class="flex justify-end">
+              <Button
+                icon="pi pi-trash"
+                label="ลบ"
+                severity="danger"
+                size="small"
+                outlined
+                @click="removeCustomProduct(index)"
+              />
+            </div>
+          </div>
+          <p v-if="customProducts.length === 0" class="text-sm text-gray-500 text-center py-4">
+            ไม่มีสินค้านอกเหนือรายการ (ไม่บังคับ)
+          </p>
+        </div>
       </div>
 
       <!-- Product Information -->
       <div
-        v-if="saleForm.status !== 'wait_product'"
+        v-if="showProductSelection"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center justify-between mb-4">
@@ -749,7 +923,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         </div>
 
         <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
         >
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
@@ -873,7 +1047,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           label="บันทึกข้อมูล"
           icon="pi pi-check"
           @click="handleSubmit"
-          :loading="isCreatingSale || isUpdatingSale"
+          :loading="isCreatingSale"
           severity="success"
           size="small"
         />

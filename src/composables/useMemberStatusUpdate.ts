@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/vue-query'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
-import { useSalesStore, type StatusWorkflow } from '@/stores/sales/sales'
-import type { ISales, IUpdateSalesPayload } from '@/types/sales'
+import { useSalesStore } from '@/stores/sales/sales'
+import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
 import { calculateOrderTotal, calculateSaleTotal } from '@/utils/salesCalculations'
 import type { IProduct } from '@/stores/product/product'
 
