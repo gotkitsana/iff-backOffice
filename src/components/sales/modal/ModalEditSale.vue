@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, provide } from 'vue'
 import { Dialog, Textarea, Select, Button } from 'primevue'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
+import type {
+  ISales,
+  IUpdateSalesPayload,
+  SellingStatus,
+  StatusWorkflow,
+  PaymentMethod,
+  DeliveryStatus,
+} from '@/types/sales'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
-import ProductManagementSection from '../ProductManagementSection.vue'
+import ProductItemForm from '../ProductItemForm.vue'
 import PaymentCalculationSection from '../PaymentCalculationSection.vue'
 import type { IAdmin } from '@/stores/admin/admin'
-import { useProductStore, type IProduct, type IUpdateProductPayload } from '@/stores/product/product'
+import {
+  useProductStore,
+  type IProduct,
+  type IUpdateProductPayload,
+} from '@/stores/product/product'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { executeStockDeduction } from '@/utils/stockDeduction'
+import { useProductSelection } from '@/composables/useProductSelection'
+import {
+  validateStatusForEdit,
+  getAvailableStatuses,
+  canEditField,
+} from '@/utils/salesStatusValidation'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -27,11 +46,14 @@ const emit = defineEmits<{
 // Stores
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
+const productStore = useProductStore()
+const categoryStore = useCategoryStore()
 
 // Form data - ใช้โครงสร้างเดียวกับ ModalAddSale
 const saleForm = ref<IUpdateSalesPayload>({
   _id: '',
   payment: 'cash',
+  paymentMethod: undefined,
   bankCode: '',
   bankAccount: '',
   cat: 0,
@@ -45,6 +67,11 @@ const saleForm = ref<IUpdateSalesPayload>({
   note: '',
   deliveryNo: 0,
   delivery: '',
+  deliveryStatus: undefined,
+  paymentDueDate: undefined,
+  shippingAddress: undefined,
+  shippingProvince: undefined,
+  customProducts: undefined,
 })
 
 // Queries
@@ -52,6 +79,27 @@ const { data: members } = useQuery<IMember[]>({
   queryKey: ['get_members'],
   queryFn: () => memberStore.onGetMembers(),
 })
+
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(0),
+})
+
+const { data: productsData, refetch: refetchProducts } = useQuery<IProduct[]>({
+  queryKey: ['get_products'],
+  queryFn: () => productStore.onGetProducts(),
+})
+
+// Use composable for product selection
+const productSelection = useProductSelection(
+  productsData,
+  categories,
+  ref(undefined), // foodSales not used in edit mode
+  computed(() => saleForm.value.products || [])
+)
+
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productSelection)
 
 // Computed
 const totalAmount = ref(0)
@@ -80,11 +128,28 @@ const requiresSlipUpload = computed(() => {
 
 // Disable selecting steps that are earlier than current persisted status
 const statusOptionsForSelect = computed(() => {
-  const baseIndex = getStatusStepIndex(props.saleData.status)
+  const availableStatuses = getAvailableStatuses(props.saleData.status as SellingStatus, 'edit')
   return salesStore.sellingStatusOptions.map((opt) => ({
     ...opt,
-    disabled: getStatusStepIndex(opt.value) < baseIndex,
+    disabled: !availableStatuses.includes(opt.value as SellingStatus),
   }))
+})
+
+// Check if can edit fields based on current status
+const canEditProducts = computed(() => {
+  return canEditField('products', props.saleData.status as SellingStatus)
+})
+
+const canEditBankInfo = computed(() => {
+  return canEditField('bankInfo', props.saleData.status as SellingStatus)
+})
+
+const canEditSlip = computed(() => {
+  return canEditField('slip', props.saleData.status as SellingStatus)
+})
+
+const canEditShippingSlip = computed(() => {
+  return canEditField('shippingSlip', props.saleData.status as SellingStatus)
 })
 
 // Product management functions
@@ -104,8 +169,32 @@ const removeProduct = (index: number) => {
   }
 }
 
-const updateProducts = (products: Array<{ id: string; quantity: number, category: string, price: number }>) => {
-  saleForm.value.products = products
+const updateProductForIndex = (index: number, value: string | Record<string, any>) => {
+  let selectedId: string
+  if (typeof value === 'string') {
+    selectedId = value
+  } else if (value && typeof value === 'object') {
+    selectedId = Object.keys(value)[0] || ''
+  } else {
+    return
+  }
+
+  if (!selectedId) return
+
+  const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
+  if (!product) return
+
+  let price = product.price || 0
+  if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
+    price = product.food.customerPrice
+  }
+
+  saleForm.value.products[index] = {
+    id: product._id,
+    category: product.category?._id || '',
+    price: price,
+    quantity: saleForm.value.products[index].quantity || 1,
+  }
 }
 
 const updateDeposit = (deposit: number) => {
@@ -124,18 +213,15 @@ const updateBankCode = (bankCode: string) => {
   saleForm.value.bankCode = bankCode
 }
 
-const updateTotalAmount = (amount: number) => {
-  totalAmount.value = amount
-}
-
 // Handlers
 const populateForm = (saleData: ISales) => {
   if (!saleData) return
 
-  // แปลงข้อมูลจาก ISales เป็น ICreateSalesPayload
+  // แปลงข้อมูลจาก ISales เป็น IUpdateSalesPayload
   saleForm.value = {
     _id: saleData._id || '',
     payment: saleData.payment || 'cash',
+    paymentMethod: saleData.paymentMethod,
     bankCode: saleData.bankCode || '',
     bankAccount: saleData.bankAccount || '',
     cat: saleData.cat || 0,
@@ -154,6 +240,11 @@ const populateForm = (saleData: ISales) => {
     note: saleData.note || '',
     deliveryNo: saleData.deliveryNo || 0,
     delivery: saleData.delivery || '',
+    deliveryStatus: saleData.deliveryStatusForCash,
+    paymentDueDate: saleData.paymentDueDate,
+    shippingAddress: saleData.shippingAddress,
+    shippingProvince: saleData.shippingProvince,
+    customProducts: saleData.customProducts,
   }
 }
 
@@ -173,31 +264,38 @@ const handleSubmit = () => {
   isSubmitting.value = true
 
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products.filter((p) => !(p.id && p.quantity > 0))
-  if (invalidProducts.length > 0) {
-    toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
+  const hasValidProducts = saleForm.value.products.some((p) => p.id && p.quantity > 0)
+
+  // Use utility function for status validation
+  const validationResult = validateStatusForEdit({
+    selectedStatus: saleForm.value.status as SellingStatus,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!saleForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: false, // Edit mode doesn't have shipping slip check
+    currentStatus: props.saleData.status as SellingStatus,
+    mode: 'edit',
+  })
+
+  // Show validation errors
+  if (!validationResult.isValid) {
+    validationResult.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
     return
   }
 
-  // Check bank selection requirement
-  if (requiresBankSelection.value && !saleForm.value.bankCode) {
-    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
-    return
-  }
+  // Filter products to only include those with valid id and quantity
+  const validProducts = saleForm.value.products.filter((p) => p.id && p.quantity > 0)
 
-  // Check slip upload requirement
-  if (requiresSlipUpload.value && !hasSlip.value) {
-    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
-    return
-  }
-
-  updateSale(saleForm.value)
+  // Use final status from validation result
+  updateSale({
+    ...saleForm.value,
+    products: validProducts,
+    status: validationResult.finalStatus,
+  })
 }
-
-const { data: productsData, refetch: refetchProducts } = useQuery<IProduct[]>({
-  queryKey: ['get_products'],
-  queryFn: () => productStore.onGetProducts(),
-})
 
 const { data: allSales } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
@@ -207,11 +305,14 @@ const { data: allSales } = useQuery<ISales[]>({
 const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
+  onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
     if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
 
-      if (salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder) {
+      if (
+        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
+        salesStore.statusWorkflow['preparing'].stepOrder
+      ) {
         // A. อัพเดทสถานะสมาชิก
         const member = members.value?.find((m) => m._id === variables.user)
 
@@ -223,7 +324,8 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
               ?.filter(
                 (s) =>
                   s.user._id === variables.user &&
-                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >= salesStore.statusWorkflow['paid_complete'].stepOrder &&
+                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
+                    salesStore.statusWorkflow['preparing'].stepOrder &&
                   s._id !== variables._id
               )
               .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0
@@ -258,61 +360,11 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           }
         }
 
-        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
-        const products = productsData.value?.filter((p) =>
-          variables.products.some((product) => product.id === p._id)
-        )
-
-        if (products && products.length > 0) {
-          products.forEach((product) => {
-            const purchasedItem = variables.products.find((p) => p.id === product._id)
-            if (!purchasedItem) return
-
-            const quantity = purchasedItem.quantity
-            const isFish = product.category?.name === 'ปลา'
-
-            let newSoldStatus = product.sold
-            let newBalance = product.balance || 0
-
-            if (isFish) {
-              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
-              newSoldStatus = true
-              newBalance = product.balance || 0
-            } else {
-              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
-              const balance = product.balance || 0
-
-              if (balance >= quantity) {
-                // กรณีมีสต็อกเพียงพอ
-                newBalance = balance - quantity
-                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
-              } else {
-                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
-                newBalance = 0
-                newSoldStatus = true
-                console.warn(
-                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
-                )
-              }
-            }
-
-            updateProduct({
-              ...product,
-              fishpond: product.fishpond?._id || undefined,
-              species: product.species?._id || undefined,
-              farm: product.farm?._id || undefined,
-              quality: product.quality?._id || undefined,
-              lotNumber: product.lotNumber?._id || undefined,
-              seedSize: product.seedSize?._id || undefined,
-              foodtype: product.foodtype?._id || undefined,
-              brand: product.brand?._id || undefined,
-              fishStatus: product.fishStatus?._id || undefined,
-
-              sold: newSoldStatus,
-              balance: newBalance,
-
-            })
-          })
+        // B. ตัดสต็อกสินค้า - ใช้ utility function
+        if (productsData.value) {
+          executeStockDeduction(variables, productsData.value, updateProduct, (warning) =>
+            toast.warning(warning)
+          )
         }
       }
 
@@ -364,11 +416,9 @@ const { mutate: mutateUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
 })
 
-const productStore = useProductStore()
 const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
-
 
 const handleClose = () => {
   resetForm()
@@ -380,6 +430,7 @@ const resetForm = () => {
   saleForm.value = {
     _id: '',
     payment: 'cash',
+    paymentMethod: undefined,
     bankCode: '',
     bankAccount: '',
     cat: 0,
@@ -393,6 +444,11 @@ const resetForm = () => {
     note: '',
     deliveryNo: 0,
     delivery: '',
+    deliveryStatus: undefined,
+    paymentDueDate: undefined,
+    shippingAddress: undefined,
+    shippingProvince: undefined,
+    customProducts: undefined,
   }
 }
 
@@ -402,12 +458,52 @@ const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
 }
 
+// Auto-update status to preparing when slip is uploaded and current status < preparing
+const handleSlipUploaded = async (saleId: string) => {
+  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
+
+  const currentStepIndex = getStatusStepIndex(props.saleData.status)
+  const preparingStepIndex = getStatusStepIndex('preparing')
+
+  // Only auto-change if current status < preparing
+  if (currentStepIndex < preparingStepIndex) {
+    // Update status to preparing
+    const updatedPayload: IUpdateSalesPayload = {
+      _id: props.saleData._id,
+      status: 'preparing',
+      bankCode: saleForm.value.bankCode || props.saleData.bankCode,
+      bankAccount: props.saleData.bankAccount,
+      item: props.saleData.item,
+      user: props.saleData.user._id,
+      products:
+        props.saleData.products?.map((p) => ({
+          id: p.id || '',
+          category: p.category || '',
+          price: p.price || 0,
+          quantity: p.quantity || 1,
+        })) || [],
+      deposit: props.saleData.deposit,
+      discount: props.saleData.discount,
+      seller: props.saleData.seller,
+      note: props.saleData.note,
+      payment: props.saleData.payment,
+      cat: props.saleData.cat,
+      deliveryNo: props.saleData.deliveryNo,
+      delivery: props.saleData.delivery,
+    }
+
+    updateSale(updatedPayload)
+  }
+}
+
 const sellers = computed(() => {
   if (!props.admins) return []
-  return props.admins?.filter((admin) => admin.role === 1).map((admin) => ({
-    label: admin.name,
-    value: admin._id,
-  }))
+  return props.admins
+    ?.filter((admin) => admin.role === 1)
+    .map((admin) => ({
+      label: admin.name,
+      value: admin._id,
+    }))
 })
 </script>
 
@@ -511,7 +607,7 @@ const sellers = computed(() => {
 
         <!-- Bank Selection (if required) -->
         <BankSelectionSection
-          v-if="requiresBankSelection"
+          v-if="requiresBankSelection && canEditBankInfo"
           :selected-bank-code="saleForm.bankCode || ''"
           :is-submitting="isSubmitting"
           :is-current-bank="props.saleData.bankCode"
@@ -521,27 +617,50 @@ const sellers = computed(() => {
 
         <!-- Slip Upload Section -->
         <SlipUploadSection
-          v-if="requiresSlipUpload"
+          v-if="requiresSlipUpload && canEditSlip"
           :sale-id="props.saleData._id || ''"
           :selected-status="saleForm.status"
           :is-current-status="props.saleData.status"
           :is-submitting="isSubmitting"
           @slip-status-changed="handleSlipStatusChanged"
+          @slip-uploaded="handleSlipUploaded"
         />
       </div>
 
       <!-- Product Management -->
-      <ProductManagementSection
-        :products="saleForm.products"
-        :is-submitting="isSubmitting"
-        :read-only="
-          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
-        "
-        @update:products="updateProducts"
-        @add-product="addProduct"
-        @remove-product="removeProduct"
-        @update:total-amount="updateTotalAmount"
-      />
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-box text-blue-600"></i>
+            รายการสินค้า
+          </h4>
+          <Button
+            v-if="canEditProducts"
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addProduct"
+            :disabled="saleForm.products.length >= 10"
+          />
+        </div>
+
+        <div class="space-y-4">
+          <ProductItemForm
+            v-for="(product, index) in saleForm.products"
+            :key="index"
+            :product="product"
+            :index="index"
+            :is-submitting="isSubmitting"
+            :products-data="productsData"
+            :can-remove="saleForm.products.length > 1 && canEditProducts"
+            :is-read-only="!canEditProducts"
+            @update:product="updateProductForIndex"
+            @update:quantity="(idx, qty) => (saleForm.products[idx].quantity = qty)"
+            @remove="removeProduct"
+          />
+        </div>
+      </div>
 
       <!-- Payment Calculation -->
       <PaymentCalculationSection
@@ -550,9 +669,7 @@ const sellers = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
-        :read-only="
-          getStatusStepIndex(props.saleData.status) >= getStatusStepIndex('paid_complete')
-        "
+        :read-only="!canEditProducts"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"

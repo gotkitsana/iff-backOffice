@@ -3,7 +3,7 @@ defineOptions({
   name: 'ModalAddProduction',
 })
 import { computed, ref } from 'vue'
-import { Dialog, Button, InputText, InputNumber, Select, Textarea, Calendar } from 'primevue'
+import { Dialog, Button, InputText, InputNumber, Select, Textarea, DatePicker } from 'primevue'
 import { toast } from 'vue3-toastify'
 
 const props = defineProps<{
@@ -239,7 +239,7 @@ const autoGenerateBatchNumber = () => {
               <i class="pi pi-play mr-1.5 !text-sm"></i>
               วันที่เริ่มผลิต *
             </label>
-            <Calendar
+            <DatePicker
               v-model="newProduction.startDate"
               showIcon
               fluid
@@ -263,7 +263,7 @@ const autoGenerateBatchNumber = () => {
               <i class="pi pi-stop mr-1.5 !text-sm"></i>
               วันที่คาดการณ์เก็บเกี่ยว *
             </label>
-            <Calendar
+            <DatePicker
               v-model="newProduction.expectedHarvest"
               showIcon
               fluid

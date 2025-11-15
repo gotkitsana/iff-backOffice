@@ -18,8 +18,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'slip-status-changed': [hasSlip: boolean]
-  'slip-uploaded': [saleId: string]
+  'shipping-slip-status-changed': [hasSlip: boolean]
 }>()
 
 // Stores
@@ -39,88 +38,86 @@ const statusSteps: SellingStatus[] = [
   'received',
   'damaged',
 ]
-const requiresSlipUpload = computed(() => {
+const requiresShippingSlipUpload = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatus)
-  const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
   const preparingStepIndex = statusSteps.indexOf('preparing')
-  // Show for wait_payment, preparing, shipping and above
-  return currentStepIndex >= waitPaymentStepIndex
+  const shippingStepIndex = statusSteps.indexOf('shipping')
+  // Show for wait_payment (optional), preparing (mandatory), shipping and above
+  return currentStepIndex >= preparingStepIndex || props.selectedStatus === 'wait_payment'
 })
 
 const closeEdit = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
-  const preparingStepIndex = statusSteps.indexOf('preparing')
-  return currentStepIndex >= preparingStepIndex
+  const shippingStepIndex = statusSteps.indexOf('shipping')
+  return currentStepIndex >= shippingStepIndex
 })
 
-const hasSlip = ref(false)
+const hasShippingSlip = ref(false)
 const isCheckingSlip = ref(false)
 
-const checkSlipExists = async (saleId: string) => {
+const checkShippingSlipExists = async (saleId: string) => {
   if (!saleId) {
-    hasSlip.value = false
+    hasShippingSlip.value = false
     isCheckingSlip.value = false
     return false
   }
 
   try {
     isCheckingSlip.value = true
-    const slipUrl = `${import.meta.env.VITE_API_URL}/erp/download/slip?saleId=${saleId}`
+    const slipUrl = `${import.meta.env.VITE_API_URL}/erp/download/shipping-slip?saleId=${saleId}`
 
     return new Promise((resolve) => {
       const img = new Image()
 
       const timeout = setTimeout(() => {
-        hasSlip.value = false
+        hasShippingSlip.value = false
         isCheckingSlip.value = false
         resolve(false)
       }, 10000)
 
       img.onload = () => {
         clearTimeout(timeout)
-        hasSlip.value = true
+        hasShippingSlip.value = true
         isCheckingSlip.value = false
-        emit('slip-status-changed', true)
+        emit('shipping-slip-status-changed', true)
         resolve(true)
       }
 
       img.onerror = () => {
         clearTimeout(timeout)
-        hasSlip.value = false
+        hasShippingSlip.value = false
         isCheckingSlip.value = false
-        emit('slip-status-changed', false)
+        emit('shipping-slip-status-changed', false)
         resolve(false)
       }
 
       img.src = slipUrl
     })
   } catch (error) {
-    console.error('Error checking slip:', error)
-    hasSlip.value = false
+    console.error('Error checking shipping slip:', error)
+    hasShippingSlip.value = false
     isCheckingSlip.value = false
     return false
   }
 }
 
-// แก้ไข watch ให้ดีขึ้น
+// Watch for saleId changes
 watch(
   () => props.saleId,
   (newSaleId, oldSaleId) => {
     if (newSaleId && newSaleId !== oldSaleId) {
-      checkSlipExists(newSaleId)
+      checkShippingSlipExists(newSaleId)
     }
   },
   { immediate: true }
 )
 onUnmounted(() => {
-  // Cleanup any pending image checks
   isCheckingSlip.value = false
 })
 
-// Helper function to get slip image URL
-const onGetSlipImg = (id: string) => {
-  const data = `${import.meta.env.VITE_API_URL}/erp/download/slip?saleId=${id}`
-  return data
+// Helper function to get shipping slip image URL
+const onGetShippingSlipImg = (id: string) => {
+  return `${import.meta.env.VITE_API_URL}/erp/download/shipping-slip?saleId=${id}`
 }
 
 // File upload handlers
@@ -136,14 +133,14 @@ const onFileSelect = (event: { files: File[] }) => {
     }
     reader.readAsDataURL(file)
     if (props.isAddSale) {
-      emit('slip-status-changed', true)
+      emit('shipping-slip-status-changed', true)
     }
   }
 }
 
-const confirmUploadSlip = () => {
+const confirmUploadShippingSlip = () => {
   if (uploadedFile.value) {
-    uploadSlip({
+    uploadShippingSlip({
       id: props.saleId,
       file: uploadedFile.value,
     })
@@ -158,8 +155,8 @@ const removeSelectedFile = () => {
 
 const handleImageError = (event: Event) => {
   console.error('Image load error:', event)
-  hasSlip.value = false
-  toast.error('ไม่สามารถโหลดรูปสลิปได้')
+  hasShippingSlip.value = false
+  toast.error('ไม่สามารถโหลดรูปสลิปการจัดส่งได้')
 }
 
 const editSlip = () => {
@@ -170,41 +167,26 @@ watch(
   () => props.uploadToSubmit,
   (newUploadToSubmit) => {
     if (!!newUploadToSubmit) {
-      confirmUploadSlip()
+      confirmUploadShippingSlip()
     }
   },
   { immediate: true }
 )
 
-// Check if should auto-change to preparing
-const shouldAutoChangeToPreparing = computed(() => {
-  if (!props.isCurrentStatus || props.isAddSale) return false
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
-  const preparingStepIndex = statusSteps.indexOf('preparing')
-  // Auto-change if current status < preparing
-  return currentStepIndex < preparingStepIndex
-})
-
 // Mutations
-const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
+const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
   mutationFn: (payload: { id: string; file: File }) =>
-    salesStore.onUploadSlip(payload.id, payload.file),
+    salesStore.onUploadShippingSlip(payload.id, payload.file),
   onSuccess: (data: any) => {
-    toast.success('อัปโหลดสลิปสำเร็จ')
-    hasSlip.value = true
-    emit('slip-status-changed', true)
-
-    // Auto-change to preparing if current status < preparing
-    if (shouldAutoChangeToPreparing.value && props.saleId) {
-      emit('slip-uploaded', props.saleId)
-    }
-
+    toast.success('อัปโหลดสลิปการจัดส่งสำเร็จ')
+    hasShippingSlip.value = true
+    emit('shipping-slip-status-changed', true)
     previewImage.value = ''
     uploadedFile.value = null
     showUploadSection.value = false
   },
   onError: (error: any) => {
-    toast.error(error.response?.data?.message || 'อัปโหลดสลิปไม่สำเร็จ')
+    toast.error(error.response?.data?.message || 'อัปโหลดสลิปการจัดส่งไม่สำเร็จ')
     previewImage.value = ''
     uploadedFile.value = null
   },
@@ -213,37 +195,23 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
 
 <template>
   <div
-    v-if="requiresSlipUpload"
-    :class="`mt-4 p-4 border rounded-lg ${
-      props.selectedStatus === 'wait_payment'
-        ? 'bg-yellow-50 border-yellow-200'
-        : 'bg-green-50 border-green-200'
-    }`"
+    v-if="requiresShippingSlipUpload"
+    class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
   >
     <!-- Header -->
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-        <i class="pi pi-upload text-green-600 text-lg"></i>
+      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+        <i class="pi pi-truck text-blue-600 text-lg"></i>
       </div>
       <div>
-        <h4
-          class="font-semibold"
-          :class="props.selectedStatus === 'wait_payment' ? 'text-yellow-900' : 'text-green-900'"
-        >
-          สลิปการโอนเงิน
-        </h4>
-        <p
-          class="text-sm"
-          :class="props.selectedStatus === 'wait_payment' ? 'text-yellow-700' : 'text-green-700'"
-        >
+        <h4 class="font-semibold text-blue-900">สลิปการจัดส่ง</h4>
+        <p class="text-sm text-blue-700">
           {{
             isCheckingSlip
               ? 'กำลังตรวจสอบสลิป...'
-              : hasSlip
-              ? 'แสดงสลิปการโอนเงินที่อัปโหลดแล้ว'
-              : props.selectedStatus === 'wait_payment'
-              ? 'อัปโหลดสลิปการโอนเงิน (บังคับ) - อัปโหลดแล้วจะเปลี่ยนเป็น preparing'
-              : 'อัปโหลดสลิปการโอนเงินเพื่อยืนยันการชำระเงิน'
+              : hasShippingSlip
+              ? 'แสดงสลิปการจัดส่งที่อัปโหลดแล้ว'
+              : 'อัปโหลดสลิปการจัดส่ง (ไม่บังคับ)'
           }}
         </p>
       </div>
@@ -263,14 +231,12 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Slip Display -->
-    <div v-else-if="hasSlip && !showUploadSection" class="mb-4">
+    <div v-else-if="hasShippingSlip && !showUploadSection" class="mb-4">
       <div class="bg-white border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-3">
-          <h5 class="text-sm font-medium text-gray-700">สลิปการโอนเงิน</h5>
+          <h5 class="text-sm font-medium text-gray-700">สลิปการจัดส่ง</h5>
           <div class="flex items-center gap-2">
-            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              อัปโหลดแล้ว
-            </span>
+            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full"> อัปโหลดแล้ว </span>
             <Button
               v-if="!closeEdit"
               icon="pi pi-pencil"
@@ -286,8 +252,8 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
 
         <div class="relative">
           <img
-            :src="onGetSlipImg(props.saleId)"
-            alt="slip"
+            :src="onGetShippingSlipImg(props.saleId)"
+            alt="shipping slip"
             class="w-full max-h-50 object-contain rounded-lg border border-gray-200"
             @error="handleImageError"
           />
@@ -296,7 +262,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Upload Section -->
-    <div v-else-if="!hasSlip || showUploadSection" class="space-y-4">
+    <div v-else-if="!hasShippingSlip || showUploadSection" class="space-y-4">
       <!-- Preview Section -->
       <div
         v-if="previewImage || isUploadingSlip"
@@ -304,7 +270,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
       >
         <div class="flex items-center justify-between mb-3">
           <h6 class="text-sm font-medium text-gray-700">
-            {{ hasSlip ? 'สลิปใหม่' : 'สลิปการโอนเงิน' }}
+            {{ hasShippingSlip ? 'สลิปใหม่' : 'สลิปการจัดส่ง' }}
           </h6>
           <div class="flex items-center gap-2">
             <span
@@ -336,7 +302,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
           <img
             v-if="!isUploadingSlip"
             :src="previewImage"
-            alt="slip preview"
+            alt="shipping slip preview"
             class="w-full max-h-64 object-contain rounded-lg border border-gray-200"
           />
           <div
@@ -357,11 +323,11 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
           <!-- File Upload -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              {{ hasSlip ? 'เลือกสลิปใหม่' : 'เลือกสลิปการโอนเงิน' }}
+              {{ hasShippingSlip ? 'เลือกสลิปใหม่' : 'เลือกสลิปการจัดส่ง' }}
             </label>
             <FileUpload
               mode="basic"
-              name="slip"
+              name="shipping-slip"
               accept="image/*"
               :maxFileSize="2000000"
               @select="onFileSelect"
@@ -369,14 +335,13 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
                 isUploadingSlip
                   ? 'กำลังอัปโหลด...'
                   : previewImage
-                  ? hasSlip
+                  ? hasShippingSlip
                     ? 'เปลี่ยนสลิป'
                     : 'เลือกสลิปอื่น'
                   : 'เลือกสลิป'
               "
               :disabled="isUploadingSlip"
               class="w-full"
-              :invalid="requiresSlipUpload && !hasSlip && props.isSubmitting"
             />
             <p class="text-xs text-gray-500 mt-1">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
           </div>
@@ -385,35 +350,17 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
           <div v-if="!isAddSale" class="flex items-center gap-3">
             <Button
               v-if="previewImage && !isUploadingSlip"
-              :label="hasSlip ? 'อัปเดตสลิป' : 'ยืนยันการอัปโหลด'"
+              :label="hasShippingSlip ? 'อัปเดตสลิป' : 'ยืนยันการอัปโหลด'"
               icon="pi pi-upload"
               severity="success"
               size="small"
-              @click="confirmUploadSlip"
+              @click="confirmUploadShippingSlip"
               :loading="isUploadingSlip"
             />
-
-            <!-- <Button
-              label="ยกเลิก"
-              icon="pi pi-times"
-              severity="danger"
-              size="small"
-              @click="cancelEdit"
-            /> -->
           </div>
-        </div>
-      </div>
-
-      <!-- Validation Message -->
-      <div
-        v-if="requiresSlipUpload && !hasSlip && !isCheckingSlip && props.isSubmitting"
-        class="bg-red-50 border border-red-200 rounded-lg p-3"
-      >
-        <div class="flex items-center gap-2">
-          <i class="pi pi-exclamation-triangle text-red-500"></i>
-          <p class="text-sm text-red-700">กรุณาอัปโหลดสลิปการโอนเงินก่อนบันทึกข้อมูล</p>
         </div>
       </div>
     </div>
   </div>
 </template>
+

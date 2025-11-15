@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Dialog, Textarea, Select, InputNumber, Button, TreeSelect, Tag } from 'primevue'
+import { ref, computed, provide } from 'vue'
+import { Dialog, Textarea, Select, InputNumber, Button } from 'primevue'
 import {
   useProductStore,
   type IProduct,
@@ -16,14 +16,24 @@ import type {
   ICreateSalesPayload,
   ISales,
   IUpdateSalesPayload,
+  SellingStatus,
   StatusWorkflow,
+  PaymentMethod,
+  DeliveryStatus,
 } from '@/types/sales'
-import CardProductList from '../CardProductList.vue'
+import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
-import { getProductImageUrl } from '@/utils/imageUrl'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import SlipUploadSection from '../SlipUploadSection.vue'
+import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
+import { executeStockDeduction } from '@/utils/stockDeduction'
+import { useProductSelection } from '@/composables/useProductSelection'
+import { validatePaymentMethod } from '@/utils/salesStatusValidation'
+import { calculateInitialStatus } from '@/utils/salesStatusCalculation'
+import {DatePicker} from 'primevue'
+import InputText from 'primevue/inputtext'
+import { watch } from 'vue'
 
 // Props
 const props = defineProps<{
@@ -45,8 +55,8 @@ const categoryStore = useCategoryStore()
 // Form data
 const saleForm = ref<ICreateSalesPayload>({
   item: '',
-  status: '',
   user: '',
+  paymentMethod: 'order' as PaymentMethod,
   products: [{ id: '', category: '', price: 0, quantity: 1 }],
   deposit: 0,
   discount: 0,
@@ -54,6 +64,11 @@ const saleForm = ref<ICreateSalesPayload>({
   note: '',
   deliveryNo: 0,
   delivery: '',
+  deliveryStatus: undefined,
+  paymentDueDate: undefined,
+  shippingAddress: undefined,
+  shippingProvince: undefined,
+  customProducts: undefined,
 })
 
 // Queries
@@ -72,247 +87,22 @@ const { data: categories } = useQuery<ICategory[]>({
   queryFn: () => categoryStore.onGetCategory(0),
 })
 
-const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
-  if (!id) return undefined
-  return categories.value?.find((category) => category._id === id)
-}
-
-// Computed
-const availableProducts = computed(() => {
-  if (!products.value) return []
-  return products.value.filter((p) => p.auctionOnly === 0)
-})
-
-const productOptions = computed(() => {
-  return availableProducts.value.map((product) => ({
-    label: `${product.name} (รหัส: ${product.sku})`,
-    value: product._id,
-  }))
-})
-
-const imageUrlCache = new Map<string, string>()
-const getImageUrl = (filename: string): string => {
-  if (imageUrlCache.has(filename)) {
-    return imageUrlCache.get(filename)!
-  }
-  const url = getProductImageUrl(filename)
-  imageUrlCache.set(filename, url)
-  return url
-}
-
 const foodSaleStore = useFoodSaleStore()
 const { data: foodSales } = useQuery<IFoodSale[]>({
   queryKey: ['get_food_sales'],
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 
-const getProductOptionsForIndex = (currentIndex: number) => {
-  if (!availableProducts.value) return []
+// Use composable for product selection
+const productSelection = useProductSelection(
+  products,
+  categories,
+  foodSales,
+  computed(() => saleForm.value.products || [])
+)
 
-  // ดึงรายการ ID ของสินค้าที่เลือกแล้ว (ยกเว้น index ปัจจุบัน)
-  const selectedProductIds = saleForm.value.products
-    ?.map((p, index) => (index !== currentIndex ? p.id : ''))
-    .filter((id) => id !== '')
-
-  // กรองสินค้าที่ยังไม่ได้เลือก
-  const unselectedProducts = availableProducts.value.filter(
-    (product) => !selectedProductIds?.includes(product._id)
-  )
-
-  // กรอง food sales ที่ยังไม่ได้เลือก
-  const unselectedFoodSales = (foodSales.value || []).filter(
-    (foodSale) => !selectedProductIds?.includes(foodSale.product?._id)
-  )
-
-  // group by category._id
-  const groupsMap = new Map<
-    string,
-    {
-      label: string
-      children: Array<{
-        label: string
-        value: string
-        image?: string
-        disabled?: boolean
-        sold?: boolean
-        balance?: number
-        isFish?: boolean
-        sku?: string
-        isFoodSale?: boolean
-        kilo?: number
-        customerPriceKilo?: number
-      }>
-    }
-  >()
-
-  unselectedProducts.forEach((product) => {
-    const catId = product.category?._id || 'unknown'
-    const cat = handleFindCategory(product.category?._id)
-    const isFish = cat?.value === 'fish'
-    const isFood = cat?.value === 'food'
-
-    const groupLabel = isFood ? 'อาหาร (กระสอบ)' : cat?.name || 'ไม่ระบุหมวดหมู่'
-    const group = groupsMap.get(catId) || {
-      label: groupLabel,
-      children: [],
-    }
-
-    // เพิ่มรูปภาพจาก images[0]
-    const imageUrl =
-      product.images && product.images.length > 0
-        ? getImageUrl(product.images[0].filename) // ใช้ function แทน
-        : undefined
-
-    const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
-
-    group.children.push({
-      label: `${product.name || `${product.species?.name}`}`,
-      sku: product.sku || '',
-      value: product._id,
-      image: imageUrl,
-      disabled: isSold, // disable ถ้าขายแล้ว
-      sold: product.sold,
-      balance: product.balance,
-      isFish: isFish,
-      isFoodSale: false,
-    })
-
-    groupsMap.set(catId, group)
-  })
-
-  // unselectedFoodSales.forEach((foodSale) => {
-  //   const product = foodSale.product
-  //   const catId = 'food_sale'
-  //   const cat = handleFindCategory(product?.category)
-
-  //   // สร้าง group สำหรับอาหารแบ่งขาย หรือใช้ category เดิม
-  //   const groupLabel = 'อาหาร (แบ่งขาย)'
-  //   const group = groupsMap.get(catId) || {
-  //     label: groupLabel,
-  //     children: [],
-  //   }
-
-  //   const imageUrl =
-  //     product?.images && product.images.length > 0
-  //       ? getImageUrl(product.images[0].filename)
-  //       : undefined
-
-  //   // ตรวจสอบว่าขายหมดหรือยัง (ใช้ kilo เป็น balance)
-  //   const isSold = (foodSale.kilo || 0) === 0
-
-  //   group.children.push({
-  //     label: `${foodSale.name || product?.name || ''}`,
-  //     sku: product?.sku || '',
-  //     value: foodSale._id, // ใช้ _id ของ food sale
-  //     image: imageUrl,
-  //     disabled: isSold,
-  //     sold: isSold,
-  //     balance: foodSale.kilo || 0,
-  //     isFish: false,
-  //     isFoodSale: true,
-  //     kilo: foodSale.kilo,
-  //     customerPriceKilo: foodSale.customerPriceKilo,
-  //   })
-
-  //   groupsMap.set(catId, group)
-  // })
-
-  const treeNodes = Array.from(groupsMap.values()).map((group, groupIndex) => ({
-    key: `group-${groupIndex}`,
-    label: group.label,
-    selectable: false, // ไม่ให้เลือก category
-    children: group.children
-      .sort((a, b) => {
-        // ถ้า a disabled และ b ไม่ disabled -> a ต้องลงล่าง
-        if (a.disabled && !b.disabled) return 1
-        if (!a.disabled && b.disabled) return -1
-        return a.label.localeCompare(b.label)
-      })
-      .map((item) => ({
-        key: item.value,
-        label: item.label,
-        value: item.value,
-        data: item, // เก็บข้อมูลเต็มไว้ใน data
-        selectable: !item.disabled,
-        disabled: item.disabled,
-        sku: item.sku,
-        image: item.image,
-        sold: item.sold,
-        balance: item.balance,
-        isFish: item.isFish,
-        isFoodSale: item.isFoodSale,
-        kilo: item.kilo,
-        customerPriceKilo: item.customerPriceKilo,
-      })),
-  }))
-
-  return treeNodes
-}
-
-const selectedProductDetails = computed(() => {
-  return saleForm.value.products?.map(
-    (product: { id: string; quantity: number; category: string }) => {
-      if (!product.id) return null
-
-      // ตรวจสอบว่าเป็น food sale หรือ product ปกติ
-      const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
-
-      if (foodSale) {
-        // กรณีเป็น food sale
-        const productDetail = foodSale.product
-        const imageUrl =
-          productDetail?.images && productDetail?.images.length > 0
-            ? getProductImageUrl(productDetail.images[0].filename)
-            : undefined
-
-        return {
-          ...productDetail,
-          quantity: product.quantity,
-          productId: foodSale._id,
-          isMissing: false,
-          category: handleFindCategory(productDetail?.category),
-          image: imageUrl,
-          isFoodSale: true,
-          kilo: foodSale.kilo,
-          customerPriceKilo: foodSale.customerPriceKilo,
-          price: foodSale.customerPriceKilo, // ใช้ราคาต่อกิโล
-        }
-      }
-
-      if (!availableProducts.value) return null
-      const productDetail = availableProducts.value?.find((p) => p._id === product.id)
-
-      const category = handleFindCategory(productDetail?.category?._id)
-      const imageUrl =
-        productDetail?.images && productDetail?.images.length > 0
-          ? getProductImageUrl(productDetail?.images[0].filename)
-          : undefined
-
-      if (!productDetail) {
-        return {
-          name: '',
-          price: 0,
-          productId: product.id,
-          quantity: product.quantity,
-          isMissing: true,
-          category: undefined,
-          image: undefined,
-          sku: '',
-          balance: 0,
-        }
-      }
-
-      return {
-        ...productDetail,
-        quantity: product.quantity,
-        productId: product.id,
-        isMissing: false,
-        category: category,
-        image: imageUrl,
-      }
-    }
-  )
-})
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productSelection)
 
 const totalAmount = computed(() => {
   return saleForm.value.products?.reduce((sum, product) => {
@@ -325,7 +115,9 @@ const totalAmount = computed(() => {
     }
 
     // กรณี product ปกติ
-    const productDetail = availableProducts.value?.find((p) => p._id === product.id)
+    const productDetail = productSelection.availableProducts.value?.find(
+      (p) => p._id === product.id
+    )
     if (productDetail && productDetail.price) {
       return sum + (productDetail.price || 0) * product.quantity
     }
@@ -381,57 +173,113 @@ const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
 }
 
-const requiresSlipUpload = computed(() => {
-  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
-  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-  return currentStepIndex > waitPaymentStepIndex
+// Computed สำหรับการแสดงผลตาม payment method
+const showProductSelection = computed(() => {
+  return saleForm.value.paymentMethod !== 'order'
 })
 
-const requiresBankSelection = computed(() => {
-  const currentStepIndex = getStatusStepIndex(saleForm.value.status)
-  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-  return currentStepIndex >= waitPaymentStepIndex
+const showCustomProducts = computed(() => {
+  return saleForm.value.paymentMethod === 'order'
 })
+
+const showDeliveryStatus = computed(() => {
+  return saleForm.value.paymentMethod === 'cash'
+})
+
+const showPaymentDueDate = computed(() => {
+  return saleForm.value.paymentMethod === 'credit'
+})
+
+const showBankSelection = computed(() => {
+  return saleForm.value.paymentMethod === 'transfer' || saleForm.value.paymentMethod === 'card'
+})
+
+const showShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+const requiresShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+// Custom products management
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+
+const addCustomProduct = () => {
+  customProducts.value.push({ name: '', quantity: 1, description: '' })
+}
+
+const removeCustomProduct = (index: number) => {
+  customProducts.value.splice(index, 1)
+}
 
 // Handlers
 const handleSubmit = () => {
   isSubmitting.value = true
 
-  // Validation
+  // Basic validation
   if (!saleForm.value.user) {
     toast.error('กรุณาเลือกลูกค้า')
+    isSubmitting.value = false
     return
   }
 
-  if (!saleForm.value.status) {
-    toast.error('กรุณาเลือกสถานะรายการขาย')
+  if (!saleForm.value.paymentMethod) {
+    toast.error('กรุณาเลือกวิธีชำระเงิน')
+    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.seller) {
     toast.error('กรุณาเลือกผู้ขาย')
-    return
-  }
-
-  // Check bank selection requirement
-  if (requiresBankSelection.value && !bankForm.value.bankCode) {
-    toast.error('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
-    return
-  }
-
-  // Check slip upload requirement
-  if (requiresSlipUpload.value && !hasSlip.value) {
-    toast.error('กรุณาอัปโหลดสลิปการโอนเงิน')
+    isSubmitting.value = false
     return
   }
 
   // Check if all products are valid
-  const invalidProducts = saleForm.value.products?.filter((p) => !isProductValid(p)) || []
-  if (invalidProducts.length > 0 && saleForm.value.status !== 'wait_product') {
-    toast.error('กรุณาเลือกสินค้าและระบุจำนวนให้ครบถ้วน')
+  const hasValidProducts = saleForm.value.products?.some((p) => isProductValid(p)) || false
+  const hasCustomProducts = customProducts.value.some((p) => p.name && p.quantity > 0)
+
+  // Validate payment method
+  const paymentValidation = validatePaymentMethod({
+    paymentMethod: saleForm.value.paymentMethod,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!bankForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: hasShippingSlip.value,
+    hasShippingAddress: !!(saleForm.value.shippingAddress && saleForm.value.shippingProvince),
+    deliveryStatus: saleForm.value.deliveryStatus,
+    hasPaymentDueDate: !!saleForm.value.paymentDueDate,
+    hasCustomProducts: hasCustomProducts,
+  })
+
+  // Show validation errors
+  if (!paymentValidation.isValid) {
+    paymentValidation.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
     return
   }
 
+  // Calculate initial status from payment method
+  const initialStatus = calculateInitialStatus(
+    saleForm.value.paymentMethod,
+    saleForm.value.deliveryStatus,
+    hasValidProducts
+  )
+
+  // Format products
   let formattedProducts:
     | {
         id: string
@@ -444,192 +292,124 @@ const handleSubmit = () => {
       }[]
     | null = null
 
-  if (saleForm.value.status !== 'wait_product' && saleForm.value.products) {
+  if (saleForm.value.paymentMethod !== 'order' && saleForm.value.products) {
     formattedProducts = saleForm.value.products.map((product) => {
       if (product.retailID) {
         return {
           id: product.id,
           category: product.category || '',
-          price: product.price, // ราคาต่อกก.
-          quantity: product.quantity || 1, // จำนวนกก.
+          price: product.price,
+          quantity: product.quantity || 1,
           retailID: product.retailID,
           name: product.name,
-          unit: 'kilo', // ระบุหน่วย
+          unit: 'kilo',
         }
       } else {
         return {
           id: product.id,
           category: product.category,
-          price: product.price, // ราคาต่อกระสอบ
-          quantity: product.quantity || 1, // จำนวนกระสอบ
+          price: product.price,
+          quantity: product.quantity || 1,
           name: product.name || '',
-          unit: 'piece', // ระบุหน่วย
+          unit: 'piece',
         }
       }
     })
   }
-  createSale({
+
+  // Prepare payload
+  const payload: ICreateSalesPayload = {
     ...saleForm.value,
     products: formattedProducts,
+    customProducts: saleForm.value.paymentMethod === 'order' ? customProducts.value : undefined,
     item: `SALE-${Date.now().toString().slice(-8)}`,
-  })
+    payment:
+      saleForm.value.paymentMethod === 'cash'
+        ? 'cash'
+        : saleForm.value.paymentMethod === 'transfer'
+        ? 'transfer'
+        : saleForm.value.paymentMethod === 'card'
+        ? 'credit'
+        : saleForm.value.paymentMethod === 'credit'
+        ? 'credit'
+        : 'other',
+    bankCode: bankForm.value.bankCode || undefined,
+    bankAccount: bankForm.value.bankAccount || undefined,
+  }
+
+  // Add status field (calculated)
+  ;(payload as any).status = initialStatus
+
+  createSale(payload)
 }
 
 const queryClient = useQueryClient()
 const { mutate: createSale, isPending: isCreatingSale } = useMutation({
   mutationFn: (sale: ICreateSalesPayload) => salesStore.onCreateSales(sale),
-  onSuccess: (data: any) => {
+  onSuccess: async (data: any, variables: ICreateSalesPayload) => {
     if (data.data) {
       toast.success('เพิ่มข้อมูลการขายสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_sales'] })
 
-      if (requiresBankSelection.value && data.data._id) {
-        saleData.value._id = data.data._id
-        if (requiresSlipUpload.value) {
-          saleData.value.submit = true
+      const createdSale = data.data
+      const initialStatus = calculateInitialStatus(
+        variables.paymentMethod!,
+        variables.deliveryStatus,
+        !!variables.products && variables.products.length > 0
+      )
+
+      // Check if should deduct stock (status = preparing or received)
+      if (initialStatus === 'preparing' || initialStatus === 'received') {
+        // Update member status if needed
+        if (variables.products) {
+          const { useMemberStatusUpdate } = await import('@/composables/useMemberStatusUpdate')
+          const memberStatusUpdate = useMemberStatusUpdate()
+
+          const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
+          memberStatusUpdate.updateMemberStatusIfNeeded(
+            {
+              ...variables,
+              _id: createdSale._id,
+              status: initialStatus,
+            } as IUpdateSalesPayload,
+            members.value,
+            allSales.value,
+            products.value || [],
+            preparingStepOrder
+          )
         }
 
-        updateSale({
-          ...data.data,
-          _id: saleData.value._id,
-          bankCode: bankForm.value.bankCode,
-          bankAccount: bankForm.value.bankAccount,
-        })
-      } else {
-        handleClose()
+        // Deduct stock
+        if (variables.products && products.value) {
+          executeStockDeduction(
+            {
+              ...variables,
+              _id: createdSale._id,
+              status: initialStatus,
+            } as IUpdateSalesPayload,
+            products.value,
+            updateProduct,
+            (warning) => toast.warning(warning)
+          )
+        }
       }
+
+      refetchProducts()
+      handleClose()
     } else {
       toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+      isSubmitting.value = false
     }
   },
   onError: () => {
     toast.error('เพิ่มข้อมูลการขายไม่สำเร็จ')
+    isSubmitting.value = false
   },
 })
 
 const { data: allSales } = useQuery<ISales[]>({
   queryKey: ['get_sales'],
   queryFn: () => salesStore.onGetSales(),
-})
-const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
-  mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
-  onSuccess: (data: unknown, variables: IUpdateSalesPayload) => {
-    if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
-      if (
-        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder >=
-        salesStore.statusWorkflow['paid_complete'].stepOrder
-      ) {
-        // A. อัพเดทสถานะสมาชิก
-        const member = members.value?.find((m) => m._id === variables.user)
-
-        if (member && member.status !== 'css') {
-          // คำนวณยอดซื้อรวมทั้งหมด (รายการปัจจุบัน + ยอดซื้อในอดีต)
-          const currentTotal = calculateOrderTotal(variables, products.value || [])
-          const previousTotal =
-            allSales.value
-              ?.filter(
-                (s) =>
-                  s.user._id === variables.user &&
-                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
-                    salesStore.statusWorkflow['paid_complete'].stepOrder &&
-                  s._id !== variables._id
-              )
-              .reduce((sum, s) => sum + calculateSaleTotal(s, products.value || []), 0) || 0
-
-          const totalSpending = currentTotal + previousTotal
-
-          const shouldBeCss = totalSpending >= 50000
-          const shouldBeCs = !shouldBeCss && member.status === 'ci'
-
-          if (shouldBeCss || shouldBeCs) {
-            const newStatus = shouldBeCss ? 'css' : 'cs'
-            const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
-
-            updateMember({
-              _id: member._id,
-              status: newStatus,
-              code: newCode,
-              contacts: member.contacts || [],
-              interests: member.interests || [],
-              displayName: member.displayName,
-              name: member.name,
-              address: member.address,
-              province: member.province,
-              phone: member.phone,
-              type: member.type,
-              username: member.username,
-              password: member.password,
-              bidder: member.bidder,
-              cat: member.cat,
-              uat: member.uat,
-            })
-          }
-        }
-
-        // B. ตัดสต็อกสินค้า - แยก logic ปลา vs สินค้าทั่วไป
-        const productsList = products.value?.filter((p) =>
-          variables.products.some((product) => product.id === p._id)
-        )
-
-        if (productsList && productsList.length > 0) {
-          productsList.forEach((product) => {
-            const purchasedItem = variables.products.find((p) => p.id === product._id)
-            if (!purchasedItem) return
-
-            const quantity = purchasedItem.quantity
-            const isFish = product.category?.name === 'ปลา'
-
-            let newSoldStatus = product.sold
-            let newBalance = product.balance || 0
-
-            if (isFish) {
-              // === กรณีปลา: ไม่ใช้ balance แค่เปลี่ยน sold ===
-              newSoldStatus = true
-              newBalance = product.balance || 0
-            } else {
-              // === กรณีสินค้าทั่วไป: ใช้ทั้ง balance และ sold ===
-              const balance = product.balance || 0
-
-              if (balance >= quantity) {
-                // กรณีมีสต็อกเพียงพอ
-                newBalance = balance - quantity
-                newSoldStatus = newBalance === 0 // sold = true ถ้าสินค้าหมด
-              } else {
-                // กรณีสต็อกไม่พอ (ไม่ควรเกิด แต่เผื่อ)
-                newBalance = 0
-                newSoldStatus = true
-                console.warn(
-                  `สินค้า ${product.sku} มีสต็อกไม่เพียงพอ (มี: ${balance}, ขาย: ${quantity})`
-                )
-              }
-            }
-
-            updateProduct({
-              ...product,
-              fishpond: product.fishpond?._id || undefined,
-              species: product.species?._id || undefined,
-              farm: product.farm?._id || undefined,
-              quality: product.quality?._id || undefined,
-              lotNumber: product.lotNumber?._id || undefined,
-              seedSize: product.seedSize?._id || undefined,
-              foodtype: product.foodtype?._id || undefined,
-              brand: product.brand?._id || undefined,
-              fishStatus: product.fishStatus?._id || undefined,
-
-              sold: newSoldStatus,
-              balance: newBalance,
-            })
-          })
-        }
-      }
-
-      refetchProducts()
-      queryClient.invalidateQueries({ queryKey: ['get_sales'] })
-      handleClose()
-    } else {
-      toast.error('แก้ไขข้อมูลการขายไม่สำเร็จ')
-    }
-  },
 })
 
 const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
@@ -685,8 +465,8 @@ const handleClose = () => {
 const resetForm = () => {
   saleForm.value = {
     item: '',
-    status: '',
     user: '',
+    paymentMethod: 'order' as PaymentMethod,
     products: [{ id: '', category: '', price: 0, quantity: 1 }],
     deposit: 0,
     discount: 0,
@@ -694,12 +474,23 @@ const resetForm = () => {
     note: '',
     deliveryNo: 0,
     delivery: '',
+    deliveryStatus: undefined,
+    paymentDueDate: undefined,
+    shippingAddress: undefined,
+    shippingProvince: undefined,
+    customProducts: undefined,
   }
+  customProducts.value = []
   saleData.value = {
     _id: '',
     submit: false,
   }
+  shippingSlipData.value = {
+    _id: '',
+    submit: false,
+  }
   hasSlip.value = false
+  hasShippingSlip.value = false
   bankForm.value = {
     bankCode: '',
     bankAccount: '',
@@ -716,11 +507,26 @@ const sellers = computed(() => {
     }))
 })
 
-const getStatusStepIndex = (status: string) => {
-  return salesStore.sellingStatusOptions.findIndex((option) => option.value === status)
+// Update shipping address from member
+const updateShippingAddressFromMember = () => {
+  if (selectedMemberDetails.value) {
+    saleForm.value.shippingAddress = selectedMemberDetails.value.address || ''
+    saleForm.value.shippingProvince = selectedMemberDetails.value.province || ''
+  }
 }
 
+// Watch member change to auto-fill shipping address
+watch(
+  () => saleForm.value.user,
+  () => {
+    if (saleForm.value.user && !saleForm.value.shippingAddress) {
+      updateShippingAddressFromMember()
+    }
+  }
+)
+
 const hasSlip = ref(false)
+const hasShippingSlip = ref(false)
 const bankForm = ref({
   bankCode: '',
   bankAccount: '',
@@ -729,16 +535,30 @@ const saleData = ref({
   _id: '',
   submit: false,
 })
+const shippingSlipData = ref({
+  _id: '',
+  submit: false,
+})
 const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
+}
+const handleShippingSlipStatusChanged = (status: boolean) => {
+  hasShippingSlip.value = status
 }
 const updateBankCode = (bankCode: string) => {
   bankForm.value.bankCode = bankCode
 }
 
-const updateProducts = (index: number, value: string) => {
-  // TreeSelect ส่ง value เป็น string (id)
-  const selectedId = Object.keys(value)[0]
+const updateProducts = (index: number, value: string | Record<string, any>) => {
+  // TreeSelect ส่ง value เป็น string หรือ object
+  let selectedId: string
+  if (typeof value === 'string') {
+    selectedId = value
+  } else if (value && typeof value === 'object') {
+    selectedId = Object.keys(value)[0] || ''
+  } else {
+    return
+  }
 
   if (!selectedId) return
 
@@ -759,7 +579,7 @@ const updateProducts = (index: number, value: string) => {
     }
   } else {
     // กรณีสินค้าปกติ
-    const product = availableProducts.value?.find((p) => p._id === selectedId)
+    const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
 
     if (!product) return
 
@@ -779,10 +599,6 @@ const updateProducts = (index: number, value: string) => {
       unit: 'piece',
     }
   }
-}
-
-const getSelectedProduct = (id: string) => {
-  return availableProducts.value?.find((p) => p._id === id)
 }
 </script>
 
@@ -817,6 +633,7 @@ const getSelectedProduct = (id: string) => {
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลือกลูกค้า</label>
             <Select
               v-model="saleForm.user"
               :options="memberOptions"
@@ -835,22 +652,24 @@ const getSelectedProduct = (id: string) => {
           </div>
 
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">วิธีชำระเงิน</label>
             <Select
-              v-model="saleForm.status"
-              :options="salesStore.sellingStatusOptions"
+              v-model="saleForm.paymentMethod"
+              :options="salesStore.paymentMethods"
               optionLabel="label"
               optionValue="value"
               fluid
               size="small"
-              placeholder="เลือกสถานะรายการขาย"
-              :invalid="!saleForm.status && isSubmitting"
+              placeholder="เลือกวิธีชำระเงิน"
+              :invalid="!saleForm.paymentMethod && isSubmitting"
             />
-            <small v-if="!saleForm.status && isSubmitting" class="text-red-500"
-              >กรุณาเลือกสถานะรายการขาย</small
+            <small v-if="!saleForm.paymentMethod && isSubmitting" class="text-red-500"
+              >กรุณาเลือกวิธีชำระเงิน</small
             >
           </div>
 
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
             <Select
               v-model="saleForm.seller"
               :options="sellers"
@@ -901,31 +720,175 @@ const getSelectedProduct = (id: string) => {
           </div>
         </div>
 
-        <!-- Bank Selection (if required) -->
-        <BankSelectionSection
-          v-if="requiresBankSelection"
-          :selected-bank-code="bankForm.bankCode || ''"
-          :is-submitting="isSubmitting"
-          :is-current-bank="''"
-          :is-current-status="''"
-          @update:selected-bank-code="updateBankCode"
-        />
+        <!-- Delivery Status (for cash) -->
+        <div v-if="showDeliveryStatus" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
+          <Select
+            v-model="saleForm.deliveryStatus"
+            :options="[
+              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            fluid
+            size="small"
+            placeholder="เลือกสถานะการส่ง"
+            :invalid="!saleForm.deliveryStatus && isSubmitting"
+          />
+          <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
+            >กรุณาเลือกสถานะการส่ง</small
+          >
+        </div>
 
-        <!-- Slip Upload Section -->
-        <SlipUploadSection
-          :sale-id="saleData._id || ''"
-          :upload-to-submit="saleData.submit"
-          :is-add-sale="true"
-          :selected-status="saleForm.status"
-          :is-current-status="''"
-          :is-submitting="isSubmitting"
-          @slip-status-changed="handleSlipStatusChanged"
-        />
+        <!-- Payment Due Date (for credit) -->
+        <div v-if="showPaymentDueDate" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
+          <DatePicker
+            v-model="saleForm.paymentDueDate as Date | undefined"
+            dateFormat="dd/mm/yy"
+            showIcon
+            iconDisplay="input"
+            fluid
+            size="small"
+            :invalid="!saleForm.paymentDueDate && isSubmitting"
+          />
+          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500"
+            >กรุณาระบุวันชำระเงิน</small
+          >
+        </div>
+
+        <!-- Bank Selection (for transfer/card) -->
+        <div v-if="showBankSelection" class="mt-4">
+          <BankSelectionSection
+            :selected-bank-code="bankForm.bankCode || ''"
+            :is-submitting="isSubmitting"
+            :is-current-bank="''"
+            :is-current-status="''"
+            @update:selected-bank-code="updateBankCode"
+          />
+        </div>
+
+        <!-- Shipping Address -->
+        <div v-if="showShippingAddress" class="mt-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
+            <Button
+              v-if="selectedMemberDetails"
+              label="ใช้ที่อยู่เดิม"
+              icon="pi pi-refresh"
+              severity="secondary"
+              size="small"
+              outlined
+              @click="updateShippingAddressFromMember"
+            />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <InputText
+                v-model="saleForm.shippingAddress"
+                placeholder="ที่อยู่"
+                fluid
+                size="small"
+                :invalid="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+              />
+              <small
+                v-if="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+                class="text-red-500"
+                >กรุณากรอกที่อยู่จัดส่ง</small
+              >
+            </div>
+            <div>
+              <Select
+                v-model="saleForm.shippingProvince"
+                :options="memberStore.provinceOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกจังหวัด"
+                fluid
+                size="small"
+                :invalid="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+              />
+              <small
+                v-if="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+                class="text-red-500"
+                >กรุณาเลือกจังหวัด</small
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Products (for order) -->
+      <div
+        v-if="showCustomProducts"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-shopping-cart text-orange-600"></i>
+            สินค้านอกเหนือรายการ
+          </h4>
+          <Button
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addCustomProduct"
+          />
+        </div>
+        <div class="space-y-3">
+          <div
+            v-for="(product, index) in customProducts"
+            :key="index"
+            class="p-3 bg-gray-50 rounded-lg space-y-3"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
+                <InputText v-model="product.name" placeholder="ชื่อสินค้า" fluid size="small" />
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
+                <InputNumber
+                  v-model="product.quantity"
+                  :min="1"
+                  placeholder="จำนวน"
+                  fluid
+                  size="small"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
+              <Textarea
+                v-model="product.description"
+                placeholder="รายละเอียดสินค้า"
+                rows="3"
+                fluid
+                size="small"
+              />
+            </div>
+            <div class="flex justify-end">
+              <Button
+                icon="pi pi-trash"
+                label="ลบ"
+                severity="danger"
+                size="small"
+                outlined
+                @click="removeCustomProduct(index)"
+              />
+            </div>
+          </div>
+          <p v-if="customProducts.length === 0" class="text-sm text-gray-500 text-center py-4">
+            ไม่มีสินค้านอกเหนือรายการ (ไม่บังคับ)
+          </p>
+        </div>
       </div>
 
       <!-- Product Information -->
       <div
-        v-if="saleForm.status !== 'wait_product'"
+        v-if="showProductSelection"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center justify-between mb-4">
@@ -943,186 +906,24 @@ const getSelectedProduct = (id: string) => {
         </div>
 
         <div class="space-y-4">
-          <div
+          <ProductItemForm
             v-for="(product, index) in saleForm.products"
             :key="index"
-            class="p-3 bg-gray-50 border border-gray-200 rounded-xl"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <h5 class="text-sm font-semibold text-gray-700">สินค้า {{ index + 1 }}</h5>
-              <Button
-                v-if="saleForm.products && saleForm.products.length > 1"
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                text
-                rounded
-                @click="removeProduct(index)"
-                v-tooltip.top="'ลบสินค้านี้'"
-              />
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <TreeSelect
-                  v-model="product.id"
-                  @update:modelValue="(value) => updateProducts(index, value)"
-                  :options="getProductOptionsForIndex(index)"
-                  placeholder="เลือกสินค้าที่ต้องการขาย"
-                  fluid
-                  size="small"
-                  filter
-                  filterBy="label,sku"
-                  :filterPlaceholder="`ค้นหาจากชื่อหรือรหัสสินค้า`"
-                  :invalid="!product.id && isSubmitting"
-                  selectionMode="single"
-                  :pt="{
-                    label: 'flex items-center gap-2',
-                  }"
-                >
-                  <template #value="slotProps" >
-                    <div v-if="!!product.id" class="flex items-center gap-2">
-                      <img
-                        v-if="
-                          getSelectedProduct(product.id)?.images?.[0]
-                        "
-                        :src="getImageUrl(getSelectedProduct(product.id)?.images?.[0]?.filename || '')"
-                        alt="product"
-                        class="w-6 h-6 object-cover rounded"
-                        loading="lazy"
-                        fetchpriority="low"
-                        crossorigin="anonymous"
-                      />
-                      <span>
-                        {{ product.name }}
-                        <span class="text-xs text-gray-500 pl-1">
-                          รหัส ({{
-                            getSelectedProduct(product.id)?.sku
-                          }})
-                        </span>
-                      </span>
-                    </div>
-                    <span v-else>{{ slotProps.placeholder }}</span>
-                  </template>
-
-                  <template #option="{ node }">
-                    <div class="flex items-center justify-between gap-2 w-full">
-                      <div class="flex items-center gap-2">
-                        <img
-                          v-if="node.image"
-                          :src="node.image"
-                          alt="product"
-                          class="w-6 h-6 object-cover rounded"
-                          loading="lazy"
-                          fetchpriority="low"
-                          crossorigin="anonymous"
-                        />
-                        <span :class="{ 'opacity-50': node.disabled }">
-                          {{ node.label }}
-                          <span v-if="node.sku" class="text-xs text-gray-500 pl-1">
-                            รหัส ({{ node.sku }})
-                          </span>
-                        </span>
-                      </div>
-
-                      <!-- Badge สถานะ -->
-                      <div v-if="node.value" class="flex-shrink-0">
-                        <!-- ปลา -->
-                        <Tag
-                          v-if="node.isFish && node.sold"
-                          value="ขายแล้ว"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="node.isFish && !node.sold"
-                          value="พร้อมขาย"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-
-                        <!-- สินค้าทั่วไป (อาหารกระสอบ) -->
-                        <Tag
-                          v-else-if="
-                            !node.isFish && !node.isFoodSale && (node.sold || node.balance === 0)
-                          "
-                          :value="`คงเหลือ: ${node.balance || 0}`"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="!node.isFish && !node.isFoodSale"
-                          :value="`คงเหลือ: ${node.balance || 0}`"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-
-                        <!-- อาหารแบ่งขาย -->
-                        <Tag
-                          v-else-if="node.isFoodSale && (node.sold || node.balance === 0)"
-                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
-                          severity="danger"
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          v-else-if="node.isFoodSale"
-                          :value="`คงเหลือ: ${node.balance || 0} กก.`"
-                          severity="success"
-                          size="small"
-                          class="text-xs"
-                        />
-                      </div>
-                    </div>
-                  </template>
-                </TreeSelect>
-
-                <small v-if="!product.id && isSubmitting" class="text-red-500"
-                  >กรุณาเลือกสินค้า</small
-                >
-              </div>
-
-              <div>
-                <InputNumber
-                  v-model="product.quantity"
-                  :min="1"
-                  :max="products?.find((p) => p._id === product.id)?.balance || 100"
-                  fluid
-                  size="small"
-                  placeholder="ระบุจำนวนสินค้า"
-                  :invalid="!product.quantity && isSubmitting"
-                  :disabled="
-                    handleFindCategory(products?.find((p) => p._id === product.id)?.category?._id)
-                      ?.value === 'fish'
-                  "
-                />
-                <small v-if="!product.quantity && isSubmitting" class="text-red-500"
-                  >กรุณากรอกจำนวนสินค้า
-                </small>
-              </div>
-            </div>
-
-            <CardProductList
-              v-if="selectedProductDetails && selectedProductDetails[index]"
-              :name="selectedProductDetails[index]?.name"
-              :quantity="selectedProductDetails[index]?.quantity || product.quantity"
-              :price="selectedProductDetails[index]?.price"
-              :detail="''"
-              :category="selectedProductDetails[index]?.category"
-              :is-missing="!selectedProductDetails[index]"
-              :image="selectedProductDetails[index]?.image"
-              :sku="selectedProductDetails[index]?.sku"
-              :balance="selectedProductDetails[index]?.balance"
-            />
-          </div>
+            :product="product"
+            :index="index"
+            :is-submitting="isSubmitting"
+            :products-data="products"
+            :can-remove="!!saleForm.products && saleForm.products.length > 1"
+            @update:product="(idx, value) => updateProducts(idx, value)"
+            @update:quantity="
+              (idx, qty) => (saleForm.products ? (saleForm.products[idx].quantity = qty) : 1)
+            "
+            @remove="removeProduct"
+          />
         </div>
 
         <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-4 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
         >
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
@@ -1246,7 +1047,7 @@ const getSelectedProduct = (id: string) => {
           label="บันทึกข้อมูล"
           icon="pi pi-check"
           @click="handleSubmit"
-          :loading="isCreatingSale || isUpdatingSale"
+          :loading="isCreatingSale"
           severity="success"
           size="small"
         />

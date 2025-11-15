@@ -39,22 +39,17 @@ const filteredSales = computed(() => {
   if (activeTab.value === 'all') {
     return salesData.value || []
   }
+  // Filter by status
   return salesData.value?.filter((sale) => sale.status === activeTab.value) || []
 })
 
-// Tab counts
+// Tab counts - Status
 const allCount = computed(() => salesData.value?.length || 0)
-const waitProductCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'wait_product').length || 0
-)
-const waitConfirmCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'wait_confirm').length || 0
+const orderStatusCount = computed(
+  () => salesData.value?.filter((s) => s.status === 'order').length || 0
 )
 const waitPaymentCount = computed(
   () => salesData.value?.filter((s) => s.status === 'wait_payment').length || 0
-)
-const paidCompleteCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'paid_complete').length || 0
 )
 const preparingCount = computed(
   () => salesData.value?.filter((s) => s.status === 'preparing').length || 0
@@ -71,29 +66,29 @@ const damagedCount = computed(
 
 // Current filter display
 const currentFilterDisplay = computed(() => {
-  const statusMap: Record<SellingStatus | 'all', string> = {
-    all: 'ทั้งหมด',
-    wait_product: 'ระหว่างจัดหา',
-    wait_confirm: 'รอตัดสินใจ',
+  if (activeTab.value === 'all') {
+    return 'ทั้งหมด'
+  }
+
+  const statusMap: Record<SellingStatus, string> = {
+    order: 'ออเดอร์',
     wait_payment: 'รอชำระเงิน',
-    paid_complete: 'ชำระเงินเรียบร้อย',
-    preparing: 'ระหว่างรอจัดส่ง',
+    preparing: 'แพ็ครอจัดส่ง',
     shipping: 'ระหว่างขนส่ง',
     received: 'ได้รับสินค้าแล้ว',
     damaged: 'สินค้าเสียหาย',
   }
-  return statusMap[activeTab.value as SellingStatus | 'all'] || 'ทั้งหมด'
+  return statusMap[activeTab.value as SellingStatus] || activeTab.value
 })
+
 const getStatusStepOrder = (status: string) => {
   const statusOrder: Record<SellingStatus, number> = {
-    wait_product: 1,
-    wait_confirm: 2,
-    wait_payment: 3,
-    paid_complete: 4,
-    preparing: 5,
-    shipping: 6,
-    received: 7,
-    damaged: 8,
+    order: 1,
+    wait_payment: 2,
+    preparing: 3,
+    shipping: 4,
+    received: 5,
+    damaged: 6,
   }
   return statusOrder[status as SellingStatus] || 0
 }
@@ -107,7 +102,7 @@ const { data: categories } = useQuery<ICategory[]>({
 const totalRevenue = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         const saleTotal = sale.products
           ? sale.products.reduce((productSum, product) => {
@@ -122,7 +117,7 @@ const totalRevenue = computed(() => {
 const totalDiscount = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         return sum + (sale.discount || 0)
       }, 0) || 0
@@ -147,7 +142,7 @@ const totalDeposit = computed(() => {
 const totalDelivery = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         return sum + (sale.deliveryNo || 0)
       }, 0) || 0
@@ -157,7 +152,7 @@ const totalDelivery = computed(() => {
 const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('paid_complete'))
+      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
         const categoryProductsTotal = sale.products
@@ -228,8 +223,10 @@ const closeDetailModal = () => {
   selectedSaleForDetail.value = null
 }
 
-const openStatusManager = (sale: ISales) => {
+const targetStatus = ref<string | undefined>(undefined)
+const openStatusManager = (sale: ISales, status?: string) => {
   selectedSale.value = sale
+  targetStatus.value = status
   showStatusManager.value = true
 }
 
@@ -441,6 +438,7 @@ const { data: admins } = useQuery<IAdmin[]>({
       <template #content>
         <Tabs v-model:value="activeTab" class="w-full">
           <TabList class="flex border-b border-gray-200 overflow-x-auto bg-gray-50/50">
+            <!-- All Tab -->
             <Tab value="all" class="flex-shrink-0">
               <div
                 class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
@@ -450,28 +448,16 @@ const { data: admins } = useQuery<IAdmin[]>({
                 <Tag :value="allCount.toString()" severity="info" size="small" class="ml-1" />
               </div>
             </Tab>
-            <Tab value="wait_product" class="flex-shrink-0">
+
+            <!-- Status Tabs -->
+            <Tab value="order" class="flex-shrink-0">
               <div
                 class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
-                <i class="pi pi-box text-orange-600 text-sm"></i>
-                <span class="text-sm font-medium text-gray-700">ระหว่างจัดหา</span>
+                <i class="pi pi-shopping-cart text-orange-600 text-sm"></i>
+                <span class="text-sm font-medium text-gray-700">ออเดอร์</span>
                 <Tag
-                  :value="waitProductCount.toString()"
-                  severity="warning"
-                  size="small"
-                  class="ml-1"
-                />
-              </div>
-            </Tab>
-            <Tab value="wait_confirm" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
-                <i class="pi pi-clock text-yellow-600 text-sm"></i>
-                <span class="text-sm font-medium text-gray-700">รอตัดสินใจ</span>
-                <Tag
-                  :value="waitConfirmCount.toString()"
+                  :value="orderStatusCount.toString()"
                   severity="warning"
                   size="small"
                   class="ml-1"
@@ -492,26 +478,12 @@ const { data: admins } = useQuery<IAdmin[]>({
                 />
               </div>
             </Tab>
-            <Tab value="paid_complete" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
-                <i class="pi pi-check text-green-600 text-sm"></i>
-                <span class="text-sm font-medium text-gray-700">ชำระเงินเรียบร้อย</span>
-                <Tag
-                  :value="paidCompleteCount.toString()"
-                  severity="success"
-                  size="small"
-                  class="ml-1"
-                />
-              </div>
-            </Tab>
             <Tab value="preparing" class="flex-shrink-0">
               <div
                 class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
               >
                 <i class="pi pi-box text-purple-600 text-sm"></i>
-                <span class="text-sm font-medium text-gray-700">ระหว่างรอจัดส่ง</span>
+                <span class="text-sm font-medium text-gray-700">แพ็ครอจัดส่ง</span>
                 <Tag :value="preparingCount.toString()" severity="info" size="small" class="ml-1" />
               </div>
             </Tab>
@@ -567,7 +539,7 @@ const { data: admins } = useQuery<IAdmin[]>({
                 :severity="
                   activeTab === 'all'
                     ? 'info'
-                    : activeTab === 'paid_complete' || activeTab === 'delivered'
+                    : activeTab === 'received'
                     ? 'success'
                     : activeTab === 'damaged'
                     ? 'danger'
@@ -707,9 +679,14 @@ const { data: admins } = useQuery<IAdmin[]>({
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-semibold text-green-600 text-sm">
-                  {{ formatCurrency(
-                    slotProps.data.products ? slotProps.data.products.reduce(
-                      (sum: number, product: any) => sum + ((product.price || 0) * product.quantity), 0) : 0
+                  {{
+                    formatCurrency(
+                      slotProps.data.products
+                        ? slotProps.data.products.reduce(
+                            (sum: number, product: any) => sum + (product.price || 0) * product.quantity,
+                            0
+                          )
+                        : 0
                     )
                   }}
                 </div>
@@ -821,6 +798,14 @@ const { data: admins } = useQuery<IAdmin[]>({
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
                 <Button
+                  icon="pi pi-sync"
+                  severity="info"
+                  size="small"
+                  outlined
+                  @click="openStatusManager(slotProps.data)"
+                  v-tooltip.top="'เปลี่ยนสถานะ'"
+                />
+                <Button
                   icon="pi pi-trash"
                   severity="danger"
                   size="small"
@@ -871,6 +856,7 @@ const { data: admins } = useQuery<IAdmin[]>({
     :current-status="selectedSale?.status || ''"
     :order-number="selectedSale?.item || ''"
     :current-data="selectedSale"
+    :target-status="targetStatus"
   />
 
   <!-- รายละเอียดสินค้า -->
