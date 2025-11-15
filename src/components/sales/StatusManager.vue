@@ -960,7 +960,7 @@ const showReportView = computed(() => {
     :pt="{
       header: 'px-6 py-5',
       footer: 'px-6 py-4',
-      content: 'px-6 py-5',
+      content: 'px-6 py-0',
     }"
     class="status-manager-dialog"
   >
@@ -979,16 +979,10 @@ const showReportView = computed(() => {
             </p>
           </div>
         </div>
-        <Tag
-          :value="currentStatusInfo?.label"
-          :severity="currentStatusInfo?.color"
-          size="large"
-          class="font-semibold"
-        />
       </div>
     </template>
 
-    <div v-if="showReportView" class="space-y-6">
+    <div v-if="showReportView" class="space-y-4">
       <!-- Report View for received/damaged -->
       <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
         <div class="text-center mb-6">
@@ -1089,47 +1083,13 @@ const showReportView = computed(() => {
       </div>
     </div>
 
-    <div v-else class="space-y-5">
-      <!-- Current Status Card -->
-      <div
-        class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 shadow-sm"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <div
-              class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center shadow-md"
-            >
-              <i :class="`${currentStatusInfo?.icon} text-white text-2xl`"></i>
-            </div>
-            <div>
-              <h4 class="text-lg font-bold text-gray-900">ขั้นตอนปัจจุบัน</h4>
-              <p class="text-sm text-gray-600 mt-0.5">{{ currentStatusInfo?.label }}</p>
-            </div>
-          </div>
-          <Tag
-            :value="currentStatusInfo?.label"
-            :severity="currentStatusInfo?.color"
-            size="large"
-            class="font-semibold"
-          />
-        </div>
-      </div>
-
+    <div v-else class="space-y-4">
       <!-- Sale Detail Summary -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-            <i class="pi pi-info-circle text-gray-600"></i>
-            ข้อมูลการขาย
-          </h4>
-        </div>
-        <div class="p-5">
-          <SaleDetailSummary
-            :sale-data="currentData"
-            :member="members?.find((m) => m._id === currentData.user._id)"
-          />
-        </div>
-      </div>
+
+      <SaleDetailSummary
+        :sale-data="currentData"
+        :member="members?.find((m) => m._id === currentData.user._id)"
+      />
 
       <!-- Status Selection for wait_product and wait_confirm -->
       <div
@@ -1137,10 +1097,7 @@ const showReportView = computed(() => {
         class="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
       >
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-blue-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-            <i class="pi pi-arrow-right text-blue-600"></i>
-            เลือกขั้นตอนถัดไป
-          </h4>
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">เลือกขั้นตอนถัดไป</h4>
         </div>
         <div class="p-5">
           <Select
@@ -1200,6 +1157,7 @@ const showReportView = computed(() => {
               :index="index"
               :is-submitting="isSubmitting"
               :products-data="productsData"
+              :is-read-only="currentStatus !== 'wait_product'"
               :can-remove="saleForm.products.length > 1"
               @update:product="updateProductForIndex"
               @update:quantity="
@@ -1417,24 +1375,6 @@ const showReportView = computed(() => {
               size="small"
             />
           </div>
-        </div>
-      </div>
-
-      <!-- Data Summary -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-            <i class="pi pi-list-check text-gray-600"></i>
-            สรุปข้อมูล
-          </h4>
-        </div>
-        <div class="p-5">
-          <SaleDataSummary
-            :sale-data="currentData"
-            :has-slip="hasSlip"
-            :has-shipping-slip="hasShippingSlip"
-            :current-status="currentStatus"
-          />
         </div>
       </div>
     </div>

@@ -267,9 +267,13 @@ const handleSubmit = () => {
     return
   }
 
+  // Filter products to only include those with valid id and quantity
+  const validProducts = saleForm.value.products.filter((p) => p.id && p.quantity > 0)
+
   // Use final status from validation result
   updateSale({
     ...saleForm.value,
+    products: validProducts,
     status: validationResult.finalStatus,
   })
 }

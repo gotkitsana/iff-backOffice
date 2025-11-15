@@ -71,16 +71,10 @@ const bankName = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Customer Information -->
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <i class="pi pi-user text-blue-600"></i>
-        ข้อมูลลูกค้า
-      </h4>
+  <div class="space-y-3">
       <div
         v-if="member || saleData.user"
-        class="p-4 bg-green-50 border border-green-200 rounded-lg"
+        class="p-3 bg-green-50 border border-green-200 rounded-lg"
       >
         <div class="flex items-center gap-3">
           <div class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center">
@@ -96,21 +90,17 @@ const bankName = computed(() => {
           </div>
         </div>
       </div>
-    </div>
+
 
     <!-- Order Information -->
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <i class="pi pi-shopping-cart text-indigo-600"></i>
-        ข้อมูลการสั่งซื้อ
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <div class="text-sm text-gray-600 mb-1">รหัสรายการ</div>
+          <div class="text-sm text-gray-600">รหัสรายการ</div>
           <div class="font-semibold text-gray-900">{{ saleData.item }}</div>
         </div>
         <div>
-          <div class="text-sm text-gray-600 mb-1">สถานะปัจจุบัน</div>
+          <div class="text-sm text-gray-600">สถานะปัจจุบัน</div>
           <Tag
             :value="currentStatusInfo?.label"
             :severity="currentStatusInfo?.color"
@@ -118,11 +108,11 @@ const bankName = computed(() => {
           />
         </div>
         <div>
-          <div class="text-sm text-gray-600 mb-1">ผู้ขาย</div>
+          <div class="text-sm text-gray-600">ผู้ขาย</div>
           <div class="font-medium text-gray-900">{{ handleFindAdmin(saleData.seller)?.name || '-' }}</div>
         </div>
         <div>
-          <div class="text-sm text-gray-600 mb-1">วันที่สั่งซื้อ</div>
+          <div class="text-sm text-gray-600">วันที่สั่งซื้อ</div>
           <div class="font-medium text-gray-900">
             {{ new Date(saleData.cat).toLocaleDateString('th-TH') }}
           </div>
@@ -131,7 +121,7 @@ const bankName = computed(() => {
     </div>
 
     <!-- Payment Information -->
-    <div
+    <!-- <div
       v-if="saleData.bankCode || saleData.payment"
       class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
     >
@@ -155,7 +145,7 @@ const bankName = computed(() => {
           <div class="font-medium text-gray-900">{{ saleData.bankAccount }}</div>
         </div>
       </div>
-    </div>
+    </div> -->
 
   </div>
 </template>
