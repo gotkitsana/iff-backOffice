@@ -82,7 +82,7 @@ const getInterestValue = (type: string): string | undefined => {
         <h2 class="text-xl font-semibold! text-gray-900">
           {{ data?.displayName || data?.name || 'ไม่ระบุชื่อ' }}
         </h2>
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap  capitalize" >
           <span class="text-sm text-blue-600">รหัส: {{ data?.code }}</span>
           <Tag
             v-if="data?.status"
@@ -126,7 +126,7 @@ const getInterestValue = (type: string): string | undefined => {
               <div
                 v-for="contact in data.contacts"
                 :key="contact.index"
-                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg  hover:bg-gray-100 transition-colors"
               >
                 <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                   <img
@@ -160,7 +160,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อเล่น</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 data.displayName || 'ไม่ระบุ'
               }}</span>
@@ -171,7 +171,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อ-นามสกุล</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{ data.name || 'ไม่ระบุ' }}</span>
             </div>
           </div>
@@ -180,7 +180,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ที่อยู่</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200 min-h-[60px]">
+            <div class="bg-gray-50 rounded-lg py-2 px-3  min-h-[60px]">
               <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
                 data.address || 'ไม่ระบุ'
               }}</span>
@@ -191,7 +191,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >จังหวัด</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.provinceOptions.find((option) => option.value === data?.province)
                   ?.label || 'ไม่ระบุ'
@@ -203,14 +203,14 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >เบอร์โทรศัพท์</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{ data.phone || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <!-- <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ประเภทลูกค้า</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-1.5 px-3 ">
               <span class="text-gray-900 text-sm">{{
                 memberStore.memberTypeOptions.find((option) => option.value === data?.type)
                   ?.label || 'ไม่ระบุ'
@@ -220,7 +220,7 @@ const getInterestValue = (type: string): string | undefined => {
 
           <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">อีเมล</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-1.5 px-3 ">
               <span class="text-gray-900 text-sm">{{ data.email || 'ไม่ระบุ' }}</span>
             </div>
           </div> -->
@@ -228,7 +228,7 @@ const getInterestValue = (type: string): string | undefined => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+      <div class="bg-white rounded-xl p-5  shadow-sm">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-heart text-purple-600 text-xs"></i>
@@ -241,7 +241,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ความชำนาญในการเลี้ยง</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.memberExperienceOptions.find(
                   (option) => option.value === getInterestValue('experience')
@@ -254,7 +254,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชอบปลาเล็กหรือปลาใหญ่</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.memberFishPreferenceOptions.find(
                   (option) => option.value === getInterestValue('fish_preference')
@@ -267,7 +267,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ขนาดบ่อที่เลี้ยง</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('pond_size') || 'ไม่ระบุ'
               }}</span>
@@ -278,7 +278,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้อจุลินทรีย์</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('bacteria_brand') || 'ไม่ระบุ'
               }}</span>
@@ -289,7 +289,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้ออาหาร</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('food_brand') || 'ไม่ระบุ'
               }}</span>
@@ -299,7 +299,7 @@ const getInterestValue = (type: string): string | undefined => {
       </div>
 
       <!-- Account Information Section -->
-      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+      <!-- <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-shield text-green-600 text-xs"></i>
@@ -357,7 +357,7 @@ const getInterestValue = (type: string): string | undefined => {
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <template #footer>

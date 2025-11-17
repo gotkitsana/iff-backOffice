@@ -6,7 +6,7 @@ import {
   type IProduct,
   type IUpdateProductPayload,
 } from '@/stores/product/product'
-import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
+import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import formatCurrency from '@/utils/formatCurrency'
@@ -17,8 +17,6 @@ import { SellingStatus } from '@/types/sales'
 import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
 import BankSelectionSection from '../BankSelectionSection.vue'
-import SlipUploadSection from '../SlipUploadSection.vue'
-import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
@@ -256,6 +254,7 @@ const handleSubmit = () => {
     deliveryStatus: saleForm.value.deliveryStatus,
     hasPaymentDueDate: !!saleForm.value.paymentDueDate,
     hasCustomProducts: hasCustomProducts,
+    mode: 'add',
   })
 
   // Show validation errors
@@ -402,45 +401,6 @@ const { data: allSales } = useQuery<ISales[]>({
   queryFn: () => salesStore.onGetSales(),
 })
 
-const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
-  const productsTotal = order.products.reduce((sum, item) => {
-    const product = allProducts.find((p) => p._id === item.id)
-    if (!product) return sum
-
-    if (product.category?.name === 'ปลา') {
-      const price = product.price || 0
-      return sum + price
-    } else {
-      const price = product.food?.customerPrice || 0
-      return sum + price * item.quantity
-    }
-  }, 0)
-
-  // ยอดสุทธิ = ยอดสินค้า - ส่วนลด
-  return productsTotal - (order.discount || 0)
-}
-
-const calculateSaleTotal = (sale: ISales, allProducts: IProduct[]): number => {
-  const productsTotal = sale.products?.reduce((sum, item) => {
-    const product = allProducts.find((p) => p._id === item.id)
-    if (!product) return sum
-
-    if (product.category?.name === 'ปลา') {
-      const price = product.price || 0
-      return sum + price
-    } else {
-      const price = product.food?.customerPrice || 0
-      return sum + price * item.quantity
-    }
-  }, 0)
-
-  return productsTotal ? productsTotal - (sale.discount || 0) : 0
-}
-
-const { mutate: updateMember } = useMutation({
-  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
-})
-
 const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
@@ -530,12 +490,7 @@ const shippingSlipData = ref({
   _id: '',
   submit: false,
 })
-const handleSlipStatusChanged = (status: boolean) => {
-  hasSlip.value = status
-}
-const handleShippingSlipStatusChanged = (status: boolean) => {
-  hasShippingSlip.value = status
-}
+
 const updateBankCode = (bankCode: string) => {
   bankForm.value.bankCode = bankCode
 }

@@ -496,10 +496,10 @@ const generateInvoiceHTML = () => {
               '-'
             }</div>
             <div><strong>ที่อยู่:</strong> ${
-              findMemberData(props.saleData.user)?.address || '-'
+              props.saleData?.shippingAddress || '-'
             }, ${
     memberStore.provinceOptions.find(
-      (option) => option.value === findMemberData(props.saleData.user)?.province
+      (option) => option.value === props.saleData?.shippingProvince
     )?.label || '-'
   }</div>
 
@@ -807,10 +807,10 @@ const getProductImage = (productId: string): string | undefined => {
             <div class="flex flex-col gap-1">
               <span class="text-gray-600">ที่อยู่:</span>
               <span class="font-medium! text-xs"
-                >{{ findMemberData(saleData.user)?.address || '-' }},
+                >{{ saleData.shippingAddress || '-' }},
                 {{
                   memberStore.provinceOptions.find(
-                    (option) => option.value === findMemberData(props.saleData.user)?.province
+                    (option) => option.value === saleData.shippingProvince
                   )?.label
                 }}</span
               >
