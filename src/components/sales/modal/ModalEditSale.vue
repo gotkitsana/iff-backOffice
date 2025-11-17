@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, provide } from 'vue'
-import { Dialog, Textarea, Select, Button } from 'primevue'
+import { Dialog, Textarea, Select, Button, InputText, InputNumber } from 'primevue'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
@@ -34,7 +34,9 @@ import {
   validateStatusForEdit,
   getAvailableStatuses,
   canEditField,
+  validatePaymentMethod,
 } from '@/utils/salesStatusValidation'
+import { calculateInitialStatus } from '@/utils/salesStatusCalculation'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -183,6 +185,56 @@ const canEditShippingSlip = computed(() => {
   return canEditField('shippingSlip', currentStatusString.value as SellingStatusString)
 })
 
+// Computed สำหรับการแสดงผลตาม payment method
+const showProductSelection = computed(() => {
+  return saleForm.value.paymentMethod !== 'order'
+})
+
+const showCustomProducts = computed(() => {
+  return saleForm.value.paymentMethod === 'order'
+})
+
+const showDeliveryStatus = computed(() => {
+  return saleForm.value.paymentMethod === 'cash'
+})
+
+const showPaymentDueDate = computed(() => {
+  return saleForm.value.paymentMethod === 'credit'
+})
+
+const showBankSelection = computed(() => {
+  return saleForm.value.paymentMethod === 'transfer' || saleForm.value.paymentMethod === 'card'
+})
+
+const showShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+const requiresShippingAddress = computed(() => {
+  const pm = saleForm.value.paymentMethod
+  if (pm === 'cash') {
+    return saleForm.value.deliveryStatus === 'preparing'
+  }
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+// Custom products management
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+
+const addCustomProduct = () => {
+  customProducts.value.push({ name: '', quantity: 1, description: '' })
+}
+
+const removeCustomProduct = (index: number) => {
+  customProducts.value.splice(index, 1)
+}
+
 // Product management functions
 const addProduct = () => {
   if (saleForm.value.products.length < 10) {
@@ -280,6 +332,13 @@ const populateForm = (saleData: ISales) => {
     shippingProvince: saleData.shippingProvince,
     customProducts: saleData.customProducts,
   }
+
+  // Load customProducts into ref
+  if (saleData.customProducts && saleData.customProducts.length > 0) {
+    customProducts.value = [...saleData.customProducts]
+  } else {
+    customProducts.value = []
+  }
 }
 
 // Watch for props changes to populate form
@@ -297,8 +356,50 @@ const isSubmitting = ref(false)
 const handleSubmit = () => {
   isSubmitting.value = true
 
+  // Basic validation
+  if (!saleForm.value.user) {
+    toast.error('กรุณาเลือกลูกค้า')
+    isSubmitting.value = false
+    return
+  }
+
+  if (!saleForm.value.paymentMethod) {
+    toast.error('กรุณาเลือกวิธีชำระเงิน')
+    isSubmitting.value = false
+    return
+  }
+
+  if (!saleForm.value.seller) {
+    toast.error('กรุณาเลือกผู้ขาย')
+    isSubmitting.value = false
+    return
+  }
+
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products.some((p) => p.id && p.quantity > 0)
+  const hasCustomProducts = customProducts.value.some((p) => p.name && p.quantity > 0)
+
+  // Validate payment method
+  const paymentValidation = validatePaymentMethod({
+    paymentMethod: saleForm.value.paymentMethod,
+    hasProducts: hasValidProducts,
+    hasBankInfo: !!saleForm.value.bankCode,
+    hasSlip: hasSlip.value,
+    hasShippingSlip: false,
+    hasShippingAddress: !!(saleForm.value.shippingAddress && saleForm.value.shippingProvince),
+    deliveryStatus: saleForm.value.deliveryStatus,
+    hasPaymentDueDate: !!saleForm.value.paymentDueDate,
+    hasCustomProducts: hasCustomProducts,
+  })
+
+  // Show validation errors
+  if (!paymentValidation.isValid) {
+    paymentValidation.errors.forEach((error) => {
+      toast.error(error)
+    })
+    isSubmitting.value = false
+    return
+  }
 
   // แปลง sellingStatus เป็น string สำหรับ validation
   const selectedStatusString =
@@ -336,12 +437,16 @@ const handleSubmit = () => {
   // แปลง finalStatus จาก string เป็น number
   const finalStatusNumber = convertStatusStringToNumber(validationResult.finalStatus)
 
-  // Use final status from validation result
-  updateSale({
+  // Prepare payload with customProducts if paymentMethod is 'order'
+  const payload: IUpdateSalesPayload = {
     ...saleForm.value,
     products: validProducts,
     sellingStatus: finalStatusNumber,
-  })
+    customProducts: saleForm.value.paymentMethod === 'order' ? customProducts.value : undefined,
+  }
+
+  // Use final status from validation result
+  updateSale(payload)
 }
 
 const { data: allSales } = useQuery<ISales[]>({
@@ -426,6 +531,7 @@ const resetForm = () => {
     shippingProvince: undefined,
     customProducts: undefined,
   }
+  customProducts.value = []
 }
 
 const hasSlip = ref(false)
@@ -626,8 +732,87 @@ const sellers = computed(() => {
         />
       </div>
 
+      <!-- Custom Products (for order) -->
+      <div
+        v-if="showCustomProducts"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-shopping-cart text-orange-600"></i>
+            สินค้านอกเหนือรายการ
+          </h4>
+          <Button
+            v-if="canEditProducts"
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addCustomProduct"
+          />
+        </div>
+        <div class="space-y-3">
+          <div
+            v-for="(product, index) in customProducts"
+            :key="index"
+            class="p-3 bg-gray-50 rounded-lg space-y-3"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
+                <InputText
+                  v-model="product.name"
+                  placeholder="ชื่อสินค้า"
+                  fluid
+                  size="small"
+                  :disabled="!canEditProducts"
+                />
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
+                <InputNumber
+                  v-model="product.quantity"
+                  :min="1"
+                  placeholder="จำนวน"
+                  fluid
+                  size="small"
+                  :disabled="!canEditProducts"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
+              <Textarea
+                v-model="product.description"
+                placeholder="รายละเอียดสินค้า"
+                rows="3"
+                fluid
+                size="small"
+                :disabled="!canEditProducts"
+              />
+            </div>
+            <div v-if="canEditProducts" class="flex justify-end">
+              <Button
+                icon="pi pi-trash"
+                label="ลบ"
+                severity="danger"
+                size="small"
+                outlined
+                @click="removeCustomProduct(index)"
+              />
+            </div>
+          </div>
+          <p v-if="customProducts.length === 0" class="text-sm text-gray-500 text-center py-4">
+            ไม่มีสินค้านอกเหนือรายการ (ไม่บังคับ)
+          </p>
+        </div>
+      </div>
+
       <!-- Product Management -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div
+        v-if="showProductSelection"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-box text-blue-600"></i>

@@ -1062,6 +1062,43 @@ const showReportView = computed(() => {
         :member="members?.find((m) => m._id === currentData.user)"
       />
 
+      <!-- Custom Products (for order) -->
+      <div
+        v-if="currentData.customProducts && currentData.customProducts.length > 0"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <i class="pi pi-shopping-cart text-orange-600"></i>
+          สินค้านอกเหนือรายการ
+        </h4>
+        <div class="space-y-3">
+          <div
+            v-for="(product, index) in currentData.customProducts"
+            :key="index"
+            class="p-3 bg-gray-50 rounded-lg border border-gray-200"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div>
+                <span class="text-sm font-medium text-gray-600">ชื่อสินค้า:</span>
+                <span class="text-sm font-semibold text-gray-900 ml-2">{{
+                  product.name || '-'
+                }}</span>
+              </div>
+              <div>
+                <span class="text-sm font-medium text-gray-600">จำนวน:</span>
+                <span class="text-sm font-semibold text-gray-900 ml-2">{{
+                  product.quantity || 0
+                }}</span>
+              </div>
+            </div>
+            <div v-if="product.description">
+              <span class="text-sm font-medium text-gray-600">รายละเอียด:</span>
+              <p class="text-sm text-gray-700 mt-1">{{ product.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Status Selection for order -->
       <div
         v-if="
