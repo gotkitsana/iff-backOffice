@@ -69,146 +69,155 @@ const getInterestValue = (type: string): string | undefined => {
     v-model:visible="showDetailModal"
     @update:visible="closeDetailModal"
     modal
-    header="รายละเอียดลูกค้า"
-    :style="{ width: '60rem' }"
-    :breakpoints="{ '1199px': '85vw', '575px': '95vw' }"
+    :style="{ width: '56rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
+    :pt="{
+      header: 'p-0',
+      content: 'p-0',
+      footer: 'p-4',
+    }"
   >
-    <div v-if="isLoading" class="space-y-4">
-      <div class="flex items-center gap-4 mb-6">
-        <Skeleton height="60px" width="60px" shape="circle" />
-        <div class="flex-1">
-          <Skeleton height="24px" width="200px" class="mb-2" />
-          <Skeleton height="16px" width="150px" />
-        </div>
-      </div>
-
-      <Skeleton height="120px" width="100%" class="mb-4" />
-      <Skeleton height="120px" width="100%" class="mb-4" />
-      <Skeleton height="120px" width="100%" class="mb-4" />
-    </div>
-
-    <div v-if="data" class="space-y-4">
-      <!-- Header Profile Section -->
-      <div class="bg-gradient-to-r from-blue-50/30 to-indigo-50/50 rounded-xl p-4 border border-blue-100">
-        <div class="flex items-center gap-3">
+    <template #header>
+      <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 rounded-t-lg">
+        <div class="flex items-center gap-4">
           <div
-            class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+            class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg border-2 border-white/30"
           >
             {{
-              data.displayName?.charAt(0)?.toUpperCase() ||
-              data.name?.charAt(0)?.toUpperCase() ||
+              data?.displayName?.charAt(0)?.toUpperCase() ||
+              data?.name?.charAt(0)?.toUpperCase() ||
               'U'
             }}
           </div>
-          <div class="flex-1">
-            <div class="flex items-center justify-between mb-1">
-              <h2 class="text-xl font-[500]! text-gray-900">
-                {{ data.displayName || data.name || 'ไม่ระบุชื่อ' }}
-              </h2>
-              <p class="text-gray-600 text-sm capitalize">รหัสลูกค้า: {{ data.code }}</p>
-            </div>
-            <div class="flex items-center gap-2">
+          <div class="flex-1 text-white">
+            <h2 class="text-2xl font-bold mb-1">
+              {{ data?.displayName || data?.name || 'ไม่ระบุชื่อ' }}
+            </h2>
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="text-sm text-blue-100">รหัส: {{ data?.code }}</span>
               <Tag
+                v-if="data?.status"
                 :value="
                   memberStore.memberStatusOptions.find((option) => option.value === data?.status)
                     ?.label || ''
                 "
                 :severity="memberStore.getStatusTag(data?.status)"
                 size="small"
-                class="font-medium"
+                class="bg-white/20 border-white/30 text-white"
               />
-
             </div>
           </div>
         </div>
       </div>
+    </template>
+    <div v-if="isLoading" class="p-6 space-y-4">
+      <Skeleton height="200px" width="100%" />
+      <Skeleton height="150px" width="100%" />
+      <Skeleton height="150px" width="100%" />
+    </div>
 
+    <div v-if="data" class="p-6 space-y-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
       <!-- Basic Information Section -->
-      <div class="bg-white rounded-xl p-4 border border-blue-100 shadow">
-        <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-3">
-          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="pi pi-user text-blue-600 text-sm"></i>
+      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+            <i class="pi pi-user text-blue-600 text-xs"></i>
           </div>
-          ข้อมูลลูกค้า
+          <span>ข้อมูลติดต่อ</span>
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- ช่องทางติดต่อ -->
-          <div class="md:col-span-2 space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ช่องทางติดต่อ</label>
-            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <div v-if="data.contacts && data.contacts.length > 0" class="space-y-2">
-                <div
-                  v-for="contact in data.contacts"
-                  :key="contact.index"
-                  class="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200"
-                >
-                  <div class="w-8 h-8 flex items-center justify-center">
-                    <img
-                      v-if="getContactImage(contact.type)"
-                      :src="getContactImage(contact.type)"
-                      :alt="contact.type"
-                      class="w-8 h-8 object-contain rounded"
-                    />
-                    <div
-                      v-else
-                      class="w-8 h-8 bg-gray-200 flex items-center rounded justify-center text-gray-600 text-xs"
-                    >
-                      ?
-                    </div>
-                  </div>
-                  <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">
-                      {{
-                        memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
-                          ?.label || contact.type
-                      }}
-                    </p>
-                    <p class="text-sm text-gray-600">{{ contact.value }}</p>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ช่องทางติดต่อ</label
+            >
+            <div
+              v-if="data.contacts && data.contacts.length > 0"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-2"
+            >
+              <div
+                v-for="contact in data.contacts"
+                :key="contact.index"
+                class="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+              >
+                <div class="w-7 h-7 flex items-center justify-center flex-shrink-0">
+                  <img
+                    v-if="getContactImage(contact.type)"
+                    :src="getContactImage(contact.type)"
+                    :alt="contact.type"
+                    class="w-7 h-7 object-contain rounded"
+                  />
+                  <div
+                    v-else
+                    class="w-7 h-7 bg-gray-300 flex items-center rounded justify-center text-gray-600 text-xs"
+                  >
+                    ?
                   </div>
                 </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-medium text-gray-600 mb-0.5">
+                    {{
+                      memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
+                        ?.label || contact.type
+                    }}
+                  </p>
+                  <p class="text-sm font-semibold text-gray-900 truncate">{{ contact.value }}</p>
+                </div>
               </div>
-              <div v-else class="text-gray-500 text-sm">ไม่ระบุช่องทางติดต่อ</div>
+            </div>
+            <div v-else class="text-gray-400 text-sm py-2">ไม่ระบุช่องทางติดต่อ</div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ชื่อเล่น</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
+                data.displayName || 'ไม่ระบุ'
+              }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อเล่น</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{ data.displayName || 'ไม่ระบุ' }}</span>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ชื่อ-นามสกุล</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{ data.name || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{ data.name || 'ไม่ระบุ' }}</span>
-            </div>
-          </div>
-
-          <div class="md:col-span-2 space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ที่อยู่</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200 min-h-[80px]">
-              <span class="text-gray-900 whitespace-pre-line text-sm">{{
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ที่อยู่</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200 min-h-[60px]">
+              <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
                 data.address || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">จังหวัด</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >จังหวัด</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.provinceOptions.find((option) => option.value === data?.province)
                   ?.label || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{ data.phone || 'ไม่ระบุ' }}</span>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >เบอร์โทรศัพท์</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{ data.phone || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
@@ -232,61 +241,69 @@ const getInterestValue = (type: string): string | undefined => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-white rounded-xl p-4 border border-purple-100 shadow">
-        <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-3">
-          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-            <i class="pi pi-heart text-purple-600 text-sm"></i>
+      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+            <i class="pi pi-heart text-purple-600 text-xs"></i>
           </div>
-          ข้อมูลพฤติกรรมความสนใจของลูกค้า
+          <span>ความสนใจ</span>
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1"
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
               >ความชำนาญในการเลี้ยง</label
             >
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
-                memberStore.memberExperienceOptions.find((option) => option.value === getInterestValue('experience'))
-                  ?.label || 'ไม่ระบุ'
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
+                memberStore.memberExperienceOptions.find(
+                  (option) => option.value === getInterestValue('experience')
+                )?.label || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1"
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
               >ชอบปลาเล็กหรือปลาใหญ่</label
             >
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
-                memberStore.memberFishPreferenceOptions.find((option) => option.value === getInterestValue('fish_preference'))
-                  ?.label || 'ไม่ระบุ'
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
+                memberStore.memberFishPreferenceOptions.find(
+                  (option) => option.value === getInterestValue('fish_preference')
+                )?.label || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ขนาดบ่อที่เลี้ยง</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ขนาดบ่อที่เลี้ยง</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('pond_size') || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ยี่ห้อจุลินทรีย์</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('bacteria_brand') || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ยี่ห้ออาหาร</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ยี่ห้ออาหาร</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('food_brand') || 'ไม่ระบุ'
               }}</span>
             </div>
@@ -295,70 +312,61 @@ const getInterestValue = (type: string): string | undefined => {
       </div>
 
       <!-- Account Information Section -->
-      <div class="bg-white rounded-xl p-4 border border-green-100 shadow">
-        <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-3">
-          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <i class="pi pi-shield text-green-600 text-sm"></i>
+      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+            <i class="pi pi-shield text-green-600 text-xs"></i>
           </div>
-          ข้อมูลบัญชีประมูล
+          <span>ข้อมูลบัญชี</span>
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อผู้ใช้</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200">
-              <span class="text-gray-900 text-sm">{{ data.username || 'ไม่ระบุ' }}</span>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ชื่อผู้ใช้</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-900 text-sm font-medium">{{
+                data.username || 'ไม่ระบุ'
+              }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">รหัสผ่าน</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 border border-gray-200 overflow-hidden">
-              <span class="text-gray-500 text-sm">{{
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >รหัสผ่าน</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
+              <span class="text-gray-500 text-sm font-medium">{{
                 data.password ? '••••••••' : 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">สถานะยูสเซอร์</label>
-            <div class="flex items-center gap-3">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >สถานะประมูล</label
+            >
+            <div class="flex items-center gap-2">
               <Tag
                 :value="data.bidder ? 'เปิดใช้งาน' : 'ล็อค'"
                 :severity="data.bidder ? 'success' : 'danger'"
                 size="small"
               />
-              <div class="flex items-center gap-2 text-sm text-gray-600">
-                <i
-                  :class="
-                    data.bidder
-                      ? 'pi pi-check-circle text-green-500'
-                      : 'pi pi-times-circle text-red-500'
-                  "
-                ></i>
-                <span>{{
-                  data.bidder ? 'สามารถเข้าร่วมประมูลได้' : 'ไม่สามารถเข้าร่วมประมูลได้'
-                }}</span>
-              </div>
+              <span class="text-sm text-gray-600">{{
+                data.bidder ? 'สามารถเข้าร่วมประมูลได้' : 'ไม่สามารถเข้าร่วมประมูลได้'
+              }}</span>
             </div>
           </div>
 
-          <!-- <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">สถานะการยืนยัน</label>
-            <div class="flex items-center gap-3">
-              <Tag
-                :value="data.isVerify ? 'ยืนยันแล้ว' : 'ยังไม่ยืนยัน'"
-                :severity="data.isVerify ? 'success' : 'warning'"
-                size="small"
-                class="px-4 py-2"
-              />
-            </div>
-          </div> -->
-
-          <div v-if="data.info" class="md:col-span-2 space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">ข้อมูลเพิ่มเติม</label>
-            <div class="bg-gray-50 rounded-lg p-2 border border-gray-200 min-h-[60px]">
-              <span class="text-gray-900 whitespace-pre-line text-sm">{{ data.info }}</span>
+          <div v-if="data.info" class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+              >ข้อมูลเพิ่มเติม</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200 min-h-[50px]">
+              <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
+                data.info
+              }}</span>
             </div>
           </div>
         </div>
@@ -373,6 +381,7 @@ const getInterestValue = (type: string): string | undefined => {
           @click="closeDetailModal"
           severity="secondary"
           size="small"
+          outlined
         />
       </div>
     </template>

@@ -2,7 +2,17 @@
 import { ref, computed, watch, provide } from 'vue'
 import { Dialog, Button, Tag, Textarea, Select } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { StatusWorkflow, SellingStatus, ISales, IUpdateSalesPayload } from '@/types/sales'
+import type {
+  StatusWorkflow,
+  SellingStatusString,
+  ISales,
+  IUpdateSalesPayload,
+} from '@/types/sales'
+import {
+  SellingStatus,
+  convertStatusNumberToString,
+  convertStatusStringToNumber,
+} from '@/types/sales'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import SlipUploadSection from './SlipUploadSection.vue'
@@ -27,6 +37,7 @@ import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import BankData from '@/config/BankData'
 import logoIcon from '@/assets/images/icon/icon.png'
 import { useProductSelection } from '@/composables/useProductSelection'
+import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
 import { validateStatusForStatusChange, getAvailableStatuses } from '@/utils/salesStatusValidation'
 
 // Props
@@ -58,7 +69,12 @@ const saleForm = ref<IUpdateSalesPayload>({
   bankAccount: props.currentData.bankAccount || '',
   cat: props.currentData.cat || 0,
   item: props.currentData.item || '',
-  status: props.targetStatus || props.currentStatus,
+  sellingStatus:
+    typeof props.currentData.sellingStatus === 'number'
+      ? props.targetStatus
+        ? convertStatusStringToNumber(props.targetStatus)
+        : props.currentData.sellingStatus
+      : convertStatusStringToNumber(props.targetStatus || props.currentStatus || 'none'),
   user: props.currentData.user._id || '',
   products:
     props.currentData.products?.map((p) => ({
@@ -124,8 +140,15 @@ const productSelection = useProductSelection(
 // Provide composable to child components
 provide(Symbol.for('productSelection'), productSelection)
 
+// Use composable for member status update
+const memberStatusUpdate = useMemberStatusUpdate()
+
 const currentStatusInfo = computed(() => {
-  return salesStore.statusWorkflow[props.currentStatus as keyof StatusWorkflow]
+  const currentStatusString =
+    typeof props.currentData.sellingStatus === 'number'
+      ? convertStatusNumberToString(props.currentData.sellingStatus)
+      : props.currentStatus
+  return salesStore.statusWorkflow[currentStatusString as keyof StatusWorkflow]
 })
 
 const allSteps = computed(() => {
@@ -156,12 +179,16 @@ const isStepCurrent = (stepIndex: number) => {
 
 // Available next status options based on current status
 const availableNextStatusOptions = computed(() => {
+  const currentStatusString =
+    typeof props.currentData.sellingStatus === 'number'
+      ? convertStatusNumberToString(props.currentData.sellingStatus)
+      : props.currentStatus
   const availableStatuses = getAvailableStatuses(
-    props.currentStatus as SellingStatus,
+    currentStatusString as SellingStatusString,
     'status-change'
   )
   return salesStore.sellingStatusOptions.filter((opt) =>
-    availableStatuses.includes(opt.value as SellingStatus)
+    availableStatuses.includes(opt.value as SellingStatusString)
   )
 })
 
@@ -299,7 +326,12 @@ const resetForm = () => {
     bankAccount: props.currentData.bankAccount || '',
     cat: props.currentData.cat || 0,
     item: props.currentData.item || '',
-    status: props.targetStatus || props.currentStatus,
+    sellingStatus:
+      typeof props.currentData.sellingStatus === 'number'
+        ? props.targetStatus
+          ? convertStatusStringToNumber(props.targetStatus)
+          : props.currentData.sellingStatus
+        : convertStatusStringToNumber(props.targetStatus || props.currentStatus || 'none'),
     user: props.currentData.user._id || '',
     products:
       props.currentData.products?.map((p) => ({
@@ -329,7 +361,7 @@ watch(
       // Reset form when dialog opens
       resetForm()
       if (props.targetStatus) {
-        saleForm.value.status = props.targetStatus
+        saleForm.value.sellingStatus = convertStatusStringToNumber(props.targetStatus)
       }
     } else {
       resetForm()
@@ -384,20 +416,26 @@ watch(
 const handleSubmit = () => {
   isSubmitting.value = true
 
-  const currentStatus = props.currentStatus as SellingStatus
-  const selectedStatus = (saleForm.value.status as SellingStatus) || currentStatus
+  const currentStatusString =
+    typeof props.currentData.sellingStatus === 'number'
+      ? convertStatusNumberToString(props.currentData.sellingStatus)
+      : props.currentStatus
+  const selectedStatusString =
+    typeof saleForm.value.sellingStatus === 'number'
+      ? convertStatusNumberToString(saleForm.value.sellingStatus)
+      : (saleForm.value.sellingStatus as string) || currentStatusString
 
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
 
   // Use utility function for status validation
   const validationResult = validateStatusForStatusChange({
-    selectedStatus,
+    selectedStatus: selectedStatusString as SellingStatusString,
     hasProducts: hasValidProducts,
     hasBankInfo: !!saleForm.value.bankCode,
     hasSlip: hasSlip.value,
     hasShippingSlip: hasShippingSlip.value,
-    currentStatus,
+    currentStatus: currentStatusString as SellingStatusString,
     mode: 'status-change',
   })
 
@@ -410,10 +448,13 @@ const handleSubmit = () => {
     return
   }
 
+  // แปลง finalStatus จาก string เป็น number
+  const finalStatusNumber = convertStatusStringToNumber(validationResult.finalStatus)
+
   // Use final status from validation result
   updateSalesStatus({
     ...saleForm.value,
-    status: validationResult.finalStatus,
+    sellingStatus: finalStatusNumber,
   })
 }
 
@@ -426,55 +467,23 @@ const { mutate: updateSalesStatus } = useMutation({
       toast.success('บันทึกข้อมูลสำเร็จ')
 
       // Check if should update member status and deduct stock
+      const statusString =
+        typeof variables.sellingStatus === 'number'
+          ? convertStatusNumberToString(variables.sellingStatus)
+          : variables.sellingStatus
       const targetStepOrder =
-        salesStore.statusWorkflow[variables.status as keyof StatusWorkflow]?.stepOrder
+        salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder
       const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
 
       if (targetStepOrder && targetStepOrder >= preparingStepOrder) {
         // A. Update member status
-        const member = members.value?.find((m) => m._id === variables.user)
-
-        if (member && member.status !== 'css') {
-          const currentTotal = calculateOrderTotal(variables, productsData.value || [])
-          const previousTotal =
-            allSales.value
-              ?.filter(
-                (s) =>
-                  s.user._id === variables.user &&
-                  salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
-                    preparingStepOrder &&
-                  s._id !== variables._id
-              )
-              .reduce((sum, s) => sum + calculateSaleTotal(s, productsData.value || []), 0) || 0
-
-          const totalSpending = currentTotal + previousTotal
-          const shouldBeCss = totalSpending >= 50000
-          const shouldBeCs = !shouldBeCss && member.status === 'ci'
-
-          if (shouldBeCss || shouldBeCs) {
-            const newStatus = shouldBeCss ? 'css' : 'cs'
-            const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
-
-            mutateUpdate({
-              _id: member._id,
-              status: newStatus,
-              code: newCode,
-              contacts: member.contacts || [],
-              interests: member.interests || [],
-              displayName: member.displayName,
-              name: member.name,
-              address: member.address,
-              province: member.province,
-              phone: member.phone,
-              type: member.type,
-              username: member.username,
-              password: member.password,
-              bidder: member.bidder,
-              cat: member.cat,
-              uat: member.uat,
-            })
-          }
-        }
+        memberStatusUpdate.updateMemberStatusIfNeeded(
+          variables,
+          members.value,
+          allSales.value,
+          productsData.value || [],
+          preparingStepOrder
+        )
 
         // B. Deduct stock using utility function (only if slip is confirmed)
         // ตัดสต็อกเมื่อยืนยันสลิปแล้วและ status >= preparing
@@ -502,45 +511,6 @@ const { mutate: updateSalesStatus } = useMutation({
     toast.error(errorMessage)
     isSubmitting.value = false
   },
-})
-
-// Helper functions (reuse from ModalEditSale)
-const calculateOrderTotal = (order: IUpdateSalesPayload, allProducts: IProduct[]): number => {
-  const productsTotal = order.products.reduce((sum, item) => {
-    const product = allProducts.find((p) => p._id === item.id)
-    if (!product) return sum
-
-    if (product.category?.name === 'ปลา') {
-      const price = product.price || 0
-      return sum + price
-    } else {
-      const price = product.food?.customerPrice || 0
-      return sum + price * item.quantity
-    }
-  }, 0)
-
-  return productsTotal - (order.discount || 0)
-}
-
-const calculateSaleTotal = (sale: ISales, allProducts: IProduct[]): number => {
-  const productsTotal = sale.products?.reduce((sum, item) => {
-    const product = allProducts.find((p) => p._id === item.id)
-    if (!product) return sum
-
-    if (product.category?.name === 'ปลา') {
-      const price = product.price || 0
-      return sum + price
-    } else {
-      const price = product.food?.customerPrice || 0
-      return sum + price * item.quantity
-    }
-  }, 0)
-
-  return productsTotal ? productsTotal - (sale.discount || 0) : 0
-}
-
-const { mutate: mutateUpdate } = useMutation({
-  mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
 })
 
 const { mutate: updateProduct } = useMutation({
@@ -1092,7 +1062,11 @@ const showReportView = computed(() => {
 
       <!-- Status Selection for order -->
       <div
-        v-if="currentStatus === 'order'"
+        v-if="
+          (typeof currentData.sellingStatus === 'number'
+            ? convertStatusNumberToString(currentData.sellingStatus)
+            : currentStatus) === 'order'
+        "
         class="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
       >
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-blue-200">
@@ -1100,17 +1074,24 @@ const showReportView = computed(() => {
         </div>
         <div class="p-5">
           <Select
-            v-model="saleForm.status"
+            :model-value="
+              typeof saleForm.sellingStatus === 'number'
+                ? convertStatusNumberToString(saleForm.sellingStatus)
+                : saleForm.sellingStatus
+            "
+            @update:model-value="
+              (value) => (saleForm.sellingStatus = convertStatusStringToNumber(value))
+            "
             :options="availableNextStatusOptions"
             optionLabel="label"
             optionValue="value"
             placeholder="เลือกขั้นตอนถัดไป"
             fluid
             size="small"
-            :invalid="!saleForm.status && isSubmitting"
+            :invalid="!saleForm.sellingStatus && isSubmitting"
             class="mt-2"
           />
-          <small v-if="!saleForm.status && isSubmitting" class="text-red-500 mt-2 block"
+          <small v-if="!saleForm.sellingStatus && isSubmitting" class="text-red-500 mt-2 block"
             >กรุณาเลือกขั้นตอนถัดไป</small
           >
         </div>
@@ -1120,7 +1101,11 @@ const showReportView = computed(() => {
       <div v-if="showFormForCurrentStatus" class="space-y-5">
         <!-- order: Product selection (optional) -->
         <div
-          v-if="currentStatus === 'order'"
+          v-if="
+            (typeof currentData.sellingStatus === 'number'
+              ? convertStatusNumberToString(currentData.sellingStatus)
+              : currentStatus) === 'order'
+          "
           class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
           <div
@@ -1185,7 +1170,11 @@ const showReportView = computed(() => {
               <div class="border-t border-gray-200 pt-5">
                 <SlipUploadSection
                   :sale-id="currentData._id"
-                  :selected-status="currentStatus"
+                  :selected-status="
+                    typeof currentData.sellingStatus === 'number'
+                      ? convertStatusNumberToString(currentData.sellingStatus)
+                      : currentStatus
+                  "
                   :is-current-status="currentStatus"
                   :is-submitting="isSubmitting"
                   @slip-status-changed="handleSlipStatusChanged"
@@ -1196,7 +1185,11 @@ const showReportView = computed(() => {
               <div class="border-t border-gray-200 pt-5">
                 <ShippingSlipUploadSection
                   :sale-id="currentData._id"
-                  :selected-status="currentStatus"
+                  :selected-status="
+                    typeof currentData.sellingStatus === 'number'
+                      ? convertStatusNumberToString(currentData.sellingStatus)
+                      : currentStatus
+                  "
                   :is-current-status="currentStatus"
                   :is-submitting="isSubmitting"
                   @shipping-slip-status-changed="handleShippingSlipStatusChanged"
@@ -1207,7 +1200,14 @@ const showReportView = computed(() => {
         </div>
 
         <!-- preparing: Shipping slip upload (mandatory) -->
-        <div v-if="currentStatus === 'preparing'" class="space-y-5">
+        <div
+          v-if="
+            (typeof currentData.sellingStatus === 'number'
+              ? convertStatusNumberToString(currentData.sellingStatus)
+              : currentStatus) === 'preparing'
+          "
+          class="space-y-5"
+        >
           <div
             class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200"
           >
@@ -1250,7 +1250,11 @@ const showReportView = computed(() => {
 
         <!-- shipping: Select received or damaged -->
         <div
-          v-if="currentStatus === 'shipping'"
+          v-if="
+            (typeof currentData.sellingStatus === 'number'
+              ? convertStatusNumberToString(currentData.sellingStatus)
+              : currentStatus) === 'shipping'
+          "
           class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
           <div
@@ -1281,13 +1285,15 @@ const showReportView = computed(() => {
               ]"
               :key="option.value"
               :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                saleForm.status === option.value
+                (typeof saleForm.sellingStatus === 'number'
+                  ? convertStatusNumberToString(saleForm.sellingStatus)
+                  : saleForm.sellingStatus) === option.value
                   ? option.color === 'success'
                     ? 'border-green-500 bg-green-50 shadow-sm'
                     : 'border-red-500 bg-red-50 shadow-sm'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`"
-              @click="saleForm.status = option.value"
+              @click="saleForm.sellingStatus = convertStatusStringToNumber(option.value)"
             >
               <div class="flex items-center gap-4">
                 <div
@@ -1306,7 +1312,11 @@ const showReportView = computed(() => {
                   <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
                 </div>
                 <div
-                  v-if="saleForm.status === option.value"
+                  v-if="
+                    (typeof saleForm.sellingStatus === 'number'
+                      ? convertStatusNumberToString(saleForm.sellingStatus)
+                      : saleForm.sellingStatus) === option.value
+                  "
                   :class="`w-8 h-8 rounded-full flex items-center justify-center ${
                     option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
                   }`"
@@ -1320,7 +1330,14 @@ const showReportView = computed(() => {
 
         <!-- Payment Calculation (for order, wait_payment) -->
         <div
-          v-if="currentStatus === 'order' || currentStatus === 'wait_payment'"
+          v-if="
+            (typeof currentData.sellingStatus === 'number'
+              ? convertStatusNumberToString(currentData.sellingStatus)
+              : currentStatus) === 'order' ||
+            (typeof currentData.sellingStatus === 'number'
+              ? convertStatusNumberToString(currentData.sellingStatus)
+              : currentStatus) === 'wait_payment'
+          "
           class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
         >
           <div

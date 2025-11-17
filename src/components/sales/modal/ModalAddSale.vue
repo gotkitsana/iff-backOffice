@@ -12,15 +12,8 @@ import { toast } from 'vue3-toastify'
 import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
-import type {
-  ICreateSalesPayload,
-  ISales,
-  IUpdateSalesPayload,
-  SellingStatus,
-  StatusWorkflow,
-  PaymentMethod,
-  DeliveryStatus,
-} from '@/types/sales'
+import type { ICreateSalesPayload, ISales, IUpdateSalesPayload, PaymentMethod } from '@/types/sales'
+import { SellingStatus } from '@/types/sales'
 import ProductItemForm from '../ProductItemForm.vue'
 import { type IAdmin } from '@/stores/admin/admin'
 import BankSelectionSection from '../BankSelectionSection.vue'
@@ -31,7 +24,8 @@ import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
 import { validatePaymentMethod } from '@/utils/salesStatusValidation'
 import { calculateInitialStatus } from '@/utils/salesStatusCalculation'
-import {DatePicker} from 'primevue'
+import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
+import { DatePicker } from 'primevue'
 import InputText from 'primevue/inputtext'
 import { watch } from 'vue'
 
@@ -56,12 +50,13 @@ const categoryStore = useCategoryStore()
 const saleForm = ref<ICreateSalesPayload>({
   item: '',
   user: '',
-  paymentMethod: 'order' as PaymentMethod,
+  paymentMethod: null,
   products: [{ id: '', category: '', price: 0, quantity: 1 }],
   deposit: 0,
   discount: 0,
   seller: '',
   note: '',
+  sellingStatus: SellingStatus.order,
   deliveryNo: 0,
   delivery: '',
   deliveryStatus: undefined,
@@ -103,6 +98,9 @@ const productSelection = useProductSelection(
 
 // Provide composable to child components
 provide(Symbol.for('productSelection'), productSelection)
+
+// Use composable for member status update
+const memberStatusUpdate = useMemberStatusUpdate()
 
 const totalAmount = computed(() => {
   return saleForm.value.products?.reduce((sum, product) => {
@@ -230,19 +228,16 @@ const handleSubmit = () => {
   // Basic validation
   if (!saleForm.value.user) {
     toast.error('กรุณาเลือกลูกค้า')
-    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.paymentMethod) {
     toast.error('กรุณาเลือกวิธีชำระเงิน')
-    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.seller) {
     toast.error('กรุณาเลือกผู้ขาย')
-    isSubmitting.value = false
     return
   }
 
@@ -323,6 +318,7 @@ const handleSubmit = () => {
     products: formattedProducts,
     customProducts: saleForm.value.paymentMethod === 'order' ? customProducts.value : undefined,
     item: `SALE-${Date.now().toString().slice(-8)}`,
+    sellingStatus: initialStatus,
     payment:
       saleForm.value.paymentMethod === 'cash'
         ? 'cash'
@@ -336,9 +332,6 @@ const handleSubmit = () => {
     bankCode: bankForm.value.bankCode || undefined,
     bankAccount: bankForm.value.bankAccount || undefined,
   }
-
-  // Add status field (calculated)
-  ;(payload as any).status = initialStatus
 
   createSale(payload)
 }
@@ -359,18 +352,15 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
       )
 
       // Check if should deduct stock (status = preparing or received)
-      if (initialStatus === 'preparing' || initialStatus === 'received') {
+      if (initialStatus === SellingStatus.preparing || initialStatus === SellingStatus.received) {
         // Update member status if needed
         if (variables.products) {
-          const { useMemberStatusUpdate } = await import('@/composables/useMemberStatusUpdate')
-          const memberStatusUpdate = useMemberStatusUpdate()
-
           const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
           memberStatusUpdate.updateMemberStatusIfNeeded(
             {
               ...variables,
               _id: createdSale._id,
-              status: initialStatus,
+              sellingStatus: initialStatus,
             } as IUpdateSalesPayload,
             members.value,
             allSales.value,
@@ -385,7 +375,7 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
             {
               ...variables,
               _id: createdSale._id,
-              status: initialStatus,
+              sellingStatus: initialStatus,
             } as IUpdateSalesPayload,
             products.value,
             updateProduct,
@@ -472,6 +462,7 @@ const resetForm = () => {
     discount: 0,
     seller: '',
     note: '',
+    sellingStatus: SellingStatus.order,
     deliveryNo: 0,
     delivery: '',
     deliveryStatus: undefined,
@@ -668,6 +659,27 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             >
           </div>
 
+          <!-- Delivery Status (for cash) -->
+          <div v-if="showDeliveryStatus">
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
+            <Select
+              v-model="saleForm.deliveryStatus"
+              :options="[
+                { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+                { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+              placeholder="เลือกสถานะการส่ง"
+              :invalid="!saleForm.deliveryStatus && isSubmitting"
+            />
+            <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
+              >กรุณาเลือกสถานะการส่ง</small
+            >
+          </div>
+
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
             <Select
@@ -720,27 +732,6 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           </div>
         </div>
 
-        <!-- Delivery Status (for cash) -->
-        <div v-if="showDeliveryStatus" class="mt-4">
-          <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
-          <Select
-            v-model="saleForm.deliveryStatus"
-            :options="[
-              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
-              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            fluid
-            size="small"
-            placeholder="เลือกสถานะการส่ง"
-            :invalid="!saleForm.deliveryStatus && isSubmitting"
-          />
-          <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
-            >กรุณาเลือกสถานะการส่ง</small
-          >
-        </div>
-
         <!-- Payment Due Date (for credit) -->
         <div v-if="showPaymentDueDate" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
@@ -770,7 +761,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         </div>
 
         <!-- Shipping Address -->
-        <div v-if="showShippingAddress" class="mt-4 space-y-3">
+        <div v-if="showShippingAddress" class="mt-4 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
             <Button

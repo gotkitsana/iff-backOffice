@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/vue-query'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
+import { convertStatusNumberToString } from '@/types/sales'
 import { calculateOrderTotal, calculateSaleTotal } from '@/utils/salesCalculations'
 import type { IProduct } from '@/stores/product/product'
 
@@ -34,13 +35,18 @@ export function useMemberStatusUpdate() {
     const currentTotal = calculateOrderTotal(variables, allProducts)
     const previousTotal =
       allSales
-        ?.filter(
-          (s) =>
+        ?.filter((s) => {
+          const statusString =
+            typeof s.sellingStatus === 'number'
+              ? convertStatusNumberToString(s.sellingStatus)
+              : s.sellingStatus
+          return (
             s.user._id === variables.user &&
-            salesStore.statusWorkflow[s.status as keyof StatusWorkflow]?.stepOrder >=
+            salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
               preparingStepOrder &&
-            s._id !== variables._id,
-        )
+            s._id !== variables._id
+          )
+        })
         .reduce((sum, s) => sum + calculateSaleTotal(s, allProducts), 0) || 0
 
     const totalSpending = currentTotal + previousTotal

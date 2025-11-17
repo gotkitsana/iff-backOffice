@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Dialog, Tag, Button } from 'primevue'
 import { useSalesStore } from '../../../stores/sales/sales'
 import type { ISales } from '../../../types/sales'
+import { convertStatusNumberToString } from '../../../types/sales'
 import dayjs from 'dayjs'
 import { useMemberStore, type IMember } from '../../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
@@ -53,7 +54,11 @@ const formatDateForInvoice = (date: Date) => {
 
 // Computed properties
 const currentStatusInfo = computed(() => {
-  return salesStore.statusWorkflow[props.saleData.status]
+  const statusString =
+    typeof props.saleData.sellingStatus === 'number'
+      ? convertStatusNumberToString(props.saleData.sellingStatus)
+      : props.saleData.sellingStatus
+  return salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
 })
 
 const totalAmount = computed(() => {

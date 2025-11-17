@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SalebankData from '@/config/Salebank_data'
-import type { SellingStatus } from '@/types/sales'
+import type { SellingStatusString } from '@/types/sales'
 
 // Props
 const props = defineProps<{
@@ -43,7 +43,7 @@ const handleBankSelect = (bankCode: string) => {
   emit('update:selectedBankCode', bankCode)
 }
 
-const statusSteps: SellingStatus[] = [
+const statusSteps: SellingStatusString[] = [
   'order',
   'wait_payment',
   'preparing',
@@ -52,7 +52,7 @@ const statusSteps: SellingStatus[] = [
   'damaged',
 ]
 const closeEditBank = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
   const preparingStepIndex = statusSteps.indexOf('preparing')
   return currentStepIndex >= preparingStepIndex
 })

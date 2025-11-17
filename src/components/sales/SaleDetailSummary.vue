@@ -4,6 +4,7 @@ import { Tag } from 'primevue'
 import { useMemberStore } from '@/stores/member/member'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales } from '@/types/sales'
+import { convertStatusNumberToString } from '@/types/sales'
 import type { IMember } from '@/stores/member/member'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
@@ -27,7 +28,11 @@ const handleFindAdmin = (id: string | null | undefined): IAdmin | undefined => {
   return admins.value?.find((admin) => admin._id === id)
 }
 const currentStatusInfo = computed(() => {
-  return salesStore.statusWorkflow[props.saleData.status as keyof typeof salesStore.statusWorkflow]
+  const statusString =
+    typeof props.saleData.sellingStatus === 'number'
+      ? convertStatusNumberToString(props.saleData.sellingStatus)
+      : props.saleData.sellingStatus
+  return salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
 })
 
 const totalAmount = computed(() => {

@@ -4,7 +4,7 @@ import { Button, FileUpload } from 'primevue'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { SellingStatus } from '@/types/sales'
+import type { SellingStatusString } from '@/types/sales'
 
 // Props
 const props = defineProps<{
@@ -31,7 +31,7 @@ const previewImage = ref<string>('')
 const showUploadSection = ref<boolean>(false)
 
 // Computed
-const statusSteps: SellingStatus[] = [
+const statusSteps: SellingStatusString[] = [
   'order',
   'wait_payment',
   'preparing',
@@ -40,7 +40,7 @@ const statusSteps: SellingStatus[] = [
   'damaged',
 ]
 const requiresSlipUpload = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatusString)
   const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
   const preparingStepIndex = statusSteps.indexOf('preparing')
   // Show for wait_payment, preparing, shipping and above
@@ -48,7 +48,7 @@ const requiresSlipUpload = computed(() => {
 })
 
 const closeEdit = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
   const preparingStepIndex = statusSteps.indexOf('preparing')
   return currentStepIndex >= preparingStepIndex
 })
@@ -179,7 +179,7 @@ watch(
 // Check if should auto-change to preparing
 const shouldAutoChangeToPreparing = computed(() => {
   if (!props.isCurrentStatus || props.isAddSale) return false
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
   const preparingStepIndex = statusSteps.indexOf('preparing')
   // Auto-change if current status < preparing
   return currentStepIndex < preparingStepIndex

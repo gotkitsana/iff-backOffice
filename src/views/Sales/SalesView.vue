@@ -8,11 +8,13 @@ import ModalSaleDetail from '@/components/sales/modal/ModalSaleDetail.vue'
 import ModalProductDetail from '@/components/sales/modal/ModalProductDetail.vue'
 import ModalDeleteSale from '@/components/sales/modal/ModalDeleteSale.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
+import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
 import { useSalesStore } from '@/stores/sales/sales'
-import { useMemberStore } from '@/stores/member/member'
-import type { ISales, SellingStatus } from '@/types/sales'
+import { useMemberStore, type IMember } from '@/stores/member/member'
+import type { ISales, SellingStatus, SellingStatusString } from '@/types/sales'
+import { convertStatusNumberToString } from '@/types/sales'
 import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/product/category'
 import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
@@ -40,28 +42,78 @@ const filteredSales = computed(() => {
     return salesData.value || []
   }
   // Filter by status
-  return salesData.value?.filter((sale) => sale.status === activeTab.value) || []
+  return (
+    salesData.value?.filter((sale) => {
+      const saleStatusString =
+        typeof sale.sellingStatus === 'number'
+          ? convertStatusNumberToString(sale.sellingStatus)
+          : sale.sellingStatus
+      return saleStatusString === activeTab.value
+    }) || []
+  )
 })
 
 // Tab counts - Status
 const allCount = computed(() => salesData.value?.length || 0)
 const orderStatusCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'order').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'order'
+    }).length || 0
 )
 const waitPaymentCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'wait_payment').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'wait_payment'
+    }).length || 0
 )
 const preparingCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'preparing').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'preparing'
+    }).length || 0
 )
 const shippingCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'shipping').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'shipping'
+    }).length || 0
 )
 const deliveredCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'received').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'received'
+    }).length || 0
 )
 const damagedCount = computed(
-  () => salesData.value?.filter((s) => s.status === 'damaged').length || 0
+  () =>
+    salesData.value?.filter((s) => {
+      const statusString =
+        typeof s.sellingStatus === 'number'
+          ? convertStatusNumberToString(s.sellingStatus)
+          : s.sellingStatus
+      return statusString === 'damaged'
+    }).length || 0
 )
 
 // Current filter display
@@ -70,7 +122,8 @@ const currentFilterDisplay = computed(() => {
     return 'ทั้งหมด'
   }
 
-  const statusMap: Record<SellingStatus, string> = {
+  const statusMap: Record<SellingStatusString, string> = {
+    none: 'ไม่ระบุ',
     order: 'ออเดอร์',
     wait_payment: 'รอชำระเงิน',
     preparing: 'แพ็ครอจัดส่ง',
@@ -78,19 +131,21 @@ const currentFilterDisplay = computed(() => {
     received: 'ได้รับสินค้าแล้ว',
     damaged: 'สินค้าเสียหาย',
   }
-  return statusMap[activeTab.value as SellingStatus] || activeTab.value
+  return statusMap[activeTab.value as SellingStatusString] || activeTab.value
 })
 
-const getStatusStepOrder = (status: string) => {
-  const statusOrder: Record<SellingStatus, number> = {
+const getStatusStepOrder = (status: SellingStatus | number | string) => {
+  const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
+  const statusOrder: Record<SellingStatusString, number> = {
     order: 1,
     wait_payment: 2,
     preparing: 3,
     shipping: 4,
     received: 5,
     damaged: 6,
+    none: 0,
   }
-  return statusOrder[status as SellingStatus] || 0
+  return statusOrder[statusString as SellingStatusString] || 0
 }
 
 const categoryStore = useCategoryStore()
@@ -102,7 +157,7 @@ const { data: categories } = useQuery<ICategory[]>({
 const totalRevenue = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
+      ?.filter((s) => getStatusStepOrder(s.sellingStatus) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         const saleTotal = sale.products
           ? sale.products.reduce((productSum, product) => {
@@ -117,7 +172,7 @@ const totalRevenue = computed(() => {
 const totalDiscount = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
+      ?.filter((s) => getStatusStepOrder(s.sellingStatus) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         return sum + (sale.discount || 0)
       }, 0) || 0
@@ -127,7 +182,7 @@ const totalDiscount = computed(() => {
 const totalDeposit = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) === getStatusStepOrder('wait_payment'))
+      ?.filter((s) => getStatusStepOrder(s.sellingStatus) === getStatusStepOrder('wait_payment'))
       .reduce((sum, sale) => {
         const saleTotal = sale.products
           ? sale.products.reduce((productSum, product) => {
@@ -142,7 +197,7 @@ const totalDeposit = computed(() => {
 const totalDelivery = computed(() => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
+      ?.filter((s) => getStatusStepOrder(s.sellingStatus) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         return sum + (sale.deliveryNo || 0)
       }, 0) || 0
@@ -152,7 +207,7 @@ const totalDelivery = computed(() => {
 const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
   return (
     salesData.value
-      ?.filter((s) => getStatusStepOrder(s.status) >= getStatusStepOrder('preparing'))
+      ?.filter((s) => getStatusStepOrder(s.sellingStatus) >= getStatusStepOrder('preparing'))
       .reduce((sum, sale) => {
         // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
         const categoryProductsTotal = sale.products
@@ -190,12 +245,19 @@ const formatDate = (date: Date) => {
 // Helper functions for sales data
 const getSaleTotalAmount = (sale: ISales) => {
   const productTotal = sale.products
-    ? sale.products.reduce((sum, product) => {
+    ? sale.products.reduce((sum: number, product: any) => {
         return sum + (product.price || 0) * product.quantity
       }, 0)
     : 0
   const netAmount = productTotal - (sale.deliveryNo || 0) - sale.discount
   return netAmount < 0 ? 0 : netAmount
+}
+
+const getProductTotal = (products: any[] | undefined) => {
+  if (!products) return 0
+  return products.reduce((sum: number, product: any) => {
+    return sum + (product.price || 0) * product.quantity
+  }, 0)
 }
 
 // Modal functions
@@ -254,11 +316,51 @@ const closeDeleteModal = () => {
   selectedSaleForDelete.value = null
 }
 
+const showMemberDetailModal = ref(false)
+const selectedMemberId = ref<string | null>(null)
+
+const openMemberDetailModal = (memberId: string | { _id: string }) => {
+  const id = typeof memberId === 'string' ? memberId : memberId._id
+  selectedMemberId.value = id
+  showMemberDetailModal.value = true
+}
+const closeMemberDetailModal = () => {
+  showMemberDetailModal.value = false
+  selectedMemberId.value = null
+}
+
 const adminStore = useAdminStore()
 const { data: admins } = useQuery<IAdmin[]>({
   queryKey: ['get_admins'],
   queryFn: () => adminStore.onGetAdmins(),
 })
+
+const { data: members } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
+})
+const findMemberData = (memberId: string) => {
+  return members.value?.find((member) => member._id === memberId) || null
+}
+
+const getPaymentMethodSeverity = (
+  paymentMethod: string | null | undefined
+): 'success' | 'info' | 'warning' | 'danger' => {
+  switch (paymentMethod) {
+    case 'transfer':
+    case 'card':
+      return 'info' // สีน้ำเงิน
+    case 'cod':
+    case 'credit':
+      return 'success' // สีเขียว
+    case 'cash':
+      return 'danger' // สีแดง
+    case 'order':
+      return 'warning' // สีส้ม
+    default:
+      return 'info'
+  }
+}
 </script>
 
 <template>
@@ -594,8 +696,8 @@ const { data: admins } = useQuery<IAdmin[]>({
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
                 <Tag
-                  :value="salesStore.getStatusTag(slotProps.data.status).label"
-                  :severity="salesStore.getStatusTag(slotProps.data.status).severity"
+                  :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
+                  :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
                   size="small"
                   class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   @click="openStatusManager(slotProps.data)"
@@ -606,45 +708,72 @@ const { data: admins } = useQuery<IAdmin[]>({
           </Column>
 
           <Column
-            field="user.code"
-            header="รหัสลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[4.5rem] justify-center', bodyCell: 'text-center' }"
+            field="paymentMethod"
+            header="สถานะการชำระ"
+            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
-              <p
-                class="text-sm capitalize font-[500]!"
-                :class="{
-                  'text-gray-500': slotProps.data.user?.status == 'ci',
-                  'text-green-500': slotProps.data.user?.status == 'cs',
-                  'text-yellow-600': slotProps.data.user?.status == 'css',
-                }"
-              >
-                {{ slotProps.data.user?.code }}
-              </p>
+              <Tag
+                :value="
+                  salesStore.paymentMethods.find((pm) => pm.value === slotProps.data.paymentMethod)
+                    ?.label || '-'
+                "
+                :severity="getPaymentMethodSeverity(slotProps.data.paymentMethod)"
+                size="small"
+              />
             </template>
           </Column>
 
           <Column
             field="user.displayName"
-            header="ชื่อเล่น"
-            :pt="{ columnHeaderContent: 'min-w-[4.5rem]' }"
-          />
-
-          <Column
-            field="user.status"
-            header="สถานะลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[5.75rem] justify-center', bodyCell: 'text-center' }"
+            header="ข้อมูลลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[7rem]' }"
           >
             <template #body="slotProps">
-              <Tag
-                :value="
-                  memberStore.memberStatusOptions.find(
-                    (s) => s.value === slotProps.data.user?.status
-                  )?.label
-                "
-                :severity="memberStore.getStatusTag(slotProps.data.user?.status)"
-                size="small"
-              />
+              <div
+                class="cursor-pointer group p-2 -m-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                @click="openMemberDetailModal(slotProps.data.user._id)"
+                v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
+              >
+                <div class="flex items-center gap-2 mb-1.5">
+                  <div
+                    class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-sm flex-shrink-0"
+                  >
+                    {{
+                      (
+                        findMemberData(slotProps.data.user._id)?.displayName ||
+                        findMemberData(slotProps.data.user._id)?.name ||
+                        'U'
+                      )
+                        .charAt(0)
+                        .toUpperCase()
+                    }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div
+                      class="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors"
+                    >
+                      {{ findMemberData(slotProps.data.user._id)?.displayName || '-' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <Tag
+                    :value="
+                      memberStore.memberStatusOptions.find(
+                        (s) => s.value === findMemberData(slotProps.data.user._id)?.status
+                      )?.label || '-'
+                    "
+                    :severity="
+                      memberStore.getStatusTag(
+                        findMemberData(slotProps.data.user._id)?.status || ''
+                      )
+                    "
+                    size="small"
+                    class="text-xs"
+                  />
+                </div>
+              </div>
             </template>
           </Column>
 
@@ -679,16 +808,7 @@ const { data: admins } = useQuery<IAdmin[]>({
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-semibold text-green-600 text-sm">
-                  {{
-                    formatCurrency(
-                      slotProps.data.products
-                        ? slotProps.data.products.reduce(
-                            (sum: number, product: any) => sum + (product.price || 0) * product.quantity,
-                            0
-                          )
-                        : 0
-                    )
-                  }}
+                  {{ formatCurrency(getProductTotal(slotProps.data.products)) }}
                 </div>
                 <div class="text-xs text-gray-500 mt-0.5">
                   {{ slotProps.data.products?.length || 0 }} รายการ
@@ -853,7 +973,13 @@ const { data: admins } = useQuery<IAdmin[]>({
   <StatusManager
     v-if="selectedSale"
     v-model:visible="showStatusManager"
-    :current-status="selectedSale?.status || ''"
+    :current-status="
+      selectedSale
+        ? typeof selectedSale.sellingStatus === 'number'
+          ? convertStatusNumberToString(selectedSale.sellingStatus)
+          : selectedSale.sellingStatus
+        : ''
+    "
     :order-number="selectedSale?.item || ''"
     :current-data="selectedSale"
     :target-status="targetStatus"
@@ -873,5 +999,13 @@ const { data: admins } = useQuery<IAdmin[]>({
     :showDeleteModal="showDeleteModal"
     @onCloseDeleteModal="closeDeleteModal"
     :saleData="selectedSaleForDelete"
+  />
+
+  <!-- รายละเอียดลูกค้า -->
+  <ModalDetailMember
+    v-if="!!selectedMemberId"
+    :showDetailModal="showMemberDetailModal"
+    @onCloseDetailModal="closeMemberDetailModal"
+    :id="selectedMemberId"
   />
 </template>
