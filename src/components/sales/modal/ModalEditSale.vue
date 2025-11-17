@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, provide } from 'vue'
-import { Dialog, Textarea, Select, Button, InputText, InputNumber, DatePicker } from 'primevue'
+import {
+  Dialog,
+  Textarea,
+  Select,
+  Button,
+  InputText,
+  InputNumber,
+  DatePicker,
+  FileUpload,
+} from 'primevue'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
@@ -36,6 +45,8 @@ import {
   canEditField,
   validatePaymentMethod,
 } from '@/utils/salesStatusValidation'
+import { useUploadFileStore } from '@/stores/product/upload_file'
+import { getShippingSlipUrl } from '@/utils/imageUrl'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -51,6 +62,7 @@ const emit = defineEmits<{
 // Stores
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
+const uploadFileStore = useUploadFileStore()
 const productStore = useProductStore()
 const categoryStore = useCategoryStore()
 
@@ -357,7 +369,11 @@ const updateShippingAddressFromMember = () => {
 
 // Computed for showing shipping slip upload
 const showShippingSlipUpload = computed(() => {
-  return currentStatusString.value === 'preparing' || currentStatusString.value === 'shipping'
+  // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
+  const statusStr = currentStatusString.value
+  const currentStepIndex = getStatusStepIndex(statusStr)
+  const preparingStepIndex = getStatusStepIndex('preparing')
+  return currentStepIndex >= preparingStepIndex
 })
 
 // Handlers
@@ -423,19 +439,16 @@ const handleSubmit = () => {
   // Basic validation
   if (!saleForm.value.user) {
     toast.error('กรุณาเลือกลูกค้า')
-    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.paymentMethod) {
     toast.error('กรุณาเลือกวิธีชำระเงิน')
-    isSubmitting.value = false
     return
   }
 
   if (!saleForm.value.seller) {
     toast.error('กรุณาเลือกผู้ขาย')
-    isSubmitting.value = false
     return
   }
 
@@ -467,7 +480,17 @@ const handleSubmit = () => {
     paymentValidation.errors.forEach((error) => {
       toast.error(error)
     })
-    isSubmitting.value = false
+    return
+  }
+
+  // ตรวจสอบว่ามี pending upload หรือไม่
+  if (hasPendingSlipUpload.value) {
+    toast.error('กรุณากด ยืนยันการอัปโหลด')
+    return
+  }
+
+  if (hasPendingShippingSlipUpload.value) {
+    toast.error('กรุณากด ยืนยันการอัปโหลด')
     return
   }
 
@@ -477,17 +500,37 @@ const handleSubmit = () => {
       ? convertStatusNumberToString(props.saleData.sellingStatus)
       : props.saleData.sellingStatus
 
+  // ตรวจสอบว่าถ้า status = wait_payment ต้องมีสลิป
+  if (currentStatusString === 'wait_payment' && !hasSlip.value) {
+    toast.error('กรุณาอัพโหลดสลิปการโอนเงินก่อนบันทึก')
+    isSubmitting.value = false
+    return
+  }
+
   let finalStatus: SellingStatus
+
+  // ตรวจสอบ currentStatus step เพื่อป้องกันไม่ให้ย้อนกลับ
+  const currentStepIndex = getStatusStepIndex(currentStatusString)
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  const preparingStepIndex = getStatusStepIndex('preparing')
 
   // Logic สำหรับคำนวณ finalStatus ตาม paymentMethod และ currentStatus
   if (saleForm.value.paymentMethod === 'order') {
-    // Order: ถ้ามีสินค้า (products หรือ customProducts) + bankCode + shippingAddress → wait_payment
-    const hasAnyProducts = hasValidProducts || hasCustomProducts
-    if (hasAnyProducts && saleForm.value.bankCode && saleForm.value.shippingAddress) {
-      finalStatus = SellingStatus.wait_payment
+    // Order: ถ้า currentStatus >= wait_payment ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= waitPaymentStepIndex) {
+      finalStatus =
+        typeof props.saleData.sellingStatus === 'number'
+          ? props.saleData.sellingStatus
+          : convertStatusStringToNumber(currentStatusString)
     } else {
-      // ถ้ายังไม่มีข้อมูลครบ → ยังคงเป็น order
-      finalStatus = SellingStatus.order
+      // ถ้ามีสินค้า (products หรือ customProducts) + bankCode + shippingAddress → wait_payment
+      const hasAnyProducts = hasValidProducts || hasCustomProducts
+      if (hasAnyProducts && saleForm.value.bankCode && saleForm.value.shippingAddress) {
+        finalStatus = SellingStatus.wait_payment
+      } else {
+        // ถ้ายังไม่มีข้อมูลครบ → ยังคงเป็น order
+        finalStatus = SellingStatus.order
+      }
     }
   } else if (saleForm.value.paymentMethod === 'cash') {
     // Cash: ตาม deliveryStatus
@@ -497,14 +540,26 @@ const handleSubmit = () => {
       finalStatus = SellingStatus.preparing
     }
   } else if (saleForm.value.paymentMethod === 'credit') {
-    // Credit: preparing (ตัดสต็อก)
-    finalStatus = SellingStatus.preparing
+    // Credit: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.saleData.sellingStatus === 'number'
+          ? props.saleData.sellingStatus
+          : convertStatusStringToNumber(currentStatusString)
+    } else {
+      finalStatus = SellingStatus.preparing
+    }
   } else if (
     saleForm.value.paymentMethod === 'transfer' ||
     saleForm.value.paymentMethod === 'card'
   ) {
-    // Transfer/Card: ถ้ามี slip → preparing, ถ้าไม่มี → wait_payment
-    if (hasSlip.value) {
+    // Transfer/Card: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.saleData.sellingStatus === 'number'
+          ? props.saleData.sellingStatus
+          : convertStatusStringToNumber(currentStatusString)
+    } else if (hasSlip.value) {
       // ถ้ามี shipping slip → shipping
       if (hasShippingSlip.value) {
         finalStatus = SellingStatus.shipping
@@ -515,8 +570,15 @@ const handleSubmit = () => {
       finalStatus = SellingStatus.wait_payment
     }
   } else if (saleForm.value.paymentMethod === 'cod') {
-    // COD: preparing (ตัดสต็อก)
-    finalStatus = SellingStatus.preparing
+    // COD: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.saleData.sellingStatus === 'number'
+          ? props.saleData.sellingStatus
+          : convertStatusStringToNumber(currentStatusString)
+    } else {
+      finalStatus = SellingStatus.preparing
+    }
   } else {
     // Default: ใช้ currentStatus
     finalStatus =
@@ -531,8 +593,15 @@ const handleSubmit = () => {
   }
 
   // ถ้า currentStatus เป็น shipping → ยังคงเป็น shipping (ไม่เปลี่ยน)
+  // แต่ถ้ามี finalSaleStatus ให้ใช้ finalSaleStatus แทน
   if (currentStatusString === 'shipping') {
-    finalStatus = SellingStatus.shipping
+    if (finalSaleStatus.value === 'received') {
+      finalStatus = SellingStatus.received
+    } else if (finalSaleStatus.value === 'damaged') {
+      finalStatus = SellingStatus.damaged
+    } else {
+      finalStatus = SellingStatus.shipping
+    }
   }
 
   // Filter products to only include those with valid id and quantity
@@ -575,7 +644,7 @@ const queryClient = useQueryClient()
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
   onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
-    if ((data as { data: { modifiedCount: number } }).data.modifiedCount > 0) {
+    if ((data as { data: { modifiedCount: number } }).data) {
       toast.success('แก้ไขข้อมูลการขายสำเร็จ')
 
       const statusString =
@@ -649,10 +718,26 @@ const resetForm = () => {
     customProducts: undefined,
   }
   customProducts.value = []
+  finalSaleStatus.value = null
+  deliveryPhoto.value = null
+  deliveryPhotoPreview.value = ''
+  deliveryNote.value = ''
+  hasPendingSlipUpload.value = false
+  hasPendingShippingSlipUpload.value = false
 }
 
 const hasSlip = ref(false)
 const hasShippingSlip = ref(false)
+
+// Track pending upload states
+const hasPendingSlipUpload = ref(false)
+const hasPendingShippingSlipUpload = ref(false)
+
+// สำหรับจบการขายเมื่อ status = shipping
+const finalSaleStatus = ref<'received' | 'damaged' | null>(null)
+const deliveryPhoto = ref<File | null>(null)
+const deliveryPhotoPreview = ref<string>('')
+const deliveryNote = ref<string>('')
 
 const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
@@ -662,13 +747,195 @@ const handleShippingSlipStatusChanged = (status: boolean) => {
   hasShippingSlip.value = status
 }
 
+// Handler สำหรับเมื่ออัพโหลดสลิปสำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
+const handleSlipUploaded = async (saleId: string) => {
+  // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
+  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
+
+  // ตรวจสอบว่าสถานะปัจจุบันเป็น wait_payment หรือไม่
+  const currentStatusStr = currentStatusString.value
+  if (currentStatusStr !== 'wait_payment') return
+
+  // ตรวจสอบว่ามีสลิปแล้วจริงๆ โดย query ด้วย saleId
+  try {
+    const apiUrl = (import.meta as any).env.VITE_API_URL as string
+    const slipUrl = `${apiUrl}/erp/download/slip?saleId=${saleId}`
+
+    // ตรวจสอบว่ามีสลิปจริงๆ หรือไม่
+    const slipExists = await new Promise<boolean>((resolve) => {
+      const img = new Image()
+      const timeout = setTimeout(() => {
+        resolve(false)
+      }, 5000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        resolve(true)
+      }
+
+      img.onerror = () => {
+        clearTimeout(timeout)
+        resolve(false)
+      }
+
+      img.src = slipUrl
+    })
+
+    // ถ้ามีสลิปแล้ว ให้เปลี่ยนสถานะเป็น preparing
+    if (slipExists) {
+      // อัพเดทสถานะเป็น preparing
+      const payload: IUpdateSalesPayload = {
+        ...saleForm.value,
+        sellingStatus: SellingStatus.preparing,
+      }
+
+      updateSale(payload)
+    }
+  } catch (error) {
+    console.error('Error checking slip:', error)
+  }
+}
+
+const handleSlipPendingUpload = (isPending: boolean) => {
+  hasPendingSlipUpload.value = isPending
+}
+
+const handleShippingSlipPendingUpload = (isPending: boolean) => {
+  hasPendingShippingSlipUpload.value = isPending
+}
+
+// Handler สำหรับเมื่ออัพโหลด shipping slip สำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
+const handleShippingSlipUploaded = async (saleId: string) => {
+  // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
+  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
+
+  // ตรวจสอบว่าสถานะปัจจุบันเป็น preparing หรือไม่
+  const currentStatusStr = currentStatusString.value
+  if (currentStatusStr !== 'preparing') return
+
+  // ตรวจสอบว่ามี shipping slip แล้วจริงๆ โดย query ด้วย saleId
+  try {
+    const extensions = ['jpg', 'jpeg', 'png']
+    let found = false
+
+    for (const ext of extensions) {
+      const shippingSlipUrl = getShippingSlipUrl(saleId, ext)
+      const slipExists = await new Promise<boolean>((resolve) => {
+        const img = new Image()
+        const timeout = setTimeout(() => {
+          resolve(false)
+        }, 5000)
+
+        img.onload = () => {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          resolve(false)
+        }
+
+        img.src = shippingSlipUrl
+      })
+
+      if (slipExists) {
+        found = true
+        break
+      }
+    }
+
+    // ถ้ามี shipping slip แล้ว ให้เปลี่ยนสถานะเป็น shipping
+    if (found) {
+      // อัพเดทสถานะเป็น shipping
+      const payload: IUpdateSalesPayload = {
+        ...saleForm.value,
+        sellingStatus: SellingStatus.shipping,
+      }
+
+      updateSale(payload)
+    }
+  } catch (error) {
+    console.error('Error checking shipping slip:', error)
+  }
+}
+
+// Handler สำหรับเลือกรูปจากขนส่ง
+const onDeliveryPhotoSelect = (event: { files: File[] }) => {
+  const file = event.files[0]
+  if (file) {
+    deliveryPhoto.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      deliveryPhotoPreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+// Handler สำหรับลบรูปที่เลือก
+const removeDeliveryPhoto = () => {
+  deliveryPhoto.value = null
+  deliveryPhotoPreview.value = ''
+}
+
+// Handler สำหรับจบการขาย
+const handleCompleteSale = async () => {
+  if (!finalSaleStatus.value) {
+    toast.error('กรุณาเลือกสถานะการขาย (ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย)')
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    // อัพโหลดรูปถ้ามี
+    if (deliveryPhoto.value && props.saleData._id) {
+      // Rename file to express-slip-{saleId}
+      const fileExtension = deliveryPhoto.value.name.split('.').pop() || 'jpg'
+      const newFileName = `express-slip-${props.saleData._id}.${fileExtension}`
+      const renamedFile = new File([deliveryPhoto.value], newFileName, {
+        type: deliveryPhoto.value.type,
+      })
+
+      await uploadFileStore.onUploadImage(renamedFile)
+    }
+
+    // อัพเดท status เป็น received หรือ damaged
+    const finalStatus =
+      finalSaleStatus.value === 'received' ? SellingStatus.received : SellingStatus.damaged
+
+    // รวมหมายเหตุ
+    const updatedNote = deliveryNote.value
+      ? saleForm.value.note
+        ? `${saleForm.value.note}\n\nหมายเหตุการจบการขาย: ${deliveryNote.value}`
+        : `หมายเหตุการจบการขาย: ${deliveryNote.value}`
+      : saleForm.value.note
+
+    const payload: IUpdateSalesPayload = {
+      ...saleForm.value,
+      sellingStatus: finalStatus,
+      note: updatedNote,
+    }
+
+    updateSale(payload)
+  } catch (error: unknown) {
+    const errorMessage =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined
+    toast.error(errorMessage || 'จบการขายไม่สำเร็จ')
+    isSubmitting.value = false
+  }
+}
+
 // Check slip exists when dialog opens
 watch(
   () => props.visible && props.saleData._id,
-  (shouldCheck) => {
+  async (shouldCheck) => {
     if (shouldCheck && props.saleData._id) {
       // Check slip exists
-      const apiUrl = import.meta.env.VITE_API_URL as string
+      const apiUrl = (import.meta as any).env.VITE_API_URL as string
       const slipUrl = `${apiUrl}/erp/download/slip?saleId=${props.saleData._id}`
       const img = new Image()
       img.onload = () => {
@@ -679,62 +946,47 @@ watch(
       }
       img.src = slipUrl
 
-      // Check shipping slip exists
-      const shippingSlipUrl = `${apiUrl}/erp/download/shipping-slip?saleId=${props.saleData._id}`
-      const shippingImg = new Image()
-      shippingImg.onload = () => {
-        hasShippingSlip.value = true
+      // Check shipping slip exists using getShippingSlipUrl - ลองหา extension หลายแบบ
+      const extensions = ['jpg', 'jpeg', 'png']
+      let found = false
+
+      for (const ext of extensions) {
+        const shippingSlipUrl = getShippingSlipUrl(props.saleData._id, ext)
+        const shippingImg = new Image()
+
+        const checkPromise = new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => {
+            resolve(false)
+          }, 3000)
+
+          shippingImg.onload = () => {
+            clearTimeout(timeout)
+            resolve(true)
+          }
+
+          shippingImg.onerror = () => {
+            clearTimeout(timeout)
+            resolve(false)
+          }
+
+          shippingImg.src = shippingSlipUrl
+        })
+
+        const exists = await checkPromise
+        if (exists) {
+          hasShippingSlip.value = true
+          found = true
+          break
+        }
       }
-      shippingImg.onerror = () => {
+
+      if (!found) {
         hasShippingSlip.value = false
       }
-      shippingImg.src = shippingSlipUrl
     }
   },
   { immediate: true }
 )
-
-// Auto-update status to preparing when slip is uploaded and current status < preparing
-const handleSlipUploaded = async (saleId: string) => {
-  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
-
-  const currentStatusString =
-    typeof props.saleData.sellingStatus === 'number'
-      ? convertStatusNumberToString(props.saleData.sellingStatus)
-      : props.saleData.sellingStatus
-  const currentStepIndex = getStatusStepIndex(currentStatusString)
-  const preparingStepIndex = getStatusStepIndex('preparing')
-
-  // Only auto-change if current status < preparing
-  if (currentStepIndex < preparingStepIndex) {
-    // Update status to preparing
-    const updatedPayload: IUpdateSalesPayload = {
-      _id: props.saleData._id,
-      sellingStatus: SellingStatus.preparing,
-      bankCode: saleForm.value.bankCode || props.saleData.bankCode,
-      bankAccount: props.saleData.bankAccount,
-      item: props.saleData.item,
-      user: props.saleData.user,
-      products:
-        props.saleData.products?.map((p) => ({
-          id: p.id || '',
-          category: p.category || '',
-          price: p.price || 0,
-          quantity: p.quantity || 1,
-        })) || [],
-      deposit: props.saleData.deposit,
-      discount: props.saleData.discount,
-      seller: props.saleData.seller,
-      note: props.saleData.note,
-      payment: props.saleData.payment,
-      cat: props.saleData.cat,
-      deliveryNo: props.saleData.deliveryNo,
-      delivery: props.saleData.delivery,
-    }
-
-    updateSale(updatedPayload)
-  }
-}
 
 const sellers = computed(() => {
   if (!props.admins) return []
@@ -744,6 +996,19 @@ const sellers = computed(() => {
       label: admin.name,
       value: admin._id,
     }))
+})
+
+// Computed สำหรับ disable ปุ่มอัปเดตข้อมูล
+const isUpdateButtonDisabled = computed(() => {
+  // ถ้า status = wait_payment และยังไม่มีสลิป ให้ disable ปุ่ม
+  if (currentStatusString.value === 'wait_payment' && !hasSlip.value) {
+    return true
+  }
+  // ถ้ามี pending upload ให้ disable ปุ่ม
+  if (hasPendingSlipUpload.value || hasPendingShippingSlipUpload.value) {
+    return true
+  }
+  return false
 })
 </script>
 
@@ -1023,12 +1288,13 @@ const sellers = computed(() => {
         </div>
 
         <!-- Bank Selection (for transfer/card) -->
-        <div v-if="showBankSelection && canEditBankInfo" class="mt-4">
+        <div v-if="showBankSelection" class="mt-4">
           <BankSelectionSection
             :selected-bank-code="saleForm.bankCode || ''"
             :is-submitting="isSubmitting"
             :is-current-bank="props.saleData.bankCode"
             :is-current-status="currentStatusString"
+            :is-read-only="!canEditBankInfo"
             @update:selected-bank-code="updateBankCode"
           />
         </div>
@@ -1086,24 +1352,82 @@ const sellers = computed(() => {
 
         <!-- Slip Upload Section (for order/transfer/card when status >= wait_payment) -->
         <SlipUploadSection
-          v-if="showSlipUpload && canEditSlip"
+          v-if="showSlipUpload"
           :sale-id="props.saleData._id || ''"
           :selected-status="currentStatusString"
           :is-current-status="currentStatusString"
           :is-submitting="isSubmitting"
           @slip-status-changed="handleSlipStatusChanged"
+          @slip-pending-upload="handleSlipPendingUpload"
           @slip-uploaded="handleSlipUploaded"
         />
 
         <!-- Shipping Slip Upload Section -->
         <ShippingSlipUploadSection
-          v-if="showShippingSlipUpload && canEditShippingSlip"
+          v-if="showShippingSlipUpload"
           :sale-id="props.saleData._id || ''"
           :selected-status="currentStatusString"
           :is-current-status="currentStatusString"
           :is-submitting="isSubmitting"
           @shipping-slip-status-changed="handleShippingSlipStatusChanged"
+          @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
+          @shipping-slip-uploaded="handleShippingSlipUploaded"
         />
+
+        <!-- Complete Sale Section (for shipping status) -->
+        <div
+          v-if="currentStatusString === 'shipping'"
+          class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
+        >
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+              <i class="pi pi-check-circle text-white text-lg"></i>
+            </div>
+            <div>
+              <h4 class="font-semibold text-green-900">จบการขาย</h4>
+              <p class="text-sm text-green-700">เลือกสถานะการขายและอัพโหลดรูปจากขนส่ง (ถ้ามี)</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Final Status Selection -->
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการขาย *</label>
+              <Select
+                v-model="finalSaleStatus"
+                :options="[
+                  { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+                  { label: 'สินค้าเสียหาย', value: 'damaged' },
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกสถานะการขาย"
+                fluid
+                size="small"
+                :invalid="!finalSaleStatus && isSubmitting"
+              />
+              <small v-if="!finalSaleStatus && isSubmitting" class="text-red-500"
+                >กรุณาเลือกสถานะการขาย</small
+              >
+            </div>
+
+            <!-- Delivery Note -->
+
+            <!-- Delivery Photo Upload -->
+
+            <!-- Complete Sale Button -->
+            <div class="flex justify-end">
+              <Button
+                label="จบการขาย"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+                @click="handleCompleteSale"
+                :loading="isUpdatingSale"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Payment Calculation -->
@@ -1113,7 +1437,7 @@ const sellers = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
-        :read-only="!canEditProducts"
+        :read-only="currentStatusString === 'wait_payment'"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"
@@ -1150,6 +1474,7 @@ const sellers = computed(() => {
           icon="pi pi-check"
           @click="handleSubmit"
           :loading="isUpdatingSale"
+          :disabled="isUpdateButtonDisabled"
           severity="success"
           size="small"
         />

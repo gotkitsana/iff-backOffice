@@ -92,12 +92,12 @@ export function canEditField(
       return field === 'products' || field === 'bankInfo' || field === 'slip'
 
     case 'preparing':
-      // แก้ไขสลิปได้
-      return field === 'slip'
+      // แก้ไขใบเสร็จการขนส่งได้
+      return field === 'shippingSlip'
 
     case 'shipping':
-      // แก้ไขใบเสร็จได้
-      return field === 'shippingSlip'
+      // ให้เลือกจบการขาย อาจจะมีให้อัพโหลดรูปจากขนส่ง
+
 
     case 'received':
     case 'damaged':

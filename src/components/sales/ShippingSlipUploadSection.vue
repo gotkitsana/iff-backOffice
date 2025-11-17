@@ -3,7 +3,8 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { Button, FileUpload } from 'primevue'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
-import { useSalesStore } from '@/stores/sales/sales'
+import { useUploadFileStore } from '@/stores/product/upload_file'
+import { getShippingSlipUrl, clearImageCacheByFilename } from '@/utils/imageUrl'
 import type { SellingStatusString } from '@/types/sales'
 
 // Props
@@ -19,10 +20,12 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
   'shipping-slip-status-changed': [hasSlip: boolean]
+  'shipping-slip-pending-upload': [isPending: boolean]
+  'shipping-slip-uploaded': [saleId: string]
 }>()
 
 // Stores
-const salesStore = useSalesStore()
+const uploadFileStore = useUploadFileStore()
 
 // Reactive data
 const uploadedFile = ref<File | null>(null)
@@ -39,11 +42,8 @@ const statusSteps: SellingStatusString[] = [
   'damaged',
 ]
 const requiresShippingSlipUpload = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatusString)
-  const preparingStepIndex = statusSteps.indexOf('preparing')
-  const shippingStepIndex = statusSteps.indexOf('shipping')
-  // Show for wait_payment (optional), preparing (mandatory), shipping and above
-  return currentStepIndex >= preparingStepIndex || props.selectedStatus === 'wait_payment'
+  // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
+  return props.selectedStatus === 'preparing'
 })
 
 const closeEdit = computed(() => {
@@ -54,6 +54,7 @@ const closeEdit = computed(() => {
 
 const hasShippingSlip = ref(false)
 const isCheckingSlip = ref(false)
+const shippingSlipExtension = ref<string | undefined>(undefined)
 
 const checkShippingSlipExists = async (saleId: string) => {
   if (!saleId) {
@@ -64,35 +65,76 @@ const checkShippingSlipExists = async (saleId: string) => {
 
   try {
     isCheckingSlip.value = true
-    const slipUrl = `${import.meta.env.VITE_API_URL}/erp/download/shipping-slip?saleId=${saleId}`
 
-    return new Promise((resolve) => {
-      const img = new Image()
+    // ถ้ามี extension ที่เก็บไว้แล้ว ให้ใช้ extension นั้น
+    if (shippingSlipExtension.value) {
+      const slipUrl = getShippingSlipUrl(saleId, shippingSlipExtension.value)
+      return new Promise((resolve) => {
+        const img = new Image()
 
-      const timeout = setTimeout(() => {
-        hasShippingSlip.value = false
-        isCheckingSlip.value = false
-        resolve(false)
-      }, 10000)
+        const timeout = setTimeout(() => {
+          hasShippingSlip.value = false
+          isCheckingSlip.value = false
+          resolve(false)
+        }, 10000)
 
-      img.onload = () => {
-        clearTimeout(timeout)
+        img.onload = () => {
+          clearTimeout(timeout)
+          hasShippingSlip.value = true
+          isCheckingSlip.value = false
+          emit('shipping-slip-status-changed', true)
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          hasShippingSlip.value = false
+          isCheckingSlip.value = false
+          emit('shipping-slip-status-changed', false)
+          resolve(false)
+        }
+
+        img.src = slipUrl
+      })
+    }
+
+    // ถ้ายังไม่มี extension ให้ลองหาไฟล์ที่มี extension หลายแบบ
+    const extensions = ['jpg', 'jpeg', 'png']
+    for (const ext of extensions) {
+      const slipUrl = getShippingSlipUrl(saleId, ext)
+      const exists = await new Promise<boolean>((resolve) => {
+        const img = new Image()
+        const timeout = setTimeout(() => {
+          resolve(false)
+        }, 5000)
+
+        img.onload = () => {
+          clearTimeout(timeout)
+          shippingSlipExtension.value = ext
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          resolve(false)
+        }
+
+        img.src = slipUrl
+      })
+
+      if (exists) {
         hasShippingSlip.value = true
         isCheckingSlip.value = false
         emit('shipping-slip-status-changed', true)
-        resolve(true)
+        return true
       }
+    }
 
-      img.onerror = () => {
-        clearTimeout(timeout)
-        hasShippingSlip.value = false
-        isCheckingSlip.value = false
-        emit('shipping-slip-status-changed', false)
-        resolve(false)
-      }
-
-      img.src = slipUrl
-    })
+    // ถ้าไม่พบไฟล์เลย
+    hasShippingSlip.value = false
+    isCheckingSlip.value = false
+    emit('shipping-slip-status-changed', false)
+    return false
   } catch (error) {
     console.error('Error checking shipping slip:', error)
     hasShippingSlip.value = false
@@ -117,7 +159,7 @@ onUnmounted(() => {
 
 // Helper function to get shipping slip image URL
 const onGetShippingSlipImg = (id: string) => {
-  return `${import.meta.env.VITE_API_URL}/erp/download/shipping-slip?saleId=${id}`
+  return getShippingSlipUrl(id, shippingSlipExtension.value)
 }
 
 // File upload handlers
@@ -130,6 +172,10 @@ const onFileSelect = (event: { files: File[] }) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       previewImage.value = e.target?.result as string
+      // Emit pending upload state (มี previewImage แต่ยังไม่ confirm)
+      if (!props.isAddSale) {
+        emit('shipping-slip-pending-upload', true)
+      }
     }
     reader.readAsDataURL(file)
     if (props.isAddSale) {
@@ -139,11 +185,16 @@ const onFileSelect = (event: { files: File[] }) => {
 }
 
 const confirmUploadShippingSlip = () => {
-  if (uploadedFile.value) {
-    uploadShippingSlip({
-      id: props.saleId,
-      file: uploadedFile.value,
+  if (uploadedFile.value && props.saleId) {
+    // Rename file to express-slip-{saleId}
+    const fileExtension = uploadedFile.value.name.split('.').pop() || 'jpg'
+    shippingSlipExtension.value = fileExtension // เก็บ extension ไว้
+    const newFileName = `express-slip-${props.saleId}.${fileExtension}`
+    const renamedFile = new File([uploadedFile.value], newFileName, {
+      type: uploadedFile.value.type,
     })
+
+    uploadShippingSlip(renamedFile)
   }
 }
 
@@ -151,6 +202,10 @@ const removeSelectedFile = () => {
   showUploadSection.value = false
   uploadedFile.value = null
   previewImage.value = ''
+  // Emit pending upload state = false เมื่อลบไฟล์
+  if (!props.isAddSale) {
+    emit('shipping-slip-pending-upload', false)
+  }
 }
 
 const handleImageError = (event: Event) => {
@@ -175,18 +230,48 @@ watch(
 
 // Mutations
 const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
-  mutationFn: (payload: { id: string; file: File }) =>
-    salesStore.onUploadShippingSlip(payload.id, payload.file),
-  onSuccess: (data: any) => {
+  mutationFn: (file: File) => uploadFileStore.onUploadImage(file),
+  onSuccess: () => {
     toast.success('อัปโหลดสลิปการจัดส่งสำเร็จ')
+
+    // ล้าง cache ของ shipping slip URL เพื่อให้โหลดรูปใหม่
+    if (props.saleId && shippingSlipExtension.value) {
+      const filename = `express-slip-${props.saleId}.${shippingSlipExtension.value}`
+      clearImageCacheByFilename(filename, 'product')
+    }
+
     hasShippingSlip.value = true
     emit('shipping-slip-status-changed', true)
-    previewImage.value = ''
+    emit('shipping-slip-pending-upload', false) // Clear pending state
+
+    // เก็บ previewImage ไว้จนกว่าจะรีเฟรชสำเร็จ
+    // previewImage จะถูกล้างเมื่อ checkShippingSlipExists สำเร็จ
+
     uploadedFile.value = null
     showUploadSection.value = false
+
+    // รีเฟรชการตรวจสอบสลิปเพื่อให้แสดงรูปใหม่
+    if (props.saleId) {
+      setTimeout(async () => {
+        const exists = await checkShippingSlipExists(props.saleId)
+        // เมื่อรีเฟรชสำเร็จแล้ว ให้ล้าง previewImage
+        if (exists) {
+          previewImage.value = ''
+        }
+      }, 500)
+    } else {
+      // ถ้าไม่มี saleId ให้ล้าง previewImage ทันที
+      previewImage.value = ''
+    }
+
+    // ถ้า status = preparing ให้ emit shipping-slip-uploaded เพื่อเปลี่ยนสถานะอัตโนมัติ
+    if (props.selectedStatus === 'preparing' && props.saleId) {
+      emit('shipping-slip-uploaded', props.saleId)
+    }
   },
   onError: (error: any) => {
     toast.error(error.response?.data?.message || 'อัปโหลดสลิปการจัดส่งไม่สำเร็จ')
+    emit('shipping-slip-pending-upload', false) // Clear pending state on error
     previewImage.value = ''
     uploadedFile.value = null
   },
@@ -195,7 +280,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
 
 <template>
   <div
-    v-if="requiresShippingSlipUpload"
+
     class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
   >
     <!-- Header -->
@@ -231,7 +316,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Slip Display -->
-    <div v-else-if="hasShippingSlip && !showUploadSection" class="mb-4">
+    <div v-else-if="hasShippingSlip && !showUploadSection && !previewImage" class="mb-4">
       <div class="bg-white border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-3">
           <h5 class="text-sm font-medium text-gray-700">สลิปการจัดส่ง</h5>
@@ -262,7 +347,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Upload Section -->
-    <div v-else-if="!hasShippingSlip || showUploadSection" class="space-y-4">
+    <div v-else-if="!hasShippingSlip || showUploadSection || previewImage" class="space-y-4">
       <!-- Preview Section -->
       <div
         v-if="previewImage || isUploadingSlip"

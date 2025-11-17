@@ -19,6 +19,7 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
   'slip-status-changed': [hasSlip: boolean]
+  'slip-pending-upload': [isPending: boolean]
   'slip-uploaded': [saleId: string]
 }>()
 
@@ -42,7 +43,6 @@ const statusSteps: SellingStatusString[] = [
 const requiresSlipUpload = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatusString)
   const waitPaymentStepIndex = statusSteps.indexOf('wait_payment')
-  const preparingStepIndex = statusSteps.indexOf('preparing')
   // Show for wait_payment, preparing, shipping and above
   return currentStepIndex >= waitPaymentStepIndex
 })
@@ -133,6 +133,10 @@ const onFileSelect = (event: { files: File[] }) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       previewImage.value = e.target?.result as string
+      // Emit pending upload state (มี previewImage แต่ยังไม่ confirm)
+      if (!props.isAddSale) {
+        emit('slip-pending-upload', true)
+      }
     }
     reader.readAsDataURL(file)
     if (props.isAddSale) {
@@ -154,6 +158,10 @@ const removeSelectedFile = () => {
   showUploadSection.value = false
   uploadedFile.value = null
   previewImage.value = ''
+  // Emit pending upload state = false เมื่อลบไฟล์
+  if (!props.isAddSale) {
+    emit('slip-pending-upload', false)
+  }
 }
 
 const handleImageError = (event: Event) => {
@@ -176,15 +184,6 @@ watch(
   { immediate: true }
 )
 
-// Check if should auto-change to preparing
-const shouldAutoChangeToPreparing = computed(() => {
-  if (!props.isCurrentStatus || props.isAddSale) return false
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
-  const preparingStepIndex = statusSteps.indexOf('preparing')
-  // Auto-change if current status < preparing
-  return currentStepIndex < preparingStepIndex
-})
-
 // Mutations
 const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
   mutationFn: (payload: { id: string; file: File }) =>
@@ -193,9 +192,10 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
     toast.success('อัปโหลดสลิปสำเร็จ')
     hasSlip.value = true
     emit('slip-status-changed', true)
+    emit('slip-pending-upload', false) // Clear pending state
 
-    // Auto-change to preparing if current status < preparing
-    if (shouldAutoChangeToPreparing.value && props.saleId) {
+    // ถ้า status = wait_payment ให้ emit slip-uploaded เพื่อเปลี่ยนสถานะอัตโนมัติ
+    if (props.selectedStatus === 'wait_payment' && props.saleId) {
       emit('slip-uploaded', props.saleId)
     }
 
@@ -205,6 +205,7 @@ const { mutate: uploadSlip, isPending: isUploadingSlip } = useMutation({
   },
   onError: (error: any) => {
     toast.error(error.response?.data?.message || 'อัปโหลดสลิปไม่สำเร็จ')
+    emit('slip-pending-upload', false) // Clear pending state on error
     previewImage.value = ''
     uploadedFile.value = null
   },
