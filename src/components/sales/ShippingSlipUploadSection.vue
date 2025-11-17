@@ -21,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'shipping-slip-status-changed': [hasSlip: boolean]
   'shipping-slip-pending-upload': [isPending: boolean]
+  'shipping-slip-uploaded': [saleId: string]
 }>()
 
 // Stores
@@ -243,15 +244,29 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
     emit('shipping-slip-status-changed', true)
     emit('shipping-slip-pending-upload', false) // Clear pending state
 
-    previewImage.value = ''
+    // เก็บ previewImage ไว้จนกว่าจะรีเฟรชสำเร็จ
+    // previewImage จะถูกล้างเมื่อ checkShippingSlipExists สำเร็จ
+
     uploadedFile.value = null
     showUploadSection.value = false
 
     // รีเฟรชการตรวจสอบสลิปเพื่อให้แสดงรูปใหม่
     if (props.saleId) {
-      setTimeout(() => {
-        checkShippingSlipExists(props.saleId)
+      setTimeout(async () => {
+        const exists = await checkShippingSlipExists(props.saleId)
+        // เมื่อรีเฟรชสำเร็จแล้ว ให้ล้าง previewImage
+        if (exists) {
+          previewImage.value = ''
+        }
       }, 500)
+    } else {
+      // ถ้าไม่มี saleId ให้ล้าง previewImage ทันที
+      previewImage.value = ''
+    }
+
+    // ถ้า status = preparing ให้ emit shipping-slip-uploaded เพื่อเปลี่ยนสถานะอัตโนมัติ
+    if (props.selectedStatus === 'preparing' && props.saleId) {
+      emit('shipping-slip-uploaded', props.saleId)
     }
   },
   onError: (error: any) => {
@@ -265,7 +280,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
 
 <template>
   <div
-    v-if="requiresShippingSlipUpload"
+
     class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
   >
     <!-- Header -->
@@ -301,7 +316,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Slip Display -->
-    <div v-else-if="hasShippingSlip && !showUploadSection" class="mb-4">
+    <div v-else-if="hasShippingSlip && !showUploadSection && !previewImage" class="mb-4">
       <div class="bg-white border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-3">
           <h5 class="text-sm font-medium text-gray-700">สลิปการจัดส่ง</h5>
@@ -332,7 +347,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
     </div>
 
     <!-- Upload Section -->
-    <div v-else-if="!hasShippingSlip || showUploadSection" class="space-y-4">
+    <div v-else-if="!hasShippingSlip || showUploadSection || previewImage" class="space-y-4">
       <!-- Preview Section -->
       <div
         v-if="previewImage || isUploadingSlip"

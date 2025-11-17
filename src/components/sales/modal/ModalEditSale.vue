@@ -370,7 +370,10 @@ const updateShippingAddressFromMember = () => {
 // Computed for showing shipping slip upload
 const showShippingSlipUpload = computed(() => {
   // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
-  return currentStatusString.value === 'preparing'
+  const statusStr = currentStatusString.value
+  const currentStepIndex = getStatusStepIndex(statusStr)
+  const preparingStepIndex = getStatusStepIndex('preparing')
+  return currentStepIndex >= preparingStepIndex
 })
 
 // Handlers
@@ -477,20 +480,17 @@ const handleSubmit = () => {
     paymentValidation.errors.forEach((error) => {
       toast.error(error)
     })
-    isSubmitting.value = false
     return
   }
 
   // ตรวจสอบว่ามี pending upload หรือไม่
   if (hasPendingSlipUpload.value) {
     toast.error('กรุณากด ยืนยันการอัปโหลด')
-    isSubmitting.value = false
     return
   }
 
   if (hasPendingShippingSlipUpload.value) {
     toast.error('กรุณากด ยืนยันการอัปโหลด')
-    isSubmitting.value = false
     return
   }
 
@@ -802,6 +802,62 @@ const handleSlipPendingUpload = (isPending: boolean) => {
 
 const handleShippingSlipPendingUpload = (isPending: boolean) => {
   hasPendingShippingSlipUpload.value = isPending
+}
+
+// Handler สำหรับเมื่ออัพโหลด shipping slip สำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
+const handleShippingSlipUploaded = async (saleId: string) => {
+  // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
+  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
+
+  // ตรวจสอบว่าสถานะปัจจุบันเป็น preparing หรือไม่
+  const currentStatusStr = currentStatusString.value
+  if (currentStatusStr !== 'preparing') return
+
+  // ตรวจสอบว่ามี shipping slip แล้วจริงๆ โดย query ด้วย saleId
+  try {
+    const extensions = ['jpg', 'jpeg', 'png']
+    let found = false
+
+    for (const ext of extensions) {
+      const shippingSlipUrl = getShippingSlipUrl(saleId, ext)
+      const slipExists = await new Promise<boolean>((resolve) => {
+        const img = new Image()
+        const timeout = setTimeout(() => {
+          resolve(false)
+        }, 5000)
+
+        img.onload = () => {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          resolve(false)
+        }
+
+        img.src = shippingSlipUrl
+      })
+
+      if (slipExists) {
+        found = true
+        break
+      }
+    }
+
+    // ถ้ามี shipping slip แล้ว ให้เปลี่ยนสถานะเป็น shipping
+    if (found) {
+      // อัพเดทสถานะเป็น shipping
+      const payload: IUpdateSalesPayload = {
+        ...saleForm.value,
+        sellingStatus: SellingStatus.shipping,
+      }
+
+      updateSale(payload)
+    }
+  } catch (error) {
+    console.error('Error checking shipping slip:', error)
+  }
 }
 
 // Handler สำหรับเลือกรูปจากขนส่ง
@@ -1315,6 +1371,7 @@ const isUpdateButtonDisabled = computed(() => {
           :is-submitting="isSubmitting"
           @shipping-slip-status-changed="handleShippingSlipStatusChanged"
           @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
+          @shipping-slip-uploaded="handleShippingSlipUploaded"
         />
 
         <!-- Complete Sale Section (for shipping status) -->
@@ -1356,9 +1413,7 @@ const isUpdateButtonDisabled = computed(() => {
 
             <!-- Delivery Note -->
 
-
             <!-- Delivery Photo Upload -->
-            
 
             <!-- Complete Sale Button -->
             <div class="flex justify-end">
@@ -1382,6 +1437,7 @@ const isUpdateButtonDisabled = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
+        :read-only="currentStatusString === 'wait_payment'"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"
