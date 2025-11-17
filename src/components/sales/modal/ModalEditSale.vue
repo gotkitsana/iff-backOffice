@@ -187,7 +187,8 @@ const canEditShippingSlip = computed(() => {
 
 // Computed สำหรับการแสดงผลตาม payment method
 const showProductSelection = computed(() => {
-  return saleForm.value.paymentMethod !== 'order'
+  // แสดงเมื่อ paymentMethod ไม่ใช่ 'order' หรือเมื่อ paymentMethod === 'order' (ให้แสดงได้ทั้งสองแบบ)
+  return true // แสดงได้เสมอ แต่จะควบคุมด้วยเงื่อนไขอื่น
 })
 
 const showCustomProducts = computed(() => {
@@ -228,6 +229,12 @@ const requiresShippingAddress = computed(() => {
 const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
 
 const addCustomProduct = () => {
+  // ถ้ามี products ที่มี id (valid products) ให้ clear ออก
+  const hasValidProducts = saleForm.value.products.some((p) => p.id && p.quantity > 0)
+  if (hasValidProducts) {
+    saleForm.value.products = [{ id: '', quantity: 1, category: '', price: 0 }]
+    toast.info('ลบสินค้าปกติออกแล้ว เนื่องจากเพิ่มสินค้านอกเหนือรายการ')
+  }
   customProducts.value.push({ name: '', quantity: 1, description: '' })
 }
 
@@ -238,6 +245,11 @@ const removeCustomProduct = (index: number) => {
 // Product management functions
 const addProduct = () => {
   if (saleForm.value.products.length < 10) {
+    // ถ้ามี customProducts ให้ clear ออก
+    if (customProducts.value.length > 0) {
+      customProducts.value = []
+      toast.info('ลบสินค้านอกเหนือรายการออกแล้ว เนื่องจากเพิ่มสินค้าปกติ')
+    }
     saleForm.value.products.push({ id: '', quantity: 1, category: '', price: 0 })
   } else {
     toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
@@ -433,6 +445,23 @@ const handleSubmit = () => {
 
   // Filter products to only include those with valid id and quantity
   const validProducts = saleForm.value.products.filter((p) => p.id && p.quantity > 0)
+  const hasValidCustomProducts = customProducts.value.some((p) => p.name && p.quantity > 0)
+
+  // ตรวจสอบว่ามีทั้ง products และ customProducts หรือไม่
+  // ถ้ามีทั้งสองอย่าง ให้ลบ customProducts ออก (ให้ความสำคัญกับ products)
+  let finalCustomProducts:
+    | Array<{ name: string; quantity: number; description: string }>
+    | undefined = customProducts.value
+  if (validProducts.length > 0 && hasValidCustomProducts) {
+    finalCustomProducts = undefined
+    toast.warning('ลบสินค้านอกเหนือรายการออกแล้ว เนื่องจากมีสินค้าปกติ')
+  } else if (validProducts.length === 0 && hasValidCustomProducts) {
+    // ถ้าไม่มี products แต่มี customProducts ให้ใช้ customProducts
+    finalCustomProducts = customProducts.value
+  } else {
+    // ถ้าไม่มี customProducts หรือไม่มีทั้งสองอย่าง
+    finalCustomProducts = undefined
+  }
 
   // แปลง finalStatus จาก string เป็น number
   const finalStatusNumber = convertStatusStringToNumber(validationResult.finalStatus)
@@ -440,9 +469,9 @@ const handleSubmit = () => {
   // Prepare payload with customProducts if paymentMethod is 'order'
   const payload: IUpdateSalesPayload = {
     ...saleForm.value,
-    products: validProducts,
+    products: validProducts.length > 0 ? validProducts : [],
     sellingStatus: finalStatusNumber,
-    customProducts: saleForm.value.paymentMethod === 'order' ? customProducts.value : undefined,
+    customProducts: saleForm.value.paymentMethod === 'order' ? finalCustomProducts : undefined,
   }
 
   // Use final status from validation result
