@@ -254,6 +254,7 @@ const handleSubmit = () => {
     deliveryStatus: saleForm.value.deliveryStatus,
     hasPaymentDueDate: !!saleForm.value.paymentDueDate,
     hasCustomProducts: hasCustomProducts,
+    mode: 'add',
   })
 
   // Show validation errors

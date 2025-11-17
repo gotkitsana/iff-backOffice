@@ -129,7 +129,7 @@ const getProductImage = (productId: string) => {
 
       <!-- Custom Products (for order) -->
       <div
-        v-if="customProducts.length > 0"
+        v-if="customProducts.length > 0 && saleData?.sellingStatus === 1"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <h4 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">

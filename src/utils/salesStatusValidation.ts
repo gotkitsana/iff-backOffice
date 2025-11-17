@@ -22,6 +22,7 @@ export type PaymentMethodValidationInput = {
   deliveryStatus?: DeliveryStatus
   hasPaymentDueDate?: boolean
   hasCustomProducts?: boolean
+  mode?: 'add' | 'edit'
 }
 
 export type RequiredFields = {
@@ -83,12 +84,12 @@ export function canEditField(
 ): boolean {
   switch (currentStatus) {
     case 'order':
-      // แก้ไขสินค้าได้
-      return field === 'products'
+      // แก้ไขสินค้าและข้อมูลธนาคารได้ (สำหรับกรณี order ที่มีสินค้าแล้ว)
+      return field === 'products' || field === 'bankInfo'
 
     case 'wait_payment':
-      // แก้ไขสินค้าและข้อมูลธนาคารได้
-      return field === 'products' || field === 'bankInfo'
+      // แก้ไขสินค้า, ข้อมูลธนาคาร, และสลิปได้ (สำหรับอัพโหลดสลิปโอนเงิน)
+      return field === 'products' || field === 'bankInfo' || field === 'slip'
 
     case 'preparing':
       // แก้ไขสลิปได้
@@ -549,7 +550,20 @@ export function validatePaymentMethod(input: PaymentMethodValidationInput): {
 
   switch (input.paymentMethod) {
     case 'order':
-      // ออเดอร์: ไม่บังคับอะไร
+      // ออเดอร์:
+      // - Add mode: ไม่บังคับอะไร (แค่ลงข้อมูลนอกเหนือจากที่ขาย บันทึก สถานะรายการ = order)
+      // - Edit mode: ถ้ามีสินค้าแล้ว ให้บังคับ bankInfo และ shippingAddress
+      if (input.mode === 'edit' && input.hasProducts) {
+        requiredFields.bankInfo = true
+        requiredFields.shippingAddress = true
+        if (!input.hasBankInfo) {
+          errors.push('กรุณาเลือกบัญชีธนาคารสำหรับการชำระเงิน')
+        }
+        if (!input.hasShippingAddress) {
+          errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+        }
+      }
+      // Add mode หรือไม่มี mode: ไม่บังคับอะไร
       break
 
     case 'cash':
