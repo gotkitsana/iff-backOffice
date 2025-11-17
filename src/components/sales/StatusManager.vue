@@ -75,7 +75,7 @@ const saleForm = ref<IUpdateSalesPayload>({
         ? convertStatusStringToNumber(props.targetStatus)
         : props.currentData.sellingStatus
       : convertStatusStringToNumber(props.targetStatus || props.currentStatus || 'none'),
-  user: props.currentData.user._id || '',
+  user: props.currentData.user || '',
   products:
     props.currentData.products?.map((p) => ({
       id: p.id || '',
@@ -332,7 +332,7 @@ const resetForm = () => {
           ? convertStatusStringToNumber(props.targetStatus)
           : props.currentData.sellingStatus
         : convertStatusStringToNumber(props.targetStatus || props.currentStatus || 'none'),
-    user: props.currentData.user._id || '',
+    user: props.currentData.user || '',
     products:
       props.currentData.products?.map((p) => ({
         id: p.id || '',
@@ -688,14 +688,16 @@ const generateReportHTML = () => {
           <div style="font-weight: 600; margin-bottom: 8px;">ข้อมูลลูกค้า</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 15px; font-size: 13px;">
             <div><strong>ชื่อลูกค้า:</strong> ${
-              props.currentData.user.name || props.currentData.user.displayName
+              findMemberData(props.currentData.user)?.name ||
+              findMemberData(props.currentData.user)?.displayName ||
+              '-'
             }</div>
-            <div><strong>รหัส:</strong> ${props.currentData.user.code}</div>
+            <div><strong>รหัส:</strong> ${findMemberData(props.currentData.user)?.code || '-'}</div>
             <div><strong>ที่อยู่:</strong> ${
-              findMemberData(props.currentData.user._id)?.address || '-'
+              findMemberData(props.currentData.user)?.address || '-'
             }, ${
     memberStore.provinceOptions.find(
-      (option) => option.value === findMemberData(props.currentData.user._id)?.province
+      (option) => option.value === findMemberData(props.currentData.user)?.province
     )?.label || '-'
   }</div>
           </div>
@@ -1057,7 +1059,7 @@ const showReportView = computed(() => {
 
       <SaleDetailSummary
         :sale-data="currentData"
-        :member="members?.find((m) => m._id === currentData.user._id)"
+        :member="members?.find((m) => m._id === currentData.user)"
       />
 
       <!-- Status Selection for order -->

@@ -41,7 +41,7 @@ export function useMemberStatusUpdate() {
               ? convertStatusNumberToString(s.sellingStatus)
               : s.sellingStatus
           return (
-            s.user._id === variables.user &&
+            s.user === variables.user &&
             salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
               preparingStepOrder &&
             s._id !== variables._id

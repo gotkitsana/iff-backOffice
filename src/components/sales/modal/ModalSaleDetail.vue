@@ -491,13 +491,15 @@ const generateInvoiceHTML = () => {
           <div class="customer-title">ข้อมูลลูกค้า</div>
           <div class="customer-details">
             <div><strong>ชื่อลูกค้า:</strong> ${
-              props.saleData.user.name || props.saleData.user.displayName
+              findMemberData(props.saleData.user)?.name ||
+              findMemberData(props.saleData.user)?.displayName ||
+              '-'
             }</div>
             <div><strong>ที่อยู่:</strong> ${
-              findMemberData(props.saleData.user._id)?.address || '-'
+              findMemberData(props.saleData.user)?.address || '-'
             }, ${
     memberStore.provinceOptions.find(
-      (option) => option.value === findMemberData(props.saleData.user._id)?.province
+      (option) => option.value === findMemberData(props.saleData.user)?.province
     )?.label || '-'
   }</div>
 
@@ -770,15 +772,23 @@ const getProductImage = (productId: string): string | undefined => {
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">รหัสลูกค้า:</span>
-              <span class="font-medium capitalize">{{ saleData.user.code }}</span>
+              <span class="font-medium capitalize">{{
+                findMemberData(saleData.user)?.code || '-'
+              }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">ชื่อ-สกุล:</span>
-              <span class="font-medium">{{ saleData.user.name || saleData.user.displayName }}</span>
+              <span class="font-medium">{{
+                findMemberData(saleData.user)?.name ||
+                findMemberData(saleData.user)?.displayName ||
+                '-'
+              }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">ชื่อเล่น:</span>
-              <span class="font-medium">{{ saleData.user.displayName || '-' }}</span>
+              <span class="font-medium">{{
+                findMemberData(saleData.user)?.displayName || '-'
+              }}</span>
             </div>
 
             <!-- <div class="flex justify-between">
@@ -788,8 +798,8 @@ const getProductImage = (productId: string): string | undefined => {
             <div class="flex justify-between items-center">
               <span class="text-gray-600">สถานะ:</span>
               <Tag
-                :value="findMemberStatusTag(saleData.user.status)?.label"
-                :severity="findMemberStatusSeverity(saleData.user.status)"
+                :value="findMemberStatusTag(findMemberData(saleData.user)?.status || '')?.label"
+                :severity="findMemberStatusSeverity(findMemberData(saleData.user)?.status || '')"
                 size="small"
               />
             </div>
@@ -797,10 +807,10 @@ const getProductImage = (productId: string): string | undefined => {
             <div class="flex flex-col gap-1">
               <span class="text-gray-600">ที่อยู่:</span>
               <span class="font-medium! text-xs"
-                >{{ findMemberData(saleData.user._id)?.address || '-' }},
+                >{{ findMemberData(saleData.user)?.address || '-' }},
                 {{
                   memberStore.provinceOptions.find(
-                    (option) => option.value === findMemberData(props.saleData.user._id)?.province
+                    (option) => option.value === findMemberData(props.saleData.user)?.province
                   )?.label
                 }}</span
               >

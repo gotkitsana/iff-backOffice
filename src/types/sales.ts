@@ -77,14 +77,7 @@ export type ISales = {
   _id: string
   item: string
   sellingStatus: SellingStatus
-  user: {
-    _id: string
-    displayName: string
-    code: string
-    name: string
-    status: 'ci' | 'cs' | 'css'
-    type: string
-  }
+  user: string // id
   products: {
     name?: string
     price?: number | null
@@ -97,7 +90,7 @@ export type ISales = {
   }[]
   deposit: number
   discount: number
-  seller: string
+  seller: string // id
   deliveryStatus: string
   note: string
   cat: number

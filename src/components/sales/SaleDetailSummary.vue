@@ -6,10 +6,10 @@ import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales } from '@/types/sales'
 import { convertStatusNumberToString } from '@/types/sales'
 import type { IMember } from '@/stores/member/member'
+import { useQuery } from '@tanstack/vue-query'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
 import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
-import { useQuery } from '@tanstack/vue-query'
 
 const props = defineProps<{
   saleData: ISales
@@ -23,6 +23,16 @@ const { data: admins } = useQuery<IAdmin[]>({
   queryKey: ['get_admins'],
   queryFn: () => adminStore.onGetAdmins(),
 })
+const { data: members } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
+})
+
+const findMemberData = (id: string) => {
+  if (!members.value) return null
+  return members.value.find((member) => member._id === id)
+}
+
 const handleFindAdmin = (id: string | null | undefined): IAdmin | undefined => {
   if (!id) return undefined
   return admins.value?.find((admin) => admin._id === id)
@@ -48,11 +58,16 @@ const finalAmount = computed(() => {
 })
 
 const memberName = computed(() => {
-  return props.member?.name || props.saleData.user.name || props.saleData.user.displayName || '-'
+  return (
+    props.member?.name ||
+    findMemberData(props.saleData.user)?.name ||
+    findMemberData(props.saleData.user)?.displayName ||
+    '-'
+  )
 })
 
 const memberCode = computed(() => {
-  return props.member?.code || props.saleData.user.code || '-'
+  return props.member?.code || findMemberData(props.saleData.user)?.code || '-'
 })
 
 const memberPhone = computed(() => {
@@ -100,7 +115,7 @@ const shippingAddressDisplay = computed(() => {
           <h5 class="font-semibold text-gray-900">{{ memberName }}</h5>
           <p class="text-sm text-gray-600">
             รหัส: <span class="capitalize">{{ memberCode }}</span> | ชื่อเล่น:
-            {{ saleData.user.displayName || '-' }} | เบอร์: {{ memberPhone }}
+            {{ findMemberData(saleData.user)?.displayName || '-' }} | เบอร์: {{ memberPhone }}
           </p>
           <p class="text-xs text-gray-500 mt-0.5">ที่อยู่: {{ memberAddress }}</p>
         </div>

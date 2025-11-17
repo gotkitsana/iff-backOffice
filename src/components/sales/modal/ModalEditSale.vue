@@ -261,7 +261,7 @@ const populateForm = (saleData: ISales) => {
       typeof saleData.sellingStatus === 'number'
         ? saleData.sellingStatus
         : convertStatusStringToNumber(saleData.sellingStatus || 'none'),
-    user: saleData.user?._id || '',
+    user: saleData.user || '',
     products: saleData.products?.map((p) => ({
       id: p.id || '',
       quantity: p.quantity || 1,
@@ -454,7 +454,7 @@ const handleSlipUploaded = async (saleId: string) => {
       bankCode: saleForm.value.bankCode || props.saleData.bankCode,
       bankAccount: props.saleData.bankAccount,
       item: props.saleData.item,
-      user: props.saleData.user._id,
+      user: props.saleData.user,
       products:
         props.saleData.products?.map((p) => ({
           id: p.id || '',

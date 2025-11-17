@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import { useSalesStore } from '@/stores/sales/sales'
 import { Dialog, Button } from 'primevue'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import type { ISales } from '@/types/sales'
+import { useMemberStore, type IMember } from '@/stores/member/member'
 
 const props = defineProps<{
   showDeleteModal: boolean
@@ -30,6 +31,18 @@ const closeDeleteModal = () => {
 
 const queryClient = useQueryClient()
 const salesStore = useSalesStore()
+const memberStore = useMemberStore()
+
+const { data: members } = useQuery<IMember[]>({
+  queryKey: ['get_members'],
+  queryFn: () => memberStore.onGetMembers(),
+})
+
+const findMemberData = (id: string) => {
+  if (!members.value) return null
+  return members.value.find((member) => member._id === id)
+}
+
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: string) => salesStore.onDeleteSales(payload),
   onSuccess: (data: any) => {
@@ -75,7 +88,7 @@ const { mutate, isPending } = useMutation({
         <div class="flex justify-between">
           <span class="text-gray-600">ลูกค้า:</span>
           <span class="font-medium text-gray-900">{{
-            saleData.user?.name || saleData.user?.displayName
+            findMemberData(saleData.user)?.name || findMemberData(saleData.user)?.displayName || '-'
           }}</span>
         </div>
         <div class="flex justify-between">

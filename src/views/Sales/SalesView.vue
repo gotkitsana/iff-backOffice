@@ -319,8 +319,8 @@ const closeDeleteModal = () => {
 const showMemberDetailModal = ref(false)
 const selectedMemberId = ref<string | null>(null)
 
-const openMemberDetailModal = (memberId: string | { _id: string }) => {
-  const id = typeof memberId === 'string' ? memberId : memberId._id
+const openMemberDetailModal = (memberId: string) => {
+  const id = memberId
   selectedMemberId.value = id
   showMemberDetailModal.value = true
 }
@@ -732,7 +732,7 @@ const getPaymentMethodSeverity = (
             <template #body="slotProps">
               <div
                 class="cursor-pointer group p-2 -m-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                @click="openMemberDetailModal(slotProps.data.user._id)"
+                @click="openMemberDetailModal(slotProps.data.user)"
                 v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
               >
                 <div class="flex items-center gap-2 mb-1.5">
@@ -741,8 +741,8 @@ const getPaymentMethodSeverity = (
                   >
                     {{
                       (
-                        findMemberData(slotProps.data.user._id)?.displayName ||
-                        findMemberData(slotProps.data.user._id)?.name ||
+                        findMemberData(slotProps.data.user)?.displayName ||
+                        findMemberData(slotProps.data.user)?.name ||
                         'U'
                       )
                         .charAt(0)
@@ -753,7 +753,7 @@ const getPaymentMethodSeverity = (
                     <div
                       class="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors"
                     >
-                      {{ findMemberData(slotProps.data.user._id)?.displayName || '-' }}
+                      {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
                     </div>
                   </div>
                 </div>
@@ -766,7 +766,7 @@ const getPaymentMethodSeverity = (
                     "
                     :severity="
                       memberStore.getStatusTag(
-                        findMemberData(slotProps.data.user._id)?.status || ''
+                        findMemberData(slotProps.data.user)?.status || ''
                       )
                     "
                     size="small"
