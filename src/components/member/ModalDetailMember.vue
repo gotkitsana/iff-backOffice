@@ -72,41 +72,28 @@ const getInterestValue = (type: string): string | undefined => {
     :style="{ width: '56rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
     :pt="{
-      header: 'p-0',
+      header: 'py-3',
       content: 'p-0',
       footer: 'p-4',
     }"
   >
     <template #header>
-      <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 rounded-t-lg">
-        <div class="flex items-center gap-4">
-          <div
-            class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg border-2 border-white/30"
-          >
-            {{
-              data?.displayName?.charAt(0)?.toUpperCase() ||
-              data?.name?.charAt(0)?.toUpperCase() ||
-              'U'
-            }}
-          </div>
-          <div class="flex-1 text-white">
-            <h2 class="text-2xl font-bold mb-1">
-              {{ data?.displayName || data?.name || 'ไม่ระบุชื่อ' }}
-            </h2>
-            <div class="flex items-center gap-3 flex-wrap">
-              <span class="text-sm text-blue-100">รหัส: {{ data?.code }}</span>
-              <Tag
-                v-if="data?.status"
-                :value="
-                  memberStore.memberStatusOptions.find((option) => option.value === data?.status)
-                    ?.label || ''
-                "
-                :severity="memberStore.getStatusTag(data?.status)"
-                size="small"
-                class="bg-white/20 border-white/30 text-white"
-              />
-            </div>
-          </div>
+      <div class=" text-white">
+        <h2 class="text-xl font-semibold! text-gray-900">
+          {{ data?.displayName || data?.name || 'ไม่ระบุชื่อ' }}
+        </h2>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-sm text-blue-600">รหัส: {{ data?.code }}</span>
+          <Tag
+            v-if="data?.status"
+            :value="
+              memberStore.memberStatusOptions.find((option) => option.value === data?.status)
+                ?.label || ''
+            "
+            :severity="memberStore.getStatusTag(data?.status)"
+            size="small"
+            class="text-xs"
+          />
         </div>
       </div>
     </template>
@@ -116,7 +103,7 @@ const getInterestValue = (type: string): string | undefined => {
       <Skeleton height="150px" width="100%" />
     </div>
 
-    <div v-if="data" class="p-6 space-y-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
+    <div v-if="data" class="p-4 pt-2 space-y-4 ">
       <!-- Basic Information Section -->
       <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -129,7 +116,7 @@ const getInterestValue = (type: string): string | undefined => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- ช่องทางติดต่อ -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ช่องทางติดต่อ</label
             >
             <div
@@ -139,24 +126,24 @@ const getInterestValue = (type: string): string | undefined => {
               <div
                 v-for="contact in data.contacts"
                 :key="contact.index"
-                class="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
               >
-                <div class="w-7 h-7 flex items-center justify-center flex-shrink-0">
+                <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                   <img
                     v-if="getContactImage(contact.type)"
                     :src="getContactImage(contact.type)"
                     :alt="contact.type"
-                    class="w-7 h-7 object-contain rounded"
+                    class="w-8 h-8 object-contain rounded"
                   />
                   <div
                     v-else
-                    class="w-7 h-7 bg-gray-300 flex items-center rounded justify-center text-gray-600 text-xs"
+                    class="w-8 h-8 bg-gray-300 flex items-center rounded justify-center text-gray-600 text-xs"
                   >
                     ?
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-medium text-gray-600 mb-0.5">
+                  <p class="text-xs font-medium text-gray-600">
                     {{
                       memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
                         ?.label || contact.type
@@ -170,7 +157,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อเล่น</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -181,7 +168,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อ-นามสกุล</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -190,7 +177,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ที่อยู่</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200 min-h-[60px]">
@@ -201,7 +188,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >จังหวัด</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -213,7 +200,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >เบอร์โทรศัพท์</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -251,7 +238,7 @@ const getInterestValue = (type: string): string | undefined => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ความชำนาญในการเลี้ยง</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -264,7 +251,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชอบปลาเล็กหรือปลาใหญ่</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -277,7 +264,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ขนาดบ่อที่เลี้ยง</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -288,7 +275,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้อจุลินทรีย์</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -299,7 +286,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้ออาหาร</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -322,7 +309,7 @@ const getInterestValue = (type: string): string | undefined => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อผู้ใช้</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -333,7 +320,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >รหัสผ่าน</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200">
@@ -344,7 +331,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >สถานะประมูล</label
             >
             <div class="flex items-center gap-2">
@@ -360,7 +347,7 @@ const getInterestValue = (type: string): string | undefined => {
           </div>
 
           <div v-if="data.info" class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide"
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ข้อมูลเพิ่มเติม</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 border border-gray-200 min-h-[50px]">

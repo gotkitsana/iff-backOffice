@@ -735,39 +735,21 @@ const getPaymentMethodSeverity = (
                 @click="openMemberDetailModal(slotProps.data.user)"
                 v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
               >
-                <div class="flex items-center gap-2 mb-1.5">
-                  <div
-                    class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-sm flex-shrink-0"
-                  >
-                    {{
-                      (
-                        findMemberData(slotProps.data.user)?.displayName ||
-                        findMemberData(slotProps.data.user)?.name ||
-                        'U'
-                      )
-                        .charAt(0)
-                        .toUpperCase()
-                    }}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div
-                      class="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors"
-                    >
-                      {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
-                    </div>
-                  </div>
-                </div>
+                <p
+                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors"
+                >
+                  ชื่อเล่น: {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
+                </p>
+
                 <div class="flex items-center gap-1.5">
                   <Tag
                     :value="
                       memberStore.memberStatusOptions.find(
-                        (s) => s.value === findMemberData(slotProps.data.user._id)?.status
+                        (s) => s.value === findMemberData(slotProps.data.user)?.status
                       )?.label || '-'
                     "
                     :severity="
-                      memberStore.getStatusTag(
-                        findMemberData(slotProps.data.user)?.status || ''
-                      )
+                      memberStore.getStatusTag(findMemberData(slotProps.data.user)?.status || '')
                     "
                     size="small"
                     class="text-xs"
