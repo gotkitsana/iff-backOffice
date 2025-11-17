@@ -49,6 +49,21 @@ export const getVideoUrl = (filename: string | undefined): string => {
 }
 
 /**
+ * ดึง URL ของใบเสร็จส่งของ (shipping slip)
+ * @param saleId - ID ของรายการขาย
+ * @param extension - extension ของไฟล์ (optional, เช่น 'jpg', 'jpeg', 'png')
+ * @returns URL ของใบเสร็จส่งของ
+ */
+export const getShippingSlipUrl = (
+  saleId: string | undefined,
+  extension?: string | undefined,
+): string => {
+  if (!saleId) return ''
+  const filename = extension ? `express-slip-${saleId}.${extension}` : `express-slip-${saleId}`
+  return getImageUrl(filename, 'product')
+}
+
+/**
  * ล้าง cache ทั้งหมด
  */
 export const clearImageCache = (): void => {
