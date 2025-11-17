@@ -4,11 +4,12 @@ import type {
   ICreateSalesPayload,
   IUpdateSalesPayload,
   SellingLabel,
-  SellingStatus,
+  SellingStatusString,
   StatusWorkflow,
   PaymentMethod,
   DeliveryStatus,
 } from '@/types/sales'
+import { SellingStatus, convertStatusNumberToString } from '@/types/sales'
 import type { ICategoryLabel } from '../product/category'
 
 export const useSalesStore = defineStore('sales', () => {
@@ -77,7 +78,7 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'Sale02', value: 'Sale02' },
   ]
 
-  const sellingStatusOptions: { label: SellingLabel; value: SellingStatus }[] = [
+  const sellingStatusOptions: { label: SellingLabel; value: SellingStatusString }[] = [
     { label: 'ออเดอร์', value: 'order' },
     { label: 'รอชำระเงิน', value: 'wait_payment' },
     { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
@@ -87,6 +88,14 @@ export const useSalesStore = defineStore('sales', () => {
   ]
 
   const statusWorkflow: StatusWorkflow = {
+    none: {
+      label: 'ไม่ระบุ',
+      color: 'secondary',
+      icon: 'pi pi-question-circle',
+      nextSteps: ['order', 'wait_payment', 'preparing', 'shipping', 'received', 'damaged'],
+      description: 'สถานะเริ่มต้น',
+      stepOrder: 0,
+    },
     order: {
       label: 'ออเดอร์',
       color: 'warning',
@@ -138,9 +147,12 @@ export const useSalesStore = defineStore('sales', () => {
   }
 
   const getStatusTag = (
-    status: SellingStatus,
+    status: SellingStatus | number,
   ): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warning' | 'danger' } => {
-    switch (status) {
+    // แปลง number เป็น string ถ้าเป็น number
+    const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
+
+    switch (statusString) {
       case 'order':
         return { label: 'ออเดอร์', severity: 'warning' }
       case 'wait_payment':
@@ -153,8 +165,10 @@ export const useSalesStore = defineStore('sales', () => {
         return { label: 'ได้รับสินค้าแล้ว', severity: 'success' }
       case 'damaged':
         return { label: 'สินค้าเสียหาย', severity: 'danger' }
+      case 'none':
+        return { label: 'ไม่ระบุ', severity: 'secondary' }
       default:
-        return { label: status, severity: 'info' }
+        return { label: 'ไม่ระบุ', severity: 'info' }
     }
   }
 
@@ -167,21 +181,21 @@ export const useSalesStore = defineStore('sales', () => {
   ): SellingStatus => {
     switch (paymentMethod) {
       case 'order':
-        return 'order'
+        return SellingStatus.order
       case 'cash':
         if (deliveryStatus === 'received') {
-          return 'received'
+          return SellingStatus.received
         }
-        return 'preparing'
+        return SellingStatus.preparing
       case 'credit':
-        return 'preparing'
+        return SellingStatus.preparing
       case 'transfer':
       case 'card':
-        return 'wait_payment'
+        return SellingStatus.wait_payment
       case 'cod':
-        return 'preparing'
+        return SellingStatus.preparing
       default:
-        return 'wait_payment'
+        return SellingStatus.wait_payment
     }
   }
 

@@ -1,14 +1,14 @@
-import type { SellingStatus, PaymentMethod, DeliveryStatus } from '@/types/sales'
+import type { SellingStatusString, PaymentMethod, DeliveryStatus } from '@/types/sales'
 
 export type ValidationMode = 'create' | 'edit' | 'status-change'
 
 export type StatusValidationInput = {
-  selectedStatus: SellingStatus
+  selectedStatus: SellingStatusString
   hasProducts: boolean
   hasBankInfo: boolean
   hasSlip: boolean
   hasShippingSlip: boolean
-  currentStatus?: SellingStatus
+  currentStatus?: SellingStatusString
   mode: ValidationMode
 }
 
@@ -34,7 +34,7 @@ export type RequiredFields = {
 export type StatusValidationResult = {
   isValid: boolean
   errors: string[]
-  finalStatus: SellingStatus
+  finalStatus: SellingStatusString
   requiredFields: RequiredFields
 }
 
@@ -42,10 +42,10 @@ export type StatusValidationResult = {
  * คำนวณ finalStatus ตามเงื่อนไขการอัพโหลดสลิปและใบเสร็จ
  */
 export function calculateFinalStatus(
-  selectedStatus: SellingStatus,
+  selectedStatus: SellingStatusString,
   hasSlip: boolean,
   hasShippingSlip: boolean,
-): SellingStatus {
+): SellingStatusString {
   // wait_payment: ถ้าอัพสลิปแล้ว -> preparing, ถ้าอัพสลิป+ใบขนส่ง -> shipping
   if (selectedStatus === 'wait_payment') {
     if (hasSlip && hasShippingSlip) {
@@ -79,7 +79,7 @@ export function calculateFinalStatus(
  */
 export function canEditField(
   field: 'products' | 'bankInfo' | 'slip' | 'shippingSlip',
-  currentStatus: SellingStatus,
+  currentStatus: SellingStatusString,
 ): boolean {
   switch (currentStatus) {
     case 'order':
@@ -112,9 +112,9 @@ export function canEditField(
  * คืนค่า status ที่สามารถเลือกได้ตาม currentStatus และ mode
  */
 export function getAvailableStatuses(
-  currentStatus: SellingStatus | undefined,
+  currentStatus: SellingStatusString | undefined,
   mode: ValidationMode,
-): SellingStatus[] {
+): SellingStatusString[] {
   if (mode === 'create') {
     // สร้างรายการ: เลือกได้ step 1-5 (ใช้ payment method แทน)
     return ['order', 'wait_payment', 'preparing', 'shipping']
@@ -503,7 +503,6 @@ export function validateStatusForStatusChange(
       // ไม่สามารถเปลี่ยนได้
       errors.push('ไม่สามารถเปลี่ยนสถานะจากรายการที่เสร็จสิ้นแล้วได้')
       break
-
   }
 
   // คำนวณ finalStatus

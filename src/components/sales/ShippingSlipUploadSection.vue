@@ -4,7 +4,7 @@ import { Button, FileUpload } from 'primevue'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { SellingStatus } from '@/types/sales'
+import type { SellingStatusString } from '@/types/sales'
 
 // Props
 const props = defineProps<{
@@ -30,7 +30,7 @@ const previewImage = ref<string>('')
 const showUploadSection = ref<boolean>(false)
 
 // Computed
-const statusSteps: SellingStatus[] = [
+const statusSteps: SellingStatusString[] = [
   'order',
   'wait_payment',
   'preparing',
@@ -39,7 +39,7 @@ const statusSteps: SellingStatus[] = [
   'damaged',
 ]
 const requiresShippingSlipUpload = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.selectedStatus as SellingStatusString)
   const preparingStepIndex = statusSteps.indexOf('preparing')
   const shippingStepIndex = statusSteps.indexOf('shipping')
   // Show for wait_payment (optional), preparing (mandatory), shipping and above
@@ -47,7 +47,7 @@ const requiresShippingSlipUpload = computed(() => {
 })
 
 const closeEdit = computed(() => {
-  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatus)
+  const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
   const shippingStepIndex = statusSteps.indexOf('shipping')
   return currentStepIndex >= shippingStepIndex
 })

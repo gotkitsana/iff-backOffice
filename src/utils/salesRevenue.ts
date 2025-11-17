@@ -1,4 +1,5 @@
-import type { ISales, SellingStatus } from '@/types/sales'
+import type { ISales, SellingStatusString } from '@/types/sales'
+import { convertStatusNumberToString } from '@/types/sales'
 import type { ICategoryValue } from '@/stores/product/category'
 
 /**
@@ -18,11 +19,17 @@ export function calculateSaleTotal(sale: ISales): number {
  */
 export function calculateRevenueByStatus(
   sales: ISales[],
-  statusFilter: (status: SellingStatus) => boolean,
+  statusFilter: (status: SellingStatusString) => boolean,
 ): number {
   return (
     sales
-      ?.filter((s) => statusFilter(s.status as SellingStatus))
+      ?.filter((s) => {
+        const statusString =
+          typeof s.sellingStatus === 'number'
+            ? convertStatusNumberToString(s.sellingStatus)
+            : s.sellingStatus
+        return statusFilter(statusString as SellingStatusString)
+      })
       .reduce((sum, sale) => sum + calculateSaleTotal(sale), 0) || 0
   )
 }
@@ -34,11 +41,17 @@ export function calculateCategoryRevenue(
   sales: ISales[],
   categoryName: ICategoryValue,
   categories: Array<{ _id: string; value: ICategoryValue }> | undefined,
-  statusFilter: (status: SellingStatus) => boolean,
+  statusFilter: (status: SellingStatusString) => boolean,
 ): number {
   return (
     sales
-      ?.filter((s) => statusFilter(s.status as SellingStatus))
+      ?.filter((s) => {
+        const statusString =
+          typeof s.sellingStatus === 'number'
+            ? convertStatusNumberToString(s.sellingStatus)
+            : s.sellingStatus
+        return statusFilter(statusString as SellingStatusString)
+      })
       .reduce((sum, sale) => {
         const categoryProductsTotal = sale.products
           ? sale.products
