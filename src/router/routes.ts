@@ -16,6 +16,9 @@ import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
 
+import FishProductView from '@/views/Product/Category/FishProductView.vue'
+
+
 export default [
   {
     path: '/login',
@@ -88,6 +91,16 @@ export default [
           title: 'คลังสินค้า',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'คลังสินค้า' }],
+        },
+      },
+      {
+        path: '/storage/fish',
+        name: 'storage-fish',
+        component: FishProductView,
+        meta: {
+          title: 'คลังปลา',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'คลังสินค้า', path: '/storage' }, { label: 'คลังปลา' }],
         },
       },
       {

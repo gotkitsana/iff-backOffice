@@ -151,7 +151,7 @@ const menuSections = [
           },
           {
             icon: 'pi pi-cart-plus',
-            label: 'บันทึกรายการขาย',
+            label: 'รายการขาย',
             route: 'sales',
           },
         ],
@@ -188,10 +188,22 @@ const menuSections = [
   {
     title: 'ระบบการผลิต',
     items: [
+      // {
+      //   icon: 'pi pi-warehouse',
+      //   label: 'ผลิต',
+      //   route: 'production',
+      // },
       {
         icon: 'pi pi-warehouse',
-        label: 'ผลิต',
-        route: 'production',
+        label: 'ผลิต MES',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-book',
+            label: 'คู้มือ',
+            route: 'production-guide',
+          },
+        ],
       },
       // {
       //   icon: 'pi pi-shop',
