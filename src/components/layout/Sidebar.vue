@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
+import { useCategoryStore, type ICategory } from '@/stores/product/category'
+import { orderBy } from 'lodash-es'
 import MenuItem from './MenuItem.vue'
 
 defineOptions({
@@ -21,13 +24,105 @@ const route = useRoute()
 const router = useRouter()
 
 const isMobile = ref(false)
-const isSalesDropdownOpen = ref(false)
 const currentRoute = computed(() => {
   return route.name as string
 })
 
+// Dropdown state management using route-based identifiers
+const dropdownStates = ref<Record<string, boolean>>({
+  sales: false,
+  storage: false,
+})
+
+// Helper functions for dropdown management
+const getDropdownState = (item: {
+  route?: string
+  isDropdown?: boolean
+  submenu?: Array<{ route?: string }>
+}) => {
+  if (!item.isDropdown) return null
+  if (item.route === 'storage') return 'storage'
+  // Sales dropdown doesn't have route, but we can identify by checking if it has submenu with 'members' or 'sales'
+  if (item.submenu?.some((sub) => sub.route === 'members' || sub.route === 'sales')) {
+    return 'sales'
+  }
+  return null
+}
+
+const isDropdownOpen = (item: {
+  route?: string
+  isDropdown?: boolean
+  submenu?: Array<{ route?: string }>
+}) => {
+  const state = getDropdownState(item)
+  if (!state) return false
+  return dropdownStates.value[state] || false
+}
+
+const toggleDropdown = (item: {
+  route?: string
+  isDropdown?: boolean
+  submenu?: Array<{ route?: string }>
+}) => {
+  const state = getDropdownState(item)
+  if (state) {
+    dropdownStates.value[state] = !dropdownStates.value[state]
+  }
+}
+
+const isDropdownActive = (item: {
+  route?: string
+  isDropdown?: boolean
+  submenu?: Array<{ route?: string }>
+}) => {
+  if (!item.isDropdown) return false
+  const state = getDropdownState(item)
+
+  if (state === 'sales') {
+    return item.submenu?.some((sub) => currentRoute.value === sub.route) || false
+  }
+
+  if (state === 'storage') {
+    return currentRoute.value === 'storage' && !!route.query.category
+  }
+
+  return false
+}
+
+// Fetch categories for storage dropdown
+const categoryStore = useCategoryStore()
+const { data: categories } = useQuery<ICategory[]>({
+  queryKey: ['get_categories'],
+  queryFn: () => categoryStore.onGetCategory(0),
+})
+
+// Category order: ปลา (fish), อาหาร (food), สารปรับสภาพน้ำ (microorganism)
+const categoryOrder: Record<string, number> = {
+  fish: 1,
+  food: 2,
+  microorganism: 3,
+}
+
+// Create storage submenu from categories, sorted by predefined order
+const storageSubmenu = computed(() => {
+  if (!categories.value) return []
+  return orderBy(
+    categories.value.map((category) => ({
+      icon: category.icon,
+      label: category.name,
+      categoryValue: category.value,
+      order: categoryOrder[category.value] || 999, // Put unknown categories at the end
+    })),
+    'order'
+  )
+})
+
 const navigateTo = (routeName: string) => {
   router.push({ name: routeName })
+}
+
+const navigateToStorageCategory = (categoryValue: string) => {
+  router.push({ name: 'storage', query: { category: categoryValue } })
 }
 
 const checkMobile = () => {
@@ -70,6 +165,8 @@ const menuSections = [
         icon: 'pi pi-building-columns',
         label: 'คลังสินค้า',
         route: 'storage',
+        isDropdown: true,
+        submenu: [], // Will be populated dynamically from categories
       },
       {
         icon: 'pi pi-calculator',
@@ -151,18 +248,24 @@ const menuSections = [
 ]
 
 // Auto-open dropdown if current route matches any submenu item
-const salesMenuSection = menuSections[0].items.find((item) => item.isDropdown)
-if (salesMenuSection?.submenu) {
-  watch(
-    currentRoute,
-    (routeName) => {
-      if (salesMenuSection.submenu?.some((sub) => routeName === sub.route)) {
-        isSalesDropdownOpen.value = true
-      }
-    },
-    { immediate: true }
-  )
-}
+watch(
+  currentRoute,
+  (routeName) => {
+    // Check sales dropdown
+    const salesMenuSection = menuSections[0].items.find(
+      (item) => getDropdownState(item) === 'sales'
+    )
+    if (salesMenuSection?.submenu?.some((sub) => routeName === sub.route)) {
+      dropdownStates.value.sales = true
+    }
+
+    // Check storage dropdown
+    if (routeName === 'storage' && route.query.category) {
+      dropdownStates.value.storage = true
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   checkMobile()
@@ -213,11 +316,12 @@ onUnmounted(() => {
               <!-- Dropdown Menu Item -->
               <div v-if="item.isDropdown" class="space-y-1">
                 <button
-                  @click="isSalesDropdownOpen = !isSalesDropdownOpen"
+                  @click="toggleDropdown(item)"
                   :class="[
                     'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-200 group',
-                    isSalesDropdownOpen &&
-                      'bg-blue-100 lg:drop-shadow-xs',
+                    isDropdownOpen(item) || isDropdownActive(item)
+                      ? 'bg-blue-100 lg:drop-shadow-xs'
+                      : '',
                   ]"
                 >
                   <div class="flex items-center space-x-3 flex-1">
@@ -225,8 +329,7 @@ onUnmounted(() => {
                       :class="[
                         item.icon,
                         'text-sm',
-                        isSalesDropdownOpen ||
-                        item.submenu?.some((sub) => currentRoute === sub.route)
+                        isDropdownOpen(item) || isDropdownActive(item)
                           ? 'text-blue-500 lg:text-black'
                           : 'text-gray-600 group-hover:text-black',
                       ]"
@@ -234,8 +337,7 @@ onUnmounted(() => {
                     <span
                       class="flex-1 text-left font-[500]!"
                       :class="
-                        isSalesDropdownOpen ||
-                        item.submenu?.some((sub) => currentRoute === sub.route)
+                        isDropdownOpen(item) || isDropdownActive(item)
                           ? 'text-blue-500 lg:text-black'
                           : 'text-gray-600 group-hover:text-black'
                       "
@@ -245,8 +347,8 @@ onUnmounted(() => {
                   <i
                     :class="[
                       'pi text-xs transition-transform duration-200',
-                      isSalesDropdownOpen ? 'pi-angle-up' : 'pi-angle-down',
-                      isSalesDropdownOpen || item.submenu?.some((sub) => currentRoute === sub.route)
+                      isDropdownOpen(item) ? 'pi-angle-up' : 'pi-angle-down',
+                      isDropdownOpen(item) || isDropdownActive(item)
                         ? 'text-blue-500 lg:text-black'
                         : 'text-gray-600',
                     ]"
@@ -255,18 +357,36 @@ onUnmounted(() => {
                 <!-- Submenu Items -->
                 <Transition name="slide-fade">
                   <div
-                    v-if="isSalesDropdownOpen"
+                    v-if="isDropdownOpen(item)"
                     class="flex flex-col gap-1 overflow-hidden select-none duration-300 ml-2"
                   >
-                    <MenuItem
-                      v-for="subItem in item.submenu"
-                      :key="subItem.route"
-                      :icon="subItem.icon"
-                      :label="subItem.label"
-                      :active="currentRoute === subItem.route"
-                      :submenu="true"
-                      @click="navigateTo(subItem.route)"
-                    />
+                    <!-- Sales submenu -->
+                    <template v-if="getDropdownState(item) === 'sales'">
+                      <MenuItem
+                        v-for="subItem in item.submenu"
+                        :key="subItem.route"
+                        :icon="subItem.icon"
+                        :label="subItem.label"
+                        :active="currentRoute === subItem.route"
+                        :submenu="true"
+                        @click="navigateTo(subItem.route)"
+                      />
+                    </template>
+                    <!-- Storage submenu -->
+                    <template v-else-if="getDropdownState(item) === 'storage'">
+                      <MenuItem
+                        v-for="subItem in storageSubmenu"
+                        :key="subItem.categoryValue"
+                        :icon="subItem.icon"
+                        :label="subItem.label"
+                        :active="
+                          currentRoute === 'storage' &&
+                          route.query.category === subItem.categoryValue
+                        "
+                        :submenu="true"
+                        @click="navigateToStorageCategory(subItem.categoryValue)"
+                      />
+                    </template>
                   </div>
                 </Transition>
               </div>
