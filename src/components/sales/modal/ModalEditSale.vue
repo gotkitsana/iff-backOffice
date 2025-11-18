@@ -47,6 +47,7 @@ import {
 } from '@/utils/salesStatusValidation'
 import { useUploadFileStore } from '@/stores/product/upload_file'
 import { getShippingSlipUrl } from '@/utils/imageUrl'
+import dayjs from 'dayjs'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -171,6 +172,20 @@ const showSlipUpload = computed(() => {
   const pm = saleForm.value.paymentMethod
   const statusStr = currentStatusString.value
 
+  // สำหรับ cash: ซ่อนเมื่อ deliveryStatus = preparing
+  if (pm === 'cash' && saleForm.value.deliveryStatus === 'preparing') {
+    return false
+  }
+
+  // สำหรับ cod: ไม่ต้องแสดง
+  if (pm === 'cod') {
+    return false
+  }
+
+  if (pm === 'credit') {
+    return false
+  }
+
   // สำหรับ order: แสดงเมื่อ status = wait_payment หรือมากกว่า
   if (pm === 'order') {
     const currentStepIndex = getStatusStepIndex(statusStr)
@@ -275,6 +290,15 @@ const requiresShippingAddress = computed(() => {
     return hasProducts
   }
   return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+// Computed สำหรับแสดง/ซ่อนส่วน "ข้อมูลเพิ่มเติม"
+const showAdditionalInfo = computed(() => {
+  // ซ่อนเมื่อ paymentMethod = cash และ deliveryStatus = received
+  if (saleForm.value.paymentMethod === 'cash' && saleForm.value.deliveryStatus === 'received') {
+    return false
+  }
+  return true
 })
 
 // Custom products management
@@ -406,8 +430,8 @@ const populateForm = (saleData: ISales) => {
     note: saleData.note || '',
     deliveryNo: saleData.deliveryNo || 0,
     delivery: saleData.delivery || '',
-    deliveryStatus: saleData.deliveryStatusForCash,
-    paymentDueDate: saleData.paymentDueDate,
+    deliveryStatus: saleData.deliveryStatus,
+    paymentDueDate: dayjs(saleData.paymentDueDate).toDate(),
     shippingAddress: saleData.shippingAddress,
     shippingProvince: saleData.shippingProvince,
     customProducts: saleData.customProducts,
@@ -473,6 +497,8 @@ const handleSubmit = () => {
     hasPaymentDueDate: !!saleForm.value.paymentDueDate,
     hasCustomProducts: hasCustomProducts,
     mode: 'edit',
+    currentStatus: currentStatusString.value as SellingStatusString, // ส่ง currentStatus เพื่อตรวจสอบเงื่อนไข
+    skipShippingSlipUpload: skipShippingSlipUpload.value, // ส่ง skipShippingSlipUpload เพื่อรองรับการข้ามการอัพโหลด
   })
 
   // Show validation errors
@@ -495,21 +521,25 @@ const handleSubmit = () => {
   }
 
   // คำนวณ finalStatus จาก paymentMethod และ currentStatus
-  const currentStatusString =
-    typeof props.saleData.sellingStatus === 'number'
-      ? convertStatusNumberToString(props.saleData.sellingStatus)
-      : props.saleData.sellingStatus
+  // ใช้ computed property currentStatusString ที่ประกาศไว้แล้ว
+  const currentStatusStr = currentStatusString.value
 
-  // ตรวจสอบว่าถ้า status = wait_payment ต้องมีสลิป
-  if (currentStatusString === 'wait_payment' && !hasSlip.value) {
-    toast.error('กรุณาอัพโหลดสลิปการโอนเงินก่อนบันทึก')
+  // ตรวจสอบ shipping slip validation
+  // ถ้า requireShippingSlipUpload = true และ skipShippingSlipUpload = false และไม่มี shipping slip → แสดง error
+  if (
+    requireShippingSlipUpload.value &&
+    !skipShippingSlipUpload.value &&
+    !hasShippingSlip.value &&
+    currentStatusStr === 'preparing'
+  ) {
+    toast.error('กรุณาอัพโหลดสลิปการจัดส่งหรือเลือกข้ามการอัพโหลด')
     return
   }
 
   let finalStatus: SellingStatus
 
   // ตรวจสอบ currentStatus step เพื่อป้องกันไม่ให้ย้อนกลับ
-  const currentStepIndex = getStatusStepIndex(currentStatusString)
+  const currentStepIndex = getStatusStepIndex(currentStatusStr)
   const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
   const preparingStepIndex = getStatusStepIndex('preparing')
 
@@ -520,7 +550,7 @@ const handleSubmit = () => {
       finalStatus =
         typeof props.saleData.sellingStatus === 'number'
           ? props.saleData.sellingStatus
-          : convertStatusStringToNumber(currentStatusString)
+          : convertStatusStringToNumber(currentStatusStr)
     } else {
       // ถ้ามีสินค้า (products หรือ customProducts) + bankCode + shippingAddress → wait_payment
       const hasAnyProducts = hasValidProducts || hasCustomProducts
@@ -544,7 +574,7 @@ const handleSubmit = () => {
       finalStatus =
         typeof props.saleData.sellingStatus === 'number'
           ? props.saleData.sellingStatus
-          : convertStatusStringToNumber(currentStatusString)
+          : convertStatusStringToNumber(currentStatusStr)
     } else {
       finalStatus = SellingStatus.preparing
     }
@@ -557,7 +587,7 @@ const handleSubmit = () => {
       finalStatus =
         typeof props.saleData.sellingStatus === 'number'
           ? props.saleData.sellingStatus
-          : convertStatusStringToNumber(currentStatusString)
+          : convertStatusStringToNumber(currentStatusStr)
     } else if (hasSlip.value) {
       // ถ้ามี shipping slip → shipping
       if (hasShippingSlip.value) {
@@ -574,7 +604,7 @@ const handleSubmit = () => {
       finalStatus =
         typeof props.saleData.sellingStatus === 'number'
           ? props.saleData.sellingStatus
-          : convertStatusStringToNumber(currentStatusString)
+          : convertStatusStringToNumber(currentStatusStr)
     } else {
       finalStatus = SellingStatus.preparing
     }
@@ -583,17 +613,17 @@ const handleSubmit = () => {
     finalStatus =
       typeof props.saleData.sellingStatus === 'number'
         ? props.saleData.sellingStatus
-        : convertStatusStringToNumber(currentStatusString)
+        : convertStatusStringToNumber(currentStatusStr)
   }
 
-  // ถ้า currentStatus เป็น preparing และมี shipping slip → shipping
-  if (currentStatusString === 'preparing' && hasShippingSlip.value) {
+  // ถ้า currentStatus เป็น preparing และมี shipping slip หรือเลือกข้าม → shipping
+  if (currentStatusStr === 'preparing' && (hasShippingSlip.value || skipShippingSlipUpload.value)) {
     finalStatus = SellingStatus.shipping
   }
 
   // ถ้า currentStatus เป็น shipping → ยังคงเป็น shipping (ไม่เปลี่ยน)
   // แต่ถ้ามี finalSaleStatus ให้ใช้ finalSaleStatus แทน
-  if (currentStatusString === 'shipping') {
+  if (currentStatusStr === 'shipping') {
     if (finalSaleStatus.value === 'received') {
       finalStatus = SellingStatus.received
     } else if (finalSaleStatus.value === 'damaged') {
@@ -651,6 +681,11 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           ? convertStatusNumberToString(variables.sellingStatus)
           : variables.sellingStatus
 
+      // ตรวจสอบ status เดิมเพื่อป้องกันการตัดสต็อกซ้ำ
+      const previousStatusString = currentStatusString.value
+      const previousStepIndex = getStatusStepIndex(previousStatusString)
+      const preparingStepIndex = getStatusStepIndex('preparing')
+
       if (
         salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
         salesStore.statusWorkflow['preparing'].stepOrder
@@ -665,8 +700,9 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           preparingStepOrder
         )
 
-        // B. ตัดสต็อกสินค้า - ใช้ utility function
-        if (productsData.value) {
+        // B. ตัดสต็อกสินค้า - ตัดเฉพาะเมื่อ status เดิมน้อยกว่า preparing
+        // เพื่อป้องกันการตัดสต็อกซ้ำเมื่อเปลี่ยนจาก preparing เป็น shipping
+        if (productsData.value && previousStepIndex < preparingStepIndex) {
           executeStockDeduction(variables, productsData.value, updateProduct, (warning) =>
             toast.warning(warning)
           )
@@ -722,6 +758,8 @@ const resetForm = () => {
   deliveryPhotoPreview.value = ''
   hasPendingSlipUpload.value = false
   hasPendingShippingSlipUpload.value = false
+  skipShippingSlipUpload.value = false
+  requireShippingSlipUpload.value = true // Reset เป็นค่าเริ่มต้น
 }
 
 const hasSlip = ref(false)
@@ -730,6 +768,10 @@ const hasShippingSlip = ref(false)
 // Track pending upload states
 const hasPendingSlipUpload = ref(false)
 const hasPendingShippingSlipUpload = ref(false)
+
+// Track shipping slip upload option
+const skipShippingSlipUpload = ref(false)
+const requireShippingSlipUpload = ref(true) // ค่าเริ่มต้น = true (ต้องอัพโหลด)
 
 // สำหรับจบการขายเมื่อ status = shipping
 const finalSaleStatus = ref<'received' | 'damaged' | null>(null)
@@ -801,6 +843,18 @@ const handleShippingSlipPendingUpload = (isPending: boolean) => {
   hasPendingShippingSlipUpload.value = isPending
 }
 
+const handleSkipShippingSlipUploadChanged = (skip: boolean) => {
+  skipShippingSlipUpload.value = skip
+}
+
+const handleRequireShippingSlipUploadChanged = (require: boolean) => {
+  requireShippingSlipUpload.value = require
+}
+
+const handleDeliveryChanged = (delivery: string) => {
+  saleForm.value.delivery = delivery
+}
+
 // Handler สำหรับเมื่ออัพโหลด shipping slip สำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
 const handleShippingSlipUploaded = async (saleId: string) => {
   // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
@@ -859,7 +913,7 @@ const handleShippingSlipUploaded = async (saleId: string) => {
 
 // Handler สำหรับจบการขาย
 const handleCompleteSale = async () => {
-    isSubmitting.value = true
+  isSubmitting.value = true
   if (!finalSaleStatus.value) {
     toast.error('กรุณาเลือกสถานะการขาย (ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย)')
     return
@@ -954,19 +1008,6 @@ const sellers = computed(() => {
       label: admin.name,
       value: admin._id,
     }))
-})
-
-// Computed สำหรับ disable ปุ่มอัปเดตข้อมูล
-const isUpdateButtonDisabled = computed(() => {
-  // ถ้า status = wait_payment และยังไม่มีสลิป ให้ disable ปุ่ม
-  if (currentStatusString.value === 'wait_payment' && !hasSlip.value) {
-    return true
-  }
-  // ถ้ามี pending upload ให้ disable ปุ่ม
-  if (hasPendingSlipUpload.value || hasPendingShippingSlipUpload.value) {
-    return true
-  }
-  return false
 })
 </script>
 
@@ -1199,7 +1240,6 @@ const isUpdateButtonDisabled = computed(() => {
         </div>
       </div>
 
-
       <!-- Payment Calculation -->
       <PaymentCalculationSection
         :total-amount="totalAmount"
@@ -1213,7 +1253,10 @@ const isUpdateButtonDisabled = computed(() => {
         @update:delivery-no="updateDeliveryNo"
       />
 
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div
+        v-if="showAdditionalInfo"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
         <!-- Payment Due Date (for credit) -->
         <div class="flex items-center gap-2 mb-4">
           <i class="pi pi-info-circle text-blue-600"></i>
@@ -1223,7 +1266,7 @@ const isUpdateButtonDisabled = computed(() => {
         <div v-if="showPaymentDueDate" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
           <DatePicker
-            v-model="saleForm.paymentDueDate as Date | undefined"
+            v-model="saleForm.paymentDueDate as Date"
             dateFormat="dd/mm/yy"
             showIcon
             iconDisplay="input"
@@ -1341,14 +1384,25 @@ const isUpdateButtonDisabled = computed(() => {
           :selected-status="currentStatusString"
           :is-current-status="currentStatusString"
           :is-submitting="isSubmitting"
+          :skip-upload="skipShippingSlipUpload"
+          :require-upload="requireShippingSlipUpload"
+          :delivery="saleForm.delivery"
+          :is-read-only="currentStatusString === 'received' || currentStatusString === 'damaged'"
           @shipping-slip-status-changed="handleShippingSlipStatusChanged"
           @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
           @shipping-slip-uploaded="handleShippingSlipUploaded"
+          @skip-upload-changed="handleSkipShippingSlipUploadChanged"
+          @require-upload-changed="handleRequireShippingSlipUploadChanged"
+          @delivery-changed="handleDeliveryChanged"
         />
 
         <!-- Complete Sale Section (for shipping status) -->
         <div
-          v-if="currentStatusString === 'shipping' || currentStatusString === 'received' || currentStatusString === 'damaged'"
+          v-if="
+            currentStatusString === 'shipping' ||
+            currentStatusString === 'received' ||
+            currentStatusString === 'damaged'
+          "
           class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
         >
           <div class="flex items-center gap-3 mb-4">
@@ -1387,7 +1441,6 @@ const isUpdateButtonDisabled = computed(() => {
         </div>
       </div>
 
-
       <!-- Notes -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
@@ -1421,7 +1474,6 @@ const isUpdateButtonDisabled = computed(() => {
           icon="pi pi-check"
           @click="currentStatusString === 'shipping' ? handleCompleteSale() : handleSubmit()"
           :loading="isUpdatingSale"
-          :disabled="isUpdateButtonDisabled"
           severity="success"
           size="small"
         />

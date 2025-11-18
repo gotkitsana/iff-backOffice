@@ -563,7 +563,7 @@ const getPaymentMethodSeverity = (
           <Column
             field="paymentMethod"
             header="สถานะการชำระ"
-            :pt="{ columnHeaderContent: 'min-w-[8rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <Tag
@@ -753,6 +753,7 @@ const getPaymentMethodSeverity = (
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
                 <Button
+                  v-if="slotProps.data.sellingStatus < 5"
                   icon="pi pi-sync"
                   severity="info"
                   size="small"

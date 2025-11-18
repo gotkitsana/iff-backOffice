@@ -67,7 +67,7 @@ export const useSalesStore = defineStore('sales', () => {
     { label: 'เงินสด', value: 'cash' },
     { label: 'โอน', value: 'transfer' },
     { label: 'บัตร', value: 'card' },
-    { label: 'เครดิต (ส่งก่อนจ่ายทีหลัง)', value: 'credit' },
+    { label: 'เครดิต', value: 'credit' },
     { label: 'ปลายทาง', value: 'cod' },
   ]
 
@@ -148,17 +148,17 @@ export const useSalesStore = defineStore('sales', () => {
 
   const getStatusTag = (
     status: SellingStatus | number,
-  ): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warning' | 'danger' } => {
+  ): { label: SellingLabel; severity: 'secondary' | 'info' | 'success' | 'warn' | 'danger' | 'contrast' } => {
     // แปลง number เป็น string ถ้าเป็น number
     const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
 
     switch (statusString) {
       case 'order':
-        return { label: 'ออเดอร์', severity: 'warning' }
+        return { label: 'ออเดอร์', severity: 'warn' }
       case 'wait_payment':
-        return { label: 'รอชำระเงิน', severity: 'warning' }
+        return { label: 'รอชำระเงิน', severity: 'warn' }
       case 'preparing':
-        return { label: 'แพ็ครอจัดส่ง', severity: 'info' }
+        return { label: 'แพ็ครอจัดส่ง', severity: 'contrast' }
       case 'shipping':
         return { label: 'ระหว่างขนส่ง', severity: 'info' }
       case 'received':

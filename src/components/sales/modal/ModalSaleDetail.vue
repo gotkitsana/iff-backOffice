@@ -13,7 +13,7 @@ import { useAdminStore } from '../../../stores/admin/admin'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import logoIcon from '@/assets/images/icon/icon.png'
 import jsPDF from 'jspdf'
-
+import BankData from '@/config/BankData'
 // Props
 const props = defineProps<{
   visible: boolean
@@ -70,7 +70,9 @@ const totalAmount = computed(() => {
 })
 
 const finalAmount = computed(() => {
-  return totalAmount.value - props.saleData.discount - props.saleData.deliveryNo
+  return (
+    (totalAmount.value || 0) - (props.saleData.discount || 0) - (props.saleData.deliveryNo || 0)
+  )
 })
 
 const paymentMethodLabel = computed(() => {
@@ -495,12 +497,9 @@ const generateInvoiceHTML = () => {
               findMemberData(props.saleData.user)?.displayName ||
               '-'
             }</div>
-            <div><strong>ที่อยู่:</strong> ${
-              props.saleData?.shippingAddress || '-'
-            }, ${
-    memberStore.provinceOptions.find(
-      (option) => option.value === props.saleData?.shippingProvince
-    )?.label || '-'
+            <div><strong>ที่อยู่:</strong> ${props.saleData?.shippingAddress || '-'}, ${
+    memberStore.provinceOptions.find((option) => option.value === props.saleData?.shippingProvince)
+      ?.label || '-'
   }</div>
 
             <div><strong>เลขประจำตัวผู้เสียภาษี / Tax ID.:</strong> -</div>
@@ -979,11 +978,21 @@ const getProductImage = (productId: string): string | undefined => {
           ข้อมูลการโอนเงิน
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex justify-between">
-            <span class="text-gray-600">รหัสธนาคาร:</span>
-            <span class="font-medium">{{ saleData.bankCode || '-' }}</span>
+          <div class="flex gap-3 items-center">
+            <span class="text-gray-600 ">ธนาคาร:</span>
+            <div class="flex items-center gap-1.5">
+              <img
+                v-if="BankData[saleData.bankCode as keyof typeof BankData]?.icon"
+                :src="BankData[saleData.bankCode as keyof typeof BankData]?.icon as string"
+                :alt="BankData[saleData.bankCode as keyof typeof BankData]?.fullname"
+                class="w-4 h-4 object-contain"
+              />
+              <span class="font-[500]!">
+                {{ BankData[saleData.bankCode as keyof typeof BankData]?.fullname || '-' }}
+              </span>
+            </div>
           </div>
-          <div class="flex justify-between">
+          <div class="flex gap-3 items-center">
             <span class="text-gray-600">บัญชีธนาคาร:</span>
             <span class="font-medium">{{ saleData.bankAccount || '-' }}</span>
           </div>

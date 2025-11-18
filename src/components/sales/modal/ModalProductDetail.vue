@@ -26,10 +26,11 @@ const customProducts = computed(() => props.saleData?.customProducts || [])
 
 const totalAmount = computed(() => {
   if (!props.saleData) return 0
+  console.log(props.saleData.deliveryNo, products)
   const productTotal = products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0)
-  return productTotal - props.saleData.discount - props.saleData.deliveryNo
+  return (productTotal || 0)- (props.saleData.discount || 0) - (props.saleData.deliveryNo || 0)
 })
 
 const productTotal = computed(() => {
