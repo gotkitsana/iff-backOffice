@@ -503,7 +503,6 @@ const handleSubmit = () => {
   // ตรวจสอบว่าถ้า status = wait_payment ต้องมีสลิป
   if (currentStatusString === 'wait_payment' && !hasSlip.value) {
     toast.error('กรุณาอัพโหลดสลิปการโอนเงินก่อนบันทึก')
-    isSubmitting.value = false
     return
   }
 
@@ -721,7 +720,6 @@ const resetForm = () => {
   finalSaleStatus.value = null
   deliveryPhoto.value = null
   deliveryPhotoPreview.value = ''
-  deliveryNote.value = ''
   hasPendingSlipUpload.value = false
   hasPendingShippingSlipUpload.value = false
 }
@@ -737,7 +735,6 @@ const hasPendingShippingSlipUpload = ref(false)
 const finalSaleStatus = ref<'received' | 'damaged' | null>(null)
 const deliveryPhoto = ref<File | null>(null)
 const deliveryPhotoPreview = ref<string>('')
-const deliveryNote = ref<string>('')
 
 const handleSlipStatusChanged = (status: boolean) => {
   hasSlip.value = status
@@ -860,62 +857,23 @@ const handleShippingSlipUploaded = async (saleId: string) => {
   }
 }
 
-// Handler สำหรับเลือกรูปจากขนส่ง
-const onDeliveryPhotoSelect = (event: { files: File[] }) => {
-  const file = event.files[0]
-  if (file) {
-    deliveryPhoto.value = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      deliveryPhotoPreview.value = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-// Handler สำหรับลบรูปที่เลือก
-const removeDeliveryPhoto = () => {
-  deliveryPhoto.value = null
-  deliveryPhotoPreview.value = ''
-}
-
 // Handler สำหรับจบการขาย
 const handleCompleteSale = async () => {
+    isSubmitting.value = true
   if (!finalSaleStatus.value) {
     toast.error('กรุณาเลือกสถานะการขาย (ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย)')
     return
   }
 
-  isSubmitting.value = true
-
   try {
-    // อัพโหลดรูปถ้ามี
-    if (deliveryPhoto.value && props.saleData._id) {
-      // Rename file to express-slip-{saleId}
-      const fileExtension = deliveryPhoto.value.name.split('.').pop() || 'jpg'
-      const newFileName = `express-slip-${props.saleData._id}.${fileExtension}`
-      const renamedFile = new File([deliveryPhoto.value], newFileName, {
-        type: deliveryPhoto.value.type,
-      })
-
-      await uploadFileStore.onUploadImage(renamedFile)
-    }
-
     // อัพเดท status เป็น received หรือ damaged
     const finalStatus =
       finalSaleStatus.value === 'received' ? SellingStatus.received : SellingStatus.damaged
 
-    // รวมหมายเหตุ
-    const updatedNote = deliveryNote.value
-      ? saleForm.value.note
-        ? `${saleForm.value.note}\n\nหมายเหตุการจบการขาย: ${deliveryNote.value}`
-        : `หมายเหตุการจบการขาย: ${deliveryNote.value}`
-      : saleForm.value.note
-
     const payload: IUpdateSalesPayload = {
       ...saleForm.value,
       sellingStatus: finalStatus,
-      note: updatedNote,
+      note: saleForm.value.note,
     }
 
     updateSale(payload)
@@ -1241,6 +1199,20 @@ const isUpdateButtonDisabled = computed(() => {
         </div>
       </div>
 
+
+      <!-- Payment Calculation -->
+      <PaymentCalculationSection
+        :total-amount="totalAmount"
+        :deposit="saleForm.deposit"
+        :discount="saleForm.discount"
+        :delivery-no="saleForm.deliveryNo"
+        :is-submitting="isSubmitting"
+        :read-only="currentStatusString === 'wait_payment'"
+        @update:deposit="updateDeposit"
+        @update:discount="updateDiscount"
+        @update:delivery-no="updateDeliveryNo"
+      />
+
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <!-- Payment Due Date (for credit) -->
         <div class="flex items-center gap-2 mb-4">
@@ -1376,7 +1348,7 @@ const isUpdateButtonDisabled = computed(() => {
 
         <!-- Complete Sale Section (for shipping status) -->
         <div
-          v-if="currentStatusString === 'shipping'"
+          v-if="currentStatusString === 'shipping' || currentStatusString === 'received' || currentStatusString === 'damaged'"
           class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
         >
           <div class="flex items-center gap-3 mb-4">
@@ -1404,44 +1376,17 @@ const isUpdateButtonDisabled = computed(() => {
                 placeholder="เลือกสถานะการขาย"
                 fluid
                 size="small"
+                :disabled="currentStatusString == 'received' || currentStatusString == 'damaged'"
                 :invalid="!finalSaleStatus && isSubmitting"
               />
               <small v-if="!finalSaleStatus && isSubmitting" class="text-red-500"
                 >กรุณาเลือกสถานะการขาย</small
               >
             </div>
-
-            <!-- Delivery Note -->
-
-            <!-- Delivery Photo Upload -->
-
-            <!-- Complete Sale Button -->
-            <div class="flex justify-end">
-              <Button
-                label="จบการขาย"
-                icon="pi pi-check"
-                severity="success"
-                size="small"
-                @click="handleCompleteSale"
-                :loading="isUpdatingSale"
-              />
-            </div>
           </div>
         </div>
       </div>
 
-      <!-- Payment Calculation -->
-      <PaymentCalculationSection
-        :total-amount="totalAmount"
-        :deposit="saleForm.deposit"
-        :discount="saleForm.discount"
-        :delivery-no="saleForm.deliveryNo"
-        :is-submitting="isSubmitting"
-        :read-only="currentStatusString === 'wait_payment'"
-        @update:deposit="updateDeposit"
-        @update:discount="updateDiscount"
-        @update:delivery-no="updateDeliveryNo"
-      />
 
       <!-- Notes -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -1463,6 +1408,7 @@ const isUpdateButtonDisabled = computed(() => {
     <template #footer>
       <div class="flex justify-end gap-3">
         <Button
+          v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'"
           label="ยกเลิก"
           icon="pi pi-times"
           severity="secondary"
@@ -1470,12 +1416,22 @@ const isUpdateButtonDisabled = computed(() => {
           size="small"
         />
         <Button
+          v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'"
           label="อัปเดตข้อมูล"
           icon="pi pi-check"
-          @click="handleSubmit"
+          @click="currentStatusString === 'shipping' ? handleCompleteSale() : handleSubmit()"
           :loading="isUpdatingSale"
           :disabled="isUpdateButtonDisabled"
           severity="success"
+          size="small"
+        />
+
+        <Button
+          v-if="currentStatusString == 'received' || currentStatusString == 'damaged'"
+          label="ปิด"
+          icon="pi pi-times"
+          severity="danger"
+          @click="handleClose"
           size="small"
         />
       </div>
