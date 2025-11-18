@@ -4,7 +4,6 @@
     :class="[
       'w-full flex items-center space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-200 group',
       active && !submenu && 'bg-blue-400  ',
-      submenu ? 'ml-2 text-sm py-2' : '',
     ]"
   >
     <i

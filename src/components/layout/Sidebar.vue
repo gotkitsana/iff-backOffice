@@ -391,7 +391,7 @@ onUnmounted(() => {
                 <Transition name="slide-fade">
                   <div
                     v-if="isDropdownOpen(item)"
-                    class="flex flex-col gap-1 overflow-y-auto select-none duration-300 ml-2 dropdown-submenu max-h-[calc(100vh-200px)]"
+                    class="flex flex-col gap-1 overflow-y-auto select-none duration-300 ml-3 dropdown-submenu max-h-[calc(100vh-200px)]"
                     style="scrollbar-width: none; -ms-overflow-style: none"
                   >
                     <!-- Storage submenu -->
