@@ -7,6 +7,7 @@ import ModalEditSale from '@/components/sales/modal/ModalEditSale.vue'
 import ModalSaleDetail from '@/components/sales/modal/ModalSaleDetail.vue'
 import ModalProductDetail from '@/components/sales/modal/ModalProductDetail.vue'
 import ModalDeleteSale from '@/components/sales/modal/ModalDeleteSale.vue'
+import ModalKPI from '@/components/sales/modal/ModalKPI.vue'
 import StatusManager from '@/components/sales/StatusManager.vue'
 import ModalDetailMember from '@/components/member/ModalDetailMember.vue'
 import formatCurrency from '@/utils/formatCurrency'
@@ -15,7 +16,6 @@ import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import type { ISales, SellingStatus, SellingStatusString } from '@/types/sales'
 import { convertStatusNumberToString } from '@/types/sales'
-import { useCategoryStore, type ICategory, type ICategoryValue } from '@/stores/product/category'
 import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
 // Stores
@@ -28,6 +28,7 @@ const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const showStatusManager = ref(false)
 const showProductDetailModal = ref(false)
+const showKPIModal = ref(false)
 const selectedSale = ref<ISales | null>(null)
 const activeTab = ref('all')
 
@@ -148,11 +149,6 @@ const getStatusStepOrder = (status: SellingStatus | number | string) => {
   return statusOrder[statusString as SellingStatusString] || 0
 }
 
-const categoryStore = useCategoryStore()
-const { data: categories } = useQuery<ICategory[]>({
-  queryKey: ['get_categories'],
-  queryFn: () => categoryStore.onGetCategory(0),
-})
 // Revenue calculations by category
 const totalRevenue = computed(() => {
   return (
@@ -204,34 +200,6 @@ const totalDelivery = computed(() => {
   )
 })
 
-const calculateCategoryRevenue = (categoryName: ICategoryValue) => {
-  return (
-    salesData.value
-      ?.filter((s) => getStatusStepOrder(s.sellingStatus) >= getStatusStepOrder('preparing'))
-      .reduce((sum, sale) => {
-        // รวมเฉพาะ products ที่ตรงกับ category ที่ต้องการ
-        const categoryProductsTotal = sale.products
-          ? sale.products
-              .filter(
-                (product) =>
-                  categories.value?.find((c) => c._id === product.category)?.value === categoryName
-              )
-              .reduce((productSum, product) => {
-                return productSum + (product.price || 0) * product.quantity
-              }, 0)
-          : 0
-        return sum + categoryProductsTotal
-      }, 0) || 0
-  )
-}
-
-const serviceRevenue = computed(() => calculateCategoryRevenue('service'))
-const fishRevenue = computed(() => calculateCategoryRevenue('fish'))
-const equipmentRevenue = computed(() => calculateCategoryRevenue('equipment'))
-const medicineRevenue = computed(() => calculateCategoryRevenue('medicine'))
-const foodRevenue = computed(() => calculateCategoryRevenue('food'))
-const microorganismRevenue = computed(() => calculateCategoryRevenue('microorganism'))
-const constructionRevenue = computed(() => calculateCategoryRevenue('construction'))
 
 // Utility functions
 const formatDate = (date: Date) => {
@@ -329,6 +297,10 @@ const closeMemberDetailModal = () => {
   selectedMemberId.value = null
 }
 
+const openKPIModal = () => {
+  showKPIModal.value = true
+}
+
 const adminStore = useAdminStore()
 const { data: admins } = useQuery<IAdmin[]>({
   queryKey: ['get_admins'],
@@ -371,6 +343,15 @@ const getPaymentMethodSeverity = (
         <h1 class="text-xl font-semibold! text-gray-900">ระบบขาย</h1>
         <p class="text-gray-600">จัดการการขายและติดตามยอดขาย</p>
       </div>
+      <Button
+        @click="openKPIModal"
+        icon="pi pi-chart-line"
+        label="ดูรายงาน KPI"
+        class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-0 shadow-md hover:shadow-lg transition-all duration-200"
+        :pt="{
+          root: { class: 'text-white font-medium' },
+        }"
+      />
     </div>
 
     <!-- Sales KPI Dashboard -->
@@ -402,134 +383,6 @@ const getPaymentMethodSeverity = (
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">ยอดค่าจัดส่ง</h2>
             <p class="text-xl font-semibold!">{{ formatCurrency(totalDelivery) }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main KPI Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Top 3 Categories -->
-        <div
-          class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-300"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-md"
-            >
-              <i class="pi pi-box text-white text-2xl"></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-[500]! text-gray-900">ยอดอุปกรณ์</h4>
-              <p class="text-lg font-semibold! text-green-600">
-                {{ formatCurrency(equipmentRevenue) }}
-              </p>
-              <p class="text-sm text-gray-500">บาท</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-300"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md"
-            >
-              <i class="pi pi-wrench text-white text-2xl"></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-[500]! text-gray-900">ยอดบริการ</h4>
-              <p class="text-lg font-semibold! text-purple-600">
-                {{ formatCurrency(serviceRevenue) }}
-              </p>
-              <p class="text-sm text-gray-500">บาท</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-300"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-md"
-            >
-              <i class="pi pi-building text-white text-2xl"></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-[500]! text-gray-900">ยอดขายคอนสทรัคชั่น</h4>
-              <p class="text-lg font-semibold! text-orange-600">
-                {{ formatCurrency(constructionRevenue) }}
-              </p>
-              <p class="text-sm text-gray-500">บาท</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Secondary Categories -->
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div
-          class="bg-white rounded-xl shadow-md border border-gray-100 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <div class="text-center">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center shadow-sm mx-auto mb-2"
-            >
-              <i class="pi pi-cart-arrow-down text-white text-lg"></i>
-            </div>
-            <h5 class="text-sm font-medium! text-gray-700">ยอดขายปลา</h5>
-            <p class="font-semibold! text-gray-600">
-              {{ formatCurrency(fishRevenue) }}
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-xl shadow-md border border-gray-100 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <div class="text-center">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-sm mx-auto mb-2"
-            >
-              <i class="pi pi-plus-circle text-white text-lg"></i>
-            </div>
-            <h5 class="text-sm font-medium! text-gray-700">ยอดขายยา</h5>
-            <p class="font-semibold! text-red-600">
-              {{ formatCurrency(medicineRevenue) }}
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-xl shadow-md border border-gray-100 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <div class="text-center">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm mx-auto mb-2"
-            >
-              <i class="pi pi-circle text-white text-lg"></i>
-            </div>
-            <h5 class="text-sm font-medium! text-gray-700">ยอดขายจุลินทรีย์</h5>
-            <p class="font-semibold! text-teal-600">
-              {{ formatCurrency(microorganismRevenue) }}
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="bg-white rounded-xl shadow-md border border-gray-100 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <div class="text-center">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center shadow-sm mx-auto mb-2"
-            >
-              <i class="pi pi-heart text-white text-lg"></i>
-            </div>
-            <h5 class="text-sm font-medium! text-gray-700">ยอดขายอาหาร</h5>
-            <p class="font-semibold! text-pink-600">
-              {{ formatCurrency(foodRevenue) }}
-            </p>
           </div>
         </div>
       </div>
@@ -989,5 +842,11 @@ const getPaymentMethodSeverity = (
     :showDetailModal="showMemberDetailModal"
     @onCloseDetailModal="closeMemberDetailModal"
     :id="selectedMemberId"
+  />
+
+  <!-- KPI Modal -->
+  <ModalKPI
+    v-model:visible="showKPIModal"
+    :sales-data="salesData || []"
   />
 </template>
