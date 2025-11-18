@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MenuItem from './MenuItem.vue'
 
@@ -21,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 
 const isMobile = ref(false)
+const isSalesDropdownOpen = ref(false)
 const currentRoute = computed(() => {
   return route.name as string
 })
@@ -44,14 +45,21 @@ const menuSections = [
         route: 'dashboard',
       },
       {
-        icon: 'pi pi-users',
-        label: 'ข้อมูลลูกค้า',
-        route: 'members',
-      },
-      {
         icon: 'pi pi-cart-plus',
         label: 'ขาย',
-        route: 'sales',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-users',
+            label: 'ข้อมูลลูกค้า',
+            route: 'members',
+          },
+          {
+            icon: 'pi pi-cart-plus',
+            label: 'บันทึกรายการขาย',
+            route: 'sales',
+          },
+        ],
       },
       {
         icon: 'pi pi-truck',
@@ -113,7 +121,6 @@ const menuSections = [
   {
     title: 'ระบบบุคลากร',
     items: [
-
       {
         icon: 'pi pi-cog',
         label: 'จัดการ Admin',
@@ -141,8 +148,21 @@ const menuSections = [
   //     },
   //   ],
   // }
-
 ]
+
+// Auto-open dropdown if current route matches any submenu item
+const salesMenuSection = menuSections[0].items.find((item) => item.isDropdown)
+if (salesMenuSection?.submenu) {
+  watch(
+    currentRoute,
+    (routeName) => {
+      if (salesMenuSection.submenu?.some((sub) => routeName === sub.route)) {
+        isSalesDropdownOpen.value = true
+      }
+    },
+    { immediate: true }
+  )
+}
 
 onMounted(() => {
   checkMobile()
@@ -189,15 +209,76 @@ onUnmounted(() => {
             {{ section.title }}
           </h3>
           <div :class="sectionIndex === 0 ? 'lg:px-2 space-y-1' : 'lg:px-3 space-y-1'">
-            <MenuItem
-              v-for="item in section.items"
-              :route="item.route"
-              :key="item.route"
-              :icon="item.icon"
-              :label="item.label"
-              :active="currentRoute === item.route"
-              @click="navigateTo(item.route)"
-            />
+            <template v-for="item in section.items" :key="item.route || item.label">
+              <!-- Dropdown Menu Item -->
+              <div v-if="item.isDropdown" class="space-y-1">
+                <button
+                  @click="isSalesDropdownOpen = !isSalesDropdownOpen"
+                  :class="[
+                    'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-200 group',
+                    isSalesDropdownOpen &&
+                      'bg-blue-100 lg:drop-shadow-xs',
+                  ]"
+                >
+                  <div class="flex items-center space-x-3 flex-1">
+                    <i
+                      :class="[
+                        item.icon,
+                        'text-sm',
+                        isSalesDropdownOpen ||
+                        item.submenu?.some((sub) => currentRoute === sub.route)
+                          ? 'text-blue-500 lg:text-black'
+                          : 'text-gray-600 group-hover:text-black',
+                      ]"
+                    ></i>
+                    <span
+                      class="flex-1 text-left font-[500]!"
+                      :class="
+                        isSalesDropdownOpen ||
+                        item.submenu?.some((sub) => currentRoute === sub.route)
+                          ? 'text-blue-500 lg:text-black'
+                          : 'text-gray-600 group-hover:text-black'
+                      "
+                      >{{ item.label }}</span
+                    >
+                  </div>
+                  <i
+                    :class="[
+                      'pi text-xs transition-transform duration-200',
+                      isSalesDropdownOpen ? 'pi-angle-up' : 'pi-angle-down',
+                      isSalesDropdownOpen || item.submenu?.some((sub) => currentRoute === sub.route)
+                        ? 'text-blue-500 lg:text-black'
+                        : 'text-gray-600',
+                    ]"
+                  ></i>
+                </button>
+                <!-- Submenu Items -->
+                <Transition name="slide-fade">
+                  <div
+                    v-if="isSalesDropdownOpen"
+                    class="flex flex-col gap-1 overflow-hidden select-none duration-300 ml-2"
+                  >
+                    <MenuItem
+                      v-for="subItem in item.submenu"
+                      :key="subItem.route"
+                      :icon="subItem.icon"
+                      :label="subItem.label"
+                      :active="currentRoute === subItem.route"
+                      :submenu="true"
+                      @click="navigateTo(subItem.route)"
+                    />
+                  </div>
+                </Transition>
+              </div>
+              <!-- Regular Menu Item -->
+              <MenuItem
+                v-else-if="item.route"
+                :icon="item.icon"
+                :label="item.label"
+                :active="currentRoute === item.route"
+                @click="navigateTo(item.route)"
+              />
+            </template>
           </div>
         </div>
       </nav>
