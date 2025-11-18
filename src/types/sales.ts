@@ -91,7 +91,6 @@ export type ISales = {
   deposit: number
   discount: number
   seller: string // id
-  deliveryStatus: string
   note: string
   cat: number
   uat: number
@@ -102,7 +101,7 @@ export type ISales = {
   deliveryNo: number
   delivery?: string
   // Fields สำหรับวิธีชำระเงินต่างๆ
-  deliveryStatusForCash?: DeliveryStatus // สำหรับเงินสด
+  deliveryStatus?: DeliveryStatus // สำหรับเงินสด
   paymentDueDate?: Date | string // สำหรับเครดิต
   shippingAddress?: string // ที่อยู่จัดส่ง
   shippingProvince?: string // จังหวัดจัดส่ง

@@ -10,6 +10,7 @@ export type StatusValidationInput = {
   hasShippingSlip: boolean
   currentStatus?: SellingStatusString
   mode: ValidationMode
+  skipShippingSlipUpload?: boolean // เพิ่ม field สำหรับบอกว่าข้ามการอัพโหลดสลิปการจัดส่งหรือไม่
 }
 
 export type PaymentMethodValidationInput = {
@@ -23,6 +24,8 @@ export type PaymentMethodValidationInput = {
   hasPaymentDueDate?: boolean
   hasCustomProducts?: boolean
   mode?: 'add' | 'edit'
+  currentStatus?: SellingStatusString // เพิ่ม currentStatus เพื่อตรวจสอบเงื่อนไขตามสถานะ
+  skipShippingSlipUpload?: boolean // เพิ่ม field สำหรับบอกว่าข้ามการอัพโหลดสลิปการจัดส่งหรือไม่
 }
 
 export type RequiredFields = {
@@ -46,6 +49,7 @@ export function calculateFinalStatus(
   selectedStatus: SellingStatusString,
   hasSlip: boolean,
   hasShippingSlip: boolean,
+  skipShippingSlipUpload?: boolean,
 ): SellingStatusString {
   // wait_payment: ถ้าอัพสลิปแล้ว -> preparing, ถ้าอัพสลิป+ใบขนส่ง -> shipping
   if (selectedStatus === 'wait_payment') {
@@ -58,10 +62,13 @@ export function calculateFinalStatus(
     return 'wait_payment'
   }
 
-  // preparing: ถ้าอัพใบขนส่งแล้ว -> shipping
+  // preparing: ถ้าอัพใบขนส่งแล้ว หรือเลือกข้ามการอัพโหลด -> shipping
   if (selectedStatus === 'preparing') {
+    if (skipShippingSlipUpload === true) {
+      return 'shipping' // ข้ามการอัพโหลด
+    }
     if (hasShippingSlip) {
-      return 'shipping'
+      return 'shipping' // อัพโหลดแล้ว
     }
     return 'preparing'
   }
@@ -96,8 +103,7 @@ export function canEditField(
       return field === 'shippingSlip'
 
     case 'shipping':
-      // ให้เลือกจบการขาย อาจจะมีให้อัพโหลดรูปจากขนส่ง
-
+    // ให้เลือกจบการขาย อาจจะมีให้อัพโหลดรูปจากขนส่ง
 
     case 'received':
     case 'damaged':
@@ -259,6 +265,7 @@ export function validateStatusForCreate(input: StatusValidationInput): StatusVal
     input.selectedStatus,
     input.hasSlip,
     input.hasShippingSlip,
+    input.skipShippingSlipUpload,
   )
 
   return {
@@ -382,6 +389,7 @@ export function validateStatusForEdit(input: StatusValidationInput): StatusValid
     input.selectedStatus,
     input.hasSlip,
     input.hasShippingSlip,
+    input.skipShippingSlipUpload,
   )
 
   return {
@@ -481,9 +489,15 @@ export function validateStatusForStatusChange(
     case 'preparing':
       // เปลี่ยน step 5 ได้, เลือก step เองไม่ได้แล้ว (auto)
       if (input.selectedStatus === 'shipping') {
-        requiredFields.shippingSlip = true
-        if (!input.hasShippingSlip) {
-          errors.push('กรุณาอัปโหลดใบเสร็จการขนส่ง (บังคับ)')
+        // ถ้าเลือกข้ามการอัพโหลด → ไม่บังคับ shipping slip
+        if (input.skipShippingSlipUpload === true) {
+          requiredFields.shippingSlip = false
+        } else {
+          // ถ้าไม่ข้าม → บังคับ shipping slip
+          requiredFields.shippingSlip = true
+          if (!input.hasShippingSlip) {
+            errors.push('กรุณาอัปโหลดใบเสร็จการขนส่ง (บังคับ)')
+          }
         }
       }
       break
@@ -511,6 +525,7 @@ export function validateStatusForStatusChange(
     input.selectedStatus,
     input.hasSlip,
     input.hasShippingSlip,
+    input.skipShippingSlipUpload,
   )
 
   return {
@@ -612,6 +627,19 @@ export function validatePaymentMethod(input: PaymentMethodValidationInput): {
       }
       if (!input.hasShippingAddress) {
         errors.push('กรุณาเลือกที่อยู่จัดส่ง')
+      }
+      // สำหรับ edit mode: ถ้าสถานะเป็น preparing ให้บังคับ shipping slip (ยกเว้นกรณีที่เลือกข้าม)
+      if (input.mode === 'edit' && input.currentStatus === 'preparing') {
+        // ถ้าเลือกข้ามการอัพโหลด → ไม่บังคับ shipping slip
+        if (input.skipShippingSlipUpload === true) {
+          requiredFields.shippingSlip = false
+        } else {
+          // ถ้าไม่ข้าม → บังคับ shipping slip
+          requiredFields.shippingSlip = true
+          if (!input.hasShippingSlip) {
+            errors.push('กรุณาอัปโหลดใบเสร็จการขนส่ง')
+          }
+        }
       }
       break
 

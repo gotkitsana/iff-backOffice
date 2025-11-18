@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { Button, FileUpload } from 'primevue'
+import { Button, FileUpload, RadioButton, InputText } from 'primevue'
 import { useMutation } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import { useUploadFileStore } from '@/stores/product/upload_file'
@@ -15,6 +15,10 @@ const props = defineProps<{
   selectedStatus: string
   isCurrentStatus: string
   isSubmitting: boolean
+  skipUpload?: boolean // เพิ่ม prop สำหรับบอกว่าข้ามการอัพโหลดหรือไม่
+  requireUpload?: boolean // เพิ่ม prop สำหรับบอกว่าต้องการอัพโหลดหรือไม่ (ค่าเริ่มต้น = true)
+  delivery?: string // เพิ่ม prop สำหรับหมายเลขการจัดส่ง
+  isReadOnly?: boolean // เพิ่ม prop สำหรับ disable เมื่อสถานะเป็น received หรือ damaged
 }>()
 
 // Emits
@@ -22,6 +26,9 @@ const emit = defineEmits<{
   'shipping-slip-status-changed': [hasSlip: boolean]
   'shipping-slip-pending-upload': [isPending: boolean]
   'shipping-slip-uploaded': [saleId: string]
+  'skip-upload-changed': [skipUpload: boolean] // เพิ่ม emit event
+  'require-upload-changed': [requireUpload: boolean] // เพิ่ม emit event
+  'delivery-changed': [delivery: string] // เพิ่ม emit event สำหรับหมายเลขการจัดส่ง
 }>()
 
 // Stores
@@ -32,6 +39,73 @@ const uploadedFile = ref<File | null>(null)
 const previewImage = ref<string>('')
 const showUploadSection = ref<boolean>(false)
 
+// Local state for delivery tracking number
+const deliveryNumber = ref<string>(props.delivery || '')
+
+// Watch props.delivery to sync with parent
+watch(
+  () => props.delivery,
+  (newValue) => {
+    if (newValue !== undefined && newValue !== deliveryNumber.value) {
+      deliveryNumber.value = newValue || ''
+    }
+  },
+  { immediate: true }
+)
+
+// Watch deliveryNumber to emit changes
+watch(
+  () => deliveryNumber.value,
+  (newValue) => {
+    emit('delivery-changed', newValue)
+  }
+)
+
+// State สำหรับเลือกอัพโหลดหรือข้าม
+const uploadOption = ref<'upload' | 'skip'>(props.requireUpload === false ? 'skip' : 'upload')
+
+// Computed สำหรับตรวจสอบว่าต้องการอัพโหลดหรือไม่ (ใช้ชื่อต่างจาก props เพื่อหลีกเลี่ยงการชนกัน)
+const shouldRequireUpload = computed(() => uploadOption.value === 'upload')
+const shouldSkipUpload = computed(() => uploadOption.value === 'skip')
+
+// Watch สำหรับ emit events เมื่อ uploadOption เปลี่ยน
+watch(
+  () => uploadOption.value,
+  (newValue) => {
+    if (newValue === 'skip') {
+      emit('skip-upload-changed', true)
+      emit('require-upload-changed', false)
+      // ล้าง pending upload state เมื่อเลือกข้าม
+      emit('shipping-slip-pending-upload', false)
+    } else {
+      emit('skip-upload-changed', false)
+      emit('require-upload-changed', true)
+    }
+  },
+  { immediate: true }
+)
+
+// Watch props.skipUpload และ props.requireUpload เพื่อ sync กับ parent
+watch(
+  () => props.skipUpload,
+  (newValue) => {
+    if (newValue !== undefined && newValue !== shouldSkipUpload.value) {
+      uploadOption.value = newValue ? 'skip' : 'upload'
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.requireUpload,
+  (newValue) => {
+    if (newValue !== undefined && newValue !== shouldRequireUpload.value) {
+      uploadOption.value = newValue ? 'upload' : 'skip'
+    }
+  },
+  { immediate: true }
+)
+
 // Computed
 const statusSteps: SellingStatusString[] = [
   'order',
@@ -41,15 +115,37 @@ const statusSteps: SellingStatusString[] = [
   'received',
   'damaged',
 ]
-const requiresShippingSlipUpload = computed(() => {
-  // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
-  return props.selectedStatus === 'preparing'
-})
 
 const closeEdit = computed(() => {
   const currentStepIndex = statusSteps.indexOf(props.isCurrentStatus as SellingStatusString)
   const shippingStepIndex = statusSteps.indexOf('shipping')
   return currentStepIndex >= shippingStepIndex
+})
+
+// Computed สำหรับตรวจสอบว่าควรแสดง upload section หรือไม่
+const shouldShowUploadSection = computed(() => {
+  // ถ้าเลือกข้ามและสถานะเป็น shipping → แสดงแต่ปิดไว้
+  if (shouldSkipUpload.value && props.isCurrentStatus === 'shipping') {
+    return true
+  }
+  // ถ้าเลือกข้าม → ไม่แสดง upload section
+  if (shouldSkipUpload.value) {
+    return false
+  }
+  // ถ้าเลือกอัพโหลด → แสดง upload section
+  return shouldRequireUpload.value
+})
+
+// Computed สำหรับตรวจสอบว่าควร disable หรือไม่
+const isDisabled = computed(() => {
+  // ถ้าเลือกข้ามและสถานะเป็น shipping → disable
+  return shouldSkipUpload.value && props.isCurrentStatus === 'shipping'
+})
+
+// Computed สำหรับตรวจสอบว่าควร disable input หรือไม่
+const isInputDisabled = computed(() => {
+  // Disable เมื่อ isReadOnly หรือ isDisabled
+  return props.isReadOnly || isDisabled.value
 })
 
 const hasShippingSlip = ref(false)
@@ -264,8 +360,8 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
       previewImage.value = ''
     }
 
-    // ถ้า status = preparing ให้ emit shipping-slip-uploaded เพื่อเปลี่ยนสถานะอัตโนมัติ
-    if (props.selectedStatus === 'preparing' && props.saleId) {
+    // ถ้า status = preparing และไม่ใช่ skip mode ให้ emit shipping-slip-uploaded เพื่อเปลี่ยนสถานะอัตโนมัติ
+    if (props.selectedStatus === 'preparing' && props.saleId && !shouldSkipUpload.value) {
       emit('shipping-slip-uploaded', props.saleId)
     }
   },
@@ -279,16 +375,13 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
 </script>
 
 <template>
-  <div
-
-    class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-  >
+  <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
     <!-- Header -->
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
         <i class="pi pi-truck text-blue-600 text-lg"></i>
       </div>
-      <div>
+      <div class="flex-1">
         <h4 class="font-semibold text-blue-900">สลิปการจัดส่ง</h4>
         <p class="text-sm text-blue-700">
           {{
@@ -296,9 +389,71 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
               ? 'กำลังตรวจสอบสลิป...'
               : hasShippingSlip
               ? 'แสดงสลิปการจัดส่งที่อัปโหลดแล้ว'
-              : 'อัปโหลดสลิปการจัดส่ง (ไม่บังคับ)'
+              : shouldSkipUpload && isCurrentStatus === 'shipping'
+              ? 'ข้ามการอัพโหลดสลิปการจัดส่ง'
+              : 'อัปโหลดสลิปการจัดส่ง'
           }}
         </p>
+      </div>
+    </div>
+
+    <!-- Delivery Tracking Number Input (แสดงเสมอ) -->
+    <div class="mb-4 bg-white border border-gray-200 rounded-lg p-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        หมายเลขการจัดส่ง
+        <span class="text-gray-400 text-xs font-normal">(ไม่บังคับ)</span>
+      </label>
+      <InputText
+        v-model="deliveryNumber"
+        placeholder="กรอกหมายเลขการจัดส่ง"
+        fluid
+        size="small"
+        :disabled="isInputDisabled"
+        class="w-full"
+      />
+      <p class="text-xs text-gray-500 mt-1">หมายเลขติดตามการจัดส่งสินค้า</p>
+    </div>
+
+    <!-- Upload Option Selection (แสดงเฉพาะเมื่อ status = preparing และ isCurrentStatus = preparing) -->
+    <div
+      v-if="selectedStatus === 'preparing' && isCurrentStatus === 'preparing'"
+      class="mb-4 bg-white border border-gray-200 rounded-lg p-4"
+    >
+      <label class="block text-sm font-medium text-gray-700 mb-3">เลือกการดำเนินการ</label>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <RadioButton
+            v-model="uploadOption"
+            inputId="upload-option"
+            value="upload"
+            :disabled="isDisabled"
+          />
+          <label for="upload-option" class="text-sm text-gray-700 cursor-pointer">
+            อัพโหลดสลิปการจัดส่ง
+          </label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioButton
+            v-model="uploadOption"
+            inputId="skip-option"
+            value="skip"
+            :disabled="isDisabled"
+          />
+          <label for="skip-option" class="text-sm text-gray-700 cursor-pointer">
+            ข้ามการอัพโหลดสลิปการจัดส่ง
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skip Message (แสดงเมื่อเลือกข้ามและสถานะเป็น shipping) -->
+    <div
+      v-if="shouldSkipUpload && isCurrentStatus === 'shipping'"
+      class="mb-4 bg-white border border-gray-300 rounded-lg p-4 opacity-60"
+    >
+      <div class="flex items-center gap-3">
+        <i class="pi pi-info-circle text-gray-500"></i>
+        <p class="text-sm text-gray-600">ข้ามการอัพโหลดสลิปการจัดส่ง</p>
       </div>
     </div>
 
@@ -315,15 +470,26 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
       </div>
     </div>
 
-    <!-- Slip Display -->
-    <div v-else-if="hasShippingSlip && !showUploadSection && !previewImage" class="mb-4">
-      <div class="bg-white border border-gray-200 rounded-lg p-4">
+    <!-- Slip Display (แสดงเฉพาะเมื่อมี shipping slip และไม่ใช่ skip mode หรือ skip mode แต่สถานะเป็น shipping) -->
+    <div
+      v-else-if="
+        hasShippingSlip &&
+        !showUploadSection &&
+        !previewImage &&
+        (!shouldSkipUpload || (shouldSkipUpload && isCurrentStatus === 'shipping'))
+      "
+      class="mb-4"
+    >
+      <div
+        class="bg-white border border-gray-200 rounded-lg p-4"
+        :class="{ 'opacity-60': isDisabled }"
+      >
         <div class="flex items-center justify-between mb-3">
           <h5 class="text-sm font-medium text-gray-700">สลิปการจัดส่ง</h5>
           <div class="flex items-center gap-2">
             <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full"> อัปโหลดแล้ว </span>
             <Button
-              v-if="!closeEdit"
+              v-if="!closeEdit && !isDisabled"
               icon="pi pi-pencil"
               severity="info"
               size="small"
@@ -346,8 +512,17 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
       </div>
     </div>
 
-    <!-- Upload Section -->
-    <div v-else-if="!hasShippingSlip || showUploadSection || previewImage" class="space-y-4">
+    <!-- Upload Section (แสดงเฉพาะเมื่อ requireUpload = true หรือ skip mode และสถานะเป็น shipping) -->
+    <div
+      v-else-if="
+        shouldShowUploadSection &&
+        (!hasShippingSlip ||
+          showUploadSection ||
+          previewImage ||
+          (shouldSkipUpload && isCurrentStatus === 'shipping'))
+      "
+      class="space-y-4"
+    >
       <!-- Preview Section -->
       <div
         v-if="previewImage || isUploadingSlip"
@@ -403,7 +578,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
       </div>
 
       <!-- Upload Controls -->
-      <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div v-if="shouldRequireUpload" class="bg-white border border-gray-200 rounded-lg p-4">
         <div class="space-y-4">
           <!-- File Upload -->
           <div>
@@ -425,7 +600,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
                     : 'เลือกสลิปอื่น'
                   : 'เลือกสลิป'
               "
-              :disabled="isUploadingSlip"
+              :disabled="isUploadingSlip || isDisabled || isInputDisabled"
               class="w-full"
             />
             <p class="text-xs text-gray-500 mt-1">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 2MB</p>
@@ -441,6 +616,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
               size="small"
               @click="confirmUploadShippingSlip"
               :loading="isUploadingSlip"
+              :disabled="isDisabled"
             />
           </div>
         </div>
