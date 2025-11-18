@@ -28,65 +28,55 @@ const currentRoute = computed(() => {
   return route.name as string
 })
 
-// Dropdown state management using route-based identifiers
-const dropdownStates = ref<Record<string, boolean>>({
-  sales: false,
-  storage: false,
-})
+// Dropdown state management using dynamic identifiers
+const dropdownStates = ref<Record<string, boolean>>({})
 
 // Helper functions for dropdown management
-const getDropdownState = (item: {
-  route?: string
-  isDropdown?: boolean
-  submenu?: Array<{ route?: string }>
-}) => {
-  if (!item.isDropdown) return null
-  if (item.route === 'storage') return 'storage'
-  // Sales dropdown doesn't have route, but we can identify by checking if it has submenu with 'members' or 'sales'
-  if (item.submenu?.some((sub) => sub.route === 'members' || sub.route === 'sales')) {
-    return 'sales'
-  }
-  return null
-}
-
+// Use label as identifier directly - simpler approach
 const isDropdownOpen = (item: {
   route?: string
+  label?: string
   isDropdown?: boolean
   submenu?: Array<{ route?: string }>
 }) => {
-  const state = getDropdownState(item)
-  if (!state) return false
-  return dropdownStates.value[state] || false
+  if (!item.isDropdown || !item.label) return false
+  // Initialize and return state
+  if (!(item.label in dropdownStates.value)) {
+    dropdownStates.value[item.label] = false
+  }
+  return dropdownStates.value[item.label] || false
 }
 
 const toggleDropdown = (item: {
   route?: string
+  label?: string
   isDropdown?: boolean
   submenu?: Array<{ route?: string }>
 }) => {
-  const state = getDropdownState(item)
-  if (state) {
-    dropdownStates.value[state] = !dropdownStates.value[state]
+  if (!item.isDropdown || !item.label) return
+  // Initialize if needed and toggle
+  if (!(item.label in dropdownStates.value)) {
+    dropdownStates.value[item.label] = false
   }
+  dropdownStates.value[item.label] = !dropdownStates.value[item.label]
 }
 
 const isDropdownActive = (item: {
   route?: string
+  label?: string
   isDropdown?: boolean
   submenu?: Array<{ route?: string }>
 }) => {
   if (!item.isDropdown) return false
-  const state = getDropdownState(item)
+  if (!item.label) return false
 
-  if (state === 'sales') {
-    return item.submenu?.some((sub) => currentRoute.value === sub.route) || false
-  }
-
-  if (state === 'storage') {
+  // Special case for storage dropdown (uses query parameter)
+  if (item.label === 'คลังสินค้า' || item.route === 'storage') {
     return currentRoute.value === 'storage' && !!route.query.category
   }
 
-  return false
+  // For other dropdowns, check if any submenu route matches current route
+  return item.submenu?.some((sub) => currentRoute.value === sub.route) || false
 }
 
 // Fetch categories for storage dropdown
@@ -151,8 +141,13 @@ const menuSections = [
           },
           {
             icon: 'pi pi-cart-plus',
-            label: 'บันทึกรายการขาย',
+            label: 'รายการขาย',
             route: 'sales',
+          },
+          {
+            icon: 'pi pi-trophy',
+            label: 'Auction',
+            route: 'auction',
           },
         ],
       },
@@ -168,10 +163,37 @@ const menuSections = [
         isDropdown: true,
         submenu: [], // Will be populated dynamically from categories
       },
+      // {
+      //   icon: 'pi pi-calculator',
+      //   label: 'บัญชี',
+      //   route: 'accounting',
+      // },
       {
         icon: 'pi pi-calculator',
         label: 'บัญชี',
-        route: 'accounting',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-money-bill',
+            label: 'รายรับ/รายจ่าย',
+            route: 'income-expense',
+          },
+          {
+            icon: 'pi pi-database',
+            label: 'สินทรัพย์',
+            route: 'assets',
+          },
+          {
+            icon: 'pi pi-credit-card',
+            label: 'ลูกหนี้',
+            route: 'debt',
+          },
+          {
+            icon: 'pi pi-receipt',
+            label: 'กู้ยืม/หนี้สิน',
+            route: 'loan',
+          },
+        ],
       },
       {
         icon: 'pi pi-money-bill',
@@ -188,10 +210,27 @@ const menuSections = [
   {
     title: 'ระบบการผลิต',
     items: [
+      // {
+      //   icon: 'pi pi-warehouse',
+      //   label: 'ผลิต',
+      //   route: 'production',
+      // },
       {
         icon: 'pi pi-warehouse',
         label: 'ผลิต',
-        route: 'production',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-book',
+            label: 'คู้มือ',
+            route: 'production-guide',
+          },
+          {
+            icon: 'pi pi-box',
+            label: 'ระบบบริหารการผลิต MES',
+            route: 'production-mes',
+          },
+        ],
       },
       // {
       //   icon: 'pi pi-shop',
@@ -203,11 +242,6 @@ const menuSections = [
   {
     title: 'ระบบการตลาด',
     items: [
-      {
-        icon: 'pi pi-trophy',
-        label: 'Auction',
-        route: 'auction',
-      },
       {
         icon: 'pi pi-megaphone',
         label: 'โปรโมชั่น',
@@ -251,18 +285,25 @@ const menuSections = [
 watch(
   currentRoute,
   (routeName) => {
-    // Check sales dropdown
-    const salesMenuSection = menuSections[0].items.find(
-      (item) => getDropdownState(item) === 'sales'
-    )
-    if (salesMenuSection?.submenu?.some((sub) => routeName === sub.route)) {
-      dropdownStates.value.sales = true
-    }
+    // Check all dropdowns in all menu sections
+    menuSections.forEach((section) => {
+      section.items.forEach((item) => {
+        if (!item.isDropdown || !item.label) return
 
-    // Check storage dropdown
-    if (routeName === 'storage' && route.query.category) {
-      dropdownStates.value.storage = true
-    }
+        // Special case for storage dropdown
+        if (item.label === 'คลังสินค้า' || item.route === 'storage') {
+          if (routeName === 'storage' && route.query.category) {
+            dropdownStates.value[item.label] = true
+          }
+          return
+        }
+
+        // For other dropdowns, check if any submenu route matches current route
+        if (item.submenu?.some((sub) => routeName === sub.route)) {
+          dropdownStates.value[item.label] = true
+        }
+      })
+    })
   },
   { immediate: true }
 )
@@ -318,10 +359,8 @@ onUnmounted(() => {
                 <button
                   @click="toggleDropdown(item)"
                   :class="[
-                    'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-200 group',
-                    isDropdownOpen(item) || isDropdownActive(item)
-                      ? 'bg-blue-100 lg:drop-shadow-xs'
-                      : '',
+                    'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-300 group',
+
                   ]"
                 >
                   <div class="flex items-center space-x-3 flex-1">
@@ -329,28 +368,22 @@ onUnmounted(() => {
                       :class="[
                         item.icon,
                         'text-sm',
-                        isDropdownOpen(item) || isDropdownActive(item)
-                          ? 'text-blue-500 lg:text-black'
-                          : 'text-gray-600 group-hover:text-black',
+ 'text-gray-600 group-hover:text-black',
                       ]"
                     ></i>
                     <span
                       class="flex-1 text-left font-[500]!"
                       :class="
-                        isDropdownOpen(item) || isDropdownActive(item)
-                          ? 'text-blue-500 lg:text-black'
-                          : 'text-gray-600 group-hover:text-black'
+                         'text-gray-600 group-hover:text-black'
                       "
                       >{{ item.label }}</span
                     >
                   </div>
                   <i
                     :class="[
-                      'pi text-xs transition-transform duration-200',
+                      'pi text-xs transition-transform duration-300',
                       isDropdownOpen(item) ? 'pi-angle-up' : 'pi-angle-down',
-                      isDropdownOpen(item) || isDropdownActive(item)
-                        ? 'text-blue-500 lg:text-black'
-                        : 'text-gray-600',
+                      'text-gray-600',
                     ]"
                   ></i>
                 </button>
@@ -358,22 +391,11 @@ onUnmounted(() => {
                 <Transition name="slide-fade">
                   <div
                     v-if="isDropdownOpen(item)"
-                    class="flex flex-col gap-1 overflow-hidden select-none duration-300 ml-2"
+                    class="flex flex-col gap-1 overflow-y-auto select-none duration-300 ml-3 dropdown-submenu max-h-[calc(100vh-200px)]"
+                    style="scrollbar-width: none; -ms-overflow-style: none"
                   >
-                    <!-- Sales submenu -->
-                    <template v-if="getDropdownState(item) === 'sales'">
-                      <MenuItem
-                        v-for="subItem in item.submenu"
-                        :key="subItem.route"
-                        :icon="subItem.icon"
-                        :label="subItem.label"
-                        :active="currentRoute === subItem.route"
-                        :submenu="true"
-                        @click="navigateTo(subItem.route)"
-                      />
-                    </template>
                     <!-- Storage submenu -->
-                    <template v-else-if="getDropdownState(item) === 'storage'">
+                    <template v-if="item.label === 'คลังสินค้า' || item.route === 'storage'">
                       <MenuItem
                         v-for="subItem in storageSubmenu"
                         :key="subItem.categoryValue"
@@ -385,6 +407,19 @@ onUnmounted(() => {
                         "
                         :submenu="true"
                         @click="navigateToStorageCategory(subItem.categoryValue)"
+                      />
+                    </template>
+
+                    <!-- Regular submenu -->
+                    <template v-else>
+                      <MenuItem
+                        v-for="subItem in item.submenu"
+                        :key="subItem.route"
+                        :icon="subItem.icon"
+                        :label="subItem.label"
+                        :active="currentRoute === subItem.route"
+                        :submenu="true"
+                        @click="navigateTo(subItem.route)"
                       />
                     </template>
                   </div>
@@ -406,4 +441,26 @@ onUnmounted(() => {
   </aside>
 </template>
 
+<style>
+/* Hide scrollbar for dropdown submenu to prevent content shift */
+.dropdown-submenu {
+  overflow-y: auto !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+.dropdown-submenu::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important; /* Chrome, Safari, Opera */
+}
+
+.dropdown-submenu::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.dropdown-submenu::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+</style>
 

@@ -1,6 +1,10 @@
 import Dashboard from '@/views/DashboardView.vue'
 import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
+import IncomeExpense from '@/views/Accounting/IncomeExpenseView.vue'
+import Assets from '@/views/Accounting/AssetsView.vue'
+import Debt from '@/views/Accounting/DebtView.vue'
+import Loan from '@/views/Accounting/LoanView.vue'
 import Auction from '@/views/Auction/AuctionView.vue'
 import AuctionDetail from '@/views/Auction/AuctionDetailView.vue'
 import AuctionSettings from '@/views/Auction/AuctionSettingsView.vue'
@@ -10,11 +14,15 @@ import NotFound from '@/views/NotFoundView.vue'
 import DashboardLayout from '@/components/layout/DashboardLayout.vue'
 import Employee from '@/views/Employee/EmployeeView.vue'
 import Production from '@/views/Production/ProductionView.vue'
+import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
+import ProductionMES from '@/views/Production/ProductionMESView.vue'
 import Product from '@/views/Product/ProductView.vue'
 import ProductOptionSetting from '@/views/Product/ProductOptionSetting.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
+
+import FishProductView from '@/views/Product/Category/FishProductView.vue'
 
 export default [
   {
@@ -91,6 +99,20 @@ export default [
         },
       },
       {
+        path: '/storage/fish',
+        name: 'storage-fish',
+        component: FishProductView,
+        meta: {
+          title: 'คลังปลา',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'คลังสินค้า', path: '/storage' },
+            { label: 'คลังปลา' },
+          ],
+        },
+      },
+      {
         path: '/accounting',
         name: 'accounting',
         component: Accounting,
@@ -98,6 +120,46 @@ export default [
           title: 'บัญชี',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }],
+        },
+      },
+      {
+        path: '/accounting/income-expense',
+        name: 'income-expense',
+        component: IncomeExpense,
+        meta: {
+          title: 'รายรับ/รายจ่าย',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'รายรับ/รายจ่าย' }],
+        },
+      },
+      {
+        path: '/accounting/assets',
+        name: 'assets',
+        component: Assets,
+        meta: {
+          title: 'สินทรัพย์',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'สินทรัพย์' }],
+        },
+      },
+      {
+        path: '/accounting/debt',
+        name: 'debt',
+        component: Debt,
+        meta: {
+          title: 'ลูกหนี้',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'ลูกหนี้' }],
+        },
+      },
+      {
+        path: '/accounting/loan',
+        name: 'loan',
+        component: Loan,
+        meta: {
+          title: 'กู้ยืม/หนี้สิน',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'กู้ยืม/หนี้สิน' }],
         },
       },
       {
@@ -129,6 +191,30 @@ export default [
           title: 'ผลิต',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบการผลิต' }, { label: 'ผลิต' }],
+        },
+      },
+      {
+        path: '/production/guide',
+        name: 'production-guide',
+        component: ProductionGuide,
+        meta: {
+          title: 'คู่มือ',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบการผลิต' }, { label: 'ผลิต' }, { label: 'คู่มือ' }],
+        },
+      },
+      {
+        path: '/production/mes',
+        name: 'production-mes',
+        component: ProductionMES,
+        meta: {
+          title: 'ระบบบริหารการผลิต MES',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบการผลิต' },
+            { label: 'ผลิต' },
+            { label: 'ระบบบริหารการผลิต MES' },
+          ],
         },
       },
 
