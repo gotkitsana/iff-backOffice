@@ -64,6 +64,17 @@ export const getShippingSlipUrl = (
 }
 
 /**
+ * ดึง URL ของสลิปการชำระเงิน
+ * @param saleId - ID ของรายการขาย
+ * @returns URL ของสลิปการชำระเงิน
+ */
+export const getSlipUrl = (saleId: string | undefined): string => {
+  if (!saleId) return ''
+  const apiUrl = (import.meta as any).env.VITE_API_URL as string
+  return `${apiUrl}/erp/download/slip?saleId=${saleId}`
+}
+
+/**
  * ล้าง cache ทั้งหมด
  */
 export const clearImageCache = (): void => {

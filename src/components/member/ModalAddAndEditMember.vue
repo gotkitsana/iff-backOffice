@@ -6,9 +6,10 @@ import {
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText, Tag, Card } from 'primevue'
+import { Dialog, Textarea, Select, InputText, Tag } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
+import PurchaseHistoryPanel from './PurchaseHistoryPanel.vue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
 import { useSalesStore } from '@/stores/sales/sales'
@@ -886,89 +887,15 @@ const isEditing = (saleId: string) => {
             <label class="block text-sm font-[600]! text-gray-700 mb-2">
               รายการใหม่ (ยังไม่ได้บันทึก) ({{ newlyAddedPurchaseHistory.length }})
             </label>
-            <Card
+            <PurchaseHistoryPanel
               v-for="saleId in newlyAddedPurchaseHistory"
               :key="`new-${saleId}`"
-              :pt="{ body: 'p-4' }"
-              class="border-l-4 border-l-green-500"
-            >
-              <template #content>
-                <template v-if="getSaleById(saleId)">
-                  <div class="relative">
-                    <div class="flex flex-wrap items-center gap-2 mb-2">
-                      <Tag value="ใหม่" severity="success" size="small" class="text-xs" />
-                      <span class="font-semibold! text-sm text-gray-700">
-                        เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
-                      >
-                      <Tag
-                        :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
-                        :severity="
-                          (() => {
-                            const sale = getSaleById(saleId)
-                            if (!sale) return 'secondary'
-                            const statusString =
-                              typeof sale.sellingStatus === 'number'
-                                ? convertStatusNumberToString(sale.sellingStatus)
-                                : sale.sellingStatus
-                            const workflow = salesStore.statusWorkflow
-                            return workflow[statusString]?.color || 'secondary'
-                          })()
-                        "
-                        size="small"
-                        class="text-xs"
-                      />
-                      <Tag
-                        :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
-                        severity="info"
-                        size="small"
-                        class="text-xs"
-                      />
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span class="text-gray-600">ยอดรวม:</span>
-                        <span class="font-medium text-gray-900 ml-1">
-                          {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
-                        </span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">จำนวนสินค้า:</span>
-                        <span class="font-medium text-gray-900 ml-1">{{
-                          getSaleById(saleId)?.products?.length || 0
-                        }}</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">วันที่:</span>
-                        <span class="font-medium text-gray-900 ml-1">
-                          {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
-                        </span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">หมายเหตุ:</span>
-                        <span class="font-medium text-gray-600 ml-1">{{
-                          getSaleById(saleId)?.note || '-'
-                        }}</span>
-                      </div>
-                    </div>
-
-                    <div class="absolute top-0 right-0">
-                      <Button
-                        icon="pi pi-trash"
-                        size="small"
-                        severity="danger"
-                        text
-                        rounded
-                        @click="removePurchaseHistory(saleId)"
-                        class="ml-2"
-                      />
-                    </div>
-                  </div>
-                </template>
-                <div v-else class="text-sm text-gray-500">
-                  ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
-                </div>
-              </template>
-            </Card>
+              :sale-id="saleId"
+              :sale="getSaleById(saleId)"
+              :is-setting="true"
+              :is-new="true"
+              @on-delete="removePurchaseHistory"
+            />
           </div>
         </div>
 
@@ -978,110 +905,16 @@ const isEditing = (saleId: string) => {
             รายการที่บันทึกแล้ว ({{ existingPurchaseHistory.length }})
           </label>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Card
+          <div class="space-y-3">
+            <PurchaseHistoryPanel
               v-for="saleId in existingPurchaseHistory"
               :key="`existing-${saleId}`"
-              :pt="{ body: 'p-4' }"
-              class="border-l-4 border-l-blue-500"
-            >
-              <template #content>
-                <template v-if="getSaleById(saleId)">
-                  <div class="relative">
-                    <div class="flex justify-between gap-2 mb-3">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-semibold! text-sm text-gray-700">
-                          เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
-                        >
-                        <Tag
-                          :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
-                          :severity="
-                            (() => {
-                              const sale = getSaleById(saleId)
-                              if (!sale) return 'secondary'
-                              const statusString =
-                                typeof sale.sellingStatus === 'number'
-                                  ? convertStatusNumberToString(sale.sellingStatus)
-                                  : sale.sellingStatus
-                              const workflow = salesStore.statusWorkflow
-                              return workflow[statusString]?.color || 'secondary'
-                            })()
-                          "
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
-                          severity="info"
-                          size="small"
-                          class="text-xs"
-                        />
-                      </div>
-                      <div class="flex gap-1">
-                        <Button
-                          v-if="!isEditing(saleId)"
-                          icon="pi pi-pencil"
-                          size="small"
-                          severity="secondary"
-                          text
-                          rounded
-                          @click="toggleEditMode(saleId)"
-                        />
-                        <template v-else>
-                          <Button
-                            icon="pi pi-trash"
-                            size="small"
-                            severity="danger"
-                            text
-                            rounded
-                            @click="removePurchaseHistory(saleId)"
-                          />
-                          <Button
-                            icon="pi pi-times"
-                            size="small"
-                            severity="secondary"
-                            text
-                            rounded
-                            @click="toggleEditMode(saleId)"
-                            title="ยกเลิก"
-                          />
-                        </template>
-                      </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span class="text-gray-600">ยอดรวม:</span>
-                        <span class="font-medium text-gray-900 ml-1">
-                          {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
-                        </span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">จำนวนสินค้า:</span>
-                        <span class="font-medium text-gray-900 ml-1">{{
-                          getSaleById(saleId)?.products?.length || 0
-                        }}</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">วันที่:</span>
-                        <span class="font-medium text-gray-900 ml-1">
-                          {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
-                        </span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">หมายเหตุ:</span>
-                        <span class="font-medium text-gray-600 ml-1">{{
-                          getSaleById(saleId)?.note || '-'
-                        }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <div v-else class="text-sm text-gray-500">
-                  ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
-                </div>
-              </template>
-            </Card>
+              :sale-id="saleId"
+              :sale="getSaleById(saleId)"
+              :is-setting="true"
+              :is-new="false"
+              @on-delete="removePurchaseHistory"
+            />
           </div>
         </div>
       </div>
