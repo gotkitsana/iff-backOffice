@@ -2,7 +2,10 @@
 import { useMemberStore, type IMember } from '../../stores/member/member'
 import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
-import { Dialog, Button, Skeleton, Tag } from 'primevue'
+import { Dialog, Button, Skeleton, Tag, Card } from 'primevue'
+import { useSalesStore } from '@/stores/sales/sales'
+import type { ISales, PaymentMethod, SellingStatus } from '@/types/sales'
+import { convertStatusNumberToString } from '@/types/sales'
 import fbIcon from '@/assets/images/icon/fb.png'
 import lineOaIcon from '@/assets/images/icon/line-oa.webp'
 import lineChatIcon from '@/assets/images/icon/line.png'
@@ -33,10 +36,18 @@ const closeDetailModal = () => {
 }
 
 const memberStore = useMemberStore()
+const salesStore = useSalesStore()
+
 const { data, isLoading } = useQuery<IMember>({
   queryKey: ['get_member_id', props.id],
   queryFn: () => memberStore.onGetMemberID(props.id),
   enabled: computed(() => !!props.id),
+})
+
+// ดึงข้อมูล sales
+const { data: salesData } = useQuery<ISales[]>({
+  queryKey: ['get_sales'],
+  queryFn: () => salesStore.onGetSales(),
 })
 
 // ฟังก์ชันสำหรับแสดงรูป logo ของช่องทางติดต่อ
@@ -65,7 +76,6 @@ const getInterestValue = (type: string): string | undefined => {
 
 // Format วันที่
 
-
 // Format ตัวเลขเป็นเงิน
 const formatCurrency = (amount?: number) => {
   if (!amount && amount !== 0) return 'ไม่ระบุ'
@@ -84,6 +94,44 @@ const hasCRMData = computed(() => {
     data.value?.lastPurchaseDate
   )
 })
+
+// Helper function สำหรับแปลง status เป็น label
+const getStatusLabel = (status: SellingStatus | string): string => {
+  const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
+  const statusInfo =
+    salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
+  return statusInfo?.label || statusString
+}
+
+// Helper function สำหรับแปลง payment เป็น label
+const getPaymentLabel = (payment: PaymentMethod | undefined): string => {
+  const paymentMap = {
+    cash: 'เงินสด',
+    transfer: 'โอนเงิน',
+    credit: 'เครดิต',
+    order: 'ออเดอร์',
+    cod: 'COD',
+    card: 'บัตร',
+  }
+  return payment ? paymentMap[payment] : '-'
+}
+
+// Helper function คำนวณยอดรวม
+const calculateSaleTotal = (sale: ISales | undefined): number => {
+  if (!sale) return 0
+  const productsTotal = sale.products
+    ? sale.products.reduce((total, product) => {
+        return total + (product.price || 0) * (product.quantity || 1)
+      }, 0)
+    : 0
+  return productsTotal - sale.discount - (sale.deliveryNo || 0)
+}
+
+// Helper function หา sale จาก _id
+const getSaleById = (saleId: string): ISales | undefined => {
+  if (!salesData.value) return undefined
+  return salesData.value.find((sale) => sale._id === saleId)
+}
 </script>
 
 <template>
@@ -100,7 +148,7 @@ const hasCRMData = computed(() => {
     }"
   >
     <template #header>
-      <div v-if="isLoading" >
+      <div v-if="isLoading">
         <Skeleton height="20px" width="80px" />
         <Skeleton height="15px" width="120px" class="mt-2" />
       </div>
@@ -404,17 +452,132 @@ const hasCRMData = computed(() => {
           </div>
 
           <div v-if="data.purchaseHistory && data.purchaseHistory.length > 0" class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide"
               >ประวัติซื้อสินค้า</label
             >
-            <div class="flex flex-wrap gap-2">
-              <Tag
-                v-for="(saleId, index) in data.purchaseHistory"
-                :key="index"
-                :value="saleId"
-                severity="info"
-                size="small"
-              />
+            <div class="space-y-3">
+              <Card
+                v-for="saleId in data.purchaseHistory"
+                :key="saleId"
+                :pt="{ body: 'p-4' }"
+                class="border-l-4 border-l-blue-500"
+              >
+                <template #content>
+                  <template v-if="getSaleById(saleId)">
+                    <div class="space-y-3">
+                      <!-- Header: เลขรายการขาย, Status, Payment -->
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold! text-sm text-gray-700">
+                          เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
+                        >
+                        <Tag
+                          :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
+                          :severity="
+                            (() => {
+                              const sale = getSaleById(saleId)
+                              if (!sale) return 'secondary'
+                              const statusString =
+                                typeof sale.sellingStatus === 'number'
+                                  ? convertStatusNumberToString(sale.sellingStatus)
+                                  : sale.sellingStatus
+                              const workflow = salesStore.statusWorkflow
+                              return workflow[statusString]?.color || 'secondary'
+                            })()
+                          "
+                          size="small"
+                          class="text-xs"
+                        />
+                        <Tag
+                          :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
+                          severity="info"
+                          size="small"
+                          class="text-xs"
+                        />
+                      </div>
+
+                      <!-- Summary: ยอดรวม, จำนวนสินค้า, วันที่, หมายเหตุ -->
+                      <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span class="text-gray-600">ยอดรวม:</span>
+                          <span class="font-medium text-gray-900 ml-1">
+                            {{
+                              formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined))
+                            }}
+                          </span>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">จำนวนสินค้า:</span>
+                          <span class="font-medium text-gray-900 ml-1">{{
+                            getSaleById(saleId)?.products?.length || 0
+                          }}</span>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">วันที่:</span>
+                          <span class="font-medium text-gray-900 ml-1">
+                            {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
+                          </span>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">หมายเหตุ:</span>
+                          <span class="font-medium text-gray-600 ml-1">{{
+                            getSaleById(saleId)?.note || '-'
+                          }}</span>
+                        </div>
+                      </div>
+
+                      <!-- รายการสินค้าที่ซื้อ -->
+                      <div
+                        v-if="
+                          (() => {
+                            const sale = getSaleById(saleId)
+                            return sale?.products && sale.products.length > 0
+                          })()
+                        "
+                        class="mt-3 pt-3 border-t border-gray-200"
+                      >
+                        <h5 class="text-sm font-semibold text-gray-700 mb-2">รายการสินค้า:</h5>
+                        <div class="space-y-2">
+                          <div
+                            v-for="(product, productIndex) in getSaleById(saleId)?.products || []"
+                            :key="productIndex"
+                            class="bg-gray-50 rounded-lg p-2 text-sm"
+                          >
+                            <div class="grid grid-cols-2 gap-2">
+                              <div>
+                                <span class="text-gray-600">ชื่อสินค้า:</span>
+                                <span class="font-medium text-gray-900 ml-1">{{
+                                  product.name || '-'
+                                }}</span>
+                              </div>
+                              <div>
+                                <span class="text-gray-600">จำนวน:</span>
+                                <span class="font-medium text-gray-900 ml-1">{{
+                                  product.quantity || 0
+                                }}</span>
+                              </div>
+                              <div>
+                                <span class="text-gray-600">ราคาต่อหน่วย:</span>
+                                <span class="font-medium text-gray-900 ml-1">{{
+                                  formatCurrency(product.price || 0)
+                                }}</span>
+                              </div>
+                              <div>
+                                <span class="text-gray-600">รวม:</span>
+                                <span class="font-medium text-green-600 ml-1">{{
+                                  formatCurrency((product.price || 0) * (product.quantity || 1))
+                                }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <div v-else class="text-sm text-gray-500">
+                    ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
+                  </div>
+                </template>
+              </Card>
             </div>
           </div>
         </div>

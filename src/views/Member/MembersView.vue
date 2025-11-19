@@ -104,6 +104,14 @@ const createContactTooltip = (contactName: string) => {
   return `ชื่อช่องทางติดต่อ\n👤 ${contactName || 'ไม่ระบุชื่อ'}\n\n💡 คลิกเพื่อคัดลอก`
 }
 
+// ฟังก์ชันดึงตัว 4 ตัวท้ายของ code และแปลงเป็นตัวเลขสำหรับการเรียงลำดับ
+const getLast4Digits = (code: string): number => {
+  if (!code || code.length < 4) return 0
+  const last4 = code.slice(-4)
+  const num = parseInt(last4, 10)
+  return isNaN(num) ? 0 : num
+}
+
 const selectedStatus = ref<string>('all')
 const search = ref<string>('')
 const filterStatus = computed(() => {
@@ -290,7 +298,7 @@ const incompleteDataCustomersCount = computed(() => {
       </template>
       <template #content>
         <DataTable
-          :value="orderBy(filterStatus, 'code', 'asc')"
+          :value="orderBy(filterStatus, (item) => getLast4Digits(item.code), 'asc')"
           dataKey="_id"
           :loading="isLoading"
           paginator
