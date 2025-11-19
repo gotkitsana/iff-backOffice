@@ -421,7 +421,7 @@ const departmentOptions = [
             </div>
           </div>
 
-          <div
+          <!-- <div
             v-for="dept in departments"
             :key="dept.name"
             class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 lg:p-4 hover:shadow-md transition-shadow duration-200"
@@ -435,7 +435,7 @@ const departmentOptions = [
                 <p class="text-xl text-blue-600 font-[600]!">{{ dept.count }}</p>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </template>
     </Card>

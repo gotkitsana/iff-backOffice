@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   useMemberStore,
   type CreateMemberPayload,
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText } from 'primevue'
+import { Dialog, Textarea, Select, InputText, Tag, Card } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
+import { useSalesStore } from '@/stores/sales/sales'
+import type { ISales, PaymentMethod, SellingStatus } from '@/types/sales'
+import {
+  convertStatusNumberToString,
+  convertStatusStringToNumber,
+  SellingStatus as SellingStatusEnum,
+} from '@/types/sales'
+import formatCurrency from '@/utils/formatCurrency'
+import dayjs from 'dayjs'
 
 const props = defineProps<{
   showAddModal: boolean
@@ -39,10 +48,14 @@ const newMember = ref<
     pondSize?: string
     bacteriaBrand?: string
     foodBrand?: string
+    lastPurchaseDate?: string
+    totalPurchaseAmount?: number
+    purchaseCount?: number
   }
 >({
-  status: '',
+  status: null,
   code: '',
+  customerLevel: null,
   contacts: [{ index: 0, type: '', value: '' }],
   interests: [],
   displayName: '',
@@ -59,12 +72,19 @@ const newMember = ref<
   pondSize: '',
   bacteriaBrand: '',
   foodBrand: '',
+  behaviorNotes: '',
+  purchaseHistory: [],
+  requirements: '',
+  lastPurchaseDate: undefined,
+  totalPurchaseAmount: undefined,
+  purchaseCount: undefined,
 })
 
 const closeAddModal = () => {
   newMember.value = {
-    status: '',
+    status: null,
     code: '',
+    customerLevel: null,
     contacts: [{ index: 0, type: '', value: '' }],
     interests: [],
     displayName: '',
@@ -81,11 +101,189 @@ const closeAddModal = () => {
     pondSize: '',
     bacteriaBrand: '',
     foodBrand: '',
+    behaviorNotes: '',
+    purchaseHistory: [],
+    requirements: '',
+    lastPurchaseDate: undefined,
+    totalPurchaseAmount: undefined,
+    purchaseCount: undefined,
   }
+  // Reset state รายการใหม่
+  newlyAddedPurchaseHistory.value = []
+  originalPurchaseHistory.value = []
+  editingSaleIds.value.clear()
   emit('onCloseAddModal')
 }
 
 const memberStore = useMemberStore()
+const salesStore = useSalesStore()
+
+// ดึงข้อมูล sales
+const { data: salesData } = useQuery<ISales[]>({
+  queryKey: ['get_sales'],
+  queryFn: () => salesStore.onGetSales(),
+})
+
+// สำหรับจัดการประวัติซื้อสินค้า
+const selectedSaleId = ref<string | null>(null)
+const itemFilter = ref('')
+
+// Helper function สำหรับแปลง status เป็น label
+const getStatusLabel = (status: SellingStatus | string): string => {
+  const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
+  const statusInfo =
+    salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
+  return statusInfo?.label || statusString
+}
+
+// Helper function สำหรับแปลง payment เป็น label
+const getPaymentLabel = (payment: PaymentMethod | undefined): string => {
+  const paymentMap = {
+    cash: 'เงินสด',
+    transfer: 'โอนเงิน',
+    credit: 'เครดิต',
+    order: 'ออเดอร์',
+    cod: 'COD',
+    card: 'บัตร',
+  }
+  return payment ? paymentMap[payment] : '-'
+}
+
+// Helper function คำนวณยอดรวม
+const calculateSaleTotal = (sale: ISales | undefined): number => {
+  if (!sale) return 0
+  const productsTotal = sale.products
+    ? sale.products.reduce((total, product) => {
+        return total + (product.price || 0) * (product.quantity || 1)
+      }, 0)
+    : 0
+  return productsTotal - sale.discount - (sale.deliveryNo || 0)
+}
+
+// Helper function หา sale จาก _id
+const getSaleById = (id: string): ISales | undefined => {
+  return salesData.value?.find((sale) => sale._id === id)
+}
+
+// Filter sales ที่สามารถเลือกได้
+const availableSales = computed(() => {
+  if (!salesData.value || !props.data?._id) return []
+
+  return salesData.value.filter((sale) => {
+    // ตรวจสอบ user id ตรงกัน
+    if (sale.user !== props.data?._id) return false
+
+    // ตรวจสอบว่าไม่มีใน purchaseHistory แล้ว
+    if (newMember.value.purchaseHistory?.includes(sale._id)) return false
+
+    // ตรวจสอบสถานะ >= preparing (shipping, received, damaged)
+    const statusNumber =
+      typeof sale.sellingStatus === 'number'
+        ? sale.sellingStatus
+        : convertStatusStringToNumber(sale.sellingStatus)
+    if (statusNumber < SellingStatusEnum.preparing) return false
+
+    return true
+  })
+})
+
+// Filter sales ตาม item filter
+const filteredSales = computed(() => {
+  if (!itemFilter.value.trim()) return availableSales.value
+
+  const filterLower = itemFilter.value.toLowerCase().trim()
+  return availableSales.value.filter((sale) => sale.item.toLowerCase().includes(filterLower))
+})
+
+// Computed สำหรับ Select options
+const saleOptions = computed(() => {
+  return filteredSales.value.map((sale) => ({
+    label: `เลขรายการขาย: ${sale.item}`,
+    value: sale._id,
+    sale: sale,
+  }))
+})
+
+// ฟังก์ชันคำนวณ CRM statistics จาก purchaseHistory
+// รวมทั้งรายการเก่าและรายการใหม่
+const calculatePurchaseStats = () => {
+  // รวมรายการเก่าและรายการใหม่เข้าด้วยกัน
+  const allPurchaseHistory = [
+    ...(newMember.value.purchaseHistory || []),
+    ...newlyAddedPurchaseHistory.value,
+  ]
+
+  if (!salesData.value || allPurchaseHistory.length === 0) {
+    newMember.value.totalPurchaseAmount = 0
+    newMember.value.purchaseCount = 0
+    newMember.value.lastPurchaseDate = undefined
+    return
+  }
+
+  const memberSales = salesData.value.filter((sale) => allPurchaseHistory.includes(sale._id))
+
+  // คำนวณยอดซื้อรวม
+  const totalAmount = memberSales.reduce((sum, sale) => {
+    return sum + calculateSaleTotal(sale)
+  }, 0)
+
+  // หาวันที่ซื้อล่าสุด
+  const purchaseDates = memberSales
+    .map((sale) => sale.cat)
+    .filter((date) => date)
+    .sort((a, b) => b - a)
+
+  const lastPurchaseDate =
+    purchaseDates.length > 0 ? dayjs(purchaseDates[0]).toISOString() : undefined
+
+  // จำนวนครั้งที่ซื้อ
+  const count = memberSales.length
+
+  newMember.value.totalPurchaseAmount = totalAmount
+  newMember.value.purchaseCount = count
+  newMember.value.lastPurchaseDate = lastPurchaseDate
+}
+
+const addPurchaseHistory = () => {
+  if (selectedSaleId.value) {
+    // ตรวจสอบว่า saleId นี้มีอยู่แล้วหรือไม่ (ทั้งในรายการใหม่และรายการเก่า)
+    const alreadyExists =
+      newlyAddedPurchaseHistory.value.includes(selectedSaleId.value) ||
+      newMember.value.purchaseHistory?.includes(selectedSaleId.value)
+
+    if (!alreadyExists) {
+      // เพิ่มเข้า state รายการใหม่
+      newlyAddedPurchaseHistory.value.push(selectedSaleId.value)
+      selectedSaleId.value = null
+      itemFilter.value = ''
+      // คำนวณ CRM statistics ใหม่
+      calculatePurchaseStats()
+    } else {
+      toast.warning('Sale ID นี้มีอยู่แล้ว')
+    }
+  }
+}
+
+const removePurchaseHistory = (saleId: string) => {
+  // ลบจากรายการใหม่
+  const newIndex = newlyAddedPurchaseHistory.value.indexOf(saleId)
+  if (newIndex > -1) {
+    newlyAddedPurchaseHistory.value.splice(newIndex, 1)
+  }
+
+  // ลบจากรายการเก่า (ถ้ามี)
+  if (newMember.value.purchaseHistory) {
+    const index = newMember.value.purchaseHistory.indexOf(saleId)
+    if (index > -1) {
+      newMember.value.purchaseHistory.splice(index, 1)
+    }
+  }
+
+  // ลบ saleId ออกจาก editingSaleIds ถ้ามี
+  editingSaleIds.value.delete(saleId)
+  // คำนวณ CRM statistics ใหม่
+  calculatePurchaseStats()
+}
 
 // ฟังก์ชันสำหรับจัดการ contacts
 const addContact = () => {
@@ -93,7 +291,7 @@ const addContact = () => {
     const newIndex = Math.max(...newMember.value.contacts.map((c) => c.index), -1) + 1
     newMember.value.contacts = [
       ...newMember.value.contacts,
-      { index: newIndex, type: '', value: '' }
+      { index: newIndex, type: '', value: '' },
     ]
   }
 }
@@ -105,10 +303,8 @@ const removeContact = (index: number) => {
 }
 
 const updateContact = (index: number, field: 'type' | 'value', value: string | undefined) => {
-  newMember.value.contacts = newMember.value.contacts.map(contact =>
-    contact.index === index
-      ? { ...contact, [field]: value || '' }
-      : contact
+  newMember.value.contacts = newMember.value.contacts.map((contact) =>
+    contact.index === index ? { ...contact, [field]: value || '' } : contact
   )
 }
 
@@ -116,18 +312,28 @@ watch(
   () => props.data,
   (newMemberData) => {
     if (newMemberData) {
-      const experience = newMemberData.interests?.find(i => i.type === 'experience')?.value || ''
-      const fishPreference = newMemberData.interests?.find(i => i.type === 'fish_preference')?.value || ''
-      const pondSize = newMemberData.interests?.find(i => i.type === 'pond_size')?.value || ''
-      const bacteriaBrand = newMemberData.interests?.find(i => i.type === 'bacteria_brand')?.value || ''
-      const foodBrand = newMemberData.interests?.find(i => i.type === 'food_brand')?.value || ''
+      const experience = newMemberData.interests?.find((i) => i.type === 'experience')?.value || ''
+      const fishPreference =
+        newMemberData.interests?.find((i) => i.type === 'fish_preference')?.value || ''
+      const pondSize = newMemberData.interests?.find((i) => i.type === 'pond_size')?.value || ''
+      const bacteriaBrand =
+        newMemberData.interests?.find((i) => i.type === 'bacteria_brand')?.value || ''
+      const foodBrand = newMemberData.interests?.find((i) => i.type === 'food_brand')?.value || ''
+
+      // เก็บ purchaseHistory เดิมไว้
+      originalPurchaseHistory.value = newMemberData.purchaseHistory || []
+      // Reset state รายการใหม่เมื่อโหลดข้อมูลใหม่
+      newlyAddedPurchaseHistory.value = []
+      editingSaleIds.value.clear()
 
       newMember.value = {
         code: newMemberData.code,
         status: newMemberData.status,
-        contacts: newMemberData.contacts && newMemberData.contacts.length > 0
-          ? newMemberData.contacts
-          : [{ index: 0, type: '', value: '' }],
+        customerLevel: newMemberData.customerLevel || '',
+        contacts:
+          newMemberData.contacts && newMemberData.contacts.length > 0
+            ? newMemberData.contacts
+            : [{ index: 0, type: '', value: '' }],
         interests: newMemberData.interests || [],
         displayName: newMemberData.displayName,
         name: newMemberData.name || '',
@@ -143,10 +349,35 @@ watch(
         pondSize: pondSize,
         bacteriaBrand: bacteriaBrand,
         foodBrand: foodBrand,
+        behaviorNotes: newMemberData.behaviorNotes || '',
+        purchaseHistory: newMemberData.purchaseHistory || [],
+        requirements: newMemberData.requirements || '',
+        lastPurchaseDate: newMemberData.lastPurchaseDate,
+        totalPurchaseAmount: newMemberData.totalPurchaseAmount,
+        purchaseCount: newMemberData.purchaseCount,
       }
+      // คำนวณ CRM statistics เมื่อโหลดข้อมูล
+      // ใช้ nextTick เพื่อให้แน่ใจว่า salesData โหลดเสร็จแล้ว
+      setTimeout(() => {
+        calculatePurchaseStats()
+      }, 100)
     }
   },
   { immediate: true }
+)
+
+// Watch salesData เพื่อคำนวณใหม่เมื่อข้อมูล sales โหลดเสร็จ
+watch(
+  () => salesData.value,
+  () => {
+    if (
+      props.data &&
+      newMember.value.purchaseHistory &&
+      newMember.value.purchaseHistory.length > 0
+    ) {
+      calculatePurchaseStats()
+    }
+  }
 )
 
 const handleAddMember = () => {
@@ -161,10 +392,10 @@ const handleAddMember = () => {
   const requiredInterests = [
     { type: 'experience', value: newMember.value.experience },
     { type: 'fish_preference', value: newMember.value.fishPreference },
-    { type: 'pond_size', value: newMember.value.pondSize }
+    { type: 'pond_size', value: newMember.value.pondSize },
   ]
-  const hasValidInterests = requiredInterests.every(interest =>
-    interest.value && interest.value.trim() !== ''
+  const hasValidInterests = requiredInterests.every(
+    (interest) => interest.value && interest.value.trim() !== ''
   )
 
   if (!hasValidContacts) {
@@ -182,19 +413,39 @@ const handleAddMember = () => {
     return
   }
 
+  if (!newMember.value.status) {
+    toast.error('กรุณาเลือกสถานะลูกค้า')
+    return
+  }
+
+  if (!newMember.value.customerLevel) {
+    toast.error('กรุณาเลือกระดับลูกค้า')
+    return
+  }
+
   const interestsArray = [
     { index: 0, type: 'experience', value: newMember.value.experience || '' },
     { index: 1, type: 'fish_preference', value: newMember.value.fishPreference || '' },
     { index: 2, type: 'pond_size', value: newMember.value.pondSize || '' },
-    ...(newMember.value.bacteriaBrand ? [{ index: 3, type: 'bacteria_brand', value: newMember.value.bacteriaBrand }] : []),
-    ...(newMember.value.foodBrand ? [{ index: 4, type: 'food_brand', value: newMember.value.foodBrand }] : [])
+    ...(newMember.value.bacteriaBrand
+      ? [{ index: 3, type: 'bacteria_brand', value: newMember.value.bacteriaBrand }]
+      : []),
+    ...(newMember.value.foodBrand
+      ? [{ index: 4, type: 'food_brand', value: newMember.value.foodBrand }]
+      : []),
+  ]
+
+  // รวมรายการใหม่เข้ากับ purchaseHistory ก่อนบันทึก
+  const finalPurchaseHistory = [
+    ...(newMember.value.purchaseHistory || []),
+    ...newlyAddedPurchaseHistory.value,
   ]
 
   const payload = {
     ...newMember.value,
     interests: interestsArray,
+    purchaseHistory: finalPurchaseHistory,
     code: props.data ? newMember.value.code : buildPrefix(),
-    status: props.data ? newMember.value.status : 'ci',
     username: newMember.value.username || undefined,
   }
 
@@ -206,32 +457,39 @@ const handleAddMember = () => {
       uat: props.data.uat,
     })
   } else {
-    mutate(payload)
+    mutate({
+      ...payload,
+    })
   }
 }
 
 const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: CreateMemberPayload) => memberStore.onCreateMember(payload),
-  onSuccess: (data: any) => {
+  onSuccess: (data: { data?: unknown; error?: { keyPattern?: { username?: number } } }) => {
     if (data.data) {
       toast.success('เพิ่มลูกค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_members'] })
       closeAddModal()
       isSubmitting.value = false
     } else {
-      toast.error(data.error.keyPattern.username == 1 ? 'กรุณาระบุชื่อผู้ใช้งานใหม่' : 'เพิ่มลูกค้าไม่สำเร็จ')
+      toast.error(
+        data.error?.keyPattern?.username === 1
+          ? 'กรุณาระบุชื่อผู้ใช้งานใหม่'
+          : 'เพิ่มลูกค้าไม่สำเร็จ'
+      )
       isSubmitting.value = false
     }
-  }
+  },
 })
 
 const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
-  onSuccess: (data: any) => {
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
     if (data.data) {
       toast.success('แก้ไขข้อมูลลูกค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_members'] })
+      queryClient.invalidateQueries({ queryKey: ['get_member_id', props.data?._id] })
       closeAddModal()
       isSubmitting.value = false
     } else {
@@ -242,12 +500,53 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
 })
 
 function buildPrefix() {
+  // รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
   const maxNumber = props.memberData
-    .map(member => member.code)
-    .filter(code => code?.startsWith('ci'))
-    .map(code => parseInt(code.replace('ci', ''), 10) || 0)
+    .map((member) => member.code)
+    .filter((code) => code?.toLowerCase().startsWith('cs'))
+    .map((code) => {
+      // รองรับทั้ง Cs และ cs (case insensitive)
+      const numStr = code.replace(/^cs/i, '')
+      return parseInt(numStr, 10) || 0
+    })
     .reduce((max, num) => Math.max(max, num), 0)
-  return `ci${String(maxNumber + 1).padStart(4, '0')}`
+  return `Cs${String(maxNumber + 1).padStart(4, '0')}`
+}
+
+const originalPurchaseHistory = ref<string[]>([])
+
+// State สำหรับเก็บรายการใหม่ที่เพิ่มใน session นี้ (ยังไม่ได้บันทึก)
+const newlyAddedPurchaseHistory = ref<string[]>([])
+
+// State สำหรับ tracking รายการที่อยู่ในโหมดแก้ไข
+const editingSaleIds = ref<Set<string>>(new Set())
+
+// สร้าง computed property สำหรับรายการเก่าที่บันทึกแล้ว
+// แสดงเฉพาะรายการที่อยู่ใน originalPurchaseHistory และยังอยู่ใน newMember.purchaseHistory
+const existingPurchaseHistory = computed(() => {
+  if (!originalPurchaseHistory.value || originalPurchaseHistory.value.length === 0) {
+    return []
+  }
+
+  // แสดงเฉพาะรายการที่อยู่ใน originalPurchaseHistory (บันทึกแล้ว)
+  // และยังอยู่ใน newMember.purchaseHistory (ยังไม่ถูกลบ)
+  return originalPurchaseHistory.value.filter((saleId) =>
+    newMember.value.purchaseHistory?.includes(saleId)
+  )
+})
+
+// ฟังก์ชันสลับโหมดแก้ไข
+const toggleEditMode = (saleId: string) => {
+  if (editingSaleIds.value.has(saleId)) {
+    editingSaleIds.value.delete(saleId)
+  } else {
+    editingSaleIds.value.add(saleId)
+  }
+}
+
+// ตรวจสอบว่ารายการอยู่ในโหมดแก้ไขหรือไม่
+const isEditing = (saleId: string) => {
+  return editingSaleIds.value.has(saleId)
 }
 </script>
 
@@ -257,11 +556,11 @@ function buildPrefix() {
     @update:visible="closeAddModal"
     modal
     :header="props.data ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'"
-    :style="{ width: '50rem' }"
-    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    :style="{ width: '65rem' }"
+    :breakpoints="{ '1199px': '85vw', '575px': '90vw' }"
     :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
   >
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Basic Information Section -->
       <div class="bg-gray-50 rounded-lg p-4">
         <div class="flex items-center justify-between mb-3">
@@ -369,6 +668,40 @@ function buildPrefix() {
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะลูกค้า *</label>
+            <Select
+              v-model="newMember.status"
+              :options="memberStore.memberStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกสถานะลูกค้า"
+              :invalid="!newMember.status && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small v-if="!newMember.status && isSubmitting" class="text-red-500 text-xs mt-1"
+              >กรุณาเลือกสถานะลูกค้า</small
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ระดับลูกค้า *</label>
+            <Select
+              v-model="newMember.customerLevel"
+              :options="memberStore.customerLevelOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกระดับลูกค้า"
+              :invalid="!newMember.customerLevel && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small v-if="!newMember.customerLevel && isSubmitting" class="text-red-500 text-xs mt-1"
+              >กรุณาเลือกระดับลูกค้า</small
+            >
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
             <InputText
               v-model="newMember.name"
@@ -411,7 +744,6 @@ function buildPrefix() {
               size="small"
             />
           </div>
-
         </div>
       </div>
 
@@ -478,7 +810,9 @@ function buildPrefix() {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ใช้จุลินทรีย์มั้ย ยี่ห้ออะไร</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >ใช้จุลินทรีย์มั้ย ยี่ห้ออะไร</label
+            >
             <InputText
               v-model="newMember.bacteriaBrand"
               placeholder="ยี่ห้อจุลินทรีย์"
@@ -489,9 +823,25 @@ function buildPrefix() {
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
+            <InputText v-model="newMember.foodBrand" placeholder="ยี่ห้ออาหาร" fluid size="small" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
+            <Textarea
+              v-model="newMember.behaviorNotes"
+              placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
+              rows="3"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ความต้องการ</label>
             <InputText
-              v-model="newMember.foodBrand"
-              placeholder="ยี่ห้ออาหาร"
+              v-model="newMember.requirements"
+              placeholder="เช่น เน้นลาย, เน้นขนาด, เน้นบ่อดิน"
               fluid
               size="small"
             />
@@ -499,9 +849,246 @@ function buildPrefix() {
         </div>
       </div>
 
+      <div class="bg-gray-50 rounded-lg p-4 space-y-6" v-if="props.data">
+        <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
+          <i class="pi pi-shopping-bag text-green-600"></i>
+          ข้อมูลการซื้อสินค้า
+        </h3>
+        <!-- ประวัติซื้อสินค้า (แสดงเฉพาะเมื่อแก้ไข) -->
+        <div>
+          <label class="block text-sm font-[600]! text-gray-700 mb-1">เพิ่มรายการซื้อ</label>
+          <!-- Select dropdown สำหรับเลือกรายการขาย -->
+          <div class="flex gap-2 mb-3">
+            <Select
+              v-model="selectedSaleId"
+              :options="saleOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกรายการขาย"
+              fluid
+              filter
+              filterBy="sale.item"
+              size="small"
+              :disabled="!saleOptions.length"
+            />
+            <Button
+              icon="pi pi-plus"
+              size="small"
+              severity="success"
+              v-tooltip.top="'เพิ่มรายการซื้อ'"
+              @click="addPurchaseHistory"
+              :disabled="!selectedSaleId"
+            />
+          </div>
+
+          <!-- แสดง card สรุปข้อมูลรายการซื้อใหม่ (ยังไม่ได้บันทึก) -->
+          <div v-if="newlyAddedPurchaseHistory.length > 0" class="space-y-3">
+            <label class="block text-sm font-[600]! text-gray-700 mb-2">
+              รายการใหม่ (ยังไม่ได้บันทึก) ({{ newlyAddedPurchaseHistory.length }})
+            </label>
+            <Card
+              v-for="saleId in newlyAddedPurchaseHistory"
+              :key="`new-${saleId}`"
+              :pt="{ body: 'p-4' }"
+              class="border-l-4 border-l-green-500"
+            >
+              <template #content>
+                <template v-if="getSaleById(saleId)">
+                  <div class="relative">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <Tag value="ใหม่" severity="success" size="small" class="text-xs" />
+                      <span class="font-semibold! text-sm text-gray-700">
+                        เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
+                      >
+                      <Tag
+                        :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
+                        :severity="
+                          (() => {
+                            const sale = getSaleById(saleId)
+                            if (!sale) return 'secondary'
+                            const statusString =
+                              typeof sale.sellingStatus === 'number'
+                                ? convertStatusNumberToString(sale.sellingStatus)
+                                : sale.sellingStatus
+                            const workflow = salesStore.statusWorkflow
+                            return workflow[statusString]?.color || 'secondary'
+                          })()
+                        "
+                        size="small"
+                        class="text-xs"
+                      />
+                      <Tag
+                        :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
+                        severity="info"
+                        size="small"
+                        class="text-xs"
+                      />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span class="text-gray-600">ยอดรวม:</span>
+                        <span class="font-medium text-gray-900 ml-1">
+                          {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
+                        </span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">จำนวนสินค้า:</span>
+                        <span class="font-medium text-gray-900 ml-1">{{
+                          getSaleById(saleId)?.products?.length || 0
+                        }}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">วันที่:</span>
+                        <span class="font-medium text-gray-900 ml-1">
+                          {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
+                        </span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">หมายเหตุ:</span>
+                        <span class="font-medium text-gray-600 ml-1">{{
+                          getSaleById(saleId)?.note || '-'
+                        }}</span>
+                      </div>
+                    </div>
+
+                    <div class="absolute top-0 right-0">
+                      <Button
+                        icon="pi pi-trash"
+                        size="small"
+                        severity="danger"
+                        text
+                        rounded
+                        @click="removePurchaseHistory(saleId)"
+                        class="ml-2"
+                      />
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="text-sm text-gray-500">
+                  ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
+                </div>
+              </template>
+            </Card>
+          </div>
+        </div>
+
+        <!-- แสดงรายการที่บันทึกแล้ว (แยกจากรายการใหม่) -->
+        <div v-if="existingPurchaseHistory.length > 0" class="mt-4">
+          <label class="block text-sm font-[600]! text-gray-700 mb-2">
+            รายการที่บันทึกแล้ว ({{ existingPurchaseHistory.length }})
+          </label>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <Card
+              v-for="saleId in existingPurchaseHistory"
+              :key="`existing-${saleId}`"
+              :pt="{ body: 'p-4' }"
+              class="border-l-4 border-l-blue-500"
+            >
+              <template #content>
+                <template v-if="getSaleById(saleId)">
+                  <div class="relative">
+                    <div class="flex justify-between gap-2 mb-3">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold! text-sm text-gray-700">
+                          เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
+                        >
+                        <Tag
+                          :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
+                          :severity="
+                            (() => {
+                              const sale = getSaleById(saleId)
+                              if (!sale) return 'secondary'
+                              const statusString =
+                                typeof sale.sellingStatus === 'number'
+                                  ? convertStatusNumberToString(sale.sellingStatus)
+                                  : sale.sellingStatus
+                              const workflow = salesStore.statusWorkflow
+                              return workflow[statusString]?.color || 'secondary'
+                            })()
+                          "
+                          size="small"
+                          class="text-xs"
+                        />
+                        <Tag
+                          :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
+                          severity="info"
+                          size="small"
+                          class="text-xs"
+                        />
+                      </div>
+                      <div class="flex gap-1">
+                        <Button
+                          v-if="!isEditing(saleId)"
+                          icon="pi pi-pencil"
+                          size="small"
+                          severity="secondary"
+                          text
+                          rounded
+                          @click="toggleEditMode(saleId)"
+                        />
+                        <template v-else>
+                          <Button
+                            icon="pi pi-trash"
+                            size="small"
+                            severity="danger"
+                            text
+                            rounded
+                            @click="removePurchaseHistory(saleId)"
+                          />
+                          <Button
+                            icon="pi pi-times"
+                            size="small"
+                            severity="secondary"
+                            text
+                            rounded
+                            @click="toggleEditMode(saleId)"
+                            title="ยกเลิก"
+                          />
+                        </template>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span class="text-gray-600">ยอดรวม:</span>
+                        <span class="font-medium text-gray-900 ml-1">
+                          {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
+                        </span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">จำนวนสินค้า:</span>
+                        <span class="font-medium text-gray-900 ml-1">{{
+                          getSaleById(saleId)?.products?.length || 0
+                        }}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">วันที่:</span>
+                        <span class="font-medium text-gray-900 ml-1">
+                          {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
+                        </span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">หมายเหตุ:</span>
+                        <span class="font-medium text-gray-600 ml-1">{{
+                          getSaleById(saleId)?.note || '-'
+                        }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="text-sm text-gray-500">
+                  ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
+                </div>
+              </template>
+            </Card>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-gray-50 rounded-lg p-4">
         <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
-          <i class="pi pi-shield text-green-600"></i>
+          <i class="pi pi-shield text-amber-600"></i>
           ข้อมูลบัญชีประมูล
         </h3>
 

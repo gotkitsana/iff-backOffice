@@ -3,20 +3,34 @@ import api from '@/utils/axios'
 import { ref } from 'vue'
 
 export const useMemberStore = defineStore('member', () => {
+  // สถานะลูกค้าใหม่: สอบถาม, ซื้อแล้ว, Hot/Warm/Cold Active
   const memberStatusOptions = ref<{ label: MemberStatusLabel; value: MemberStatus }[]>([
     { label: 'สอบถาม', value: 'ci' },
-    { label: 'ลูกค้าซื้อแล้ว', value: 'cs' },
-    { label: 'ลูกค้าสำคัญ', value: 'css' },
+    { label: 'ซื้อแล้ว', value: 'cs' },
+    { label: 'ลูกค้า Hot Active', value: 'hot_active' },
+    { label: 'ลูกค้า Warm Active', value: 'warm_active' },
+    { label: 'ลูกค้า Cold Active', value: 'cold_active' },
   ])
 
-  const getStatusTag = (status: string): 'secondary' | 'success' | 'warn' => {
+  // ระดับลูกค้า
+  const customerLevelOptions = ref<{ label: CustomerLevelLabel; value: CustomerLevel }[]>([
+    { label: 'ทั่วไป', value: 'general' },
+    { label: 'สำคัญ', value: 'important' },
+    { label: 'สำคัญมาก', value: 'very_important' },
+  ])
+
+  const getStatusTag = (status: string): 'secondary' | 'success' | 'info' | 'warn' | 'danger' => {
     switch (status) {
       case 'ci':
         return 'secondary'
       case 'cs':
         return 'success'
-      case 'css':
+      case 'hot_active':
+        return 'danger'
+      case 'warm_active':
         return 'warn'
+      case 'cold_active':
+        return 'info'
       default:
         return 'secondary'
     }
@@ -146,6 +160,29 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'คาเฟ่', value: 'cafe' },
   ])
 
+  // ประเภทนักเลี้ยง (สำหรับ CRM)
+  const breederTypeOptions = ref([
+    { label: 'นักเลี้ยงมือใหม่', value: 'newbie' },
+    { label: 'เลี้ยงดูพัฒนาการ', value: 'development' },
+    { label: 'เลี้ยงประกวด', value: 'competition' },
+  ])
+
+  // เป้าหมายการเลี้ยง (สำหรับ CRM)
+  const breedingGoalOptions = ref([
+    { label: 'เลี้ยงสวยงาม', value: 'beauty' },
+    { label: 'พัฒนาการเติบโต', value: 'growth' },
+    { label: 'เลี้ยงประกวด', value: 'competition' },
+    { label: 'ทำฟาร์มขาย', value: 'farm_sale' },
+  ])
+
+  // ระดับงบประมาณ (สำหรับ CRM)
+  const budgetLevelOptions = ref([
+    { label: 'งบน้อย', value: 'low' },
+    { label: 'งบปานกลาง', value: 'medium' },
+    { label: 'งบมาก', value: 'high' },
+  ])
+
+  // Legacy options (เก็บไว้เพื่อ backward compatibility)
   const memberExperienceOptions = ref([
     { label: 'เป็นมือใหม่', value: 'newbie' },
     { label: 'เลี้ยงสวยงามที่บ้าน', value: 'hobbyist' },
@@ -168,18 +205,23 @@ export const useMemberStore = defineStore('member', () => {
     onResetPassword,
 
     memberStatusOptions,
+    customerLevelOptions,
     memberContactOptions,
     getStatusTag,
     provinceOptions,
     memberExperienceOptions,
     memberFishPreferenceOptions,
+    breederTypeOptions,
+    breedingGoalOptions,
+    budgetLevelOptions,
   }
 })
 
 export interface IMember {
   _id: string
-  code: string //รหัสลูกค้า
-  status: string //สถานะ
+  code: string //รหัสลูกค้า (Cs เท่านั้น)
+  status: MemberStatus //สถานะลูกค้า (ci, cs, hot_active, warm_active, cold_active)
+  customerLevel: CustomerLevel //ระดับลูกค้า (general, important, very_important)
   displayName: string //ชื่อเล่น
   name?: string //ชื่อ/สกุล
   address?: string //ที่อยู่
@@ -188,6 +230,16 @@ export interface IMember {
   type: string //ประเภทลูกค้า
   contacts?: { index: number; type: string; value: string }[] //{index:number,type:key ทางติดต่อ,value:ชื่อชองทางติดต่อ} []
   interests?: { index: number; type: string; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
+  behaviorNotes?: string //โน้ตพฤติกรรมลูกค้า
+  purchaseHistory?: string[] //ประวัติซื้อสินค้า (array of sale IDs)
+  requirements?: string //ความต้องการ (เช่น เน้นลาย, เน้นขนาด, เน้นบ่อดิน)
+
+  // CRM fields (อาจจะเก็บใน interests หรือเป็นฟิลด์แยก)
+  // lastContactDate?: string //วันที่ติดต่อล่าสุด
+  // lastVisitDate?: string //วันที่มาฟาร์มล่าสุด
+  lastPurchaseDate?: string //วันที่ซื้อล่าสุด
+  totalPurchaseAmount?: number //ยอดซื้อรวม
+  purchaseCount?: number //จำนวนครั้งที่ซื้อ
 
   username?: string | null //ยูสเซอร์
   password?: string | null //รหัสผ่าน
@@ -206,7 +258,8 @@ export interface IMember {
 
 export interface CreateMemberPayload {
   code: string
-  status: string
+  status: MemberStatus | null
+  customerLevel: CustomerLevel | null
   contacts: { index: number; type: string; value: string }[]
   interests: { index: number; type: string; value: string }[]
   displayName: string
@@ -215,6 +268,9 @@ export interface CreateMemberPayload {
   province?: string
   phone?: string
   type?: string
+  behaviorNotes?: string
+  purchaseHistory?: string[]
+  requirements?: string
 
   username?: string | null
   password?: string | null
@@ -225,6 +281,9 @@ export interface UpdateMemberPayload extends CreateMemberPayload {
   _id: string
   cat: number
   uat: number
+  lastPurchaseDate?: string
+  totalPurchaseAmount?: number
+  purchaseCount?: number
 }
 
 export interface ResetPasswordPayload {
@@ -232,6 +291,13 @@ export interface ResetPasswordPayload {
   password: string
 }
 
+export type MemberStatus = 'ci' | 'cs' | 'hot_active' | 'warm_active' | 'cold_active'
+export type MemberStatusLabel =
+  | 'สอบถาม'
+  | 'ซื้อแล้ว'
+  | 'ลูกค้า Hot Active'
+  | 'ลูกค้า Warm Active'
+  | 'ลูกค้า Cold Active'
 
-export type MemberStatus = 'ci' | 'cs' | 'css'
-export type MemberStatusLabel = 'สอบถาม' | 'ลูกค้าซื้อแล้ว' | 'ลูกค้าสำคัญ'
+export type CustomerLevel = 'general' | 'important' | 'very_important'
+export type CustomerLevelLabel = 'ทั่วไป' | 'สำคัญ' | 'สำคัญมาก'
