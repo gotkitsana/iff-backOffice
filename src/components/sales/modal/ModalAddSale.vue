@@ -366,6 +366,20 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
             products.value || [],
             preparingStepOrder
           )
+
+          // Update member customer level
+          // อัพเดท customerLevel เมื่อ status = preparing หรือ received (มีการยืนยันสลิปแล้ว)
+          memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
+            {
+              ...variables,
+              _id: createdSale._id,
+              sellingStatus: initialStatus,
+            } as IUpdateSalesPayload,
+            members.value,
+            allSales.value,
+            products.value || [],
+            preparingStepOrder
+          )
         }
 
         // Deduct stock

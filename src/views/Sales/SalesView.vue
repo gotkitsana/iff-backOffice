@@ -548,13 +548,19 @@ const getPaymentMethodSeverity = (
           >
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
-                <Tag
+                <!-- <Tag
                   :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
                   :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
                   size="small"
                   class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   @click="openStatusManager(slotProps.data)"
                   v-tooltip.top="'คลิกเพื่อเปลี่ยนสถานะ'"
+                /> -->
+                <Tag
+                  :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
+                  :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
+                  size="small"
+                  class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
                 />
               </div>
             </template>
@@ -580,7 +586,7 @@ const getPaymentMethodSeverity = (
           <Column
             field="user.displayName"
             header="ข้อมูลลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[7rem]' }"
+            :pt="{ columnHeaderContent: 'min-w-[11rem]' }"
           >
             <template #body="slotProps">
               <div
@@ -589,7 +595,7 @@ const getPaymentMethodSeverity = (
                 v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
               >
                 <p
-                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors"
+                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors mb-0.5"
                 >
                   ชื่อเล่น: {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
                 </p>
@@ -603,6 +609,23 @@ const getPaymentMethodSeverity = (
                     "
                     :severity="
                       memberStore.getStatusTag(findMemberData(slotProps.data.user)?.status || '')
+                    "
+                    size="small"
+                    class="text-xs"
+                  />
+
+                  <Tag
+                    :value="
+                      memberStore.customerLevelOptions.find(
+                        (s) => s.value === findMemberData(slotProps.data.user)?.customerLevel
+                      )?.label || '-'
+                    "
+                    :severity="
+                      findMemberData(slotProps.data.user)?.customerLevel === 'very_important'
+                        ? 'danger'
+                        : findMemberData(slotProps.data.user)?.customerLevel === 'important'
+                        ? 'warn'
+                        : 'secondary'
                     "
                     size="small"
                     class="text-xs"
