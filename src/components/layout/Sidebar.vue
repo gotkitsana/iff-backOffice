@@ -203,7 +203,19 @@ const menuSections = [
       {
         icon: 'pi pi-users',
         label: 'บุคลากร',
-        route: 'employee',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-users',
+            label: 'ข้อมูลพนักงาน',
+            route: 'employee',
+          },
+          {
+            icon: 'pi pi-money-bill',
+            label: 'เงินเดือน Payroll',
+            route: 'payroll',
+          },
+        ],
       },
     ],
   },
