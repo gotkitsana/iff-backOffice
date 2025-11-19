@@ -132,17 +132,35 @@ const statusOptions = computed(() => {
   ]
 })
 
+// KPI Cards - นับจำนวนลูกค้าตามสถานะใหม่
 const inquiryCustomersCount = computed(() => {
   return data.value?.filter((member) => member.status === 'ci').length || 0
 })
 
-// KPI Cards - นับจำนวนลูกค้าตามประเภท
-const generalCustomersCount = computed(() => {
+const purchasedCustomersCount = computed(() => {
   return data.value?.filter((member) => member.status === 'cs').length || 0
 })
 
-const importantCustomersCount = computed(() => {
-  return data.value?.filter((member) => member.status === 'css').length || 0
+// Computed values สำหรับ Active customers แยกตามระดับ (อาจใช้ในอนาคต)
+// const hotActiveCustomersCount = computed(() => {
+//   return data.value?.filter((member) => member.status === 'hot_active').length || 0
+// })
+
+// const warmActiveCustomersCount = computed(() => {
+//   return data.value?.filter((member) => member.status === 'warm_active').length || 0
+// })
+
+// const coldActiveCustomersCount = computed(() => {
+//   return data.value?.filter((member) => member.status === 'cold_active').length || 0
+// })
+
+// Active customers (Hot + Warm + Cold)
+const activeCustomersCount = computed(() => {
+  return (
+    data.value?.filter((member) =>
+      ['hot_active', 'warm_active', 'cold_active'].includes(member.status)
+    ).length || 0
+  )
 })
 
 const incompleteDataCustomersCount = computed(() => {
@@ -183,39 +201,39 @@ const incompleteDataCustomersCount = computed(() => {
         </template>
       </Card>
 
-      <!-- ลูกค้าทั่วไป -->
+      <!-- ลูกค้า Active -->
       <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">ลูกค้าทั่วไป</p>
+              <p class="text-sm text-gray-600">ลูกค้า Active</p>
               <p class="text-lg md:text-xl font-medium! text-green-600">
-                {{ generalCustomersCount }}
+                {{ activeCustomersCount }}
               </p>
             </div>
             <div
               class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
             >
-              <i class="pi pi-tag text-white text-xl"></i>
+              <i class="pi pi-check-circle text-white text-xl"></i>
             </div>
           </div>
         </template>
       </Card>
 
-      <!-- ลูกค้าสำคัญ -->
+      <!-- ลูกค้าซื้อแล้ว -->
       <Card :pt="{ body: 'p-4' }" class="hover:shadow-lg transition-shadow duration-200">
         <template #content>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600">ลูกค้าสำคัญ</p>
-              <p class="text-lg md:text-xl font-medium! text-amber-600">
-                {{ importantCustomersCount }}
+              <p class="text-sm text-gray-600">ลูกค้าซื้อแล้ว</p>
+              <p class="text-lg md:text-xl font-medium! text-emerald-600">
+                {{ purchasedCustomersCount }}
               </p>
             </div>
             <div
-              class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg"
+              class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg"
             >
-              <i class="pi pi-star text-white text-xl"></i>
+              <i class="pi pi-shopping-cart text-white text-xl"></i>
             </div>
           </div>
         </template>
@@ -305,6 +323,35 @@ const incompleteDataCustomersCount = computed(() => {
                 />
               </template>
               <template v-else></template>
+            </template>
+          </Column>
+
+          <Column
+            field="customerLevel"
+            header="ระดับลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
+          >
+            <template #body="slotProps">
+              <template v-if="slotProps.data.customerLevel">
+                <Tag
+                  :value="
+                    memberStore.customerLevelOptions.find(
+                      (option) => option.value === slotProps.data.customerLevel
+                    )?.label || 'ไม่ระบุ'
+                  "
+                  :severity="
+                    slotProps.data.customerLevel === 'very_important'
+                      ? 'danger'
+                      : slotProps.data.customerLevel === 'important'
+                      ? 'warn'
+                      : 'secondary'
+                  "
+                  size="small"
+                />
+              </template>
+              <template v-else>
+                <span class="text-gray-400 text-xs">-</span>
+              </template>
             </template>
           </Column>
 
