@@ -6,11 +6,20 @@ import {
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText, Tag } from 'primevue'
+import { Dialog, Textarea, Select, InputText, Tag, Card } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
+import { useSalesStore } from '@/stores/sales/sales'
+import type { ISales, PaymentMethod, SellingStatus } from '@/types/sales'
+import {
+  convertStatusNumberToString,
+  convertStatusStringToNumber,
+  SellingStatus as SellingStatusEnum,
+} from '@/types/sales'
+import formatCurrency from '@/utils/formatCurrency'
+import dayjs from 'dayjs'
 
 const props = defineProps<{
   showAddModal: boolean
@@ -94,17 +103,103 @@ const closeAddModal = () => {
 }
 
 const memberStore = useMemberStore()
+const salesStore = useSalesStore()
+
+// ดึงข้อมูล sales
+const { data: salesData } = useQuery<ISales[]>({
+  queryKey: ['get_sales'],
+  queryFn: () => salesStore.onGetSales(),
+})
 
 // สำหรับจัดการประวัติซื้อสินค้า
-const newSaleId = ref('')
+const selectedSaleId = ref<string | null>(null)
+const itemFilter = ref('')
+
+// Helper function สำหรับแปลง status เป็น label
+const getStatusLabel = (status: SellingStatus | string): string => {
+  const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
+  const statusInfo =
+    salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
+  return statusInfo?.label || statusString
+}
+
+// Helper function สำหรับแปลง payment เป็น label
+const getPaymentLabel = (payment: PaymentMethod | undefined): string => {
+  const paymentMap = {
+    cash: 'เงินสด',
+    transfer: 'โอนเงิน',
+    credit: 'เครดิต',
+    order: 'ออเดอร์',
+    cod: 'COD',
+    card: 'บัตร',
+  }
+  return payment ? paymentMap[payment] : '-'
+}
+
+// Helper function คำนวณยอดรวม
+const calculateSaleTotal = (sale: ISales | undefined): number => {
+  if (!sale) return 0
+  const productsTotal = sale.products
+    ? sale.products.reduce((total, product) => {
+        return total + (product.price || 0) * (product.quantity || 1)
+      }, 0)
+    : 0
+  return productsTotal - sale.discount - (sale.deliveryNo || 0)
+}
+
+// Helper function หา sale จาก _id
+const getSaleById = (id: string): ISales | undefined => {
+  return salesData.value?.find((sale) => sale._id === id)
+}
+
+// Filter sales ที่สามารถเลือกได้
+const availableSales = computed(() => {
+  if (!salesData.value || !props.data?._id) return []
+
+  return salesData.value.filter((sale) => {
+    // ตรวจสอบ user id ตรงกัน
+    if (sale.user !== props.data?._id) return false
+
+    // ตรวจสอบว่าไม่มีใน purchaseHistory แล้ว
+    if (newMember.value.purchaseHistory?.includes(sale._id)) return false
+
+    // ตรวจสอบสถานะ >= preparing (shipping, received, damaged)
+    const statusNumber =
+      typeof sale.sellingStatus === 'number'
+        ? sale.sellingStatus
+        : convertStatusStringToNumber(sale.sellingStatus)
+    if (statusNumber < SellingStatusEnum.preparing) return false
+
+    return true
+  })
+})
+
+// Filter sales ตาม item filter
+const filteredSales = computed(() => {
+  if (!itemFilter.value.trim()) return availableSales.value
+
+  const filterLower = itemFilter.value.toLowerCase().trim()
+  return availableSales.value.filter((sale) => sale.item.toLowerCase().includes(filterLower))
+})
+
+// Computed สำหรับ Select options
+const saleOptions = computed(() => {
+  return filteredSales.value.map((sale) => ({
+    label: `เลขรายการขาย: ${sale.item}`,
+    value: sale._id,
+    sale: sale,
+  }))
+})
+
 const addPurchaseHistory = () => {
-  if (newSaleId.value && newSaleId.value.trim() !== '') {
+  if (selectedSaleId.value) {
     if (!newMember.value.purchaseHistory) {
       newMember.value.purchaseHistory = []
     }
-    if (!newMember.value.purchaseHistory.includes(newSaleId.value.trim())) {
-      newMember.value.purchaseHistory.push(newSaleId.value.trim())
-      newSaleId.value = ''
+    if (!newMember.value.purchaseHistory.includes(selectedSaleId.value)) {
+      newMember.value.purchaseHistory.push(selectedSaleId.value)
+      selectedSaleId.value = null
+      itemFilter.value = ''
     } else {
       toast.warning('Sale ID นี้มีอยู่แล้ว')
     }
@@ -609,40 +704,119 @@ function buildPrefix() {
           <!-- ประวัติซื้อสินค้า (แสดงเฉพาะเมื่อแก้ไข) -->
           <div v-if="props.data" class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">ประวัติซื้อสินค้า</label>
-            <div
-              v-if="newMember.purchaseHistory && newMember.purchaseHistory.length > 0"
-              class="flex flex-wrap gap-2 mb-2"
-            >
-              <Tag
-                v-for="(saleId, index) in newMember.purchaseHistory"
-                :key="index"
-                :value="saleId"
-                severity="info"
-                size="small"
-                class="cursor-pointer"
-                @click="removePurchaseHistory(index)"
-              />
-            </div>
-            <div class="flex gap-2">
-              <InputText
-                v-model="newSaleId"
-                placeholder="เพิ่ม Sale ID"
+            <!-- Select dropdown สำหรับเลือกรายการขาย -->
+            <div class="flex gap-2 mb-3">
+              <Select
+                v-model="selectedSaleId"
+                :options="saleOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกรายการขาย"
                 fluid
+                filter
+                filterBy="sale.item"
                 size="small"
-                @keyup.enter="addPurchaseHistory"
+                :disabled="!saleOptions.length"
               />
               <Button
                 icon="pi pi-plus"
                 size="small"
-                severity="secondary"
-                outlined
+                severity="success"
                 @click="addPurchaseHistory"
-                :disabled="!newSaleId || newSaleId.trim() === ''"
+                :disabled="!selectedSaleId"
               />
             </div>
-            <small class="text-gray-500 text-xs mt-1"
-              >คลิก Tag เพื่อลบ, พิมพ์ Sale ID แล้วกด Enter หรือคลิก + เพื่อเพิ่ม</small
+
+            <!-- แสดง card สรุปข้อมูลรายการซื้อ -->
+            <div
+              v-if="newMember.purchaseHistory && newMember.purchaseHistory.length > 0"
+              class="space-y-3"
             >
+              <Card
+                v-for="(saleId, index) in newMember.purchaseHistory"
+                :key="index"
+                :pt="{ body: 'p-4' }"
+              >
+                <template #content>
+                  <template v-if="getSaleById(saleId)">
+
+                      <div class="relative">
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="font-semibold! text-sm text-gray-700">
+                            เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
+                          >
+                          <Tag
+                            :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
+                            :severity="
+                              (() => {
+                                const sale = getSaleById(saleId)
+                                if (!sale) return 'secondary'
+                                const statusString =
+                                  typeof sale.sellingStatus === 'number'
+                                    ? convertStatusNumberToString(sale.sellingStatus)
+                                    : sale.sellingStatus
+                                const workflow = salesStore.statusWorkflow
+                                return workflow[statusString]?.color || 'secondary'
+                              })()
+                            "
+                            size="small"
+                            class="text-xs"
+                          />
+                          <Tag
+                            :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
+                            severity="info"
+                            size="small"
+                            class="text-xs"
+                          />
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span class="text-gray-600">ยอดรวม:</span>
+                            <span class="font-medium text-gray-900 ml-1">
+                              {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
+                            </span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">จำนวนสินค้า:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{
+                              getSaleById(saleId)?.products?.length || 0
+                            }}</span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">วันที่:</span>
+                            <span class="font-medium text-gray-900 ml-1">
+                              {{dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
+                            </span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">หมายเหตุ:</span>
+                            <span class="font-medium text-gray-600 ml-1">{{
+                              getSaleById(saleId)?.note || '-'
+                            }}</span>
+                          </div>
+                        </div>
+
+                        <div class="absolute top-0 right-0">
+                          <Button
+                            icon="pi pi-trash"
+                            size="small"
+                            severity="danger"
+                            text
+                            rounded
+                            @click="removePurchaseHistory(index)"
+                            class="ml-2"
+                          />
+                        </div>
+                      </div>
+
+                  </template>
+                  <div v-else class="text-sm text-gray-500">
+                    ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
+                  </div>
+                </template>
+              </Card>
+            </div>
+            <div v-else class="text-sm text-gray-500 italic">ยังไม่มีประวัติซื้อสินค้า</div>
           </div>
         </div>
       </div>

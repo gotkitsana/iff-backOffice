@@ -95,7 +95,7 @@ export type ISales = {
   cat: number
   uat: number
   payment: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
-  paymentMethod?: PaymentMethod // วิธีชำระเงิน
+  paymentMethod: PaymentMethod // วิธีชำระเงิน
   bankCode: string
   bankAccount: string
   deliveryNo: number
