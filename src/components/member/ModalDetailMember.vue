@@ -8,6 +8,7 @@ import lineOaIcon from '@/assets/images/icon/line-oa.webp'
 import lineChatIcon from '@/assets/images/icon/line.png'
 import tiktokIcon from '@/assets/images/icon/tiktok.png'
 import groupIcon from '@/assets/images/icon/icon-group.png'
+import dayjs from 'dayjs'
 
 const props = defineProps<{
   showDetailModal: boolean
@@ -63,19 +64,7 @@ const getInterestValue = (type: string): string | undefined => {
 }
 
 // Format วันที่
-const formatDate = (dateString?: string) => {
-  if (!dateString) return 'ไม่ระบุ'
-  try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('th-TH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } catch {
-    return dateString
-  }
-}
+
 
 // Format ตัวเลขเป็นเงิน
 const formatCurrency = (amount?: number) => {
@@ -90,8 +79,8 @@ const formatCurrency = (amount?: number) => {
 // ตรวจสอบว่ามี CRM data หรือไม่
 const hasCRMData = computed(() => {
   return !!(
-    data.value?.totalPurchaseAmount ||
-    data.value?.purchaseCount ||
+    data.value?.totalPurchaseAmount &&
+    data.value?.purchaseCount &&
     data.value?.lastPurchaseDate
   )
 })
@@ -168,7 +157,7 @@ const hasCRMData = computed(() => {
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยอดซื้อรวม</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -179,7 +168,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >จำนวนครั้งที่ซื้อ</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -190,12 +179,12 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >วันที่ซื้อล่าสุด</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
-                formatDate(data.lastPurchaseDate)
+                dayjs(data.lastPurchaseDate).format('DD/MM/YYYY HH:mm:ss')
               }}</span>
             </div>
           </div>
@@ -214,7 +203,7 @@ const hasCRMData = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- ช่องทางติดต่อ -->
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ช่องทางติดต่อ</label
             >
             <div
@@ -241,7 +230,7 @@ const hasCRMData = computed(() => {
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-medium text-gray-600">
+                  <p class="text-sm font-medium text-gray-600">
                     {{
                       memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
                         ?.label || contact.type
@@ -255,7 +244,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อเล่น</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -266,7 +255,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อ-นามสกุล</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -275,7 +264,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ที่อยู่</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
@@ -286,7 +275,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >จังหวัด</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -298,7 +287,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >เบอร์โทรศัพท์</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -307,7 +296,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div v-if="data.requirements" class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ความต้องการ</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -345,7 +334,7 @@ const hasCRMData = computed(() => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ความชำนาญในการเลี้ยง</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -358,7 +347,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชอบปลาเล็กหรือปลาใหญ่</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -371,7 +360,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ขนาดบ่อที่เลี้ยง</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -382,7 +371,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้อจุลินทรีย์</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -393,7 +382,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้ออาหาร</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3">
@@ -404,7 +393,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div v-if="data.behaviorNotes" class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >โน้ตพฤติกรรมลูกค้า</label
             >
             <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
@@ -415,7 +404,7 @@ const hasCRMData = computed(() => {
           </div>
 
           <div v-if="data.purchaseHistory && data.purchaseHistory.length > 0" class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ประวัติซื้อสินค้า</label
             >
             <div class="flex flex-wrap gap-2">

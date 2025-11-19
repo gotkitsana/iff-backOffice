@@ -281,6 +281,9 @@ export interface UpdateMemberPayload extends CreateMemberPayload {
   _id: string
   cat: number
   uat: number
+  lastPurchaseDate?: string
+  totalPurchaseAmount?: number
+  purchaseCount?: number
 }
 
 export interface ResetPasswordPayload {
