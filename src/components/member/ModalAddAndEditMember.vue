@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   useMemberStore,
   type CreateMemberPayload,
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText } from 'primevue'
+import { Dialog, Textarea, Select, InputText, Tag } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { toast } from 'vue3-toastify'
@@ -41,8 +41,9 @@ const newMember = ref<
     foodBrand?: string
   }
 >({
-  status: '',
+  status: null,
   code: '',
+  customerLevel: null,
   contacts: [{ index: 0, type: '', value: '' }],
   interests: [],
   displayName: '',
@@ -59,12 +60,16 @@ const newMember = ref<
   pondSize: '',
   bacteriaBrand: '',
   foodBrand: '',
+  behaviorNotes: '',
+  purchaseHistory: [],
+  requirements: '',
 })
 
 const closeAddModal = () => {
   newMember.value = {
-    status: '',
+    status: null,
     code: '',
+    customerLevel: null,
     contacts: [{ index: 0, type: '', value: '' }],
     interests: [],
     displayName: '',
@@ -81,11 +86,35 @@ const closeAddModal = () => {
     pondSize: '',
     bacteriaBrand: '',
     foodBrand: '',
+    behaviorNotes: '',
+    purchaseHistory: [],
+    requirements: '',
   }
   emit('onCloseAddModal')
 }
 
 const memberStore = useMemberStore()
+
+// สำหรับจัดการประวัติซื้อสินค้า
+const newSaleId = ref('')
+const addPurchaseHistory = () => {
+  if (newSaleId.value && newSaleId.value.trim() !== '') {
+    if (!newMember.value.purchaseHistory) {
+      newMember.value.purchaseHistory = []
+    }
+    if (!newMember.value.purchaseHistory.includes(newSaleId.value.trim())) {
+      newMember.value.purchaseHistory.push(newSaleId.value.trim())
+      newSaleId.value = ''
+    } else {
+      toast.warning('Sale ID นี้มีอยู่แล้ว')
+    }
+  }
+}
+const removePurchaseHistory = (index: number) => {
+  if (newMember.value.purchaseHistory) {
+    newMember.value.purchaseHistory.splice(index, 1)
+  }
+}
 
 // ฟังก์ชันสำหรับจัดการ contacts
 const addContact = () => {
@@ -93,7 +122,7 @@ const addContact = () => {
     const newIndex = Math.max(...newMember.value.contacts.map((c) => c.index), -1) + 1
     newMember.value.contacts = [
       ...newMember.value.contacts,
-      { index: newIndex, type: '', value: '' }
+      { index: newIndex, type: '', value: '' },
     ]
   }
 }
@@ -105,10 +134,8 @@ const removeContact = (index: number) => {
 }
 
 const updateContact = (index: number, field: 'type' | 'value', value: string | undefined) => {
-  newMember.value.contacts = newMember.value.contacts.map(contact =>
-    contact.index === index
-      ? { ...contact, [field]: value || '' }
-      : contact
+  newMember.value.contacts = newMember.value.contacts.map((contact) =>
+    contact.index === index ? { ...contact, [field]: value || '' } : contact
   )
 }
 
@@ -116,18 +143,22 @@ watch(
   () => props.data,
   (newMemberData) => {
     if (newMemberData) {
-      const experience = newMemberData.interests?.find(i => i.type === 'experience')?.value || ''
-      const fishPreference = newMemberData.interests?.find(i => i.type === 'fish_preference')?.value || ''
-      const pondSize = newMemberData.interests?.find(i => i.type === 'pond_size')?.value || ''
-      const bacteriaBrand = newMemberData.interests?.find(i => i.type === 'bacteria_brand')?.value || ''
-      const foodBrand = newMemberData.interests?.find(i => i.type === 'food_brand')?.value || ''
+      const experience = newMemberData.interests?.find((i) => i.type === 'experience')?.value || ''
+      const fishPreference =
+        newMemberData.interests?.find((i) => i.type === 'fish_preference')?.value || ''
+      const pondSize = newMemberData.interests?.find((i) => i.type === 'pond_size')?.value || ''
+      const bacteriaBrand =
+        newMemberData.interests?.find((i) => i.type === 'bacteria_brand')?.value || ''
+      const foodBrand = newMemberData.interests?.find((i) => i.type === 'food_brand')?.value || ''
 
       newMember.value = {
         code: newMemberData.code,
         status: newMemberData.status,
-        contacts: newMemberData.contacts && newMemberData.contacts.length > 0
-          ? newMemberData.contacts
-          : [{ index: 0, type: '', value: '' }],
+        customerLevel: newMemberData.customerLevel || '',
+        contacts:
+          newMemberData.contacts && newMemberData.contacts.length > 0
+            ? newMemberData.contacts
+            : [{ index: 0, type: '', value: '' }],
         interests: newMemberData.interests || [],
         displayName: newMemberData.displayName,
         name: newMemberData.name || '',
@@ -143,6 +174,9 @@ watch(
         pondSize: pondSize,
         bacteriaBrand: bacteriaBrand,
         foodBrand: foodBrand,
+        behaviorNotes: newMemberData.behaviorNotes || '',
+        purchaseHistory: newMemberData.purchaseHistory || [],
+        requirements: newMemberData.requirements || '',
       }
     }
   },
@@ -161,10 +195,10 @@ const handleAddMember = () => {
   const requiredInterests = [
     { type: 'experience', value: newMember.value.experience },
     { type: 'fish_preference', value: newMember.value.fishPreference },
-    { type: 'pond_size', value: newMember.value.pondSize }
+    { type: 'pond_size', value: newMember.value.pondSize },
   ]
-  const hasValidInterests = requiredInterests.every(interest =>
-    interest.value && interest.value.trim() !== ''
+  const hasValidInterests = requiredInterests.every(
+    (interest) => interest.value && interest.value.trim() !== ''
   )
 
   if (!hasValidContacts) {
@@ -182,19 +216,32 @@ const handleAddMember = () => {
     return
   }
 
+  if (!newMember.value.status) {
+    toast.error('กรุณาเลือกสถานะลูกค้า')
+    return
+  }
+
+  if (!newMember.value.customerLevel) {
+    toast.error('กรุณาเลือกระดับลูกค้า')
+    return
+  }
+
   const interestsArray = [
     { index: 0, type: 'experience', value: newMember.value.experience || '' },
     { index: 1, type: 'fish_preference', value: newMember.value.fishPreference || '' },
     { index: 2, type: 'pond_size', value: newMember.value.pondSize || '' },
-    ...(newMember.value.bacteriaBrand ? [{ index: 3, type: 'bacteria_brand', value: newMember.value.bacteriaBrand }] : []),
-    ...(newMember.value.foodBrand ? [{ index: 4, type: 'food_brand', value: newMember.value.foodBrand }] : [])
+    ...(newMember.value.bacteriaBrand
+      ? [{ index: 3, type: 'bacteria_brand', value: newMember.value.bacteriaBrand }]
+      : []),
+    ...(newMember.value.foodBrand
+      ? [{ index: 4, type: 'food_brand', value: newMember.value.foodBrand }]
+      : []),
   ]
 
   const payload = {
     ...newMember.value,
     interests: interestsArray,
     code: props.data ? newMember.value.code : buildPrefix(),
-    status: props.data ? newMember.value.status : 'ci',
     username: newMember.value.username || undefined,
   }
 
@@ -206,29 +253,35 @@ const handleAddMember = () => {
       uat: props.data.uat,
     })
   } else {
-    mutate(payload)
+    mutate({
+      ...payload,
+    })
   }
 }
 
 const queryClient = useQueryClient()
 const { mutate, isPending } = useMutation({
   mutationFn: (payload: CreateMemberPayload) => memberStore.onCreateMember(payload),
-  onSuccess: (data: any) => {
+  onSuccess: (data: { data?: unknown; error?: { keyPattern?: { username?: number } } }) => {
     if (data.data) {
       toast.success('เพิ่มลูกค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_members'] })
       closeAddModal()
       isSubmitting.value = false
     } else {
-      toast.error(data.error.keyPattern.username == 1 ? 'กรุณาระบุชื่อผู้ใช้งานใหม่' : 'เพิ่มลูกค้าไม่สำเร็จ')
+      toast.error(
+        data.error?.keyPattern?.username === 1
+          ? 'กรุณาระบุชื่อผู้ใช้งานใหม่'
+          : 'เพิ่มลูกค้าไม่สำเร็จ'
+      )
       isSubmitting.value = false
     }
-  }
+  },
 })
 
 const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
   mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
-  onSuccess: (data: any) => {
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
     if (data.data) {
       toast.success('แก้ไขข้อมูลลูกค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_members'] })
@@ -242,12 +295,17 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
 })
 
 function buildPrefix() {
+  // รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
   const maxNumber = props.memberData
-    .map(member => member.code)
-    .filter(code => code?.startsWith('ci'))
-    .map(code => parseInt(code.replace('ci', ''), 10) || 0)
+    .map((member) => member.code)
+    .filter((code) => code?.toLowerCase().startsWith('cs'))
+    .map((code) => {
+      // รองรับทั้ง Cs และ cs (case insensitive)
+      const numStr = code.replace(/^cs/i, '')
+      return parseInt(numStr, 10) || 0
+    })
     .reduce((max, num) => Math.max(max, num), 0)
-  return `ci${String(maxNumber + 1).padStart(4, '0')}`
+  return `Cs${String(maxNumber + 1).padStart(4, '0')}`
 }
 </script>
 
@@ -369,6 +427,40 @@ function buildPrefix() {
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะลูกค้า *</label>
+            <Select
+              v-model="newMember.status"
+              :options="memberStore.memberStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกสถานะลูกค้า"
+              :invalid="!newMember.status && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small v-if="!newMember.status && isSubmitting" class="text-red-500 text-xs mt-1"
+              >กรุณาเลือกสถานะลูกค้า</small
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ระดับลูกค้า *</label>
+            <Select
+              v-model="newMember.customerLevel"
+              :options="memberStore.customerLevelOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกระดับลูกค้า"
+              :invalid="!newMember.customerLevel && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small v-if="!newMember.customerLevel && isSubmitting" class="text-red-500 text-xs mt-1"
+              >กรุณาเลือกระดับลูกค้า</small
+            >
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
             <InputText
               v-model="newMember.name"
@@ -411,7 +503,6 @@ function buildPrefix() {
               size="small"
             />
           </div>
-
         </div>
       </div>
 
@@ -478,7 +569,9 @@ function buildPrefix() {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ใช้จุลินทรีย์มั้ย ยี่ห้ออะไร</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >ใช้จุลินทรีย์มั้ย ยี่ห้ออะไร</label
+            >
             <InputText
               v-model="newMember.bacteriaBrand"
               placeholder="ยี่ห้อจุลินทรีย์"
@@ -489,12 +582,67 @@ function buildPrefix() {
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
-            <InputText
-              v-model="newMember.foodBrand"
-              placeholder="ยี่ห้ออาหาร"
+            <InputText v-model="newMember.foodBrand" placeholder="ยี่ห้ออาหาร" fluid size="small" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
+            <Textarea
+              v-model="newMember.behaviorNotes"
+              placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
+              rows="3"
               fluid
               size="small"
             />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ความต้องการ</label>
+            <InputText
+              v-model="newMember.requirements"
+              placeholder="เช่น เน้นลาย, เน้นขนาด, เน้นบ่อดิน"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <!-- ประวัติซื้อสินค้า (แสดงเฉพาะเมื่อแก้ไข) -->
+          <div v-if="props.data" class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ประวัติซื้อสินค้า</label>
+            <div
+              v-if="newMember.purchaseHistory && newMember.purchaseHistory.length > 0"
+              class="flex flex-wrap gap-2 mb-2"
+            >
+              <Tag
+                v-for="(saleId, index) in newMember.purchaseHistory"
+                :key="index"
+                :value="saleId"
+                severity="info"
+                size="small"
+                class="cursor-pointer"
+                @click="removePurchaseHistory(index)"
+              />
+            </div>
+            <div class="flex gap-2">
+              <InputText
+                v-model="newSaleId"
+                placeholder="เพิ่ม Sale ID"
+                fluid
+                size="small"
+                @keyup.enter="addPurchaseHistory"
+              />
+              <Button
+                icon="pi pi-plus"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="addPurchaseHistory"
+                :disabled="!newSaleId || newSaleId.trim() === ''"
+              />
+            </div>
+            <small class="text-gray-500 text-xs mt-1"
+              >คลิก Tag เพื่อลบ, พิมพ์ Sale ID แล้วกด Enter หรือคลิก + เพื่อเพิ่ม</small
+            >
           </div>
         </div>
       </div>

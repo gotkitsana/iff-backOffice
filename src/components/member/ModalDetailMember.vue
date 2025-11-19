@@ -6,7 +6,6 @@ import { Dialog, Button, Skeleton, Tag } from 'primevue'
 import fbIcon from '@/assets/images/icon/fb.png'
 import lineOaIcon from '@/assets/images/icon/line-oa.webp'
 import lineChatIcon from '@/assets/images/icon/line.png'
-import lineGroupIcon from '@/assets/images/icon/line.png'
 import tiktokIcon from '@/assets/images/icon/tiktok.png'
 import groupIcon from '@/assets/images/icon/icon-group.png'
 
@@ -62,6 +61,40 @@ const getInterestValue = (type: string): string | undefined => {
   if (!data.value?.interests) return undefined
   return data.value.interests.find((i) => i.type === type)?.value
 }
+
+// Format วันที่
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'ไม่ระบุ'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  } catch {
+    return dateString
+  }
+}
+
+// Format ตัวเลขเป็นเงิน
+const formatCurrency = (amount?: number) => {
+  if (!amount && amount !== 0) return 'ไม่ระบุ'
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+// ตรวจสอบว่ามี CRM data หรือไม่
+const hasCRMData = computed(() => {
+  return !!(
+    data.value?.totalPurchaseAmount ||
+    data.value?.purchaseCount ||
+    data.value?.lastPurchaseDate
+  )
+})
 </script>
 
 <template>
@@ -78,11 +111,15 @@ const getInterestValue = (type: string): string | undefined => {
     }"
   >
     <template #header>
-      <div class=" text-white">
+      <div v-if="isLoading" >
+        <Skeleton height="20px" width="80px" />
+        <Skeleton height="15px" width="120px" class="mt-2" />
+      </div>
+      <div v-if="!isLoading && data" class="text-white">
         <h2 class="text-xl font-semibold! text-gray-900">
           {{ data?.displayName || data?.name || 'ไม่ระบุชื่อ' }}
         </h2>
-        <div class="flex items-center gap-2 flex-wrap  capitalize" >
+        <div class="flex items-center gap-2 flex-wrap capitalize">
           <span class="text-sm text-blue-600">รหัส: {{ data?.code }}</span>
           <Tag
             v-if="data?.status"
@@ -91,6 +128,23 @@ const getInterestValue = (type: string): string | undefined => {
                 ?.label || ''
             "
             :severity="memberStore.getStatusTag(data?.status)"
+            size="small"
+            class="text-xs"
+          />
+          <Tag
+            v-if="data?.customerLevel"
+            :value="
+              memberStore.customerLevelOptions.find(
+                (option) => option.value === data?.customerLevel
+              )?.label || ''
+            "
+            :severity="
+              data.customerLevel === 'very_important'
+                ? 'danger'
+                : data.customerLevel === 'important'
+                ? 'warn'
+                : 'secondary'
+            "
             size="small"
             class="text-xs"
           />
@@ -103,9 +157,53 @@ const getInterestValue = (type: string): string | undefined => {
       <Skeleton height="150px" width="100%" />
     </div>
 
-    <div v-if="data" class="p-4 pt-2 space-y-4 ">
+    <div v-if="data" class="p-4 pt-2 space-y-4">
+      <!-- CRM Statistics Section -->
+      <div v-if="hasCRMData" class="bg-white rounded-xl p-5 border border-gray-200">
+        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+            <i class="pi pi-chart-line text-blue-600 text-xs"></i>
+          </div>
+          <span>สถิติการซื้อ</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >ยอดซื้อรวม</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
+              <span class="text-gray-900 text-sm font-medium">{{
+                formatCurrency(data.totalPurchaseAmount)
+              }}</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >จำนวนครั้งที่ซื้อ</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
+              <span class="text-gray-900 text-sm font-medium"
+                >{{ data.purchaseCount || 0 }} ครั้ง</span
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >วันที่ซื้อล่าสุด</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
+              <span class="text-gray-900 text-sm font-medium">{{
+                formatDate(data.lastPurchaseDate)
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Basic Information Section -->
-      <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+      <div class="bg-white rounded-xl p-5 border border-gray-200">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-user text-blue-600 text-xs"></i>
@@ -126,7 +224,7 @@ const getInterestValue = (type: string): string | undefined => {
               <div
                 v-for="contact in data.contacts"
                 :key="contact.index"
-                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg  hover:bg-gray-100 transition-colors"
+                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                   <img
@@ -171,7 +269,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชื่อ-นามสกุล</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{ data.name || 'ไม่ระบุ' }}</span>
             </div>
           </div>
@@ -180,7 +278,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ที่อยู่</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3  min-h-[60px]">
+            <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
               <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
                 data.address || 'ไม่ระบุ'
               }}</span>
@@ -191,7 +289,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >จังหวัด</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.provinceOptions.find((option) => option.value === data?.province)
                   ?.label || 'ไม่ระบุ'
@@ -203,8 +301,17 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >เบอร์โทรศัพท์</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{ data.phone || 'ไม่ระบุ' }}</span>
+            </div>
+          </div>
+
+          <div v-if="data.requirements" class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >ความต้องการ</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
+              <span class="text-gray-900 text-sm font-medium">{{ data.requirements }}</span>
             </div>
           </div>
 
@@ -228,7 +335,7 @@ const getInterestValue = (type: string): string | undefined => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-white rounded-xl p-5  shadow-sm">
+      <div class="bg-white rounded-xl p-5 shadow-sm">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-heart text-purple-600 text-xs"></i>
@@ -241,7 +348,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ความชำนาญในการเลี้ยง</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.memberExperienceOptions.find(
                   (option) => option.value === getInterestValue('experience')
@@ -254,7 +361,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ชอบปลาเล็กหรือปลาใหญ่</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.memberFishPreferenceOptions.find(
                   (option) => option.value === getInterestValue('fish_preference')
@@ -267,7 +374,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ขนาดบ่อที่เลี้ยง</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('pond_size') || 'ไม่ระบุ'
               }}</span>
@@ -278,7 +385,7 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้อจุลินทรีย์</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('bacteria_brand') || 'ไม่ระบุ'
               }}</span>
@@ -289,10 +396,36 @@ const getInterestValue = (type: string): string | undefined => {
             <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
               >ยี่ห้ออาหาร</label
             >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 getInterestValue('food_brand') || 'ไม่ระบุ'
               }}</span>
+            </div>
+          </div>
+
+          <div v-if="data.behaviorNotes" class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >โน้ตพฤติกรรมลูกค้า</label
+            >
+            <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
+              <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
+                data.behaviorNotes
+              }}</span>
+            </div>
+          </div>
+
+          <div v-if="data.purchaseHistory && data.purchaseHistory.length > 0" class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+              >ประวัติซื้อสินค้า</label
+            >
+            <div class="flex flex-wrap gap-2">
+              <Tag
+                v-for="(saleId, index) in data.purchaseHistory"
+                :key="index"
+                :value="saleId"
+                severity="info"
+                size="small"
+              />
             </div>
           </div>
         </div>

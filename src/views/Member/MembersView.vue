@@ -308,7 +308,7 @@ const incompleteDataCustomersCount = computed(() => {
           <Column
             field="status"
             header="สถานะลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[6.5rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[8.5rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <template v-if="slotProps.data.status">
@@ -476,6 +476,15 @@ const incompleteDataCustomersCount = computed(() => {
           >
             <template #body="slotProps">
               <div class="flex space-x-2 justify-end">
+                <Button
+                  icon="pi pi-eye"
+                  size="small"
+                  text
+                  rounded
+                  @click="openViewModal(slotProps.data)"
+                  severity="info"
+                  v-tooltip.top="'รายละเอียด'"
+                />
                 <Button
                   icon="pi pi-pencil"
                   size="small"

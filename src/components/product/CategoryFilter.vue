@@ -335,13 +335,13 @@ const { navigateWithQuery } = useProductQuery()
             @click="navigateWithQuery('/product/options-settings')"
           />
 
-          <Button
+          <!-- <Button
             label="เปลี่ยนหมวดหมู่"
             icon="pi pi-sync"
             severity="secondary"
             size="small"
             @click="$emit('update-category-selector')"
-          />
+          /> -->
         </div>
       </div>
 
