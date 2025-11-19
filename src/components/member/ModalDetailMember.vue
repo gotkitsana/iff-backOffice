@@ -372,7 +372,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-white rounded-xl p-5 shadow-sm">
+      <div class="bg-white rounded-xl p-5 border border-gray-200">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-heart text-purple-600 text-xs"></i>
@@ -450,136 +450,141 @@ const getSaleById = (saleId: string): ISales | undefined => {
               }}</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div v-if="data.purchaseHistory && data.purchaseHistory.length > 0" class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide"
-              >ประวัติซื้อสินค้า</label
-            >
-            <div class="space-y-3">
-              <Card
-                v-for="saleId in data.purchaseHistory"
-                :key="saleId"
-                :pt="{ body: 'p-4' }"
-                class="border-l-4 border-l-blue-500"
-              >
-                <template #content>
-                  <template v-if="getSaleById(saleId)">
-                    <div class="space-y-3">
-                      <!-- Header: เลขรายการขาย, Status, Payment -->
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-semibold! text-sm text-gray-700">
-                          เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
-                        >
-                        <Tag
-                          :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
-                          :severity="
-                            (() => {
-                              const sale = getSaleById(saleId)
-                              if (!sale) return 'secondary'
-                              const statusString =
-                                typeof sale.sellingStatus === 'number'
-                                  ? convertStatusNumberToString(sale.sellingStatus)
-                                  : sale.sellingStatus
-                              const workflow = salesStore.statusWorkflow
-                              return workflow[statusString]?.color || 'secondary'
-                            })()
-                          "
-                          size="small"
-                          class="text-xs"
-                        />
-                        <Tag
-                          :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
-                          severity="info"
-                          size="small"
-                          class="text-xs"
-                        />
-                      </div>
+      <div
+        v-if="data.purchaseHistory && data.purchaseHistory.length > 0"
+        class="bg-white rounded-xl p-5 border border-gray-200"
+      >
+        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+            <i class="pi pi-shopping-bag text-blue-600 text-xs"></i>
+          </div>
+          <span>ประวัติซื้อสินค้า</span>
+        </h3>
 
-                      <!-- Summary: ยอดรวม, จำนวนสินค้า, วันที่, หมายเหตุ -->
-                      <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span class="text-gray-600">ยอดรวม:</span>
-                          <span class="font-medium text-gray-900 ml-1">
-                            {{
-                              formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined))
-                            }}
-                          </span>
-                        </div>
-                        <div>
-                          <span class="text-gray-600">จำนวนสินค้า:</span>
-                          <span class="font-medium text-gray-900 ml-1">{{
-                            getSaleById(saleId)?.products?.length || 0
-                          }}</span>
-                        </div>
-                        <div>
-                          <span class="text-gray-600">วันที่:</span>
-                          <span class="font-medium text-gray-900 ml-1">
-                            {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
-                          </span>
-                        </div>
-                        <div>
-                          <span class="text-gray-600">หมายเหตุ:</span>
-                          <span class="font-medium text-gray-600 ml-1">{{
-                            getSaleById(saleId)?.note || '-'
-                          }}</span>
-                        </div>
-                      </div>
+        <div class="space-y-3">
+          <Card
+            v-for="saleId in data.purchaseHistory"
+            :key="saleId"
+            :pt="{ body: 'p-4' }"
+            class="border-l-4 border-l-green-500 drop-shadow-sm"
+          >
+            <template #content>
+              <template v-if="getSaleById(saleId)">
+                <div class="space-y-3">
+                  <!-- Header: เลขรายการขาย, Status, Payment -->
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-semibold! text-sm text-gray-700">
+                      เลขรายการขาย: {{ getSaleById(saleId)?.item }}</span
+                    >
+                    <Tag
+                      :value="getStatusLabel(getSaleById(saleId)?.sellingStatus || '')"
+                      :severity="
+                        (() => {
+                          const sale = getSaleById(saleId)
+                          if (!sale) return 'secondary'
+                          const statusString =
+                            typeof sale.sellingStatus === 'number'
+                              ? convertStatusNumberToString(sale.sellingStatus)
+                              : sale.sellingStatus
+                          const workflow = salesStore.statusWorkflow
+                          return workflow[statusString]?.color || 'secondary'
+                        })()
+                      "
+                      size="small"
+                      class="text-xs"
+                    />
+                    <Tag
+                      :value="getPaymentLabel(getSaleById(saleId)?.paymentMethod)"
+                      severity="info"
+                      size="small"
+                      class="text-xs"
+                    />
+                  </div>
 
-                      <!-- รายการสินค้าที่ซื้อ -->
+                  <!-- Summary: ยอดรวม, จำนวนสินค้า, วันที่, หมายเหตุ -->
+                  <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span class="text-gray-600">ยอดรวม:</span>
+                      <span class="font-medium text-gray-900 ml-1">
+                        {{ formatCurrency(calculateSaleTotal(getSaleById(saleId) || undefined)) }}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">จำนวนสินค้า:</span>
+                      <span class="font-medium text-gray-900 ml-1">{{
+                        getSaleById(saleId)?.products?.length || 0
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">วันที่:</span>
+                      <span class="font-medium text-gray-900 ml-1">
+                        {{ dayjs(getSaleById(saleId)?.cat).format('DD/MM/YYYY HH:mm:ss') }}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">หมายเหตุ:</span>
+                      <span class="font-medium text-gray-600 ml-1">{{
+                        getSaleById(saleId)?.note || '-'
+                      }}</span>
+                    </div>
+                  </div>
+
+                  <!-- รายการสินค้าที่ซื้อ -->
+                  <div
+                    v-if="
+                      (() => {
+                        const sale = getSaleById(saleId)
+                        return sale?.products && sale.products.length > 0
+                      })()
+                    "
+                    class="mt-3 pt-3 border-t border-gray-200"
+                  >
+                    <h5 class="text-sm font-semibold text-gray-700 mb-2">รายการสินค้า:</h5>
+                    <div class="space-y-2">
                       <div
-                        v-if="
-                          (() => {
-                            const sale = getSaleById(saleId)
-                            return sale?.products && sale.products.length > 0
-                          })()
-                        "
-                        class="mt-3 pt-3 border-t border-gray-200"
+                        v-for="(product, productIndex) in getSaleById(saleId)?.products || []"
+                        :key="productIndex"
+                        class="bg-gray-50 rounded-lg p-2 text-sm"
                       >
-                        <h5 class="text-sm font-semibold text-gray-700 mb-2">รายการสินค้า:</h5>
-                        <div class="space-y-2">
-                          <div
-                            v-for="(product, productIndex) in getSaleById(saleId)?.products || []"
-                            :key="productIndex"
-                            class="bg-gray-50 rounded-lg p-2 text-sm"
-                          >
-                            <div class="grid grid-cols-2 gap-2">
-                              <div>
-                                <span class="text-gray-600">ชื่อสินค้า:</span>
-                                <span class="font-medium text-gray-900 ml-1">{{
-                                  product.name || '-'
-                                }}</span>
-                              </div>
-                              <div>
-                                <span class="text-gray-600">จำนวน:</span>
-                                <span class="font-medium text-gray-900 ml-1">{{
-                                  product.quantity || 0
-                                }}</span>
-                              </div>
-                              <div>
-                                <span class="text-gray-600">ราคาต่อหน่วย:</span>
-                                <span class="font-medium text-gray-900 ml-1">{{
-                                  formatCurrency(product.price || 0)
-                                }}</span>
-                              </div>
-                              <div>
-                                <span class="text-gray-600">รวม:</span>
-                                <span class="font-medium text-green-600 ml-1">{{
-                                  formatCurrency((product.price || 0) * (product.quantity || 1))
-                                }}</span>
-                              </div>
-                            </div>
+                        <div class="grid grid-cols-2 gap-2">
+                          <div>
+                            <span class="text-gray-600">ชื่อสินค้า:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{
+                              product.name || '-'
+                            }}</span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">จำนวน:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{
+                              product.quantity || 0
+                            }}</span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">ราคาต่อหน่วย:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{
+                              formatCurrency(product.price || 0)
+                            }}</span>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">รวม:</span>
+                            <span class="font-medium text-green-600 ml-1">{{
+                              formatCurrency((product.price || 0) * (product.quantity || 1))
+                            }}</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </template>
-                  <div v-else class="text-sm text-gray-500">
-                    ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
                   </div>
-                </template>
-              </Card>
-            </div>
-          </div>
+                </div>
+              </template>
+              <div v-else class="text-sm text-gray-500">
+                ไม่พบข้อมูลรายการขาย (ID: {{ saleId }})
+              </div>
+            </template>
+          </Card>
         </div>
       </div>
 
