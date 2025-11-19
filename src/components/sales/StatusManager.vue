@@ -485,6 +485,18 @@ const { mutate: updateSalesStatus } = useMutation({
           preparingStepOrder
         )
 
+        // A.1. Update member customer level (when slip is confirmed)
+        // อัพเดท customerLevel เมื่อยืนยันสลิปแล้วและ status >= preparing
+        if (hasSlip.value) {
+          memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
+            variables,
+            members.value,
+            allSales.value,
+            productsData.value || [],
+            preparingStepOrder
+          )
+        }
+
         // B. Deduct stock using utility function (only if slip is confirmed)
         // ตัดสต็อกเมื่อยืนยันสลิปแล้วและ status >= preparing
         if (productsData.value && hasSlip.value) {

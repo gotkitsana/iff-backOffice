@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales, IUpdateSalesPayload, StatusWorkflow } from '@/types/sales'
@@ -12,14 +12,112 @@ import type { IProduct } from '@/stores/product/product'
 export function useMemberStatusUpdate() {
   const memberStore = useMemberStore()
   const salesStore = useSalesStore()
+  const queryClient = useQueryClient()
 
   const { mutate: updateMember } = useMutation({
     mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
+    onSuccess: (
+      data: any,
+      variables: UpdateMemberPayload,
+    ) => {
+        queryClient.invalidateQueries({ queryKey: ['get_members'] })
+        queryClient.invalidateQueries({ queryKey: ['get_member_id', variables._id] })
+    },
   })
 
   /**
+   * ตรวจสอบและอัพเดท customerLevel ตามยอดซื้อ
+   *
+   * เงื่อนไข:
+   * - very_important: ยอดซื้อ >= 30,000
+   * - important: ยอดซื้อ >= 10,000
+   * - general: ยอดซื้อ < 10,000 (ค่าเริ่มต้น)
+   *
+   * ข้อกำหนด:
+   * - ต้องเช็คว่ายอดซื้อรวมถึงเงื่อนไขจริงๆ ถึงจะ update
+   * - เช็ค customerLevel ปัจจุบันด้วย เผื่อ admin เปลี่ยนผิดเงื่อนไข
+   * - ถ้าไม่ตรงเท่านั้น ถึงจะ update
+   */
+  const updateMemberCustomerLevelIfNeeded = (
+    variables: IUpdateSalesPayload,
+    members: IMember[] | undefined,
+    allSales: ISales[] | undefined,
+    allProducts: IProduct[],
+    preparingStepOrder: number,
+  ) => {
+    const member = members?.find((m) => m._id === variables.user)
+    if (!member) return
+
+    // คำนวณยอดซื้อรวมทั้งหมด (รวม sale ปัจจุบันและ sales ที่ผ่านมา)
+    const currentTotal = calculateOrderTotal(variables, allProducts)
+    console.log('currentTotal', currentTotal)
+    const previousTotal =
+      allSales
+        ?.filter((s) => {
+          const statusString =
+            typeof s.sellingStatus === 'number'
+              ? convertStatusNumberToString(s.sellingStatus)
+              : s.sellingStatus
+          return (
+            s.user === variables.user &&
+            salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
+              preparingStepOrder &&
+            s._id !== variables._id
+          )
+        })
+        .reduce((sum, s) => sum + calculateSaleTotal(s, allProducts), 0) || 0
+
+    const totalSpending = currentTotal + previousTotal
+    console.log('totalSpending', totalSpending)
+    // กำหนด customerLevel ที่ควรเป็นตามยอดซื้อ
+    let shouldBeLevel: 'general' | 'important' | 'very_important' = 'general'
+    if (totalSpending >= 30000) {
+      shouldBeLevel = 'very_important'
+    } else if (totalSpending >= 10000) {
+      shouldBeLevel = 'important'
+    } else {
+      shouldBeLevel = 'general'
+    }
+
+    // เช็คว่า customerLevel ปัจจุบันตรงกับที่ควรเป็นหรือไม่
+    const currentLevel = member.customerLevel || 'general'
+    if (currentLevel === shouldBeLevel) {
+      // ถ้าตรงแล้ว ไม่ต้อง update
+      return
+    }
+    console.log('shouldBeLevel', shouldBeLevel)
+
+    // ถ้าไม่ตรงเท่านั้น ถึงจะ update
+    updateMember({
+      _id: member._id,
+      status: member.status,
+      customerLevel: shouldBeLevel,
+      code: member.code,
+      contacts: member.contacts || [],
+      interests: member.interests || [],
+      displayName: member.displayName,
+      name: member.name,
+      address: member.address,
+      province: member.province,
+      phone: member.phone,
+      type: member.type,
+      username: member.username,
+      password: member.password,
+      bidder: member.bidder,
+      cat: member.cat,
+      uat: member.uat,
+      behaviorNotes: member.behaviorNotes,
+      purchaseHistory: member.purchaseHistory,
+      requirements: member.requirements,
+      lastPurchaseDate: member.lastPurchaseDate,
+      totalPurchaseAmount: member.totalPurchaseAmount,
+      purchaseCount: member.purchaseCount,
+    })
+  }
+
+  /**
    * ตรวจสอบและอัพเดทสถานะสมาชิกตามยอดซื้อ
-   * 
+   *
    * NOTE: ปิดการใช้งานชั่วคราว - รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
    * TODO: อาจจะต้องปรับ logic ใหม่เพื่อรองรับสถานะใหม่ (Hot/Warm/Cold Active)
    */
@@ -32,11 +130,8 @@ export function useMemberStatusUpdate() {
   ) => {
     // COMMENTED OUT: ปิดการเปลี่ยนรหัสลูกค้าจาก ci -> cs -> css
     // รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
-    
     // const member = members?.find((m) => m._id === variables.user)
-
     // if (!member || member.status === 'css') return
-
     // // คำนวณยอดซื้อรวมทั้งหมด
     // const currentTotal = calculateOrderTotal(variables, allProducts)
     // const previousTotal =
@@ -54,15 +149,12 @@ export function useMemberStatusUpdate() {
     //       )
     //     })
     //     .reduce((sum, s) => sum + calculateSaleTotal(s, allProducts), 0) || 0
-
     // const totalSpending = currentTotal + previousTotal
     // const shouldBeCss = totalSpending >= 50000
     // const shouldBeCs = !shouldBeCss && member.status === 'ci'
-
     // if (shouldBeCss || shouldBeCs) {
     //   const newStatus = shouldBeCss ? 'css' : 'cs'
     //   const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
-
     //   updateMember({
     //     _id: member._id,
     //     status: newStatus,
@@ -86,5 +178,6 @@ export function useMemberStatusUpdate() {
 
   return {
     updateMemberStatusIfNeeded,
+    updateMemberCustomerLevelIfNeeded,
   }
 }

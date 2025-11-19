@@ -700,6 +700,16 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
           preparingStepOrder
         )
 
+        // A.1. อัพเดท customerLevel เมื่อ status >= preparing
+        // (จะทำงานเมื่อมีการยืนยันสลิปผ่าน handleSlipUploaded หรือเปลี่ยน status เป็น preparing ขึ้นไป)
+        memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
+          variables,
+          members.value,
+          allSales.value,
+          productsData.value || [],
+          preparingStepOrder
+        )
+
         // B. ตัดสต็อกสินค้า - ตัดเฉพาะเมื่อ status เดิมน้อยกว่า preparing
         // เพื่อป้องกันการตัดสต็อกซ้ำเมื่อเปลี่ยนจาก preparing เป็น shipping
         if (productsData.value && previousStepIndex < preparingStepIndex) {
