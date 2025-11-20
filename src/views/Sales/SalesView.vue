@@ -776,7 +776,7 @@ const getPaymentMethodSeverity = (
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
                 <Button
-                  v-if="slotProps.data.sellingStatus < 5"
+                  v-if="slotProps.data.sellingStatus < 5 && false"
                   icon="pi pi-sync"
                   severity="info"
                   size="small"
