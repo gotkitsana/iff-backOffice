@@ -265,6 +265,30 @@ export const useMemberStore = defineStore('member', () => {
     { label: 'ให้ด้วยตัวเอง', value: 'manual' },
   ])
 
+  // ชอบส่งปลางานประกวดหรือไม่
+  const contestParticipationOptions = ref([
+    { label: 'ชอบ', value: 'yes' },
+    { label: 'ไม่ชอบ', value: 'no' },
+  ])
+
+  // เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่
+  const competitionParticipationOptions = ref([
+    { label: 'เคย', value: 'yes' },
+    { label: 'ไม่เคย', value: 'no' },
+  ])
+
+  // เคยประมูลปลาออนไลน์หรือไม่
+  const onlineAuctionOptions = ref([
+    { label: 'เคย', value: 'yes' },
+    { label: 'ไม่เคย', value: 'no' },
+  ])
+
+  // เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่
+  const japanPurchaseOptions = ref([
+    { label: 'เคย', value: 'yes' },
+    { label: 'ไม่เคย', value: 'no' },
+  ])
+
   // Legacy options (เก็บไว้เพื่อ backward compatibility)
   const memberExperienceOptions = ref([
     { label: 'เป็นมือใหม่', value: 'newbie' },
@@ -306,6 +330,10 @@ export const useMemberStore = defineStore('member', () => {
     bacteriaUsageOptions,
     filterCleaningOptions,
     feedingMethodOptions,
+    contestParticipationOptions,
+    competitionParticipationOptions,
+    onlineAuctionOptions,
+    japanPurchaseOptions,
   }
 })
 
@@ -415,5 +443,16 @@ export type InterestType =
   | 'filter_cleaning_company' // บริษัทรับล้างกรอง (text)
   | 'pond_size' // ขนาดบ่อเลี้ยง (text)
   | 'feeding_method' // วิธีการให้อาหาร (feeder, manual)
+  | 'contest_participation' // ชอบส่งปลางานประกวดหรือไม่ (yes, no)
+  | 'contest_participation_reason' // เหตุผลที่ไม่ชอบส่งปลางานประกวด (text)
+  | 'competition_participation' // เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่ (yes, no)
+  | 'competition_farm' // ฟาร์มที่เคยร่วมกิจกรรมแข่งเลี้ยง (text)
+  | 'competition_reason' // เหตุผลที่ไม่เคยร่วมกิจกรรมแข่งเลี้ยง (text)
+  | 'online_auction' // เคยประมูลปลาออนไลน์หรือไม่ (yes, no)
+  | 'auction_farm' // ฟาร์มที่เคยประมูลปลาออนไลน์ (text)
+  | 'auction_reason' // เหตุผลที่ไม่เคยประมูลปลาออนไลน์ (text)
+  | 'japan_purchase' // เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่ (yes, no)
+  | 'japan_farm' // ฟาร์มที่เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่น (text)
+  | 'japan_reason' // เหตุผลที่ไม่เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่น (text)
   | 'experience' // Legacy: ความชำนาญในการเลี้ยง (deprecated)
   | 'fish_preference' // Legacy: ชอบปลาเล็กหรือปลาใหญ่ (deprecated)
