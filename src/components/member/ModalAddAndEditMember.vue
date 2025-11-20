@@ -7,7 +7,7 @@ import {
   type UpdateMemberPayload,
 } from '@/stores/member/member'
 import { useMemberInterests } from '@/composables/useMemberInterests'
-import { Dialog, Textarea, Select, InputText } from 'primevue'
+import { Dialog, Textarea, Select, InputText, Panel } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import PurchaseHistoryPanel from './PurchaseHistoryPanel.vue'
@@ -579,19 +579,77 @@ const existingPurchaseHistory = computed(() => {
     :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
   >
     <div class="space-y-4">
-      <!-- Basic Information Section -->
-      <div class="bg-gray-50 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold! text-gray-900 flex items-center gap-2">
+      <!-- ข้อมูลลูกค้า - Panel -->
+      <Panel toggleable collapsed>
+        <template #header>
+          <div class="flex items-center gap-2">
             <i class="pi pi-user text-blue-600"></i>
-            ข้อมูลลูกค้า
-          </h3>
-          <p class="text-xs text-gray-700 capitalize" v-if="!!props.data">
-            รหัสลูกค้า: {{ props.data?.code }}
-          </p>
-        </div>
+            <span class="font-semibold! text-gray-900">ข้อมูลลูกค้า</span>
+            <span v-if="!!props.data" class="text-xs text-gray-500 ml-auto">
+              รหัสลูกค้า: {{ props.data?.code }}
+            </span>
+          </div>
+        </template>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- ข้อมูลส่วนตัว -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเล่น *</label>
+            <InputText
+              v-model="newMember.displayName"
+              placeholder="กรุณาใส่ชื่อเล่น"
+              :invalid="!newMember.displayName && isSubmitting"
+              fluid
+              size="small"
+            />
+            <small v-if="!newMember.displayName && isSubmitting" class="text-red-500 text-xs mt-1"
+              >กรุณาระบุชื่อเล่น</small
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+            <InputText
+              v-model="newMember.name"
+              placeholder="กรุณาใส่ชื่อ-นามสกุล"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+            <Textarea
+              v-model="newMember.address"
+              placeholder="กรุณาใส่ที่อยู่"
+              rows="3"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
+            <Select
+              v-model="newMember.province"
+              :options="memberStore.provinceOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกจังหวัด"
+              fluid
+              size="small"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+            <InputText
+              v-model="newMember.phone"
+              placeholder="กรุณาใส่เบอร์โทรศัพท์"
+              fluid
+              size="small"
+            />
+          </div>
           <!-- Dynamic Contacts -->
           <div
             v-for="(contact, contactIndex) in newMember.contacts"
@@ -672,20 +730,6 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเล่น *</label>
-            <InputText
-              v-model="newMember.displayName"
-              placeholder="กรุณาใส่ชื่อเล่น"
-              :invalid="!newMember.displayName && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.displayName && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาระบุชื่อเล่น</small
-            >
-          </div>
-
-          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">สถานะลูกค้า *</label>
             <Select
               v-model="newMember.status"
@@ -720,321 +764,312 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
-            <InputText
-              v-model="newMember.name"
-              placeholder="กรุณาใส่ชื่อ-นามสกุล"
+            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทลูกค้า</label>
+            <Select
+              v-model="newMember.type"
+              :options="memberStore.customerTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกประเภทลูกค้า"
               fluid
               size="small"
             />
           </div>
+        </div>
+      </Panel>
 
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+      <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า - Panel -->
+      <Panel toggleable collapsed>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-heart text-purple-600"></i>
+            <span class="font-semibold! text-gray-900">ข้อมูลพฤติกรรมความสนใจของลูกค้า</span>
+          </div>
+        </template>
+
+        <div class="space-y-6">
+          <!-- พฤติกรรมการเลี้ยง -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">พฤติกรรมการเลี้ยง</label>
+            <Select
+              v-model="newMember.breedingBehavior"
+              :options="memberStore.breedingBehaviorOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกพฤติกรรมการเลี้ยง"
+              fluid
+              size="small"
+            >
+              <template #option="slotProps">
+                <div class="flex flex-col">
+                  <span class="font-bold text-gray-900">{{ slotProps.option.title }}</span>
+                  <span class="text-sm text-gray-500">{{ slotProps.option.description }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+
+          <!-- สายพันธุ์ที่ชอบ -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gosanke</label>
+                <Select
+                  v-model="newMember.gosanke"
+                  :options="memberStore.gosankeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก Gosanke"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Non-Gosanke</label>
+                <Select
+                  v-model="newMember.nonGosanke"
+                  :options="memberStore.nonGosankeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก Non-Gosanke"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Variety สีล้วน</label>
+                <Select
+                  v-model="newMember.variety"
+                  :options="memberStore.varietyOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก Variety สีล้วน"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >ชอบเลี้ยงปลาอายุเท่าไร</label
+                >
+                <Select
+                  v-model="newMember.fishAge"
+                  :options="memberStore.fishAgeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกอายุปลา"
+                  fluid
+                  size="small"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- ข้อมูลการเลี้ยง -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ระดับงบประมาณ</label>
+                <Select
+                  v-model="newMember.budgetLevel"
+                  :options="memberStore.budgetLevelOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกระดับงบประมาณ"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >ใช้จุลินทรีย์ยี่ห้ออะไร</label
+                >
+                <Select
+                  v-model="newMember.bacteriaUsage"
+                  :options="memberStore.bacteriaUsageOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกใช้จุลินทรีย์หรือไม่"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.bacteriaUsage === 'yes'">
+                <label class="block text-sm font-medium text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
+                <InputText
+                  v-model="newMember.bacteriaBrand"
+                  placeholder="กรอกยี่ห้อจุลินทรีย์"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >ใช้อาหารยี่ห้ออะไร</label
+                >
+                <InputText
+                  v-model="newMember.foodBrand"
+                  placeholder="กรอกยี่ห้ออาหาร"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >ล้างกรองเองหรือมีบริษัทล้างให้</label
+                >
+                <Select
+                  v-model="newMember.filterCleaning"
+                  :options="memberStore.filterCleaningOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกวิธีการล้างกรอง"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.filterCleaning === 'company'">
+                <label class="block text-sm font-medium text-gray-700 mb-1">บริษัทรับล้าง</label>
+                <InputText
+                  v-model="newMember.filterCleaningCompany"
+                  placeholder="กรอกชื่อบริษัท"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
+                <InputText
+                  v-model="newMember.pondSize"
+                  placeholder="กรอกขนาดบ่อเลี้ยง"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">วิธีการให้อาหาร</label>
+                <Select
+                  v-model="newMember.feedingMethod"
+                  :options="memberStore.feedingMethodOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือกวิธีการให้อาหาร"
+                  fluid
+                  size="small"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- โน้ตพฤติกรรมลูกค้า -->
+          <!-- <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
             <Textarea
-              v-model="newMember.address"
-              placeholder="กรุณาใส่ที่อยู่"
+              v-model="newMember.behaviorNotes"
+              placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
               rows="3"
               fluid
               size="small"
             />
-          </div>
+          </div> -->
+        </div>
+      </Panel>
 
+      <!-- ข้อมูลการซื้อสินค้า - Panel (แสดงเฉพาะเมื่อแก้ไข) -->
+      <Panel v-if="props.data" toggleable collapsed>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-shopping-bag text-green-600"></i>
+            <span class="font-semibold! text-gray-900">ข้อมูลการซื้อสินค้า</span>
+          </div>
+        </template>
+
+        <div class="space-y-6">
+          <!-- ประวัติซื้อสินค้า (แสดงเฉพาะเมื่อแก้ไข) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
-            <Select
-              v-model="newMember.province"
-              :options="memberStore.provinceOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกจังหวัด"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
-            <InputText
-              v-model="newMember.phone"
-              placeholder="กรุณาใส่เบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-gray-50 rounded-lg p-4 space-y-6">
-        <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
-          <i class="pi pi-heart text-purple-600"></i>
-          ข้อมูลพฤติกรรมความสนใจของลูกค้า
-        </h3>
-
-        <!-- พฤติกรรมการเลี้ยง -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">พฤติกรรมการเลี้ยง</label>
-          <Select
-            v-model="newMember.breedingBehavior"
-            :options="memberStore.breedingBehaviorOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="เลือกพฤติกรรมการเลี้ยง"
-            fluid
-            size="small"
-          />
-        </div>
-
-        <!-- สายพันธุ์ที่ชอบ -->
-        <div>
-          <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Gosanke</label>
+            <label class="block text-sm font-[600]! text-gray-700 mb-1">เพิ่มรายการซื้อ</label>
+            <!-- Select dropdown สำหรับเลือกรายการขาย -->
+            <div class="flex gap-2 mb-3">
               <Select
-                v-model="newMember.gosanke"
-                :options="memberStore.gosankeOptions"
+                v-model="selectedSaleId"
+                :options="saleOptions"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="เลือก Gosanke"
+                placeholder="เลือกรายการขาย"
                 fluid
+                filter
+                filterBy="sale.item"
                 size="small"
+                :disabled="!saleOptions.length"
+              />
+              <Button
+                icon="pi pi-plus"
+                size="small"
+                severity="success"
+                v-tooltip.top="'เพิ่มรายการซื้อ'"
+                @click="addPurchaseHistory"
+                :disabled="!selectedSaleId"
               />
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Non-Gosanke</label>
-              <Select
-                v-model="newMember.nonGosanke"
-                :options="memberStore.nonGosankeOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือก Non-Gosanke"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Variety สีล้วน</label>
-              <Select
-                v-model="newMember.variety"
-                :options="memberStore.varietyOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือก Variety สีล้วน"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >ชอบเลี้ยงปลาอายุเท่าไร</label
-              >
-              <Select
-                v-model="newMember.fishAge"
-                :options="memberStore.fishAgeOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกอายุปลา"
-                fluid
-                size="small"
+            <!-- แสดง card สรุปข้อมูลรายการซื้อใหม่ (ยังไม่ได้บันทึก) -->
+            <div v-if="newlyAddedPurchaseHistory.length > 0" class="space-y-3">
+              <label class="block text-sm font-[600]! text-gray-700 mb-2">
+                รายการใหม่ (ยังไม่ได้บันทึก) ({{ newlyAddedPurchaseHistory.length }})
+              </label>
+              <PurchaseHistoryPanel
+                v-for="saleId in newlyAddedPurchaseHistory"
+                :key="`new-${saleId}`"
+                :sale-id="saleId"
+                :sale="getSaleById(saleId)"
+                :is-setting="true"
+                :is-new="true"
+                @on-delete="removePurchaseHistory"
               />
             </div>
           </div>
-        </div>
 
-        <!-- ข้อมูลการเลี้ยง -->
-        <div>
-          <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ระดับงบประมาณ</label>
-              <Select
-                v-model="newMember.budgetLevel"
-                :options="memberStore.budgetLevelOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกระดับงบประมาณ"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >ใช้จุลินทรีย์ยี่ห้ออะไร</label
-              >
-              <Select
-                v-model="newMember.bacteriaUsage"
-                :options="memberStore.bacteriaUsageOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกใช้จุลินทรีย์หรือไม่"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div v-if="newMember.bacteriaUsage === 'yes'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
-              <InputText
-                v-model="newMember.bacteriaBrand"
-                placeholder="กรอกยี่ห้อจุลินทรีย์"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
-              <InputText
-                v-model="newMember.foodBrand"
-                placeholder="กรอกยี่ห้ออาหาร"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >ล้างกรองเองหรือมีบริษัทล้างให้</label
-              >
-              <Select
-                v-model="newMember.filterCleaning"
-                :options="memberStore.filterCleaningOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกวิธีการล้างกรอง"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div v-if="newMember.filterCleaning === 'company'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">บริษัทรับล้าง</label>
-              <InputText
-                v-model="newMember.filterCleaningCompany"
-                placeholder="กรอกชื่อบริษัท"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
-              <InputText
-                v-model="newMember.pondSize"
-                placeholder="กรอกขนาดบ่อเลี้ยง"
-                fluid
-                size="small"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">วิธีการให้อาหาร</label>
-              <Select
-                v-model="newMember.feedingMethod"
-                :options="memberStore.feedingMethodOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกวิธีการให้อาหาร"
-                fluid
-                size="small"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- โน้ตพฤติกรรมลูกค้า -->
-        <!-- <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
-          <Textarea
-            v-model="newMember.behaviorNotes"
-            placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
-            rows="3"
-            fluid
-            size="small"
-          />
-        </div> -->
-      </div>
-
-      <div class="bg-gray-50 rounded-lg p-4 space-y-6" v-if="props.data">
-        <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
-          <i class="pi pi-shopping-bag text-green-600"></i>
-          ข้อมูลการซื้อสินค้า
-        </h3>
-        <!-- ประวัติซื้อสินค้า (แสดงเฉพาะเมื่อแก้ไข) -->
-        <div>
-          <label class="block text-sm font-[600]! text-gray-700 mb-1">เพิ่มรายการซื้อ</label>
-          <!-- Select dropdown สำหรับเลือกรายการขาย -->
-          <div class="flex gap-2 mb-3">
-            <Select
-              v-model="selectedSaleId"
-              :options="saleOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกรายการขาย"
-              fluid
-              filter
-              filterBy="sale.item"
-              size="small"
-              :disabled="!saleOptions.length"
-            />
-            <Button
-              icon="pi pi-plus"
-              size="small"
-              severity="success"
-              v-tooltip.top="'เพิ่มรายการซื้อ'"
-              @click="addPurchaseHistory"
-              :disabled="!selectedSaleId"
-            />
-          </div>
-
-          <!-- แสดง card สรุปข้อมูลรายการซื้อใหม่ (ยังไม่ได้บันทึก) -->
-          <div v-if="newlyAddedPurchaseHistory.length > 0" class="space-y-3">
+          <!-- แสดงรายการที่บันทึกแล้ว (แยกจากรายการใหม่) -->
+          <div v-if="existingPurchaseHistory.length > 0" class="mt-4">
             <label class="block text-sm font-[600]! text-gray-700 mb-2">
-              รายการใหม่ (ยังไม่ได้บันทึก) ({{ newlyAddedPurchaseHistory.length }})
+              รายการที่บันทึกแล้ว ({{ existingPurchaseHistory.length }})
             </label>
-            <PurchaseHistoryPanel
-              v-for="saleId in newlyAddedPurchaseHistory"
-              :key="`new-${saleId}`"
-              :sale-id="saleId"
-              :sale="getSaleById(saleId)"
-              :is-setting="true"
-              :is-new="true"
-              @on-delete="removePurchaseHistory"
-            />
+
+            <div class="space-y-3">
+              <PurchaseHistoryPanel
+                v-for="saleId in existingPurchaseHistory"
+                :key="`existing-${saleId}`"
+                :sale-id="saleId"
+                :sale="getSaleById(saleId)"
+                :is-setting="true"
+                :is-new="false"
+                @on-delete="removePurchaseHistory"
+              />
+            </div>
           </div>
         </div>
+      </Panel>
 
-        <!-- แสดงรายการที่บันทึกแล้ว (แยกจากรายการใหม่) -->
-        <div v-if="existingPurchaseHistory.length > 0" class="mt-4">
-          <label class="block text-sm font-[600]! text-gray-700 mb-2">
-            รายการที่บันทึกแล้ว ({{ existingPurchaseHistory.length }})
-          </label>
-
-          <div class="space-y-3">
-            <PurchaseHistoryPanel
-              v-for="saleId in existingPurchaseHistory"
-              :key="`existing-${saleId}`"
-              :sale-id="saleId"
-              :sale="getSaleById(saleId)"
-              :is-setting="true"
-              :is-new="false"
-              @on-delete="removePurchaseHistory"
-            />
+      <!-- ข้อมูลบัญชีประมูล - Panel -->
+      <Panel toggleable collapsed>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-shield text-amber-600"></i>
+            <span class="font-semibold! text-gray-900">ข้อมูลบัญชีประมูล</span>
           </div>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 rounded-lg p-4">
-        <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
-          <i class="pi pi-shield text-amber-600"></i>
-          ข้อมูลบัญชีประมูล
-        </h3>
+        </template>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -1079,7 +1114,7 @@ const existingPurchaseHistory = computed(() => {
             />
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
 
     <template #footer>

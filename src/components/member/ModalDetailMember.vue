@@ -320,22 +320,15 @@ const getSaleById = (saleId: string): ISales | undefined => {
             </div>
           </div>
 
-          <!-- <div class="space-y-1">
+          <div class="space-y-1">
             <label class="block text-sm font-semibold text-gray-700 mb-1">ประเภทลูกค้า</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 ">
+            <div class="bg-gray-50 rounded-lg py-1.5 px-3">
               <span class="text-gray-900 text-sm">{{
-                memberStore.memberTypeOptions.find((option) => option.value === data?.type)
+                memberStore.customerTypeOptions.find((option) => option.value === data?.type)
                   ?.label || 'ไม่ระบุ'
               }}</span>
             </div>
           </div>
-
-          <div class="space-y-1">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">อีเมล</label>
-            <div class="bg-gray-50 rounded-lg py-1.5 px-3 ">
-              <span class="text-gray-900 text-sm">{{ data.email || 'ไม่ระบุ' }}</span>
-            </div>
-          </div> -->
         </div>
       </div>
 
