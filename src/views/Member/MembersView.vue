@@ -194,6 +194,12 @@ const incompleteDataCustomersCount = computed(() => {
     }).length || 0
   )
 })
+
+
+// จำนวนข้อมูลที่ filter แล้ว
+const filteredMembersCount = computed(() => {
+  return filterStatus.value.length
+})
 </script>
 
 <template>
@@ -282,7 +288,13 @@ const incompleteDataCustomersCount = computed(() => {
         <div class="flex items-center justify-between flex-wrap gap-2 p-5 pb-0">
           <div>
             <h1 class="text-lg font-semibold! text-gray-900">ข้อมูลลูกค้า</h1>
-            <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p>
+            <div class="flex items-center gap-3">
+              <!-- <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p> -->
+              <span class="text-sm text-gray-500">
+                  จำนวนลูกค้า:
+                  <span>{{ filteredMembersCount }}</span>
+              </span>
+            </div>
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
@@ -442,7 +454,7 @@ const incompleteDataCustomersCount = computed(() => {
           <Column
             field="address"
             header="ที่อยู่"
-            :pt="{ columnHeaderContent: 'min-w-[10rem]', bodyCell: 'text-sm' }"
+            :pt="{ columnHeaderContent: 'min-w-[13rem]', bodyCell: 'text-xs' }"
           />
 
           <Column

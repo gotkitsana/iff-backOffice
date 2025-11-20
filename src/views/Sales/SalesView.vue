@@ -541,10 +541,29 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
+           <Column
+            field="user.displayName"
+            header="ชื่อเล่น"
+          >
+            <template #body="slotProps">
+              <div
+                class="cursor-pointer duration-200"
+                @click="openMemberDetailModal(slotProps.data.user)"
+                v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
+              >
+                <p
+                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors"
+                >
+                  {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
+                </p>
+              </div>
+            </template>
+          </Column>
+
           <Column
             field="status"
             header="สถานะรายการ"
-            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center', bodyCell: 'text-center' }"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
           >
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
@@ -583,57 +602,7 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="user.displayName"
-            header="ข้อมูลลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[11rem]' }"
-          >
-            <template #body="slotProps">
-              <div
-                class="cursor-pointer group p-2 -m-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                @click="openMemberDetailModal(slotProps.data.user)"
-                v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
-              >
-                <p
-                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors mb-0.5"
-                >
-                  ชื่อเล่น: {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
-                </p>
 
-                <div class="flex items-center gap-1.5">
-                  <Tag
-                    :value="
-                      memberStore.memberStatusOptions.find(
-                        (s) => s.value === findMemberData(slotProps.data.user)?.status
-                      )?.label || '-'
-                    "
-                    :severity="
-                      memberStore.getStatusTag(findMemberData(slotProps.data.user)?.status || '')
-                    "
-                    size="small"
-                    class="text-xs"
-                  />
-
-                  <Tag
-                    :value="
-                      memberStore.customerLevelOptions.find(
-                        (s) => s.value === findMemberData(slotProps.data.user)?.customerLevel
-                      )?.label || '-'
-                    "
-                    :severity="
-                      findMemberData(slotProps.data.user)?.customerLevel === 'vvip'
-                        ? 'danger'
-                        : findMemberData(slotProps.data.user)?.customerLevel === 'vip'
-                        ? 'warn'
-                        : 'secondary'
-                    "
-                    size="small"
-                    class="text-xs"
-                  />
-                </div>
-              </div>
-            </template>
-          </Column>
 
           <Column
             field="products"
