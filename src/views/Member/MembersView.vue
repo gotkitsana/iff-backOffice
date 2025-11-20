@@ -307,9 +307,25 @@ const incompleteDataCustomersCount = computed(() => {
           scrollable
           scrollHeight="600px"
         >
-          <Column field="code" header="รหัสลูกค้า" :pt="{ columnHeaderContent: 'min-w-[5.5rem]' }">
+          <Column field="code" header="รหัสลูกค้า" :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }">
             <template #body="slotProps">
               <p class="capitalize! text-sm">{{ slotProps.data.code }}</p>
+            </template>
+          </Column>
+
+                    <Column
+            field="displayName"
+            header="ชื่อเล่น"
+            :pt="{ columnHeaderContent: 'min-w-[4.25rem]', bodyCell: 'text-sm' }"
+          >
+            <template #body="slotProps">
+              <span
+                class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-200"
+                @click="openViewModal(slotProps.data)"
+                v-tooltip.top="'คลิกเพื่อดูรายละเอียด'"
+              >
+                {{ slotProps.data.displayName }}
+              </span>
             </template>
           </Column>
 
@@ -407,21 +423,7 @@ const incompleteDataCustomersCount = computed(() => {
             </template>
           </Column>
 
-          <Column
-            field="displayName"
-            header="ชื่อเล่น"
-            :pt="{ columnHeaderContent: 'min-w-[5rem]', bodyCell: 'text-sm' }"
-          >
-            <template #body="slotProps">
-              <span
-                class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-200"
-                @click="openViewModal(slotProps.data)"
-                v-tooltip.top="'คลิกเพื่อดูรายละเอียด'"
-              >
-                {{ slotProps.data.displayName }}
-              </span>
-            </template>
-          </Column>
+
 
           <Column
             field="name"
