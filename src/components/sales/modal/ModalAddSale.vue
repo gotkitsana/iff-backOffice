@@ -362,9 +362,6 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
               sellingStatus: initialStatus,
             } as IUpdateSalesPayload,
             members.value,
-            allSales.value,
-            products.value || [],
-            preparingStepOrder
           )
 
           // Update member customer level

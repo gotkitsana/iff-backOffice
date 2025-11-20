@@ -144,9 +144,9 @@ const getSaleById = (saleId: string): ISales | undefined => {
               )?.label || ''
             "
             :severity="
-              data.customerLevel === 'very_important'
+              data.customerLevel === 'vvip'
                 ? 'danger'
-                : data.customerLevel === 'important'
+                : data.customerLevel === 'vip'
                 ? 'warn'
                 : 'secondary'
             "
