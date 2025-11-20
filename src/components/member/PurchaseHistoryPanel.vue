@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Panel, Tag, Button, Menu, Image, Avatar } from 'primevue'
 import type { ISales, PaymentMethod, SellingStatus } from '@/types/sales'
 import { convertStatusNumberToString } from '@/types/sales'
@@ -117,6 +117,79 @@ const totalAmount = computed(() => {
     : 0
 })
 
+const shippingSlipExtension = ref<string | undefined>(undefined)
+const checkShippingSlipExists = async (saleId: string) => {
+  if (!saleId) {
+    hasShippingSlip.value = false
+    return false
+  }
+
+  // ถ้ามี extension ที่เก็บไว้แล้ว ให้เช็คแค่นั้น
+  if (shippingSlipExtension.value) {
+    const slipUrl = getShippingSlipUrl(saleId, shippingSlipExtension.value)
+    return new Promise<boolean>((resolve) => {
+      const img = new window.Image() as HTMLImageElement
+      const timeout = setTimeout(() => {
+        hasShippingSlip.value = false
+        resolve(false)
+      }, 5000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        hasShippingSlip.value = true
+        resolve(true)
+      }
+
+      img.onerror = () => {
+        clearTimeout(timeout)
+        hasShippingSlip.value = false
+        resolve(false)
+      }
+
+      img.src = slipUrl
+    })
+  }
+
+  // ถ้ายังไม่มี extension ให้ลองหาไฟล์ที่มี extension หลายแบบ
+  const extensions = ['jpg', 'jpeg', 'png']
+  for (const ext of extensions) {
+    const slipUrl = getShippingSlipUrl(saleId, ext)
+    const exists = await new Promise<boolean>((resolve) => {
+      const img = new window.Image() as HTMLImageElement
+      const timeout = setTimeout(() => {
+        resolve(false)
+      }, 5000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        shippingSlipExtension.value = ext
+        resolve(true)
+      }
+
+      img.onerror = () => {
+        resolve(false)
+      }
+
+      img.src = slipUrl
+    })
+
+    if (exists) {
+      hasShippingSlip.value = true
+      return true
+    }
+  }
+
+  // ถ้าไม่พบไฟล์เลย
+  hasShippingSlip.value = false
+  return false
+}
+
+const shippingSlipUrl = computed(() => {
+  if (!props.saleId) return ''
+  // ใช้ extension ที่พบ หรือ default เป็น 'jpg'
+  return getShippingSlipUrl(props.saleId, shippingSlipExtension.value || 'jpg')
+})
+
 // URL สำหรับรูปสลิปและใบขนส่ง
 const slipUrl = computed(() => {
   if (!props.saleId) return ''
@@ -124,37 +197,59 @@ const slipUrl = computed(() => {
   return `${apiUrl}/erp/download/slip?saleId=${props.saleId}`
 })
 
-const shippingSlipUrl = computed(() => {
-  if (!props.saleId) return ''
-  // สำหรับตอนนี้ใช้ jpg เป็น default
-  return getShippingSlipUrl(props.saleId, 'jpg')
-})
 
 // เช็คว่ามีรูปสลิปหรือไม่
 const hasSlip = ref(false)
 const hasShippingSlip = ref(false)
 
-// เช็ครูปสลิป
-if (props.saleId) {
+const checkSlipExists = (saleId: string) => {
+  if (!saleId) {
+    hasSlip.value = false
+    return
+  }
+
   const checkSlipImage = new window.Image() as HTMLImageElement
+  const timeout = setTimeout(() => {
+    hasSlip.value = false
+  }, 5000)
+
   checkSlipImage.onload = () => {
+    clearTimeout(timeout)
     hasSlip.value = true
   }
+
   checkSlipImage.onerror = () => {
+    clearTimeout(timeout)
     hasSlip.value = false
   }
-  checkSlipImage.src = slipUrl.value
 
-  // เช็ครูปใบขนส่ง
-  const checkShippingSlipImage = new window.Image() as HTMLImageElement
-  checkShippingSlipImage.onload = () => {
-    hasShippingSlip.value = true
-  }
-  checkShippingSlipImage.onerror = () => {
-    hasShippingSlip.value = false
-  }
-  checkShippingSlipImage.src = shippingSlipUrl.value
+  checkSlipImage.src = slipUrl.value
 }
+
+watch(
+  () => props.saleId,
+  (newSaleId) => {
+    if (newSaleId) {
+      // Reset extension เมื่อ saleId เปลี่ยน
+      shippingSlipExtension.value = undefined
+      // เช็ครูปสลิป
+      checkSlipExists(newSaleId)
+      // เช็ครูปใบขนส่ง
+      checkShippingSlipExists(newSaleId)
+    } else {
+      hasSlip.value = false
+      hasShippingSlip.value = false
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  if (props.saleId) {
+    checkSlipExists(props.saleId)
+    checkShippingSlipExists(props.saleId)
+  }
+})
 
 // Status severity
 const getStatusSeverity = computed(() => {
