@@ -165,11 +165,11 @@ const getSaleById = (saleId: string): ISales | undefined => {
     <div v-if="data" class="p-4 pt-2 space-y-4">
       <!-- CRM Statistics Section -->
       <div v-if="hasCRMData" class="bg-white rounded-xl p-5 border border-gray-200">
-        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 class="text-base font-semibold! text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-chart-line text-blue-600 text-xs"></i>
           </div>
-          <span>สถิติการซื้อ</span>
+          สถิติการซื้อ
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -209,11 +209,11 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
       <!-- Basic Information Section -->
       <div class="bg-white rounded-xl p-5 border border-gray-200">
-        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 class="text-base font-semibold! text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-user text-blue-600 text-xs"></i>
           </div>
-          <span>ข้อมูลติดต่อ</span>
+          ข้อมูลติดต่อ
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,11 +334,11 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
       <div class="bg-white rounded-xl p-5 border border-gray-200 space-y-6">
-        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 class="text-base font-semibold! text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-heart text-purple-600 text-xs"></i>
           </div>
-          <span>ความสนใจ</span>
+          ความสนใจ
         </h3>
 
         <!-- พฤติกรรมการเลี้ยง -->
@@ -357,11 +357,11 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
         <!-- สายพันธุ์ที่ชอบ -->
         <div>
-          <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+          <h4 class="font-semibold! text-gray-800 mb-1.5 text-sm">สายพันธุ์ที่ชอบ</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Gosanke</label
+                >Gosanke ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label
               >
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
@@ -374,7 +374,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
             <div>
               <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Non-Gosanke</label
+                >Non-Gosanke ลูกค้าชอบสายพันธุ์อะไร</label
               >
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
@@ -387,7 +387,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
             <div>
               <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Variety สีล้วน</label
+                >Variety สีล้วน ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label
               >
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
@@ -415,7 +415,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
         <!-- ข้อมูลการเลี้ยง -->
         <div>
-          <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+          <h4 class="font-semibold! text-sm text-gray-800 mb-1.5">ข้อมูลการเลี้ยง</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
@@ -515,6 +515,146 @@ const getSaleById = (saleId: string): ISales | undefined => {
           </div>
         </div>
 
+        <!-- กิจกรรมและประสบการณ์ -->
+        <div>
+          <h4 class="text-sm font-semibold! text-gray-800 mb-1.5">กิจกรรมและประสบการณ์</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <!-- ชอบส่งปลางานประกวดหรือไม่ -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ชอบส่งปลางานประกวดหรือไม่</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.contestParticipationOptions.find(
+                    (option) => option.value === getInterestValue('contest_participation')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('contest_participation') === 'no'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เหตุผล</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('contest_participation_reason') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <!-- เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่ -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.competitionParticipationOptions.find(
+                    (option) => option.value === getInterestValue('competition_participation')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('competition_participation') === 'yes'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ฟาร์มไหน</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('competition_farm') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('competition_participation') === 'no'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เหตุผล</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('competition_reason') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <!-- เคยประมูลปลาออนไลน์หรือไม่ -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เคยประมูลปลาออนไลน์หรือไม่ เช่น Sakai Auction Online , Dainishi Auction Online
+                เป็นต้นฯ</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.onlineAuctionOptions.find(
+                    (option) => option.value === getInterestValue('online_auction')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('online_auction') === 'yes'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ประมูลกับฟาร์มไหน</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('auction_farm') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('online_auction') === 'no'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เหตุผล</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('auction_reason') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <!-- เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่ -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.japanPurchaseOptions.find(
+                    (option) => option.value === getInterestValue('japan_purchase')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('japan_purchase') === 'yes'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ไปกับฟาร์มไหน</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('japan_farm') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('japan_purchase') === 'no'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >เหตุผล</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('japan_reason') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- โน้ตพฤติกรรมลูกค้า -->
         <div v-if="data.behaviorNotes" class="md:col-span-2">
           <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
@@ -532,11 +672,11 @@ const getSaleById = (saleId: string): ISales | undefined => {
         v-if="data.purchaseHistory && data.purchaseHistory.length > 0"
         class="bg-white rounded-xl p-5 border border-gray-200"
       >
-        <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 class="text-base font-semibold! text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-shopping-bag text-blue-600 text-xs"></i>
           </div>
-          <span>ประวัติซื้อสินค้า</span>
+          ประวัติซื้อสินค้า
         </h3>
 
         <div class="space-y-3">

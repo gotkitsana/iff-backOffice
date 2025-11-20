@@ -19,6 +19,17 @@ const fieldMap: Record<string, InterestType> = {
   filterCleaningCompany: 'filter_cleaning_company',
   pondSize: 'pond_size',
   feedingMethod: 'feeding_method',
+  contestParticipation: 'contest_participation',
+  contestParticipationReason: 'contest_participation_reason',
+  competitionParticipation: 'competition_participation',
+  competitionFarm: 'competition_farm',
+  competitionReason: 'competition_reason',
+  onlineAuction: 'online_auction',
+  auctionFarm: 'auction_farm',
+  auctionReason: 'auction_reason',
+  japanPurchase: 'japan_purchase',
+  japanFarm: 'japan_farm',
+  japanReason: 'japan_reason',
   experience: 'experience',
   fishPreference: 'fish_preference',
 }
@@ -87,6 +98,28 @@ export function useMemberInterests() {
 
       // Conditional logic for filter_cleaning_company: ต้องมี filterCleaning === 'company'
       if (interestType === 'filter_cleaning_company' && flat.filterCleaning !== 'company') return
+
+      // Conditional logic for contest_participation_reason: ต้องมี contestParticipation === 'no'
+      if (interestType === 'contest_participation_reason' && flat.contestParticipation !== 'no')
+        return
+
+      // Conditional logic for competition_farm: ต้องมี competitionParticipation === 'yes'
+      if (interestType === 'competition_farm' && flat.competitionParticipation !== 'yes') return
+
+      // Conditional logic for competition_reason: ต้องมี competitionParticipation === 'no'
+      if (interestType === 'competition_reason' && flat.competitionParticipation !== 'no') return
+
+      // Conditional logic for auction_farm: ต้องมี onlineAuction === 'yes'
+      if (interestType === 'auction_farm' && flat.onlineAuction !== 'yes') return
+
+      // Conditional logic for auction_reason: ต้องมี onlineAuction === 'no'
+      if (interestType === 'auction_reason' && flat.onlineAuction !== 'no') return
+
+      // Conditional logic for japan_farm: ต้องมี japanPurchase === 'yes'
+      if (interestType === 'japan_farm' && flat.japanPurchase !== 'yes') return
+
+      // Conditional logic for japan_reason: ต้องมี japanPurchase === 'no'
+      if (interestType === 'japan_reason' && flat.japanPurchase !== 'no') return
 
       result.push({ index: index++, type: interestType, value })
     })

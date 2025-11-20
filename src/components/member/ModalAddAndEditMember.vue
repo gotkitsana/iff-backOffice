@@ -62,6 +62,17 @@ const newMember = ref<
     filterCleaning?: string
     filterCleaningCompany?: string
     feedingMethod?: string
+    contestParticipation?: string
+    contestParticipationReason?: string
+    competitionParticipation?: string
+    competitionFarm?: string
+    competitionReason?: string
+    onlineAuction?: string
+    auctionFarm?: string
+    auctionReason?: string
+    japanPurchase?: string
+    japanFarm?: string
+    japanReason?: string
     lastPurchaseDate?: string
     totalPurchaseAmount?: number
     purchaseCount?: number
@@ -139,6 +150,17 @@ const closeAddModal = () => {
     filterCleaning: '',
     filterCleaningCompany: '',
     feedingMethod: '',
+    contestParticipation: '',
+    contestParticipationReason: '',
+    competitionParticipation: '',
+    competitionFarm: '',
+    competitionReason: '',
+    onlineAuction: '',
+    auctionFarm: '',
+    auctionReason: '',
+    japanPurchase: '',
+    japanFarm: '',
+    japanReason: '',
     behaviorNotes: '',
     purchaseHistory: [],
     requirements: '',
@@ -396,6 +418,17 @@ watch(
         filterCleaning: interestsFlat.filterCleaning || '',
         filterCleaningCompany: interestsFlat.filterCleaningCompany || '',
         feedingMethod: interestsFlat.feedingMethod || '',
+        contestParticipation: interestsFlat.contestParticipation || '',
+        contestParticipationReason: interestsFlat.contestParticipationReason || '',
+        competitionParticipation: interestsFlat.competitionParticipation || '',
+        competitionFarm: interestsFlat.competitionFarm || '',
+        competitionReason: interestsFlat.competitionReason || '',
+        onlineAuction: interestsFlat.onlineAuction || '',
+        auctionFarm: interestsFlat.auctionFarm || '',
+        auctionReason: interestsFlat.auctionReason || '',
+        japanPurchase: interestsFlat.japanPurchase || '',
+        japanFarm: interestsFlat.japanFarm || '',
+        japanReason: interestsFlat.japanReason || '',
         behaviorNotes: newMemberData.behaviorNotes || '',
         purchaseHistory: newMemberData.purchaseHistory || [],
         requirements: newMemberData.requirements || '',
@@ -473,6 +506,56 @@ const handleAddMember = () => {
     return
   }
 
+  // Validation และ auto-fill "-" สำหรับฟิลด์บังคับ
+  // ถ้าเลือกไม่ชอบส่งปลางานประกวด ต้องกรอกเหตุผล (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.contestParticipation === 'no') {
+    if (!newMember.value.contestParticipationReason?.trim()) {
+      newMember.value.contestParticipationReason = '-'
+    }
+  }
+
+  // ถ้าเลือกเคยร่วมกิจกรรมแข่งเลี้ยง ต้องกรอกฟาร์ม (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.competitionParticipation === 'yes') {
+    if (!newMember.value.competitionFarm?.trim()) {
+      newMember.value.competitionFarm = '-'
+    }
+  }
+
+  // ถ้าเลือกไม่เคยร่วมกิจกรรมแข่งเลี้ยง ต้องกรอกเหตุผล (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.competitionParticipation === 'no') {
+    if (!newMember.value.competitionReason?.trim()) {
+      newMember.value.competitionReason = '-'
+    }
+  }
+
+  // ถ้าเลือกเคยประมูลปลาออนไลน์ ต้องกรอกฟาร์ม (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.onlineAuction === 'yes') {
+    if (!newMember.value.auctionFarm?.trim()) {
+      newMember.value.auctionFarm = '-'
+    }
+  }
+
+  // ถ้าเลือกไม่เคยประมูลปลาออนไลน์ ต้องกรอกเหตุผล (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.onlineAuction === 'no') {
+    if (!newMember.value.auctionReason?.trim()) {
+      newMember.value.auctionReason = '-'
+    }
+  }
+
+  // ถ้าเลือกเคยไปซื้อปลาคาร์ฟที่ญี่ปุ่น ต้องกรอกฟาร์ม (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.japanPurchase === 'yes') {
+    if (!newMember.value.japanFarm?.trim()) {
+      newMember.value.japanFarm = '-'
+    }
+  }
+
+  // ถ้าเลือกไม่เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่น ต้องกรอกเหตุผล (ถ้าไม่กรอกให้ใส่ "-")
+  if (newMember.value.japanPurchase === 'no') {
+    if (!newMember.value.japanReason?.trim()) {
+      newMember.value.japanReason = '-'
+    }
+  }
+
   // Build interests array from flat fields using composable
   const flatFields: Record<string, string> = {
     breedingBehavior: newMember.value.breedingBehavior || '',
@@ -488,6 +571,38 @@ const handleAddMember = () => {
     filterCleaningCompany: newMember.value.filterCleaningCompany || '',
     pondSize: newMember.value.pondSize || '',
     feedingMethod: newMember.value.feedingMethod || '',
+    contestParticipation: newMember.value.contestParticipation || '',
+    contestParticipationReason:
+      newMember.value.contestParticipation === 'no'
+        ? newMember.value.contestParticipationReason || '-'
+        : newMember.value.contestParticipationReason || '',
+    competitionParticipation: newMember.value.competitionParticipation || '',
+    competitionFarm:
+      newMember.value.competitionParticipation === 'yes'
+        ? newMember.value.competitionFarm || '-'
+        : newMember.value.competitionFarm || '',
+    competitionReason:
+      newMember.value.competitionParticipation === 'no'
+        ? newMember.value.competitionReason || '-'
+        : newMember.value.competitionReason || '',
+    onlineAuction: newMember.value.onlineAuction || '',
+    auctionFarm:
+      newMember.value.onlineAuction === 'yes'
+        ? newMember.value.auctionFarm || '-'
+        : newMember.value.auctionFarm || '',
+    auctionReason:
+      newMember.value.onlineAuction === 'no'
+        ? newMember.value.auctionReason || '-'
+        : newMember.value.auctionReason || '',
+    japanPurchase: newMember.value.japanPurchase || '',
+    japanFarm:
+      newMember.value.japanPurchase === 'yes'
+        ? newMember.value.japanFarm || '-'
+        : newMember.value.japanFarm || '',
+    japanReason:
+      newMember.value.japanPurchase === 'no'
+        ? newMember.value.japanReason || '-'
+        : newMember.value.japanReason || '',
     experience: newMember.value.experience || '',
     fishPreference: newMember.value.fishPreference || '',
   }
@@ -862,7 +977,7 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- สายพันธุ์ที่ชอบ -->
           <div>
-            <h4 class="font-semibold! text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+            <h4 class="font-semibold! text-gray-800 mb-1.5">สายพันธุ์ที่ชอบ</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-semibold! text-gray-700 mb-1"
@@ -928,7 +1043,7 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- ข้อมูลการเลี้ยง -->
           <div>
-            <h4 class="font-semibold! text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+            <h4 class="font-semibold! text-gray-800 mb-1.5">ข้อมูลการเลี้ยง</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับงบประมาณ</label>
@@ -1045,6 +1160,203 @@ const existingPurchaseHistory = computed(() => {
               size="small"
             />
           </div> -->
+
+          <!-- กิจกรรมและประสบการณ์ -->
+          <div>
+            <h4 class="font-semibold! text-gray-800 mb-1.5">กิจกรรมและประสบการณ์</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <!-- ชอบส่งปลางานประกวดหรือไม่ -->
+              <div>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >ชอบส่งปลางานประกวดหรือไม่</label
+                >
+                <Select
+                  v-model="newMember.contestParticipation"
+                  :options="memberStore.contestParticipationOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.contestParticipation === 'no'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เหตุผล <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.contestParticipationReason"
+                  placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.contestParticipationReason?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.contestParticipationReason?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกเหตุผล</small
+                >
+              </div>
+
+              <!-- เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่ -->
+              <div>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่</label
+                >
+                <Select
+                  v-model="newMember.competitionParticipation"
+                  :options="memberStore.competitionParticipationOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.competitionParticipation === 'yes'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >ฟาร์มไหน <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.competitionFarm"
+                  placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.competitionFarm?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.competitionFarm?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกฟาร์ม</small
+                >
+              </div>
+
+              <div v-if="newMember.competitionParticipation === 'no'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เหตุผล <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.competitionReason"
+                  placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.competitionReason?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.competitionReason?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกเหตุผล</small
+                >
+              </div>
+
+              <!-- เคยประมูลปลาออนไลน์หรือไม่ -->
+              <div>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เคยประมูลปลาออนไลน์หรือไม่ เช่น Sakai Auction Online , Dainishi Auction Online
+                  เป็นต้นฯ</label
+                >
+                <Select
+                  v-model="newMember.onlineAuction"
+                  :options="memberStore.onlineAuctionOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.onlineAuction === 'yes'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >ประมูลกับฟาร์มไหน <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.auctionFarm"
+                  placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.auctionFarm?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.auctionFarm?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกฟาร์ม</small
+                >
+              </div>
+
+              <div v-if="newMember.onlineAuction === 'no'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เหตุผล <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.auctionReason"
+                  placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.auctionReason?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.auctionReason?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกเหตุผล</small
+                >
+              </div>
+
+              <!-- เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่ -->
+              <div>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label
+                >
+                <Select
+                  v-model="newMember.japanPurchase"
+                  :options="memberStore.japanPurchaseOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="เลือก"
+                  fluid
+                  size="small"
+                />
+              </div>
+
+              <div v-if="newMember.japanPurchase === 'yes'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >ไปกับฟาร์มไหน <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.japanFarm"
+                  placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.japanFarm?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.japanFarm?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกฟาร์ม</small
+                >
+              </div>
+
+              <div v-if="newMember.japanPurchase === 'no'">
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >เหตุผล <span class="text-red-500">*</span></label
+                >
+                <InputText
+                  v-model="newMember.japanReason"
+                  placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.japanReason?.trim()"
+                  fluid
+                  size="small"
+                />
+                <small
+                  v-if="isSubmitting && !newMember.japanReason?.trim()"
+                  class="text-red-500 text-xs mt-1"
+                  >กรุณากรอกเหตุผล</small
+                >
+              </div>
+            </div>
+          </div>
         </div>
       </Panel>
 
