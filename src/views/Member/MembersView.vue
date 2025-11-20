@@ -115,18 +115,28 @@ const getLast4Digits = (code: string): number => {
 const selectedStatus = ref<string>('all')
 const search = ref<string>('')
 const filterStatus = computed(() => {
+  const searchLower = search.value.toLowerCase()
+
+  // Helper function to check if member matches search
+  const matchesSearch = (member: IMember) => {
+    // Check displayName
+    const matchesDisplayName = member.displayName.toLowerCase().includes(searchLower)
+
+    // Check code (case insensitive, supports partial match)
+    // e.g., "Cs00082" matches "cs", "CS", "Cs", "82", "00082", etc.
+    const codeLower = member.code.toLowerCase()
+    const matchesCode =
+      codeLower.includes(searchLower) || codeLower.replace(/^cs/i, '').includes(searchLower)
+
+    return matchesDisplayName || matchesCode
+  }
+
   if (selectedStatus.value === 'all') {
-    return (
-      data.value?.filter((member) =>
-        member.displayName.toLowerCase().includes(search.value.toLowerCase())
-      ) || []
-    )
+    return data.value?.filter((member) => matchesSearch(member)) || []
   }
   return (
     data.value?.filter(
-      (member) =>
-        member.status === selectedStatus.value &&
-        member.displayName.toLowerCase().includes(search.value.toLowerCase())
+      (member) => member.status === selectedStatus.value && matchesSearch(member)
     ) || []
   )
 })
@@ -313,7 +323,7 @@ const incompleteDataCustomersCount = computed(() => {
             </template>
           </Column>
 
-                    <Column
+          <Column
             field="displayName"
             header="ชื่อเล่น"
             :pt="{ columnHeaderContent: 'min-w-[4.25rem]', bodyCell: 'text-sm' }"
@@ -422,8 +432,6 @@ const incompleteDataCustomersCount = computed(() => {
               </div>
             </template>
           </Column>
-
-
 
           <Column
             field="name"

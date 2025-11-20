@@ -12,6 +12,11 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 import PurchaseHistoryPanel from './PurchaseHistoryPanel.vue'
 import { toast } from 'vue3-toastify'
+import fbImg from '@/assets/images/icon/fb.png'
+import lineOaImg from '@/assets/images/icon/line-oa.webp'
+import lineImg from '@/assets/images/icon/line.png'
+import groupImg from '@/assets/images/icon/icon-group.png'
+import tiktokImg from '@/assets/images/icon/tiktok.png'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
 import { useSalesStore } from '@/stores/sales/sales'
 import type { ISales } from '@/types/sales'
@@ -151,6 +156,28 @@ const closeAddModal = () => {
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
 const { toFlatObject, toInterestsArray } = useMemberInterests()
+
+// Helper functions for contact icons
+const getContactIcon = (iconName: string) => {
+  const iconMap: Record<string, string> = {
+    'fb.png': fbImg,
+    'line-oa.webp': lineOaImg,
+    'line.png': lineImg,
+    'icon-group.png': groupImg,
+    'tiktok.png': tiktokImg,
+  }
+  return iconMap[iconName] || ''
+}
+
+const getSelectedContactIcon = (value: string) => {
+  const option = memberStore.memberContactOptions.find((opt) => opt.value === value)
+  return option?.icon ? getContactIcon(option.icon) : ''
+}
+
+const getSelectedContactLabel = (value: string) => {
+  const option = memberStore.memberContactOptions.find((opt) => opt.value === value)
+  return option?.label || ''
+}
 
 // ดึงข้อมูล sales
 const { data: salesData } = useQuery<ISales[]>({
@@ -594,7 +621,7 @@ const existingPurchaseHistory = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <!-- ข้อมูลส่วนตัว -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเล่น *</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อเล่น *</label>
             <InputText
               v-model="newMember.displayName"
               placeholder="กรุณาใส่ชื่อเล่น"
@@ -608,7 +635,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อ-นามสกุล</label>
             <InputText
               v-model="newMember.name"
               placeholder="กรุณาใส่ชื่อ-นามสกุล"
@@ -618,7 +645,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ที่อยู่</label>
             <Textarea
               v-model="newMember.address"
               placeholder="กรุณาใส่ที่อยู่"
@@ -629,7 +656,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">จังหวัด</label>
             <Select
               v-model="newMember.province"
               :options="memberStore.provinceOptions"
@@ -642,7 +669,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
             <InputText
               v-model="newMember.phone"
               placeholder="กรุณาใส่เบอร์โทรศัพท์"
@@ -657,7 +684,7 @@ const existingPurchaseHistory = computed(() => {
             class="border border-gray-200 rounded-lg p-3 md:col-span-2"
           >
             <div class="flex items-center justify-between mb-1">
-              <h4 class="font-medium text-gray-700">
+              <h4 class="font-semibold! text-gray-700">
                 ช่องทางติดต่อ {{ contactIndex + 1 }}
                 <span v-if="contactIndex === 0" class="text-red-500">*</span>
               </h4>
@@ -685,7 +712,31 @@ const existingPurchaseHistory = computed(() => {
                   :invalid="isSubmitting && contactIndex === 0 && !contact.type"
                   fluid
                   size="small"
-                />
+                >
+                  <template #option="slotProps">
+                    <div class="flex items-center gap-2">
+                      <img
+                        v-if="slotProps.option.icon"
+                        :src="getContactIcon(slotProps.option.icon)"
+                        :alt="slotProps.option.label"
+                        class="w-5 h-5 object-contain"
+                      />
+                      <span>{{ slotProps.option.label }}</span>
+                    </div>
+                  </template>
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value" class="flex items-center gap-2">
+                      <img
+                        v-if="getSelectedContactIcon(slotProps.value)"
+                        :src="getSelectedContactIcon(slotProps.value)"
+                        :alt="getSelectedContactLabel(slotProps.value)"
+                        class="w-5 h-5 object-contain"
+                      />
+                      <span>{{ getSelectedContactLabel(slotProps.value) }}</span>
+                    </div>
+                    <span v-else>{{ slotProps.placeholder }}</span>
+                  </template>
+                </Select>
                 <small
                   v-if="isSubmitting && contactIndex === 0 && !contact.type"
                   class="text-red-500 text-xs mt-1"
@@ -730,7 +781,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะลูกค้า *</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะลูกค้า *</label>
             <Select
               v-model="newMember.status"
               :options="memberStore.memberStatusOptions"
@@ -747,7 +798,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ระดับลูกค้า *</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับลูกค้า *</label>
             <Select
               v-model="newMember.customerLevel"
               :options="memberStore.customerLevelOptions"
@@ -764,7 +815,7 @@ const existingPurchaseHistory = computed(() => {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทลูกค้า</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ประเภทลูกค้า</label>
             <Select
               v-model="newMember.type"
               :options="memberStore.customerTypeOptions"
@@ -790,7 +841,7 @@ const existingPurchaseHistory = computed(() => {
         <div class="space-y-6">
           <!-- พฤติกรรมการเลี้ยง -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">พฤติกรรมการเลี้ยง</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับในการเลี้ยง</label>
             <Select
               v-model="newMember.breedingBehavior"
               :options="memberStore.breedingBehaviorOptions"
@@ -811,10 +862,12 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- สายพันธุ์ที่ชอบ -->
           <div>
-            <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+            <h4 class="font-semibold! text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Gosanke</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >Gosanke ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label
+                >
                 <Select
                   v-model="newMember.gosanke"
                   :options="memberStore.gosankeOptions"
@@ -827,7 +880,9 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Non-Gosanke</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >Non-Gosanke ลูกค้าชอบสายพันธุ์อะไร</label
+                >
                 <Select
                   v-model="newMember.nonGosanke"
                   :options="memberStore.nonGosankeOptions"
@@ -840,7 +895,9 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Variety สีล้วน</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >Variety สีล้วน ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label
+                >
                 <Select
                   v-model="newMember.variety"
                   :options="memberStore.varietyOptions"
@@ -853,7 +910,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
                   >ชอบเลี้ยงปลาอายุเท่าไร</label
                 >
                 <Select
@@ -871,10 +928,10 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- ข้อมูลการเลี้ยง -->
           <div>
-            <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+            <h4 class="font-semibold! text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ระดับงบประมาณ</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับงบประมาณ</label>
                 <Select
                   v-model="newMember.budgetLevel"
                   :options="memberStore.budgetLevelOptions"
@@ -887,7 +944,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
                   >ใช้จุลินทรีย์ยี่ห้ออะไร</label
                 >
                 <Select
@@ -902,7 +959,9 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div v-if="newMember.bacteriaUsage === 'yes'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >ยี่ห้อจุลินทรีย์</label
+                >
                 <InputText
                   v-model="newMember.bacteriaBrand"
                   placeholder="กรอกยี่ห้อจุลินทรีย์"
@@ -912,7 +971,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
                   >ใช้อาหารยี่ห้ออะไร</label
                 >
                 <InputText
@@ -924,7 +983,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
                   >ล้างกรองเองหรือมีบริษัทล้างให้</label
                 >
                 <Select
@@ -939,7 +998,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div v-if="newMember.filterCleaning === 'company'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">บริษัทรับล้าง</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">บริษัทรับล้าง</label>
                 <InputText
                   v-model="newMember.filterCleaningCompany"
                   placeholder="กรอกชื่อบริษัท"
@@ -949,7 +1008,7 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
                 <InputText
                   v-model="newMember.pondSize"
                   placeholder="กรอกขนาดบ่อเลี้ยง"
@@ -959,7 +1018,9 @@ const existingPurchaseHistory = computed(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">วิธีการให้อาหาร</label>
+                <label class="block text-sm font-semibold! text-gray-700 mb-1"
+                  >วิธีการให้อาหาร</label
+                >
                 <Select
                   v-model="newMember.feedingMethod"
                   :options="memberStore.feedingMethodOptions"
@@ -975,7 +1036,7 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- โน้ตพฤติกรรมลูกค้า -->
           <!-- <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
             <Textarea
               v-model="newMember.behaviorNotes"
               placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
@@ -992,7 +1053,7 @@ const existingPurchaseHistory = computed(() => {
         <template #header>
           <div class="flex items-center gap-2">
             <i class="pi pi-shopping-bag text-green-600"></i>
-            <span class="font-semibold! text-gray-900">ข้อมูลการซื้อสินค้า</span>
+            <span class="font-semibold! text-gray-900">ประวัติการซื้อสินค้า</span>
           </div>
         </template>
 
@@ -1073,7 +1134,7 @@ const existingPurchaseHistory = computed(() => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ใช้</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อผู้ใช้</label>
             <InputText
               v-model="newMember.username"
               placeholder="กรุณาใส่ชื่อผู้ใช้"
@@ -1085,7 +1146,7 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- แสดงรหัสผ่านเฉพาะเมื่อสร้างใหม่ และยังไม่มีประวัติการซื้อ -->
           <div v-if="!props.data">
-            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">รหัสผ่าน</label>
             <Password
               v-model="newMember.password"
               placeholder="กรุณาใส่รหัสผ่าน"
@@ -1099,7 +1160,7 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- แสดงสถานะยูสเซอร์เฉพาะเมื่อสร้างใหม่ -->
           <div v-if="!props.data">
-            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะยูสเซอร์</label>
+            <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะยูสเซอร์</label>
             <Select
               v-model="newMember.bidder"
               :options="[
