@@ -42,11 +42,11 @@ export const useMemberStore = defineStore('member', () => {
   }
 
   const memberContactOptions = ref([
-    { label: 'Facebook', value: 'facebook' },
-    { label: 'Line Official', value: 'line_oa' },
-    { label: 'Line พี่เบิท', value: 'line_chat' },
-    { label: 'Line กลุ่ม', value: 'line_group' },
-    { label: 'TikTok', value: 'tiktok' },
+    { label: 'Facebook', value: 'facebook', icon: 'fb.png' },
+    { label: 'Line Official', value: 'line_oa', icon: 'line-oa.webp' },
+    { label: 'Line พี่เบิท', value: 'line_chat', icon: 'line.png' },
+    { label: 'Line กลุ่ม', value: 'line_group', icon: 'icon-group.png' },
+    { label: 'TikTok', value: 'tiktok', icon: 'tiktok.png' },
   ])
 
   async function onGetMembers() {
