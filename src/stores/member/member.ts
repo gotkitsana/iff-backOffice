@@ -182,9 +182,73 @@ export const useMemberStore = defineStore('member', () => {
 
   // ระดับงบประมาณ (สำหรับ CRM)
   const budgetLevelOptions = ref([
-    { label: 'งบน้อย', value: 'low' },
-    { label: 'งบปานกลาง', value: 'medium' },
-    { label: 'งบมาก', value: 'high' },
+    { label: 'งบน้อย (ไม่เกิน 5,000฿)', value: 'low' },
+    { label: 'งบปานกลาง (ไม่เกิน 30,000฿)', value: 'medium' },
+    { label: 'งบมาก (ไม่จำกัดถ้าถูกใจ)', value: 'high' },
+  ])
+
+  // พฤติกรรมการเลี้ยง
+  const breedingBehaviorOptions = ref([
+    { label: 'นักเลี้ยงมือใหม่ สนใจปลาขนาดเล็ก ราคาไม่สูง ต้องการคำแนะนำเยอะ', value: 'newbie' },
+    {
+      label: 'เลี้ยงพัฒนาการ ซื้อปลาไปเลี้ยงโต เน้นคุณภาพโครงสร้าง อาหาร น้ำ',
+      value: 'development',
+    },
+    {
+      label: 'เลี้ยงประกวด เน้นสายพันธุ์ การันตีลวดลาย เกรดสูง ต้องการบริการ After-sale',
+      value: 'competition',
+    },
+    { label: 'นักสะสม เน้นลวดลายหายาก คุณภาพพิเศษ ตัวสวยไม่ซ้ำใคร', value: 'collector' },
+  ])
+
+  // Gosanke
+  const gosankeOptions = ref([
+    { label: 'Kohaku', value: 'kohaku' },
+    { label: 'Sanke', value: 'sanke' },
+    { label: 'Showa', value: 'showa' },
+  ])
+
+  // Non-Gosanke
+  const nonGosankeOptions = ref([
+    { label: 'Tancho', value: 'tancho' },
+    { label: 'Susui', value: 'susui' },
+    { label: 'Hi Utsuri', value: 'hi_utsuri' },
+  ])
+
+  // Variety สีล้วน
+  const varietyOptions = ref([
+    { label: 'Karashi', value: 'karashi' },
+    { label: 'Benigoi', value: 'benigoi' },
+    { label: 'Chagoi', value: 'chagoi' },
+    { label: 'Yamabuki Ogon', value: 'yamabuki_ogon' },
+  ])
+
+  // ชอบเลี้ยงปลาอายุเท่าไร
+  const fishAgeOptions = ref([
+    { label: 'โตไซต์ Tosai เข้า 1ปี', value: 'tosai' },
+    { label: 'นิไซท์ Ake Nisai 1ปี เข้า 2ปี', value: 'nisai' },
+    { label: 'ซันไซท์ Sansai 3ปี', value: 'sansai' },
+    { label: 'ยอนไซท์ Yonsai 4ปี', value: 'yonsai' },
+    { label: 'โกไซท์ Gosai 5ปี', value: 'gosai' },
+    { label: 'มากกว่า 5ปี', value: 'over_5' },
+  ])
+
+  // ใช้จุลินทรีย์
+  const bacteriaUsageOptions = ref([
+    { label: 'ไม่ใช้', value: 'no' },
+    { label: 'ใช้', value: 'yes' },
+  ])
+
+  // ล้างกรอง
+  const filterCleaningOptions = ref([
+    { label: 'ล้างเอง', value: 'self' },
+    { label: 'มีบริษัทรับล้าง', value: 'company' },
+  ])
+
+  // วิธีการให้อาหาร
+  const feedingMethodOptions = ref([
+    { label: 'ใช้เครื่องฟีด', value: 'feeder' },
+    { label: 'ให้ด้วยตัวเอง', value: 'manual' },
   ])
 
   // Legacy options (เก็บไว้เพื่อ backward compatibility)
@@ -220,6 +284,14 @@ export const useMemberStore = defineStore('member', () => {
     breederTypeOptions,
     breedingGoalOptions,
     budgetLevelOptions,
+    breedingBehaviorOptions,
+    gosankeOptions,
+    nonGosankeOptions,
+    varietyOptions,
+    fishAgeOptions,
+    bacteriaUsageOptions,
+    filterCleaningOptions,
+    feedingMethodOptions,
   }
 })
 
@@ -235,7 +307,7 @@ export interface IMember {
   phone?: string //เบอร์โทร
   type: string //ประเภทลูกค้า
   contacts?: { index: number; type: string; value: string }[] //{index:number,type:key ทางติดต่อ,value:ชื่อชองทางติดต่อ} []
-  interests?: { index: number; type: string; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
+  interests?: { index: number; type: InterestType; value: string }[] //{index:number,type:key ความสนใจ,value:ค่าความสนใจ} []
   behaviorNotes?: string //โน้ตพฤติกรรมลูกค้า
   purchaseHistory?: string[] //ประวัติซื้อสินค้า (array of sale IDs)
   requirements?: string //ความต้องการ (เช่น เน้นลาย, เน้นขนาด, เน้นบ่อดิน)
@@ -267,7 +339,7 @@ export interface CreateMemberPayload {
   status: MemberStatus | null
   customerLevel: CustomerLevel | null
   contacts: { index: number; type: string; value: string }[]
-  interests: { index: number; type: string; value: string }[]
+  interests: { index: number; type: InterestType; value: string }[]
   displayName: string
   name?: string
   address?: string
@@ -310,3 +382,24 @@ export type CustomerLevelLabel = 'ทั่วไป' | 'สำคัญ' | 'ส
 
 export type CustomerType = 'customer' | 'dealer'
 export type CustomerTypeLabel = 'ลูกค้า' | 'พ่อค้าฟาร์ม'
+
+/**
+ * Types สำหรับ interests array
+ * ใช้เก็บข้อมูลพฤติกรรมและความสนใจของลูกค้า
+ */
+export type InterestType =
+  | 'breeding_behavior' // พฤติกรรมการเลี้ยง (newbie, development, competition, collector)
+  | 'gosanke' // Gosanke (kohaku, sanke, showa)
+  | 'non_gosanke' // Non-Gosanke (tancho, susui, hi_utsuri)
+  | 'variety' // Variety สีล้วน (karashi, benigoi, chagoi, yamabuki_ogon)
+  | 'fish_age' // ชอบเลี้ยงปลาอายุเท่าไร (tosai, nisai, sansai, yonsai, gosai, over_5)
+  | 'budget_level' // ระดับงบประมาณ (low, medium, high)
+  | 'bacteria_usage' // ใช้จุลินทรีย์หรือไม่ (no, yes)
+  | 'bacteria_brand' // ยี่ห้อจุลินทรีย์ (text)
+  | 'food_brand' // ยี่ห้ออาหาร (text)
+  | 'filter_cleaning' // ล้างกรอง (self, company)
+  | 'filter_cleaning_company' // บริษัทรับล้างกรอง (text)
+  | 'pond_size' // ขนาดบ่อเลี้ยง (text)
+  | 'feeding_method' // วิธีการให้อาหาร (feeder, manual)
+  | 'experience' // Legacy: ความชำนาญในการเลี้ยง (deprecated)
+  | 'fish_preference' // Legacy: ชอบปลาเล็กหรือปลาใหญ่ (deprecated)

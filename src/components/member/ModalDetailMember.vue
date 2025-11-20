@@ -340,7 +340,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-white rounded-xl p-5 border border-gray-200">
+      <div class="bg-white rounded-xl p-5 border border-gray-200 space-y-6">
         <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-heart text-purple-600 text-xs"></i>
@@ -348,75 +348,189 @@ const getSaleById = (saleId: string): ISales | undefined => {
           <span>ความสนใจ</span>
         </h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ความชำนาญในการเลี้ยง</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium">{{
-                memberStore.memberExperienceOptions.find(
-                  (option) => option.value === getInterestValue('experience')
-                )?.label || 'ไม่ระบุ'
-              }}</span>
+        <!-- พฤติกรรมการเลี้ยง -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            >พฤติกรรมการเลี้ยง</label
+          >
+          <div class="bg-gray-50 rounded-lg py-2 px-3">
+            <span class="text-gray-900 text-sm font-medium">{{
+              memberStore.breedingBehaviorOptions.find(
+                (option) => option.value === getInterestValue('breeding_behavior')
+              )?.label || 'ไม่ระบุ'
+            }}</span>
+          </div>
+        </div>
+
+        <!-- สายพันธุ์ที่ชอบ -->
+        <div>
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >Gosanke</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.gosankeOptions.find(
+                    (option) => option.value === getInterestValue('gosanke')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >Non-Gosanke</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.nonGosankeOptions.find(
+                    (option) => option.value === getInterestValue('non_gosanke')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >Variety สีล้วน</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.varietyOptions.find(
+                    (option) => option.value === getInterestValue('variety')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ชอบเลี้ยงปลาอายุเท่าไร</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.fishAgeOptions.find(
+                    (option) => option.value === getInterestValue('fish_age')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ชอบปลาเล็กหรือปลาใหญ่</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium">{{
-                memberStore.memberFishPreferenceOptions.find(
-                  (option) => option.value === getInterestValue('fish_preference')
-                )?.label || 'ไม่ระบุ'
-              }}</span>
+        <!-- ข้อมูลการเลี้ยง -->
+        <div>
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ระดับงบประมาณ</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.budgetLevelOptions.find(
+                    (option) => option.value === getInterestValue('budget_level')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ใช้จุลินทรีย์</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.bacteriaUsageOptions.find(
+                    (option) => option.value === getInterestValue('bacteria_usage')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('bacteria_usage') === 'yes'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ยี่ห้อจุลินทรีย์</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('bacteria_brand') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ยี่ห้ออาหาร</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('food_brand') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ล้างกรอง</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.filterCleaningOptions.find(
+                    (option) => option.value === getInterestValue('filter_cleaning')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div v-if="getInterestValue('filter_cleaning') === 'company'">
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >บริษัทรับล้าง</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('filter_cleaning_company') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >ขนาดบ่อเลี้ยง</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  getInterestValue('pond_size') || 'ไม่ระบุ'
+                }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+                >วิธีการให้อาหาร</label
+              >
+              <div class="bg-gray-50 rounded-lg py-2 px-3">
+                <span class="text-gray-900 text-sm font-medium">{{
+                  memberStore.feedingMethodOptions.find(
+                    (option) => option.value === getInterestValue('feeding_method')
+                  )?.label || 'ไม่ระบุ'
+                }}</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ขนาดบ่อที่เลี้ยง</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium">{{
-                getInterestValue('pond_size') || 'ไม่ระบุ'
-              }}</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ยี่ห้อจุลินทรีย์</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium">{{
-                getInterestValue('bacteria_brand') || 'ไม่ระบุ'
-              }}</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ยี่ห้ออาหาร</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium">{{
-                getInterestValue('food_brand') || 'ไม่ระบุ'
-              }}</span>
-            </div>
-          </div>
-
-          <div v-if="data.behaviorNotes" class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >โน้ตพฤติกรรมลูกค้า</label
-            >
-            <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
-              <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
-                data.behaviorNotes
-              }}</span>
-            </div>
+        <!-- โน้ตพฤติกรรมลูกค้า -->
+        <div v-if="data.behaviorNotes" class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
+            >โน้ตพฤติกรรมลูกค้า</label
+          >
+          <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
+            <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
+              data.behaviorNotes
+            }}</span>
           </div>
         </div>
       </div>

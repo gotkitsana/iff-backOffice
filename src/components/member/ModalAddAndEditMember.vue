@@ -6,20 +6,16 @@ import {
   type IMember,
   type UpdateMemberPayload,
 } from '@/stores/member/member'
-import { Dialog, Textarea, Select, InputText, Tag } from 'primevue'
+import { useMemberInterests } from '@/composables/useMemberInterests'
+import { Dialog, Textarea, Select, InputText } from 'primevue'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import PurchaseHistoryPanel from './PurchaseHistoryPanel.vue'
 import { toast } from 'vue3-toastify'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/vue-query'
 import { useSalesStore } from '@/stores/sales/sales'
-import type { ISales, PaymentMethod, SellingStatus } from '@/types/sales'
-import {
-  convertStatusNumberToString,
-  convertStatusStringToNumber,
-  SellingStatus as SellingStatusEnum,
-} from '@/types/sales'
-import formatCurrency from '@/utils/formatCurrency'
+import type { ISales } from '@/types/sales'
+import { convertStatusStringToNumber, SellingStatus as SellingStatusEnum } from '@/types/sales'
 import dayjs from 'dayjs'
 
 const props = defineProps<{
@@ -44,11 +40,23 @@ const showAddModal = computed({
 const isSubmitting = ref(false)
 const newMember = ref<
   CreateMemberPayload & {
+    // Legacy fields (เก็บไว้เพื่อ backward compatibility)
     experience?: string
     fishPreference?: string
     pondSize?: string
     bacteriaBrand?: string
     foodBrand?: string
+    // New fields
+    breedingBehavior?: string
+    gosanke?: string
+    nonGosanke?: string
+    variety?: string
+    fishAge?: string
+    budgetLevel?: string
+    bacteriaUsage?: string
+    filterCleaning?: string
+    filterCleaningCompany?: string
+    feedingMethod?: string
     lastPurchaseDate?: string
     totalPurchaseAmount?: number
     purchaseCount?: number
@@ -68,11 +76,23 @@ const newMember = ref<
   phone: '',
   type: '',
   username: undefined,
+  // Legacy fields
   experience: '',
   fishPreference: '',
   pondSize: '',
   bacteriaBrand: '',
   foodBrand: '',
+  // New fields
+  breedingBehavior: '',
+  gosanke: '',
+  nonGosanke: '',
+  variety: '',
+  fishAge: '',
+  budgetLevel: '',
+  bacteriaUsage: '',
+  filterCleaning: '',
+  filterCleaningCompany: '',
+  feedingMethod: '',
   behaviorNotes: '',
   purchaseHistory: [],
   requirements: '',
@@ -97,11 +117,23 @@ const closeAddModal = () => {
     province: '',
     phone: '',
     type: '',
+    // Legacy fields
     experience: '',
     fishPreference: '',
     pondSize: '',
     bacteriaBrand: '',
     foodBrand: '',
+    // New fields
+    breedingBehavior: '',
+    gosanke: '',
+    nonGosanke: '',
+    variety: '',
+    fishAge: '',
+    budgetLevel: '',
+    bacteriaUsage: '',
+    filterCleaning: '',
+    filterCleaningCompany: '',
+    feedingMethod: '',
     behaviorNotes: '',
     purchaseHistory: [],
     requirements: '',
@@ -118,6 +150,7 @@ const closeAddModal = () => {
 
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
+const { toFlatObject, toInterestsArray } = useMemberInterests()
 
 // ดึงข้อมูล sales
 const { data: salesData } = useQuery<ISales[]>({
@@ -128,27 +161,6 @@ const { data: salesData } = useQuery<ISales[]>({
 // สำหรับจัดการประวัติซื้อสินค้า
 const selectedSaleId = ref<string | null>(null)
 const itemFilter = ref('')
-
-// Helper function สำหรับแปลง status เป็น label
-const getStatusLabel = (status: SellingStatus | string): string => {
-  const statusString = typeof status === 'number' ? convertStatusNumberToString(status) : status
-  const statusInfo =
-    salesStore.statusWorkflow[statusString as keyof typeof salesStore.statusWorkflow]
-  return statusInfo?.label || statusString
-}
-
-// Helper function สำหรับแปลง payment เป็น label
-const getPaymentLabel = (payment: PaymentMethod | undefined): string => {
-  const paymentMap = {
-    cash: 'เงินสด',
-    transfer: 'โอนเงิน',
-    credit: 'เครดิต',
-    order: 'ออเดอร์',
-    cod: 'COD',
-    card: 'บัตร',
-  }
-  return payment ? paymentMap[payment] : '-'
-}
 
 // Helper function คำนวณยอดรวม
 const calculateSaleTotal = (sale: ISales | undefined): number => {
@@ -313,19 +325,14 @@ watch(
   () => props.data,
   (newMemberData) => {
     if (newMemberData) {
-      const experience = newMemberData.interests?.find((i) => i.type === 'experience')?.value || ''
-      const fishPreference =
-        newMemberData.interests?.find((i) => i.type === 'fish_preference')?.value || ''
-      const pondSize = newMemberData.interests?.find((i) => i.type === 'pond_size')?.value || ''
-      const bacteriaBrand =
-        newMemberData.interests?.find((i) => i.type === 'bacteria_brand')?.value || ''
-      const foodBrand = newMemberData.interests?.find((i) => i.type === 'food_brand')?.value || ''
-
       // เก็บ purchaseHistory เดิมไว้
       originalPurchaseHistory.value = newMemberData.purchaseHistory || []
       // Reset state รายการใหม่เมื่อโหลดข้อมูลใหม่
       newlyAddedPurchaseHistory.value = []
       editingSaleIds.value.clear()
+
+      // แปลง interests array เป็น flat object
+      const interestsFlat = toFlatObject(newMemberData.interests)
 
       newMember.value = {
         code: newMemberData.code,
@@ -345,11 +352,23 @@ watch(
         phone: newMemberData.phone || '',
         type: newMemberData.type || '',
         username: newMemberData.username || null,
-        experience: experience,
-        fishPreference: fishPreference,
-        pondSize: pondSize,
-        bacteriaBrand: bacteriaBrand,
-        foodBrand: foodBrand,
+        // Legacy fields
+        experience: interestsFlat.experience || '',
+        fishPreference: interestsFlat.fishPreference || '',
+        pondSize: interestsFlat.pondSize || '',
+        bacteriaBrand: interestsFlat.bacteriaBrand || '',
+        foodBrand: interestsFlat.foodBrand || '',
+        // New fields
+        breedingBehavior: interestsFlat.breedingBehavior || '',
+        gosanke: interestsFlat.gosanke || '',
+        nonGosanke: interestsFlat.nonGosanke || '',
+        variety: interestsFlat.variety || '',
+        fishAge: interestsFlat.fishAge || '',
+        budgetLevel: interestsFlat.budgetLevel || '',
+        bacteriaUsage: interestsFlat.bacteriaUsage || '',
+        filterCleaning: interestsFlat.filterCleaning || '',
+        filterCleaningCompany: interestsFlat.filterCleaningCompany || '',
+        feedingMethod: interestsFlat.feedingMethod || '',
         behaviorNotes: newMemberData.behaviorNotes || '',
         purchaseHistory: newMemberData.purchaseHistory || [],
         requirements: newMemberData.requirements || '',
@@ -390,22 +409,8 @@ const handleAddMember = () => {
       contact.type && contact.value && contact.type.trim() !== '' && contact.value.trim() !== ''
   )
 
-  const requiredInterests = [
-    { type: 'experience', value: newMember.value.experience },
-    { type: 'fish_preference', value: newMember.value.fishPreference },
-    { type: 'pond_size', value: newMember.value.pondSize },
-  ]
-  const hasValidInterests = requiredInterests.every(
-    (interest) => interest.value && interest.value.trim() !== ''
-  )
-
   if (!hasValidContacts) {
     toast.error('กรุณาระบุช่องทางติดต่ออย่างน้อย 1 ช่องทาง')
-    return
-  }
-
-  if (!hasValidInterests) {
-    toast.error('กรุณากรอกข้อมูลพฤติกรรมและความสนใจให้ครบถ้วน')
     return
   }
 
@@ -424,17 +429,42 @@ const handleAddMember = () => {
     return
   }
 
-  const interestsArray = [
-    { index: 0, type: 'experience', value: newMember.value.experience || '' },
-    { index: 1, type: 'fish_preference', value: newMember.value.fishPreference || '' },
-    { index: 2, type: 'pond_size', value: newMember.value.pondSize || '' },
-    ...(newMember.value.bacteriaBrand
-      ? [{ index: 3, type: 'bacteria_brand', value: newMember.value.bacteriaBrand }]
-      : []),
-    ...(newMember.value.foodBrand
-      ? [{ index: 4, type: 'food_brand', value: newMember.value.foodBrand }]
-      : []),
-  ]
+  // Validation: ถ้าเลือกใช้จุลินทรีย์ ต้องกรอกยี่ห้อ
+  if (newMember.value.bacteriaUsage === 'yes' && !newMember.value.bacteriaBrand?.trim()) {
+    toast.error('กรุณากรอกยี่ห้อจุลินทรีย์')
+    isSubmitting.value = false
+    return
+  }
+
+  // Validation: ถ้าเลือกมีบริษัทรับล้าง ต้องกรอกชื่อบริษัท
+  if (
+    newMember.value.filterCleaning === 'company' &&
+    !newMember.value.filterCleaningCompany?.trim()
+  ) {
+    toast.error('กรุณากรอกชื่อบริษัทรับล้างกรอง')
+    isSubmitting.value = false
+    return
+  }
+
+  // Build interests array from flat fields using composable
+  const flatFields: Record<string, string> = {
+    breedingBehavior: newMember.value.breedingBehavior || '',
+    gosanke: newMember.value.gosanke || '',
+    nonGosanke: newMember.value.nonGosanke || '',
+    variety: newMember.value.variety || '',
+    fishAge: newMember.value.fishAge || '',
+    budgetLevel: newMember.value.budgetLevel || '',
+    bacteriaUsage: newMember.value.bacteriaUsage || '',
+    bacteriaBrand: newMember.value.bacteriaBrand || '',
+    foodBrand: newMember.value.foodBrand || '',
+    filterCleaning: newMember.value.filterCleaning || '',
+    filterCleaningCompany: newMember.value.filterCleaningCompany || '',
+    pondSize: newMember.value.pondSize || '',
+    feedingMethod: newMember.value.feedingMethod || '',
+    experience: newMember.value.experience || '',
+    fishPreference: newMember.value.fishPreference || '',
+  }
+  const interestsArray = toInterestsArray(flatFields)
 
   // รวมรายการใหม่เข้ากับ purchaseHistory ก่อนบันทึก
   const finalPurchaseHistory = [
@@ -446,6 +476,7 @@ const handleAddMember = () => {
     ...newMember.value,
     interests: interestsArray,
     purchaseHistory: finalPurchaseHistory,
+    requirements: newMember.value.requirements || '',
     code: props.data ? newMember.value.code : buildPrefix(),
     username: newMember.value.username || undefined,
   }
@@ -535,20 +566,6 @@ const existingPurchaseHistory = computed(() => {
     newMember.value.purchaseHistory?.includes(saleId)
   )
 })
-
-// ฟังก์ชันสลับโหมดแก้ไข
-const toggleEditMode = (saleId: string) => {
-  if (editingSaleIds.value.has(saleId)) {
-    editingSaleIds.value.delete(saleId)
-  } else {
-    editingSaleIds.value.add(saleId)
-  }
-}
-
-// ตรวจสอบว่ารายการอยู่ในโหมดแก้ไขหรือไม่
-const isEditing = (saleId: string) => {
-  return editingSaleIds.value.has(saleId)
-}
 </script>
 
 <template>
@@ -749,105 +766,199 @@ const isEditing = (saleId: string) => {
       </div>
 
       <!-- ข้อมูลพฤติกรรม ความสนใจของลูกค้า -->
-      <div class="bg-gray-50 rounded-lg p-4">
+      <div class="bg-gray-50 rounded-lg p-4 space-y-6">
         <h3 class="font-semibold! text-gray-900 mb-3 flex items-center gap-2">
           <i class="pi pi-heart text-purple-600"></i>
           ข้อมูลพฤติกรรมความสนใจของลูกค้า
         </h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >ความชำนาญในการเลี้ยง *</label
-            >
-            <Select
-              v-model="newMember.experience"
-              :options="memberStore.memberExperienceOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกความชำนาญในการเลี้ยง"
-              fluid
-              size="small"
-              :invalid="!newMember.experience && isSubmitting"
-            />
-            <small v-if="!newMember.experience && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกความชำนาญในการเลี้ยง</small
-            >
-          </div>
+        <!-- พฤติกรรมการเลี้ยง -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">พฤติกรรมการเลี้ยง</label>
+          <Select
+            v-model="newMember.breedingBehavior"
+            :options="memberStore.breedingBehaviorOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="เลือกพฤติกรรมการเลี้ยง"
+            fluid
+            size="small"
+          />
+        </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >ชอบปลาเล็กหรือปลาใหญ่ *</label
-            >
-            <Select
-              v-model="newMember.fishPreference"
-              :options="memberStore.memberFishPreferenceOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกความชอบปลาเล็กหรือปลาใหญ่"
-              fluid
-              size="small"
-              :invalid="!newMember.fishPreference && isSubmitting"
-            />
-            <small
-              v-if="!newMember.fishPreference && isSubmitting"
-              class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกความชอบปลาเล็กหรือปลาใหญ่</small
-            >
-          </div>
+        <!-- สายพันธุ์ที่ชอบ -->
+        <div>
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">สายพันธุ์ที่ชอบ</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gosanke</label>
+              <Select
+                v-model="newMember.gosanke"
+                :options="memberStore.gosankeOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือก Gosanke"
+                fluid
+                size="small"
+              />
+            </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อที่เลี้ยง *</label>
-            <InputText
-              v-model="newMember.pondSize"
-              placeholder="ขนาดบ่อที่เลี้ยง"
-              fluid
-              size="small"
-              :invalid="!newMember.pondSize && isSubmitting"
-            />
-            <small v-if="!newMember.pondSize && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาใส่ขนาดบ่อที่เลี้ยง</small
-            >
-          </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Non-Gosanke</label>
+              <Select
+                v-model="newMember.nonGosanke"
+                :options="memberStore.nonGosankeOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือก Non-Gosanke"
+                fluid
+                size="small"
+              />
+            </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >ใช้จุลินทรีย์มั้ย ยี่ห้ออะไร</label
-            >
-            <InputText
-              v-model="newMember.bacteriaBrand"
-              placeholder="ยี่ห้อจุลินทรีย์"
-              fluid
-              size="small"
-            />
-          </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Variety สีล้วน</label>
+              <Select
+                v-model="newMember.variety"
+                :options="memberStore.varietyOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือก Variety สีล้วน"
+                fluid
+                size="small"
+              />
+            </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
-            <InputText v-model="newMember.foodBrand" placeholder="ยี่ห้ออาหาร" fluid size="small" />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
-            <Textarea
-              v-model="newMember.behaviorNotes"
-              placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
-              rows="3"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">ความต้องการ</label>
-            <InputText
-              v-model="newMember.requirements"
-              placeholder="เช่น เน้นลาย, เน้นขนาด, เน้นบ่อดิน"
-              fluid
-              size="small"
-            />
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ชอบเลี้ยงปลาอายุเท่าไร</label
+              >
+              <Select
+                v-model="newMember.fishAge"
+                :options="memberStore.fishAgeOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกอายุปลา"
+                fluid
+                size="small"
+              />
+            </div>
           </div>
         </div>
+
+        <!-- ข้อมูลการเลี้ยง -->
+        <div>
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">ข้อมูลการเลี้ยง</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ระดับงบประมาณ</label>
+              <Select
+                v-model="newMember.budgetLevel"
+                :options="memberStore.budgetLevelOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกระดับงบประมาณ"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ใช้จุลินทรีย์ยี่ห้ออะไร</label
+              >
+              <Select
+                v-model="newMember.bacteriaUsage"
+                :options="memberStore.bacteriaUsageOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกใช้จุลินทรีย์หรือไม่"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div v-if="newMember.bacteriaUsage === 'yes'">
+              <label class="block text-sm font-medium text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
+              <InputText
+                v-model="newMember.bacteriaBrand"
+                placeholder="กรอกยี่ห้อจุลินทรีย์"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
+              <InputText
+                v-model="newMember.foodBrand"
+                placeholder="กรอกยี่ห้ออาหาร"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >ล้างกรองเองหรือมีบริษัทล้างให้</label
+              >
+              <Select
+                v-model="newMember.filterCleaning"
+                :options="memberStore.filterCleaningOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกวิธีการล้างกรอง"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div v-if="newMember.filterCleaning === 'company'">
+              <label class="block text-sm font-medium text-gray-700 mb-1">บริษัทรับล้าง</label>
+              <InputText
+                v-model="newMember.filterCleaningCompany"
+                placeholder="กรอกชื่อบริษัท"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
+              <InputText
+                v-model="newMember.pondSize"
+                placeholder="กรอกขนาดบ่อเลี้ยง"
+                fluid
+                size="small"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">วิธีการให้อาหาร</label>
+              <Select
+                v-model="newMember.feedingMethod"
+                :options="memberStore.feedingMethodOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกวิธีการให้อาหาร"
+                fluid
+                size="small"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- โน้ตพฤติกรรมลูกค้า -->
+        <!-- <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">โน้ตพฤติกรรมลูกค้า</label>
+          <Textarea
+            v-model="newMember.behaviorNotes"
+            placeholder="บันทึกโน้ตพฤติกรรมลูกค้า..."
+            rows="3"
+            fluid
+            size="small"
+          />
+        </div> -->
       </div>
 
       <div class="bg-gray-50 rounded-lg p-4 space-y-6" v-if="props.data">
