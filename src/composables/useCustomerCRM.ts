@@ -79,7 +79,7 @@ export function useCustomerCRM(
 
     const summary = { newbie: 0, development: 0, competition: 0 }
     members.value.forEach((member) => {
-      const breederType = member.interests?.find((i) => i.type === 'breeder_type')?.value
+      const breederType = member.interests?.find((i) => i.type === 'breeding_behavior')?.value
       if (breederType === 'newbie') summary.newbie++
       else if (breederType === 'development') summary.development++
       else if (breederType === 'competition') summary.competition++
