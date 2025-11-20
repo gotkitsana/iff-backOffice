@@ -698,9 +698,6 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
         memberStatusUpdate.updateMemberStatusIfNeeded(
           variables,
           members.value,
-          allSales.value,
-          productsData.value || [],
-          preparingStepOrder
         )
 
         // A.1. อัพเดท customerLevel เมื่อ status >= preparing

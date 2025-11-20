@@ -480,9 +480,6 @@ const { mutate: updateSalesStatus } = useMutation({
         memberStatusUpdate.updateMemberStatusIfNeeded(
           variables,
           members.value,
-          allSales.value,
-          productsData.value || [],
-          preparingStepOrder
         )
 
         // A.1. Update member customer level (when slip is confirmed)

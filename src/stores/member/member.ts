@@ -15,8 +15,13 @@ export const useMemberStore = defineStore('member', () => {
   // ระดับลูกค้า
   const customerLevelOptions = ref<{ label: CustomerLevelLabel; value: CustomerLevel }[]>([
     { label: 'ทั่วไป', value: 'general' },
-    { label: 'สำคัญ', value: 'important' },
-    { label: 'สำคัญมาก', value: 'very_important' },
+    { label: 'สำคัญ', value: 'vip' },
+    { label: 'สำคัญมาก', value: 'vvip' },
+  ])
+
+  const customerTypeOptions = ref<{ label: CustomerTypeLabel; value: CustomerType }[]>([
+    { label: 'ลูกค้า', value: 'customer' },
+    { label: 'พ่อค้าฟาร์ม', value: 'dealer' },
   ])
 
   const getStatusTag = (status: string): 'secondary' | 'success' | 'info' | 'warn' | 'danger' => {
@@ -206,6 +211,7 @@ export const useMemberStore = defineStore('member', () => {
 
     memberStatusOptions,
     customerLevelOptions,
+    customerTypeOptions,
     memberContactOptions,
     getStatusTag,
     provinceOptions,
@@ -299,5 +305,8 @@ export type MemberStatusLabel =
   | 'ลูกค้า Warm Active'
   | 'ลูกค้า Cold Active'
 
-export type CustomerLevel = 'general' | 'important' | 'very_important'
+export type CustomerLevel = 'general' | 'vip' | 'vvip'
 export type CustomerLevelLabel = 'ทั่วไป' | 'สำคัญ' | 'สำคัญมาก'
+
+export type CustomerType = 'customer' | 'dealer'
+export type CustomerTypeLabel = 'ลูกค้า' | 'พ่อค้าฟาร์ม'

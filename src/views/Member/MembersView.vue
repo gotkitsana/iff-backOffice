@@ -364,9 +364,9 @@ const incompleteDataCustomersCount = computed(() => {
                     )?.label || 'ไม่ระบุ'
                   "
                   :severity="
-                    slotProps.data.customerLevel === 'very_important'
+                    slotProps.data.customerLevel === 'vvip'
                       ? 'danger'
-                      : slotProps.data.customerLevel === 'important'
+                      : slotProps.data.customerLevel === 'vip'
                       ? 'warn'
                       : 'secondary'
                   "

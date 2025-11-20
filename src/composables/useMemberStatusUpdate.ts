@@ -16,12 +16,9 @@ export function useMemberStatusUpdate() {
 
   const { mutate: updateMember } = useMutation({
     mutationFn: (payload: UpdateMemberPayload) => memberStore.onUpdateMember(payload),
-    onSuccess: (
-      data: any,
-      variables: UpdateMemberPayload,
-    ) => {
-        queryClient.invalidateQueries({ queryKey: ['get_members'] })
-        queryClient.invalidateQueries({ queryKey: ['get_member_id', variables._id] })
+    onSuccess: (data: any, variables: UpdateMemberPayload) => {
+      queryClient.invalidateQueries({ queryKey: ['get_members'] })
+      queryClient.invalidateQueries({ queryKey: ['get_member_id', variables._id] })
     },
   })
 
@@ -70,11 +67,11 @@ export function useMemberStatusUpdate() {
     const totalSpending = currentTotal + previousTotal
     console.log('totalSpending', totalSpending)
     // กำหนด customerLevel ที่ควรเป็นตามยอดซื้อ
-    let shouldBeLevel: 'general' | 'important' | 'very_important' = 'general'
+    let shouldBeLevel: 'general' | 'vip' | 'vvip' = 'general'
     if (totalSpending >= 30000) {
-      shouldBeLevel = 'very_important'
+      shouldBeLevel = 'vvip'
     } else if (totalSpending >= 10000) {
-      shouldBeLevel = 'important'
+      shouldBeLevel = 'vip'
     } else {
       shouldBeLevel = 'general'
     }
@@ -116,64 +113,49 @@ export function useMemberStatusUpdate() {
   }
 
   /**
-   * ตรวจสอบและอัพเดทสถานะสมาชิกตามยอดซื้อ
+   * ตรวจสอบและอัพเดทสถานะสมาชิกจาก 'ci' (สอบถาม) เป็น 'cs' (ซื้อแล้ว)
+   * เมื่อ sale status >= 'preparing'
    *
-   * NOTE: ปิดการใช้งานชั่วคราว - รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
-   * TODO: อาจจะต้องปรับ logic ใหม่เพื่อรองรับสถานะใหม่ (Hot/Warm/Cold Active)
+   * เงื่อนไข:
+   * - เช็คว่า member.status === 'ci'
+   * - ถ้าใช่ → เปลี่ยนเป็น 'cs'
    */
   const updateMemberStatusIfNeeded = (
     variables: IUpdateSalesPayload,
     members: IMember[] | undefined,
-    allSales: ISales[] | undefined,
-    allProducts: IProduct[],
-    preparingStepOrder: number,
   ) => {
-    // COMMENTED OUT: ปิดการเปลี่ยนรหัสลูกค้าจาก ci -> cs -> css
-    // รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
-    // const member = members?.find((m) => m._id === variables.user)
-    // if (!member || member.status === 'css') return
-    // // คำนวณยอดซื้อรวมทั้งหมด
-    // const currentTotal = calculateOrderTotal(variables, allProducts)
-    // const previousTotal =
-    //   allSales
-    //     ?.filter((s) => {
-    //       const statusString =
-    //         typeof s.sellingStatus === 'number'
-    //           ? convertStatusNumberToString(s.sellingStatus)
-    //           : s.sellingStatus
-    //       return (
-    //         s.user === variables.user &&
-    //         salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
-    //           preparingStepOrder &&
-    //         s._id !== variables._id
-    //       )
-    //     })
-    //     .reduce((sum, s) => sum + calculateSaleTotal(s, allProducts), 0) || 0
-    // const totalSpending = currentTotal + previousTotal
-    // const shouldBeCss = totalSpending >= 50000
-    // const shouldBeCs = !shouldBeCss && member.status === 'ci'
-    // if (shouldBeCss || shouldBeCs) {
-    //   const newStatus = shouldBeCss ? 'css' : 'cs'
-    //   const newCode = member.code.replace('ci', newStatus).replace(/^cs(?!s)/, newStatus)
-    //   updateMember({
-    //     _id: member._id,
-    //     status: newStatus,
-    //     code: newCode,
-    //     contacts: member.contacts || [],
-    //     interests: member.interests || [],
-    //     displayName: member.displayName,
-    //     name: member.name,
-    //     address: member.address,
-    //     province: member.province,
-    //     phone: member.phone,
-    //     type: member.type,
-    //     username: member.username,
-    //     password: member.password,
-    //     bidder: member.bidder,
-    //     cat: member.cat,
-    //     uat: member.uat,
-    //   })
-    // }
+    const member = members?.find((m) => m._id === variables.user)
+    if (!member) return
+    console.log('member', member.status)
+    // เช็คว่า member.status === 'ci' หรือไม่
+    if (member.status !== 'ci') return
+
+    // เปลี่ยน status เป็น 'cs'
+    updateMember({
+      _id: member._id,
+      status: 'cs',
+      customerLevel: member.customerLevel || 'general',
+      code: member.code,
+      contacts: member.contacts || [],
+      interests: member.interests || [],
+      displayName: member.displayName,
+      name: member.name,
+      address: member.address,
+      province: member.province,
+      phone: member.phone,
+      type: member.type,
+      username: member.username,
+      password: member.password,
+      bidder: member.bidder,
+      cat: member.cat,
+      uat: member.uat,
+      behaviorNotes: member.behaviorNotes,
+      purchaseHistory: member.purchaseHistory,
+      requirements: member.requirements,
+      lastPurchaseDate: member.lastPurchaseDate,
+      totalPurchaseAmount: member.totalPurchaseAmount,
+      purchaseCount: member.purchaseCount,
+    })
   }
 
   return {

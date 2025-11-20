@@ -621,9 +621,9 @@ const getPaymentMethodSeverity = (
                       )?.label || '-'
                     "
                     :severity="
-                      findMemberData(slotProps.data.user)?.customerLevel === 'very_important'
+                      findMemberData(slotProps.data.user)?.customerLevel === 'vvip'
                         ? 'danger'
-                        : findMemberData(slotProps.data.user)?.customerLevel === 'important'
+                        : findMemberData(slotProps.data.user)?.customerLevel === 'vip'
                         ? 'warn'
                         : 'secondary'
                     "
