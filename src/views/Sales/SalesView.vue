@@ -567,19 +567,13 @@ const getPaymentMethodSeverity = (
           >
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
-                <!-- <Tag
+                <Tag
                   :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
                   :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
                   size="small"
                   class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   @click="openStatusManager(slotProps.data)"
                   v-tooltip.top="'คลิกเพื่อเปลี่ยนสถานะ'"
-                /> -->
-                <Tag
-                  :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
-                  :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
-                  size="small"
-                  class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
                 />
               </div>
             </template>

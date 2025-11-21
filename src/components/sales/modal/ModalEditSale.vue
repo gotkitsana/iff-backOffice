@@ -1015,6 +1015,10 @@ const sellers = computed(() => {
       value: admin._id,
     }))
 })
+
+const readOnly = computed(() => {
+  return currentStatusString.value === 'preparing' || currentStatusString.value === 'received' || currentStatusString.value === 'shipping' || currentStatusString.value === 'damaged'
+})
 </script>
 
 <template>
@@ -1253,7 +1257,7 @@ const sellers = computed(() => {
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
-        :read-only="currentStatusString === 'wait_payment'"
+        :read-only="readOnly"
         @update:deposit="updateDeposit"
         @update:discount="updateDiscount"
         @update:delivery-no="updateDeliveryNo"
