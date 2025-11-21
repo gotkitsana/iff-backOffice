@@ -8,7 +8,6 @@ import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { getProductImageUrl } from '@/utils/imageUrl'
-import JSZip, { type JSZipFileOptions } from 'jszip'
 
 // Props
 const props = defineProps<{
@@ -18,7 +17,7 @@ const props = defineProps<{
 }>()
 
 // Emits
-defineEmits<{
+const emit = defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
   'open-delete-modal': [product: IProduct]
@@ -86,158 +85,86 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryFn: () => greenhouseStore.onGetGreenhouses(),
 })
 
-const showMediaGalleryModal = ref(false)
-const selectedMediaItems = ref<
-  Array<{ url: string; type: 'image' | 'certificate' | 'video'; filename: string }>
->([])
-const activeMediaIndex = ref(0)
-const isDownloadingZip = ref(false)
-const selectedProduct = ref<IProduct | null>(null)
+// const showMediaGalleryModal = ref(false)
+// const selectedMediaItems = ref<
+//   Array<{ url: string; type: 'image' | 'certificate' | 'video'; filename: string }>
+// >([])
+// const activeMediaIndex = ref(0)
+// const selectedProduct = ref<IProduct | null>(null)
 
-const openMediaGalleryModal = (
-  product: IProduct,
-  startType: 'image' | 'certificate' | 'video' = 'image',
-  imageIndex: number = 0
-) => {
-  const mediaItems: Array<{
-    url: string
-    type: 'image' | 'certificate' | 'video'
-    filename: string
-  }> = []
+// const openMediaGalleryModal = (
+//   product: IProduct,
+//   startType: 'image' | 'certificate' | 'video' = 'image',
+//   imageIndex: number = 0
+// ) => {
+//   const mediaItems: Array<{
+//     url: string
+//     type: 'image' | 'certificate' | 'video'
+//     filename: string
+//   }> = []
 
-  // Add images
-  if (product.images && product.images.length > 0) {
-    product.images.forEach((img, idx) => {
-      mediaItems.push({
-        url: getImageUrl(img),
-        type: 'image',
-        filename: img.filename || `image-${idx + 1}.jpg`,
-      })
-    })
-  }
+//   // Add images
+//   if (product.images && product.images.length > 0) {
+//     product.images.forEach((img, idx) => {
+//       mediaItems.push({
+//         url: getImageUrl(img),
+//         type: 'image',
+//         filename: img.filename || `image-${idx + 1}.jpg`,
+//       })
+//     })
+//   }
 
-  // Add certificate
-  if (product.certificate) {
-    mediaItems.push({
-      url: getCertificateUrl(product.certificate),
-      type: 'certificate',
-      filename: product.certificate,
-    })
-  }
+//   // Add certificate
+//   if (product.certificate) {
+//     mediaItems.push({
+//       url: getCertificateUrl(product.certificate),
+//       type: 'certificate',
+//       filename: product.certificate,
+//     })
+//   }
 
-  // Add video
-  if (product.youtube) {
-    mediaItems.push({
-      url: product.youtube,
-      type: 'video',
-      filename: product.youtube,
-    })
-  }
+//   // Add video
+//   if (product.youtube) {
+//     mediaItems.push({
+//       url: product.youtube,
+//       type: 'video',
+//       filename: product.youtube,
+//     })
+//   }
 
-  if (mediaItems.length > 0) {
-    selectedMediaItems.value = mediaItems
-    selectedProduct.value = product
+//   if (mediaItems.length > 0) {
+//     selectedMediaItems.value = mediaItems
+//     selectedProduct.value = product
 
-    // Set active index based on type
-    if (startType === 'image') {
-      activeMediaIndex.value = imageIndex
-    } else if (startType === 'certificate') {
-      activeMediaIndex.value = product.images?.length || 0
-    } else if (startType === 'video') {
-      activeMediaIndex.value = (product.images?.length || 0) + (product.certificate ? 1 : 0)
-    }
+//     // Set active index based on type
+//     if (startType === 'image') {
+//       activeMediaIndex.value = imageIndex
+//     } else if (startType === 'certificate') {
+//       activeMediaIndex.value = product.images?.length || 0
+//     } else if (startType === 'video') {
+//       activeMediaIndex.value = (product.images?.length || 0) + (product.certificate ? 1 : 0)
+//     }
 
-    showMediaGalleryModal.value = true
-  }
-}
+//     showMediaGalleryModal.value = true
+//   }
+// }
 
-const closeMediaGalleryModal = () => {
-  showMediaGalleryModal.value = false
-  selectedMediaItems.value = []
-  activeMediaIndex.value = 0
-  selectedProduct.value = null
-}
-
-const downloadAllAsZip = async () => {
-  if (selectedMediaItems.value.length === 0 || isDownloadingZip.value || !selectedProduct.value) return
-
-  isDownloadingZip.value = true
-
-  try {
-    const zip = new JSZip()
-
-    const downloadPromises = selectedMediaItems.value.map(async (item, index) => {
-      try {
-        // สำหรับ Firebase URLs ใช้ fetch พร้อม error handling
-        const response = await fetch(item.url, {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit',
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const blob = await response.blob()
-
-        let filename = item.filename
-        if (!filename) {
-          const ext = item.type === 'video' ? 'mp4' : item.type === 'certificate' ? 'pdf' : 'jpg'
-          filename = `${item.type}-${index + 1}.${ext}`
-        }
-
-        zip.file(filename, blob)
-      } catch (error) {
-        console.error(`Failed to download ${item.filename}:`, error)
-
-        // ถ้าเป็นวิดีโอที่ดาวน์โหลดไม่ได้ ให้ดาวน์โหลดแยก
-        if (item.type === 'video') {
-          console.log('Downloading video separately...')
-          const link = document.createElement('a')
-          link.href = item.url
-          link.download = item.filename || 'video.mp4'
-          link.target = '_blank'
-          link.click()
-        }
-      }
-    })
-
-    await Promise.all(downloadPromises)
-
-    // สร้างชื่อไฟล์ ZIP
-    const productName = selectedProduct.value.species
-      ? selectedProduct.value.species?.name
-      : selectedProduct.value.name
-    const productSku = selectedProduct.value.sku || 'unknown'
-    const pondName = selectedProduct.value.fishpond?.name || 'pond'
-    const weightName = selectedProduct.value.weight || 'unknown'
-    const safeName = `${productName}-${productSku}-${pondName}-${weightName}`.replace(/[<>:"/\\|?*]/g, '-')
-
-    // Generate and download ZIP
-    const content = await zip.generateAsync({ type: 'blob' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(content)
-    link.download = `${safeName}.zip`
-    link.click()
-    URL.revokeObjectURL(link.href)
-  } catch (error) {
-    console.error('Error creating ZIP:', error)
-    alert('เกิดข้อผิดพลาดในการดาวน์โหลด')
-  } finally {
-    isDownloadingZip.value = false
-  }
-}
+// const closeMediaGalleryModal = () => {
+//   showMediaGalleryModal.value = false
+//   selectedMediaItems.value = []
+//   activeMediaIndex.value = 0
+//   selectedProduct.value = null
+// }
 
 // Computed for Galleria
-const galleriaMediaItems = computed(() => {
-  return selectedMediaItems.value.map((item) => ({
-    itemSrc: item.url,
-    thumbnailSrc: item.url,
-    type: item.type,
-    alt: `${item.type} - ${item.filename}`,
-  }))
-})
+// const galleriaMediaItems = computed(() => {
+//   return selectedMediaItems.value.map((item) => ({
+//     itemSrc: item.url,
+//     thumbnailSrc: item.url,
+//     type: item.type,
+//     alt: `${item.type} - ${item.filename}`,
+//   }))
+// })
 
 const foodColumns = ref([
   {
@@ -262,7 +189,7 @@ const foodColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
+                  onClick: () => emit('open-detail-modal', slotProps.data),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -488,7 +415,7 @@ const fishColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
+                  onClick: () => emit('open-detail-modal', slotProps.data),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -513,33 +440,6 @@ const fishColumns = ref([
       ),
   },
   {
-    field: 'youtube',
-    header: 'วิดีโอ',
-    headCell: ' justify-center',
-    bodyCell: ' text-center',
-    render: (slotProps: any) =>
-      h(
-        'div',
-        {
-          class: ['flex items-center justify-center'],
-        },
-        [
-          slotProps.data.youtube
-            ? h(Button, {
-                icon: 'pi pi-play-circle',
-                severity: 'success',
-                size: 'small',
-                outlined: true,
-                onClick: () => openMediaGalleryModal(slotProps.data, 'video'),
-                pt: {
-                  root: { class: '!w-8 !h-8' },
-                },
-              })
-            : h('i', { class: 'pi pi-video text-gray-400 !text-xl' }),
-        ]
-      ),
-  },
-  {
     field: 'certificate',
     header: 'ใบเซอร์',
     headCell: ' justify-center',
@@ -560,7 +460,7 @@ const fishColumns = ref([
                   'hover:ring hover:ring-purple-500/75 duration-150 transition-all',
                   'hover:scale-110 transform',
                 ].join(' '),
-                onClick: () => openMediaGalleryModal(slotProps.data, 'certificate'),
+                onClick: () => emit('open-detail-modal', slotProps.data),
                 loading: 'lazy',
                 fetchpriority: 'low',
                 crossorigin: 'anonymous',
@@ -756,7 +656,7 @@ const microorganismColumns = ref([
                     'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
                     'hover:scale-110 transform',
                   ].join(' '),
-                  onClick: () => openMediaGalleryModal(slotProps.data, 'image', 0),
+                  onClick: () => emit('open-detail-modal', slotProps.data),
                   loading: 'lazy',
                   fetchpriority: 'low',
                   crossorigin: 'anonymous',
@@ -1029,7 +929,7 @@ const displayColumns = computed(() => {
   </div>
 
   <!-- Image Gallery Modal with Carousel -->
-  <Dialog
+  <!-- <Dialog
     v-model:visible="showMediaGalleryModal"
     modal
     :dismissableMask="true"
@@ -1091,7 +991,7 @@ const displayColumns = computed(() => {
           <div
             class="flex justify-center items-center w-full h-full min-h-[400px] transition-all duration-300 ease-in-out"
           >
-            <!-- Image -->
+
             <img
               v-if="item.type === 'image' || item.type === 'certificate'"
               :src="item.itemSrc"
@@ -1101,8 +1001,6 @@ const displayColumns = computed(() => {
               fetchpriority="low"
               crossorigin="anonymous"
             />
-
-            <!-- Video -->
             <div v-else-if="item.type === 'video'" class="w-full max-w-4xl mx-auto">
               <video
                 :src="item.itemSrc"
@@ -1118,7 +1016,6 @@ const displayColumns = computed(() => {
 
         <template #thumbnail="{ item }">
           <div class="p-1 relative flex">
-            <!-- Image/Certificate Thumbnail -->
             <img
               v-if="item.type === 'image' || item.type === 'certificate'"
               :src="item.thumbnailSrc"
@@ -1129,7 +1026,6 @@ const displayColumns = computed(() => {
               crossorigin="anonymous"
             />
 
-            <!-- Video Thumbnail -->
             <div
               v-if="item.type === 'video'"
               class="w-20 h-20 bg-gradient-to-br from-gray-800 to-black rounded-lg cursor-pointer hover:ring hover:ring-blue-500 duration-150 transition-all flex items-center justify-center relative overflow-hidden"
@@ -1144,14 +1040,9 @@ const displayColumns = computed(() => {
 
     <template #footer>
       <div class="flex justify-between items-center gap-2">
-        <Button
-          label="ดาวน์โหลดทั้งหมด (ZIP)"
-          icon="pi pi-download"
-          severity="success"
-          @click="downloadAllAsZip"
-          size="small"
-          :loading="isDownloadingZip"
-          :disabled="isDownloadingZip || selectedMediaItems.length === 0"
+        <DownloadZipButton
+          :selected-media-items="selectedMediaItems"
+          :selected-product="selectedProduct"
         />
         <Button
           label="ปิด"
@@ -1162,7 +1053,7 @@ const displayColumns = computed(() => {
         />
       </div>
     </template>
-  </Dialog>
+  </Dialog> -->
 </template>
 
 

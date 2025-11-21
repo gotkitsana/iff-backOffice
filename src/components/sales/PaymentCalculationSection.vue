@@ -47,7 +47,7 @@ const updateDeliveryNo = (value: number | null) => {
     </div>
 
     <!-- Input Fields -->
-    <div v-if="props.readOnly" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div v-if="!props.readOnly" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <div>
         <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
           มัดจำ (บาท)

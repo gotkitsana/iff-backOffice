@@ -13,6 +13,7 @@ import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhous
 import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
+import DownloadZipButton from '../DownloadZipButton.vue'
 
 // Props
 const props = defineProps<{
@@ -159,6 +160,47 @@ const selectedSupplier = computed(() => {
   return suppliers.value?.find((supplier) => supplier.brand._id === props.productData?.brand?._id)
 })
 
+// Computed property for download media items
+const selectedMediaItems = computed(() => {
+  if (!props.productData) return []
+
+  const mediaItems: Array<{
+    url: string
+    type: 'image' | 'certificate' | 'video'
+    filename: string
+  }> = []
+
+  // Add images
+  if (props.productData.images && props.productData.images.length > 0) {
+    props.productData.images.forEach((img, idx) => {
+      mediaItems.push({
+        url: getImageUrl(img.filename),
+        type: 'image',
+        filename: img.filename || `image-${idx + 1}.jpg`,
+      })
+    })
+  }
+
+  // Add certificate
+  if (props.productData.certificate) {
+    mediaItems.push({
+      url: getCertificateUrl(props.productData.certificate),
+      type: 'certificate',
+      filename: props.productData.certificate,
+    })
+  }
+
+  // Add video
+  if (props.productData.youtube) {
+    mediaItems.push({
+      url: props.productData.youtube,
+      type: 'video',
+      filename: props.productData.youtube,
+    })
+  }
+
+  return mediaItems
+})
 </script>
 
 <template>
@@ -471,11 +513,7 @@ const selectedSupplier = computed(() => {
             </h5>
             <div v-if="productData.youtube">
               <div class="bg-black rounded-lg py-0">
-                <video
-                  :src="productData.youtube"
-                  class="w-full h-auto max-h-[55vh]"
-                  controls
-                >
+                <video :src="productData.youtube" class="w-full h-auto max-h-[55vh]" controls>
                   <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
                 </video>
               </div>
@@ -589,6 +627,11 @@ const selectedSupplier = computed(() => {
 
     <template #footer>
       <div class="flex justify-end gap-3">
+        <DownloadZipButton
+          :selected-media-items="selectedMediaItems"
+          :selected-product="productData"
+        />
+
         <Button
           label="ปิด"
           icon="pi pi-times"

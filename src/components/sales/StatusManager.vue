@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, provide } from 'vue'
-import { Dialog, Button, Tag, Textarea, Select } from 'primevue'
+import { Dialog, Button, Tag, Textarea, Select, InputText, InputNumber, DatePicker } from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import type {
   StatusWorkflow,
@@ -18,27 +18,22 @@ import { toast } from 'vue3-toastify'
 import SlipUploadSection from './SlipUploadSection.vue'
 import ShippingSlipUploadSection from './ShippingSlipUploadSection.vue'
 import BankSelectionSection from './BankSelectionSection.vue'
-import PaymentCalculationSection from './PaymentCalculationSection.vue'
 import ProductItemForm from './ProductItemForm.vue'
-import SaleDetailSummary from './SaleDetailSummary.vue'
-import SaleDataSummary from './SaleDataSummary.vue'
-import { useMemberStore, type IMember, type UpdateMemberPayload } from '@/stores/member/member'
+import PaymentCalculationSection from './PaymentCalculationSection.vue'
+import { useMemberStore, type IMember } from '@/stores/member/member'
 import {
   useProductStore,
   type IProduct,
   type IUpdateProductPayload,
 } from '@/stores/product/product'
 import { executeStockDeduction } from '@/utils/stockDeduction'
-import formatCurrency from '@/utils/formatCurrency'
-import jsPDF from 'jspdf'
 // import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
-import BankData from '@/config/BankData'
-import logoIcon from '@/assets/images/icon/icon.png'
 import { useProductSelection } from '@/composables/useProductSelection'
 import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
-import { validateStatusForStatusChange, getAvailableStatuses } from '@/utils/salesStatusValidation'
+import { validateStatusForStatusChange, getAvailableStatuses, canEditField } from '@/utils/salesStatusValidation'
+import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
 // Props
 const props = defineProps<{
@@ -89,6 +84,11 @@ const saleForm = ref<IUpdateSalesPayload>({
   note: props.currentData.note || '',
   deliveryNo: props.currentData.deliveryNo || 0,
   delivery: props.currentData.delivery || '',
+  deliveryStatus: props.currentData.deliveryStatus || undefined,
+  paymentDueDate: props.currentData.paymentDueDate || undefined,
+  shippingAddress: props.currentData.shippingAddress || undefined,
+  shippingProvince: props.currentData.shippingProvince || undefined,
+  customProducts: props.currentData.customProducts || [],
 })
 
 // Reactive data
@@ -96,6 +96,13 @@ const hasSlip = ref(false)
 const hasShippingSlip = ref(false)
 const totalAmount = ref(0)
 const isSubmitting = ref(false)
+
+// Slip upload states (from ModalEditSale)
+const hasPendingSlipUpload = ref(false)
+const hasPendingShippingSlipUpload = ref(false)
+const skipShippingSlipUpload = ref(false)
+const requireShippingSlipUpload = ref(true) // ค่าเริ่มต้น = true (ต้องอัพโหลด)
+const finalSaleStatus = ref<'received' | 'damaged' | null>(null)
 
 // Queries
 const { data: members } = useQuery<IMember[]>({
@@ -143,139 +150,144 @@ provide(Symbol.for('productSelection'), productSelection)
 // Use composable for member status update
 const memberStatusUpdate = useMemberStatusUpdate()
 
+// Helper function for status step index (from ModalEditSale)
+const getStatusStepIndex = (status: SellingStatus | number | string) => {
+  const statusString =
+    typeof status === 'number'
+      ? convertStatusNumberToString(status)
+      : typeof status === 'string'
+      ? status
+      : convertStatusNumberToString(status)
+  return salesStore.sellingStatusOptions.findIndex((option) => option.value === statusString)
+}
+
+// Current status string computed (from ModalEditSale)
+const currentStatusString = computed(() => {
+  return typeof props.currentData.sellingStatus === 'number'
+    ? convertStatusNumberToString(props.currentData.sellingStatus)
+    : props.currentStatus
+})
+
 const currentStatusInfo = computed(() => {
-  const currentStatusString =
-    typeof props.currentData.sellingStatus === 'number'
-      ? convertStatusNumberToString(props.currentData.sellingStatus)
-      : props.currentStatus
-  return salesStore.statusWorkflow[currentStatusString as keyof StatusWorkflow]
+  return salesStore.statusWorkflow[currentStatusString.value as keyof StatusWorkflow]
 })
 
-const allSteps = computed(() => {
-  return Object.entries(salesStore.statusWorkflow)
-    .sort(
-      (
-        [, a]: [string, StatusWorkflow[keyof StatusWorkflow]],
-        [, b]: [string, StatusWorkflow[keyof StatusWorkflow]]
-      ) => a.stepOrder - b.stepOrder
-    )
-    .map(([key, status]) => ({
-      key,
-      ...(status as StatusWorkflow[keyof StatusWorkflow]),
-    }))
-})
-
-const currentStepIndex = computed(() => {
-  return allSteps.value.findIndex((step) => step.key === props.currentStatus)
-})
-
-const isStepCompleted = (stepIndex: number) => {
-  return stepIndex < currentStepIndex.value
-}
-
-const isStepCurrent = (stepIndex: number) => {
-  return stepIndex === currentStepIndex.value
-}
-
-// Available next status options based on current status
-const availableNextStatusOptions = computed(() => {
-  const currentStatusString =
-    typeof props.currentData.sellingStatus === 'number'
-      ? convertStatusNumberToString(props.currentData.sellingStatus)
-      : props.currentStatus
+// Status options for select (from ModalEditSale)
+const statusOptionsForSelect = computed(() => {
   const availableStatuses = getAvailableStatuses(
-    currentStatusString as SellingStatusString,
+    currentStatusString.value as SellingStatusString,
     'status-change'
   )
-  return salesStore.sellingStatusOptions.filter((opt) =>
-    availableStatuses.includes(opt.value as SellingStatusString)
-  )
+  return salesStore.sellingStatusOptions.map((opt) => ({
+    ...opt,
+    disabled: !availableStatuses.includes(opt.value as SellingStatusString),
+  }))
 })
 
-// Note: getTargetStatus logic is now handled in validateStatusForStatusChange
-// This function is kept for backward compatibility but validation uses utility function
+// Computed for showing slip upload (from ModalEditSale)
+const showSlipUpload = computed(() => {
+  const pm = props.currentData.paymentMethod
+  const statusStr = currentStatusString.value
 
-// Handlers
-const handleSlipStatusChanged = (status: boolean) => {
-  hasSlip.value = status
-}
-
-const handleShippingSlipStatusChanged = (status: boolean) => {
-  hasShippingSlip.value = status
-}
-
-const handleSlipUploaded = (saleId: string) => {
-  if (!saleId || saleId !== props.currentData._id) return
-  // Auto-change logic is handled in getTargetStatus
-}
-
-const updateBankCode = (bankCode: string) => {
-  saleForm.value.bankCode = bankCode
-}
-
-const updateProductForIndex = (index: number, value: string | Record<string, any>) => {
-  // TreeSelect ส่ง value เป็น string หรือ object
-  let selectedId: string
-  if (typeof value === 'string') {
-    selectedId = value
-  } else if (value && typeof value === 'object') {
-    selectedId = Object.keys(value)[0] || ''
-  } else {
-    return
+  // สำหรับ cash: ซ่อนเมื่อ deliveryStatus = preparing
+  if (pm === 'cash' && props.currentData.deliveryStatus === 'preparing') {
+    return false
   }
 
-  if (!selectedId) return
-
-  // ตรวจสอบว่าเป็น foodSale หรือ product ปกติ
-  const foodSale = foodSales.value?.find((fs) => fs._id === selectedId)
-
-  if (foodSale) {
-    // กรณีอาหารแบ่งขาย
-    const productData = foodSale.product
-    saleForm.value.products[index] = {
-      id: productData._id,
-      category: productData.category || '',
-      price: foodSale.customerPriceKilo,
-      quantity: saleForm.value.products[index].quantity || 1,
-    }
-  } else {
-    // กรณีสินค้าปกติ
-    const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
-
-    if (!product) return
-
-    // หาราคาตาม category
-    let price = product.price || 0
-    if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
-      price = product.food.customerPrice
-    }
-
-    saleForm.value.products[index] = {
-      id: product._id,
-      category: product.category?._id || '',
-      price: price,
-      quantity: saleForm.value.products[index].quantity || 1,
-    }
+  // สำหรับ cod: ไม่ต้องแสดง
+  if (pm === 'cod') {
+    return false
   }
-}
 
-const addProduct = () => {
-  if (saleForm.value.products.length < 10) {
-    saleForm.value.products.push({
-      id: '',
-      quantity: 1,
-      category: '',
-      price: 0,
-    })
+  if (pm === 'credit') {
+    return false
   }
-}
 
-const removeProduct = (index: number) => {
-  if (saleForm.value.products.length > 1) {
-    saleForm.value.products.splice(index, 1)
+  // สำหรับ order: แสดงเมื่อ status = wait_payment หรือมากกว่า
+  if (pm === 'order') {
+    const currentStepIndex = getStatusStepIndex(statusStr)
+    const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+    return currentStepIndex >= waitPaymentStepIndex
   }
-}
 
+  // สำหรับ transfer/card: แสดงเมื่อ status >= wait_payment
+  const currentStepIndex = getStatusStepIndex(statusStr)
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  return currentStepIndex >= waitPaymentStepIndex
+})
+
+// Computed for showing shipping slip upload (from ModalEditSale)
+const showShippingSlipUpload = computed(() => {
+  // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
+  const statusStr = currentStatusString.value
+  const currentStepIndex = getStatusStepIndex(statusStr)
+  const preparingStepIndex = getStatusStepIndex('preparing')
+  return currentStepIndex >= preparingStepIndex
+})
+
+// Selected member details (from ModalEditSale)
+const selectedMemberDetails = computed(() => {
+  if (!saleForm.value.user || !members.value) return null
+  return members.value.find((m) => m._id === saleForm.value.user)
+})
+
+// Computed properties for showing sections (from ModalEditSale)
+const showProductSelection = computed(() => {
+  return true // แสดงได้เสมอ แต่จะควบคุมด้วยเงื่อนไขอื่น
+})
+
+const showCustomProducts = computed(() => {
+  // แสดงเฉพาะเมื่อ paymentMethod === 'order' และไม่มีสินค้าปกติ
+  const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
+  return props.currentData.paymentMethod === 'order' && !hasProducts
+})
+
+const showDeliveryStatus = computed(() => {
+  return props.currentData.paymentMethod === 'cash'
+})
+
+const showPaymentDueDate = computed(() => {
+  return props.currentData.paymentMethod === 'credit'
+})
+
+const showBankSelection = computed(() => {
+  const pm = props.currentData.paymentMethod
+  // สำหรับ order: แสดงเมื่อมีสินค้า
+  if (pm === 'order') {
+    const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
+    return hasProducts
+  }
+  // สำหรับ transfer/card: แสดงเสมอ
+  return pm === 'transfer' || pm === 'card'
+})
+
+const showShippingAddress = computed(() => {
+  const pm = props.currentData.paymentMethod
+  if (pm === 'cash') {
+    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
+    return props.currentData.deliveryStatus === 'preparing'
+  }
+  if (pm === 'order') {
+    // สำหรับ order: แสดงเมื่อมีสินค้า
+    const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
+    return hasProducts
+  }
+  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
+  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
+})
+
+const showAdditionalInfo = computed(() => {
+  // ซ่อนเมื่อ paymentMethod = cash และ deliveryStatus = received
+  if (
+    props.currentData.paymentMethod === 'cash' &&
+    props.currentData.deliveryStatus === 'received'
+  ) {
+    return false
+  }
+  return true
+})
+
+// Total amount computed (from ModalEditSale)
 const totalAmountComputed = computed(() => {
   return (
     saleForm.value.products?.reduce((sum, product) => {
@@ -301,16 +313,135 @@ watch(
   { immediate: true }
 )
 
-const updateDeposit = (deposit: number) => {
-  saleForm.value.deposit = deposit
+// Handlers
+const handleSlipStatusChanged = (status: boolean) => {
+  hasSlip.value = status
 }
 
-const updateDiscount = (discount: number) => {
-  saleForm.value.discount = discount
+const handleShippingSlipStatusChanged = (status: boolean) => {
+  hasShippingSlip.value = status
 }
 
-const updateDeliveryNo = (deliveryNo: number) => {
-  saleForm.value.deliveryNo = deliveryNo
+// Slip upload handlers (from ModalEditSale)
+const handleSlipUploaded = async (saleId: string) => {
+  if (!saleId || saleId !== props.currentData._id) return
+
+  // ตรวจสอบว่าสถานะปัจจุบันเป็น wait_payment หรือไม่
+  const currentStatusStr = currentStatusString.value
+  if (currentStatusStr !== 'wait_payment') return
+
+  // ตรวจสอบว่ามีสลิปแล้วจริงๆ โดย query ด้วย saleId
+  try {
+    const apiUrl = (import.meta as any).env.VITE_API_URL as string
+    const slipUrl = `${apiUrl}/erp/download/slip?saleId=${saleId}`
+
+    // ตรวจสอบว่ามีสลิปจริงๆ หรือไม่
+    const slipExists = await new Promise<boolean>((resolve) => {
+      const img = new Image()
+      const timeout = setTimeout(() => {
+        resolve(false)
+      }, 5000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        resolve(true)
+      }
+
+      img.onerror = () => {
+        clearTimeout(timeout)
+        resolve(false)
+      }
+
+      img.src = slipUrl
+    })
+
+    // ถ้ามีสลิปแล้ว ให้เปลี่ยนสถานะเป็น preparing
+    if (slipExists) {
+      // อัพเดทสถานะเป็น preparing
+      const payload: IUpdateSalesPayload = {
+        ...saleForm.value,
+        sellingStatus: SellingStatus.preparing,
+      }
+
+      updateSalesStatus(payload)
+    }
+  } catch (error) {
+    console.error('Error checking slip:', error)
+  }
+}
+
+const handleSlipPendingUpload = (isPending: boolean) => {
+  hasPendingSlipUpload.value = isPending
+}
+
+const handleShippingSlipPendingUpload = (isPending: boolean) => {
+  hasPendingShippingSlipUpload.value = isPending
+}
+
+const handleSkipShippingSlipUploadChanged = (skip: boolean) => {
+  skipShippingSlipUpload.value = skip
+}
+
+const handleRequireShippingSlipUploadChanged = (require: boolean) => {
+  requireShippingSlipUpload.value = require
+}
+
+const handleDeliveryChanged = (delivery: string) => {
+  saleForm.value.delivery = delivery
+}
+
+// Handler สำหรับเมื่ออัพโหลด shipping slip สำเร็จ (from ModalEditSale)
+const handleShippingSlipUploaded = async (saleId: string) => {
+  if (!saleId || saleId !== props.currentData._id) return
+
+  const currentStatusStr = currentStatusString.value
+  if (currentStatusStr !== 'preparing') return
+
+  // ตรวจสอบว่ามี shipping slip แล้วจริงๆ
+  try {
+    const apiUrl = (import.meta as any).env.VITE_API_URL as string
+    const extensions = ['jpg', 'jpeg', 'png']
+    let found = false
+
+    for (const ext of extensions) {
+      const shippingSlipUrl = `${apiUrl}/erp/download/shipping-slip?saleId=${saleId}&ext=${ext}`
+      const slipExists = await new Promise<boolean>((resolve) => {
+        const img = new Image()
+        const timeout = setTimeout(() => {
+          resolve(false)
+        }, 5000)
+
+        img.onload = () => {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+
+        img.onerror = () => {
+          clearTimeout(timeout)
+          resolve(false)
+        }
+
+        img.src = shippingSlipUrl
+      })
+
+      if (slipExists) {
+        found = true
+        break
+      }
+    }
+
+    // ถ้ามี shipping slip แล้ว ให้เปลี่ยนสถานะเป็น shipping
+    if (found) {
+      const payload: IUpdateSalesPayload = {
+        ...saleForm.value,
+        sellingStatus: SellingStatus.shipping,
+      }
+
+      updateSalesStatus(payload)
+    }
+  } catch (error) {
+    console.error('Error checking shipping slip:', error)
+  }
 }
 
 const handleClose = () => {
@@ -351,6 +482,12 @@ const resetForm = () => {
   hasShippingSlip.value = false
   totalAmount.value = 0
   isSubmitting.value = false
+  // Reset slip upload states (from ModalEditSale)
+  finalSaleStatus.value = null
+  hasPendingSlipUpload.value = false
+  hasPendingShippingSlipUpload.value = false
+  skipShippingSlipUpload.value = false
+  requireShippingSlipUpload.value = true
 }
 
 // Watch for dialog visibility and props changes
@@ -412,18 +549,15 @@ watch(
   { immediate: true }
 )
 
-// Submit handler
+// Submit handler (from ModalEditSale)
 const handleSubmit = () => {
   isSubmitting.value = true
 
-  const currentStatusString =
-    typeof props.currentData.sellingStatus === 'number'
-      ? convertStatusNumberToString(props.currentData.sellingStatus)
-      : props.currentStatus
+  const currentStatusStr = currentStatusString.value
   const selectedStatusString =
     typeof saleForm.value.sellingStatus === 'number'
       ? convertStatusNumberToString(saleForm.value.sellingStatus)
-      : (saleForm.value.sellingStatus as string) || currentStatusString
+      : (saleForm.value.sellingStatus as string) || currentStatusStr
 
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
@@ -435,7 +569,7 @@ const handleSubmit = () => {
     hasBankInfo: !!saleForm.value.bankCode,
     hasSlip: hasSlip.value,
     hasShippingSlip: hasShippingSlip.value,
-    currentStatus: currentStatusString as SellingStatusString,
+    currentStatus: currentStatusStr as SellingStatusString,
     mode: 'status-change',
   })
 
@@ -448,36 +582,149 @@ const handleSubmit = () => {
     return
   }
 
-  // แปลง finalStatus จาก string เป็น number
-  const finalStatusNumber = convertStatusStringToNumber(validationResult.finalStatus)
+  // ตรวจสอบว่ามี pending upload หรือไม่
+  if (hasPendingSlipUpload.value) {
+    toast.error('กรุณากด ยืนยันการอัปโหลด')
+    isSubmitting.value = false
+    return
+  }
 
-  // Use final status from validation result
-  updateSalesStatus({
+  if (hasPendingShippingSlipUpload.value) {
+    toast.error('กรุณากด ยืนยันการอัปโหลด')
+    isSubmitting.value = false
+    return
+  }
+
+  // ตรวจสอบ shipping slip validation
+  if (
+    requireShippingSlipUpload.value &&
+    !skipShippingSlipUpload.value &&
+    !hasShippingSlip.value &&
+    currentStatusStr === 'preparing'
+  ) {
+    toast.error('กรุณาอัพโหลดสลิปการจัดส่งหรือเลือกข้ามการอัพโหลด')
+    isSubmitting.value = false
+    return
+  }
+
+  let finalStatus: SellingStatus
+
+  // ตรวจสอบ currentStatus step เพื่อป้องกันไม่ให้ย้อนกลับ
+  const currentStepIndex = getStatusStepIndex(currentStatusStr)
+  const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
+  const preparingStepIndex = getStatusStepIndex('preparing')
+
+  // Logic สำหรับคำนวณ finalStatus ตาม paymentMethod และ currentStatus (from ModalEditSale)
+  const paymentMethod = props.currentData.paymentMethod
+
+  if (paymentMethod === 'order') {
+    // Order: ถ้า currentStatus >= wait_payment ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= waitPaymentStepIndex) {
+      finalStatus =
+        typeof props.currentData.sellingStatus === 'number'
+          ? props.currentData.sellingStatus
+          : convertStatusStringToNumber(currentStatusStr)
+    } else {
+      // ถ้ามีสินค้า + bankCode + shippingAddress → wait_payment
+      if (hasValidProducts && saleForm.value.bankCode) {
+        finalStatus = SellingStatus.wait_payment
+      } else {
+        finalStatus = SellingStatus.order
+      }
+    }
+  } else if (paymentMethod === 'cash') {
+    // Cash: ตาม deliveryStatus
+    if (props.currentData.deliveryStatus === 'received') {
+      finalStatus = SellingStatus.received
+    } else {
+      finalStatus = SellingStatus.preparing
+    }
+  } else if (paymentMethod === 'credit') {
+    // Credit: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.currentData.sellingStatus === 'number'
+          ? props.currentData.sellingStatus
+          : convertStatusStringToNumber(currentStatusStr)
+    } else {
+      finalStatus = SellingStatus.preparing
+    }
+  } else if (paymentMethod === 'transfer' || paymentMethod === 'card') {
+    // Transfer/Card: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.currentData.sellingStatus === 'number'
+          ? props.currentData.sellingStatus
+          : convertStatusStringToNumber(currentStatusStr)
+    } else {
+      finalStatus = SellingStatus.wait_payment
+    }
+  } else if (paymentMethod === 'cod') {
+    // COD: ถ้า currentStatus >= preparing ให้คงสถานะเดิมไว้
+    if (currentStepIndex >= preparingStepIndex) {
+      finalStatus =
+        typeof props.currentData.sellingStatus === 'number'
+          ? props.currentData.sellingStatus
+          : convertStatusStringToNumber(currentStatusStr)
+    } else {
+      finalStatus = SellingStatus.preparing
+    }
+  } else {
+    // Default: ใช้ validation result
+    finalStatus = convertStatusStringToNumber(validationResult.finalStatus)
+  }
+
+  // ถ้า currentStatus เป็น preparing และมี shipping slip หรือเลือกข้าม → shipping
+  if (currentStatusStr === 'preparing' && (hasShippingSlip.value || skipShippingSlipUpload.value)) {
+    finalStatus = SellingStatus.shipping
+  }
+
+  // ถ้า currentStatus เป็น shipping → ยังคงเป็น shipping (ไม่เปลี่ยน)
+  // แต่ถ้ามี finalSaleStatus ให้ใช้ finalSaleStatus แทน
+  if (currentStatusStr === 'shipping') {
+    if (finalSaleStatus.value === 'received') {
+      finalStatus = SellingStatus.received
+    } else if (finalSaleStatus.value === 'damaged') {
+      finalStatus = SellingStatus.damaged
+    } else {
+      finalStatus = SellingStatus.shipping
+    }
+  }
+
+  // Prepare payload
+  const payload: IUpdateSalesPayload = {
     ...saleForm.value,
-    sellingStatus: finalStatusNumber,
-  })
+    sellingStatus: finalStatus,
+  }
+
+  updateSalesStatus(payload)
 }
 
-// Mutation
+// Mutation (from ModalEditSale)
 const queryClient = useQueryClient()
 const { mutate: updateSalesStatus } = useMutation({
   mutationFn: (payload: IUpdateSalesPayload) => salesStore.onUpdateSales(payload),
-  onSuccess: (data: { data: { modifiedCount: number } }, variables: IUpdateSalesPayload) => {
-    if (data.data.modifiedCount > 0) {
-      toast.success('บันทึกข้อมูลสำเร็จ')
+  onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
+    if ((data as { data: { modifiedCount: number } }).data) {
+      toast.success('เปลี่ยนสถานะการขายสำเร็จ')
 
-      // Check if should update member status and deduct stock
       const statusString =
         typeof variables.sellingStatus === 'number'
           ? convertStatusNumberToString(variables.sellingStatus)
           : variables.sellingStatus
-      const targetStepOrder =
-        salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder
-      const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
 
-      if (targetStepOrder && targetStepOrder >= preparingStepOrder) {
-        // A. Update member status, purchaseHistory และ customerLevel ในครั้งเดียว
+      // ตรวจสอบ status เดิมเพื่อป้องกันการตัดสต็อกซ้ำ
+      const previousStatusString = currentStatusString.value
+      const previousStepIndex = getStatusStepIndex(previousStatusString)
+      const preparingStepIndex = getStatusStepIndex('preparing')
+
+      if (
+        salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
+        salesStore.statusWorkflow['preparing'].stepOrder
+      ) {
+        // A. อัพเดทสถานะสมาชิก, purchaseHistory และ customerLevel ในครั้งเดียว
         // ใช้ฟังก์ชันรวมเพื่อป้องกัน race condition
+        const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
         memberStatusUpdate.updateMemberStatusAndPurchaseHistory(
           variables,
           members.value,
@@ -488,9 +735,9 @@ const { mutate: updateSalesStatus } = useMutation({
           }
         )
 
-        // B. Deduct stock when status >= preparing
-        // ตัดสต็อกเมื่อ status >= preparing
-        if (productsData.value) {
+        // B. ตัดสต็อกสินค้า - ตัดเฉพาะเมื่อ status เดิมน้อยกว่า preparing
+        // เพื่อป้องกันการตัดสต็อกซ้ำเมื่อเปลี่ยนจาก preparing เป็น shipping
+        if (productsData.value && previousStepIndex < preparingStepIndex) {
           executeStockDeduction(variables, productsData.value, updateProduct, (warning) =>
             toast.warning(warning)
           )
@@ -502,7 +749,7 @@ const { mutate: updateSalesStatus } = useMutation({
       emit('update:visible', false)
       resetForm()
     } else {
-      toast.error('บันทึกข้อมูลไม่สำเร็จ')
+      toast.error('เปลี่ยนสถานะการขายไม่สำเร็จ')
       isSubmitting.value = false
     }
   },
@@ -510,7 +757,7 @@ const { mutate: updateSalesStatus } = useMutation({
     console.error(error)
     const errorMessage =
       (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-      'บันทึกข้อมูลไม่สำเร็จ'
+      'เปลี่ยนสถานะการขายไม่สำเร็จ'
     toast.error(errorMessage)
     isSubmitting.value = false
   },
@@ -520,407 +767,52 @@ const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
 
-// PDF Generation for received/damaged
-const formatDateForReport = (date: Date) => {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+const adminStore = useAdminStore()
+const { data: admins } = useQuery<IAdmin[]>({
+  queryKey: ['get_admins'],
+  queryFn: () => adminStore.onGetAdmins(),
+})
+const findAdminData = (id: string) => {
+  if (!admins.value) return null
+  return admins.value.find((admin) => admin._id === id)
 }
 
-const generateReportHTML = () => {
-  const currentDate = formatDateForReport(new Date())
-  const logoPath = logoIcon
-
-  const handleFindCategory = (id: string | null | undefined): ICategory | undefined => {
-    if (!id) return undefined
-    return categories.value?.find((category) => category._id === id)
-  }
-
-  const findMemberData = (id: string) => {
-    if (!members.value) return null
-    return members.value.find((member) => member._id === id)
-  }
-
-  const totalAmount = props.currentData.products
-    ? props.currentData.products.reduce((total, product) => {
-        return total + (product.price || 0) * (product.quantity || 1)
-      }, 0)
-    : 0
-
-  const finalAmount = totalAmount - props.currentData.discount - props.currentData.deliveryNo
-
-  return `
-    <!DOCTYPE html>
-    <html lang="th">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>รายงานการขาย - ${props.currentData.item}</title>
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        body {
-          font-family: 'Sarabun', sans-serif;
-          margin: 0;
-          padding: 20px;
-          background: white;
-          font-size: 14px;
-        }
-        .report-container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-          padding-bottom: 15px;
-          border-bottom: 2px solid #007bff;
-        }
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .logo-img {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-        .report-title {
-          background: #e3f2fd;
-          padding: 8px 16px;
-          border-radius: 4px;
-          text-align: center;
-          font-weight: 600;
-          color: #1976d2;
-          font-size: 16px;
-          margin: 0 auto;
-        }
-        .step-timeline {
-          margin: 20px 0;
-          padding: 15px;
-          background: #f8f9fa;
-          border-radius: 8px;
-        }
-        .step-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 0;
-          border-left: 3px solid #ddd;
-          padding-left: 15px;
-          margin-left: 10px;
-        }
-        .step-item.completed {
-          border-left-color: #28a745;
-        }
-        .step-item.current {
-          border-left-color: #007bff;
-          font-weight: 600;
-        }
-        .items-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-          margin: 20px 0;
-        }
-        .items-table th,
-        .items-table td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        .items-table th {
-          background: #f8f9fa;
-          font-weight: 600;
-        }
-        .summary-section {
-          text-align: right;
-          font-size: 14px;
-          width: 240px;
-          margin-left: auto;
-          padding: 12px;
-          background: #fff;
-        }
-        .summary-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          margin-bottom: 8px;
-          padding: 0 5px;
-        }
-        .summary-total {
-          font-weight: 600;
-          font-size: 16px;
-          border-top: 2px solid #333;
-          padding-top: 10px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="report-container">
-        <div class="header">
-          <div class="logo-section">
-            <img src="${logoPath}" alt="Logo" class="logo-img" onerror="this.style.display='none'">
-            <div>
-              <div style="font-size: 16px; font-weight: 600;">INTER FISH FARM</div>
-              <div style="font-size: 12px; color: #666;">อินเตอร์ ฟิชฟาร์ม</div>
-            </div>
-          </div>
-          <div class="report-title">รายงานการขาย</div>
-          <div style="text-align: right; font-size: 13px;">
-            <div style="font-weight: 600;">ห้างหุ้นส่วนจำกัด อินเตอร์ ฟิช ฟาร์ม</div>
-            <div style="font-size: 12px; color: #666;">Inter Fish Farm Part., Ltd</div>
-            <div style="margin-top: 10px;">รหัสรายการ: <strong>${
-              props.currentData.item
-            }</strong></div>
-            <div>วันที่: <strong>${currentDate}</strong></div>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 20px; background: #f8f9fa; padding: 12px 15px; border-radius: 4px;">
-          <div style="font-weight: 600; margin-bottom: 8px;">ข้อมูลลูกค้า</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 15px; font-size: 13px;">
-            <div><strong>ชื่อลูกค้า:</strong> ${
-              findMemberData(props.currentData.user)?.name ||
-              findMemberData(props.currentData.user)?.displayName ||
-              '-'
-            }</div>
-            <div><strong>รหัส:</strong> ${findMemberData(props.currentData.user)?.code || '-'}</div>
-            <div><strong>ที่อยู่:</strong> ${
-              findMemberData(props.currentData.user)?.address || '-'
-            }, ${
-    memberStore.provinceOptions.find(
-      (option) => option.value === findMemberData(props.currentData.user)?.province
-    )?.label || '-'
-  }</div>
-          </div>
-        </div>
-
-        <div class="step-timeline">
-          <div style="font-weight: 600; margin-bottom: 10px;">ขั้นตอนการขาย</div>
-          ${allSteps.value
-            .map((step, index) => {
-              const isCompleted = isStepCompleted(index)
-              const isCurrent = isStepCurrent(index)
-              return `
-            <div class="step-item ${isCompleted ? 'completed' : isCurrent ? 'current' : ''}">
-              <i class="${step.icon}" style="color: ${
-                isCompleted ? '#28a745' : isCurrent ? '#007bff' : '#999'
-              }"></i>
-              <span>${step.label}</span>
-              ${
-                isCurrent
-                  ? '<span style="color: #007bff; font-weight: 600;">(ขั้นตอนปัจจุบัน)</span>'
-                  : ''
-              }
-            </div>
-          `
-            })
-            .join('')}
-        </div>
-
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th style="width: 50px;">ลำดับ</th>
-              <th>รายการ</th>
-              <th class="text-center" style="width: 80px;">จำนวน</th>
-              <th class="text-right" style="width: 120px;">ราคา/หน่วย</th>
-              <th class="text-right" style="width: 120px;">จำนวนเงิน</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${props.currentData.products
-              ?.map((product, index) => {
-                const productData = productsData.value?.find((p) => p._id === product.id)
-                const category = handleFindCategory(product.category)
-                return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>
-                  <div style="font-weight: 600;">${product.name || productData?.name || '-'}</div>
-                  <div style="font-size: 12px; color: #666;">หมวดหมู่: ${
-                    category?.name || '-'
-                  }</div>
-                </td>
-                <td class="text-center">${product.quantity || 1}</td>
-                <td class="text-right">${formatCurrency(product.price || 0)}</td>
-                <td class="text-right">${formatCurrency(
-                  (product.price || 0) * (product.quantity || 1)
-                )}</td>
-              </tr>
-            `
-              })
-              .join('')}
-          </tbody>
-        </table>
-
-        <div class="summary-section">
-          <div class="summary-row">
-            <span>ยอดรวม:</span>
-            <span>${formatCurrency(totalAmount)}</span>
-          </div>
-          <div class="summary-row">
-            <span>ค่าส่ง:</span>
-            <span>${formatCurrency(props.currentData?.deliveryNo || 0)}</span>
-          </div>
-          <div class="summary-row">
-            <span>ส่วนลด:</span>
-            <span>${formatCurrency(props.currentData.discount || 0)}</span>
-          </div>
-          <div class="summary-row summary-total">
-            <span>จำนวนเงินรวมทั้งสิ้น:</span>
-            <span>${formatCurrency(finalAmount)}</span>
-          </div>
-        </div>
-
-        <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-          <div style="font-weight: 600; margin-bottom: 10px;">ข้อมูลการชำระเงิน</div>
-          <div style="font-size: 13px;">
-            <div>วิธีการชำระเงิน: ${
-              props.currentData.payment === 'transfer' ? 'โอนเงิน' : 'อื่นๆ'
-            }</div>
-            ${
-              props.currentData.bankCode
-                ? `<div>ธนาคาร: ${
-                    BankData[props.currentData.bankCode]?.name || props.currentData.bankCode
-                  }</div>`
-                : ''
-            }
-            ${
-              props.currentData.bankAccount
-                ? `<div>เลขบัญชี: ${props.currentData.bankAccount}</div>`
-                : ''
-            }
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `
+const findProvinceData = (id: string) => {
+  if (!memberStore.provinceOptions) return null
+  return memberStore.provinceOptions.find((province) => province.value === id)
 }
 
-const handleDownloadPDF = async () => {
-  try {
-    const reportContent = generateReportHTML()
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '800px'
-    iframe.style.height = '1200px'
-    iframe.style.border = 'none'
-    iframe.style.opacity = '0'
-    iframe.style.pointerEvents = 'none'
-    document.body.appendChild(iframe)
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
-    if (!iframeDoc) {
-      document.body.removeChild(iframe)
-      throw new Error('Cannot access iframe document')
-    }
-
-    iframeDoc.open()
-    iframeDoc.write(reportContent)
-    iframeDoc.close()
-
-    await new Promise((resolve) => {
-      iframe.onload = resolve
-      setTimeout(resolve, 1000)
-    })
-
-    const images = iframeDoc.querySelectorAll('img')
-    const imagePromises = Array.from(images).map((img) => {
-      return new Promise((resolve) => {
-        if (img.complete) {
-          resolve(true)
-        } else {
-          img.onload = () => resolve(true)
-          img.onerror = () => resolve(true)
-          setTimeout(() => resolve(true), 2000)
-        }
-      })
-    })
-    await Promise.all(imagePromises)
-
-    try {
-      const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: 800,
-        height: iframeDoc.body.scrollHeight,
-      })
-
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const imgData = canvas.toDataURL('image/png')
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      pdf.save(`Report-${props.currentData.item}.pdf`)
-      document.body.removeChild(iframe)
-    } catch {
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      await pdf.html(iframeDoc.body, {
-        callback: (doc) => {
-          doc.save(`Report-${props.currentData.item}.pdf`)
-          document.body.removeChild(iframe)
-        },
-        x: 10,
-        y: 10,
-        width: 190,
-        windowWidth: 800,
-        html2canvas: {
-          scale: 0.5,
-          useCORS: true,
-        },
-      })
-    }
-  } catch (error) {
-    console.error('Error generating PDF:', error)
-    toast.error('เกิดข้อผิดพลาดในการสร้าง PDF')
-  }
+const updateDeposit = (deposit: number) => {
+  saleForm.value.deposit = deposit
 }
 
-// Check if should show form based on current status
-const showFormForCurrentStatus = computed(() => {
-  const status = props.currentStatus
-  return (
-    status === 'order' ||
-    status === 'wait_payment' ||
-    status === 'preparing' ||
-    status === 'shipping'
-  )
+const updateDiscount = (discount: number) => {
+  saleForm.value.discount = discount
+}
+
+const updateDeliveryNo = (deliveryNo: number) => {
+  saleForm.value.deliveryNo = deliveryNo
+}
+
+const readOnly = computed(() => {
+  return currentStatusString.value === 'preparing' || currentStatusString.value === 'received' || currentStatusString.value === 'shipping' || currentStatusString.value === 'damaged'
 })
 
-// Check if should show report view
-const showReportView = computed(() => {
-  return props.currentStatus === 'received' || props.currentStatus === 'damaged'
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+const addProduct = () => {
+  if (saleForm.value.products.length < 10) {
+    // ถ้ามี customProducts ให้ clear ออก
+    if (customProducts.value.length > 0) {
+      customProducts.value = []
+    }
+    saleForm.value.products.push({ id: '', quantity: 1, category: '', price: 0 })
+  } else {
+    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
+  }
+}
+
+const canEditProducts = computed(() => {
+  return canEditField('products', currentStatusString.value as SellingStatusString)
 })
 </script>
 
@@ -929,145 +821,112 @@ const showReportView = computed(() => {
     :visible="visible"
     @update:visible="handleClose"
     modal
-    :style="{ width: showReportView ? '70rem' : '65rem' }"
-    :breakpoints="{ '1199px': '95vw', '575px': '95vw' }"
+    :style="{ width: '50rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '99vw' }"
     :pt="{
-      header: 'px-6 py-5',
-      footer: 'px-6 py-4',
-      content: 'px-6 py-0',
+      header: 'p-4',
+      footer: 'p-4',
     }"
     class="status-manager-dialog"
   >
     <template #header>
-      <div class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
-          >
-            <i class="pi pi-sync text-white text-xl"></i>
-          </div>
-          <div>
-            <h3 class="text-xl font-bold text-gray-900">เปลี่ยนขั้นตอนการขาย</h3>
-            <p class="text-sm text-gray-500 mt-0.5">
-              รายการ: <span class="font-semibold text-gray-700">{{ orderNumber }}</span>
-            </p>
-          </div>
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+        >
+          <i class="pi pi-arrow-right-arrow-left text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold! text-gray-800">เปลี่ยนสถานะการขาย</h3>
+          <p class="text-sm text-gray-600">
+            รายการ: <span class="font-semibold mr-2">{{ orderNumber }}</span>
+            <Tag
+              :value="currentStatusInfo?.label"
+              :severity="currentStatusInfo?.color"
+              size="small"
+              class="text-xs"
+            />
+          </p>
         </div>
       </div>
     </template>
 
-    <div v-if="showReportView" class="space-y-4">
-      <!-- Report View for received/damaged -->
-      <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-        <div class="text-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">รายงานการขาย</h2>
-          <p class="text-gray-600">รายการ: {{ currentData.item }}</p>
-          <Tag
-            :value="currentStatusInfo?.label"
-            :severity="currentStatusInfo?.color"
-            size="large"
-            class="mt-3"
-          />
-        </div>
-
-        <!-- Step Timeline -->
-        <div class="bg-white rounded-lg p-4 mb-6 border border-gray-200">
-          <h4 class="font-semibold text-gray-900 mb-4">ขั้นตอนการขาย</h4>
-          <div class="space-y-2">
+    <div class="space-y-4">
+      <!-- Customer Information -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <!-- Selected Member Details -->
+        <div
+          v-if="selectedMemberDetails"
+          class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg"
+        >
+          <div class="flex items-center gap-3">
             <div
-              v-for="(step, index) in allSteps"
-              :key="step.key"
-              :class="`flex items-center gap-3 p-3 rounded-lg ${
-                isStepCompleted(index)
-                  ? 'bg-green-50 border border-green-200'
-                  : isStepCurrent(index)
-                  ? 'bg-blue-50 border-2 border-blue-300'
-                  : 'bg-gray-50 border border-gray-200'
-              }`"
+              class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center"
             >
-              <i
-                :class="`${step.icon} ${
-                  isStepCompleted(index)
-                    ? 'text-green-600'
-                    : isStepCurrent(index)
-                    ? 'text-blue-600'
-                    : 'text-gray-400'
-                }`"
-              ></i>
-              <span
-                :class="`${
-                  isStepCompleted(index)
-                    ? 'text-green-700'
-                    : isStepCurrent(index)
-                    ? 'text-blue-700 font-semibold'
-                    : 'text-gray-500'
-                }`"
-              >
-                {{ step.label }}
-              </span>
-              <Tag
-                v-if="isStepCompleted(index)"
-                value="เสร็จสิ้น"
-                severity="success"
-                size="small"
-                class="ml-auto"
-              />
-              <Tag
-                v-else-if="isStepCurrent(index)"
-                value="ขั้นตอนปัจจุบัน"
-                severity="info"
-                size="small"
-                class="ml-auto"
-              />
+              <i class="pi pi-user text-green-600 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <h5 class="font-semibold text-gray-900">
+                {{ selectedMemberDetails.name || selectedMemberDetails.displayName }}
+              </h5>
+              <p class="text-sm text-gray-600">
+                รหัส: <span class="capitalize">{{ selectedMemberDetails.code }}</span> | ชื่อเล่น:
+                {{ selectedMemberDetails.displayName || '-' }} | เบอร์:
+                {{ selectedMemberDetails.phone || '-' }}
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                ที่อยู่: {{ selectedMemberDetails.address || '-' }},
+                {{
+                  selectedMemberDetails.province
+                    ? memberStore.provinceOptions.find(
+                        (option) => option.value === selectedMemberDetails?.province
+                      )?.label
+                    : '-'
+                }}
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- Products List -->
-        <div class="bg-white rounded-lg p-4 border border-gray-200">
-          <h4 class="font-semibold text-gray-900 mb-4">รายการสินค้า</h4>
-          <div class="space-y-3">
-            <div
-              v-for="(product, index) in currentData.products"
-              :key="product.id"
-              class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg"
-            >
-              <div
-                class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0"
-              >
-                <i class="pi pi-box text-gray-400 text-2xl"></i>
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-gray-900">
-                  {{ product.name || `สินค้า ${index + 1}` }}
-                </div>
-                <div class="text-sm text-gray-600">
-                  จำนวน: {{ product.quantity || 1 }} | ราคา:
-                  {{ formatCurrency(product.price || 0) }}
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="font-semibold text-green-600">
-                  {{ formatCurrency((product.price || 0) * (product.quantity || 1)) }}
-                </div>
-              </div>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Status (Read-only) -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะรายการขาย</label>
+            <Select
+              :model-value="
+                typeof saleForm.sellingStatus === 'number'
+                  ? convertStatusNumberToString(saleForm.sellingStatus)
+                  : saleForm.sellingStatus
+              "
+              :options="statusOptionsForSelect"
+              optionLabel="label"
+              optionValue="value"
+              fluid
+              size="small"
+              disabled
+              class="opacity-60"
+            />
+          </div>
+
+          <!-- Seller (Read-only) -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
+            <InputText
+              :value="findAdminData(saleForm.seller)?.name || ''"
+              disabled
+              class="opacity-60"
+              fluid
+              size="small"
+            />
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-else class="space-y-4">
-      <!-- Sale Detail Summary -->
-
-      <SaleDetailSummary
-        :sale-data="currentData"
-        :member="members?.find((m) => m._id === currentData.user)"
-      />
-
-      <!-- Custom Products (for order) -->
+      <!-- Custom Products (for order) - Read-only -->
       <div
-        v-if="currentData.customProducts && currentData.customProducts.length > 0"
+        v-if="
+          showCustomProducts && currentData.customProducts && currentData.customProducts.length > 0
+        "
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -1078,388 +937,346 @@ const showReportView = computed(() => {
           <div
             v-for="(product, index) in currentData.customProducts"
             :key="index"
-            class="p-3 bg-gray-50 rounded-lg border border-gray-200"
+            class="p-3 bg-gray-50 rounded-lg space-y-3"
           >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <span class="text-sm font-medium text-gray-600">ชื่อสินค้า:</span>
-                <span class="text-sm font-semibold text-gray-900 ml-2">{{
-                  product.name || '-'
-                }}</span>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
+                <InputText
+                  :model-value="product.name"
+                  placeholder="ชื่อสินค้า"
+                  fluid
+                  size="small"
+                  disabled
+                  class="opacity-60"
+                />
               </div>
               <div>
-                <span class="text-sm font-medium text-gray-600">จำนวน:</span>
-                <span class="text-sm font-semibold text-gray-900 ml-2">{{
-                  product.quantity || 0
-                }}</span>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
+                <InputNumber
+                  :model-value="product.quantity"
+                  :min="1"
+                  placeholder="จำนวน"
+                  fluid
+                  size="small"
+                  disabled
+                  class="opacity-60"
+                />
               </div>
             </div>
-            <div v-if="product.description">
-              <span class="text-sm font-medium text-gray-600">รายละเอียด:</span>
-              <p class="text-sm text-gray-700 mt-1">{{ product.description }}</p>
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
+              <Textarea
+                :model-value="product.description"
+                placeholder="รายละเอียดสินค้า"
+                rows="3"
+                fluid
+                size="small"
+                disabled
+                class="opacity-60"
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Status Selection for order -->
+      <!-- Product Management - Read-only -->
       <div
-        v-if="
-          (typeof currentData.sellingStatus === 'number'
-            ? convertStatusNumberToString(currentData.sellingStatus)
-            : currentStatus) === 'order'
-        "
-        class="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
+        v-if="showProductSelection"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-blue-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">เลือกขั้นตอนถัดไป</h4>
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <i class="pi pi-box text-blue-600"></i>
+            รายการสินค้า
+          </h4>
+          <Button
+            v-if="canEditProducts"
+            label="เพิ่มสินค้า"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            @click="addProduct"
+            :disabled="saleForm.products.length >= 10"
+          />
         </div>
-        <div class="p-5">
-          <Select
-            :model-value="
-              typeof saleForm.sellingStatus === 'number'
-                ? convertStatusNumberToString(saleForm.sellingStatus)
-                : saleForm.sellingStatus
-            "
-            @update:model-value="
-              (value) => (saleForm.sellingStatus = convertStatusStringToNumber(value))
-            "
-            :options="availableNextStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="เลือกขั้นตอนถัดไป"
+
+        <div class="space-y-4">
+          <ProductItemForm
+            v-for="(product, index) in saleForm.products"
+            :key="index"
+            :product="product"
+            :index="index"
+            :is-submitting="isSubmitting"
+            :products-data="productsData"
+            :can-remove="false"
+            :is-read-only="true"
+          />
+        </div>
+      </div>
+
+      <!-- Payment Calculation - Read-only -->
+      <PaymentCalculationSection
+        :total-amount="totalAmount"
+        :deposit="saleForm.deposit"
+        :discount="saleForm.discount"
+        :delivery-no="saleForm.deliveryNo"
+        :is-submitting="isSubmitting"
+        :read-only="readOnly"
+        @update:deposit="updateDeposit"
+        @update:discount="updateDiscount"
+        @update:delivery-no="updateDeliveryNo"
+      />
+
+      <!-- Additional Info - Read-only -->
+      <div
+        v-if="showAdditionalInfo"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+      >
+        <div class="flex items-center gap-2 mb-4">
+          <i class="pi pi-info-circle text-blue-600"></i>
+          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลเพิ่มเติม</h4>
+        </div>
+
+        <!-- Payment Due Date (for credit) - Read-only -->
+        <div v-if="showPaymentDueDate && currentData.paymentDueDate" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
+          <DatePicker
+            :model-value="new Date(currentData.paymentDueDate)"
+            dateFormat="dd/mm/yy"
+            showIcon
+            iconDisplay="input"
             fluid
             size="small"
-            :invalid="!saleForm.sellingStatus && isSubmitting"
-            class="mt-2"
+            disabled
+            class="opacity-60"
           />
-          <small v-if="!saleForm.sellingStatus && isSubmitting" class="text-red-500 mt-2 block"
-            >กรุณาเลือกขั้นตอนถัดไป</small
-          >
-        </div>
-      </div>
-
-      <!-- Form Section based on current status -->
-      <div v-if="showFormForCurrentStatus" class="space-y-5">
-        <!-- order: Product selection (optional) -->
-        <div
-          v-if="
-            (typeof currentData.sellingStatus === 'number'
-              ? convertStatusNumberToString(currentData.sellingStatus)
-              : currentStatus) === 'order'
-          "
-          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
-        >
-          <div
-            class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-gray-200"
-          >
-            <div class="flex items-center justify-between">
-              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-                <i class="pi pi-box text-blue-600"></i>
-                รายการสินค้า
-              </h4>
-              <Button
-                label="เพิ่มสินค้า"
-                icon="pi pi-plus"
-                severity="success"
-                size="small"
-                @click="addProduct"
-                :disabled="saleForm.products.length >= 10"
-              />
-            </div>
-          </div>
-          <div class="p-5 space-y-4">
-            <ProductItemForm
-              v-for="(product, index) in saleForm.products"
-              :key="index"
-              :product="product"
-              :index="index"
-              :is-submitting="isSubmitting"
-              :products-data="productsData"
-              :is-read-only="false"
-              :can-remove="saleForm.products.length > 1"
-              @update:product="updateProductForIndex"
-              @update:quantity="
-                (idx, qty) => {
-                  if (saleForm.products) saleForm.products[idx].quantity = qty
-                }
-              "
-              @remove="removeProduct"
-            />
-          </div>
         </div>
 
-        <!-- wait_payment: Bank selection + Slip upload (mandatory) + Shipping slip (optional) -->
-        <div v-if="currentStatus === 'wait_payment'" class="space-y-5">
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div
-              class="bg-gradient-to-r from-green-50 to-emerald-50 px-5 py-3 border-b border-gray-200"
-            >
-              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-                <i class="pi pi-credit-card text-green-600"></i>
-                ข้อมูลการชำระเงิน
-              </h4>
-            </div>
-            <div class="p-5 space-y-5">
-              <BankSelectionSection
-                :selected-bank-code="saleForm.bankCode || currentData.bankCode"
-                :is-submitting="isSubmitting"
-                :is-current-bank="currentData.bankCode"
-                :is-current-status="currentStatus"
-                @update:selected-bank-code="updateBankCode"
-              />
-
-              <div class="border-t border-gray-200 pt-5">
-                <SlipUploadSection
-                  :sale-id="currentData._id"
-                  :selected-status="
-                    typeof currentData.sellingStatus === 'number'
-                      ? convertStatusNumberToString(currentData.sellingStatus)
-                      : currentStatus
-                  "
-                  :is-current-status="currentStatus"
-                  :is-submitting="isSubmitting"
-                  @slip-status-changed="handleSlipStatusChanged"
-                  @slip-uploaded="handleSlipUploaded"
-                />
-              </div>
-
-              <div class="border-t border-gray-200 pt-5">
-                <ShippingSlipUploadSection
-                  :sale-id="currentData._id"
-                  :selected-status="
-                    typeof currentData.sellingStatus === 'number'
-                      ? convertStatusNumberToString(currentData.sellingStatus)
-                      : currentStatus
-                  "
-                  :is-current-status="currentStatus"
-                  :is-submitting="isSubmitting"
-                  @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-                />
-              </div>
-            </div>
-          </div>
+        <!-- Delivery Status (for cash) - Read-only -->
+        <div v-if="showDeliveryStatus && currentData.deliveryStatus" class="mt-4">
+          <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
+          <Select
+            :model-value="currentData.deliveryStatus"
+            :options="[
+              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            fluid
+            size="small"
+            disabled
+            class="opacity-60"
+          />
         </div>
 
-        <!-- preparing: Shipping slip upload (mandatory) -->
-        <div
-          v-if="
-            (typeof currentData.sellingStatus === 'number'
-              ? convertStatusNumberToString(currentData.sellingStatus)
-              : currentStatus) === 'preparing'
-          "
-          class="space-y-5"
-        >
-          <div
-            class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200"
-          >
-            <div class="flex items-start gap-3">
-              <div
-                class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
-              >
-                <i class="pi pi-check-circle text-white text-lg"></i>
-              </div>
-              <div class="flex-1">
-                <h4 class="font-semibold text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
-                <p class="text-sm text-green-700">
-                  กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div
-              class="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 border-b border-gray-200"
-            >
-              <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-                <i class="pi pi-truck text-blue-600"></i>
-                ใบเสร็จการขนส่ง
-                <Tag value="บังคับ" severity="danger" size="small" class="ml-2" />
-              </h4>
-            </div>
-            <div class="p-5">
-              <ShippingSlipUploadSection
-                :sale-id="currentData._id"
-                :selected-status="currentStatus"
-                :is-current-status="currentStatus"
-                :is-submitting="isSubmitting"
-                @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-              />
-            </div>
-          </div>
+        <!-- Bank Selection (for transfer/card) - Read-only -->
+        <div v-if="showBankSelection" class="mt-4">
+          <BankSelectionSection
+            :selected-bank-code="saleForm.bankCode || currentData.bankCode || ''"
+            :is-submitting="isSubmitting"
+            :is-current-bank="currentData.bankCode"
+            :is-current-status="currentStatusString"
+            :is-read-only="true"
+          />
         </div>
 
-        <!-- shipping: Select received or damaged -->
-        <div
-          v-if="
-            (typeof currentData.sellingStatus === 'number'
-              ? convertStatusNumberToString(currentData.sellingStatus)
-              : currentStatus) === 'shipping'
-          "
-          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
-        >
-          <div
-            class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-gray-200"
-          >
-            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-              <i class="pi pi-send text-purple-600"></i>
-              สถานะการจัดส่ง
-            </h4>
-          </div>
-          <div class="p-5 space-y-3">
-            <div
-              v-for="option in [
-                {
-                  value: 'received',
-                  label: 'ได้รับสินค้าแล้ว',
-                  icon: 'pi-check-circle',
-                  color: 'success',
-                  description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
-                },
-                {
-                  value: 'damaged',
-                  label: 'สินค้าเสียหาย',
-                  icon: 'pi-times-circle',
-                  color: 'danger',
-                  description: 'สินค้าเสียหายระหว่างการขนส่ง',
-                },
-              ]"
-              :key="option.value"
-              :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                (typeof saleForm.sellingStatus === 'number'
-                  ? convertStatusNumberToString(saleForm.sellingStatus)
-                  : saleForm.sellingStatus) === option.value
-                  ? option.color === 'success'
-                    ? 'border-green-500 bg-green-50 shadow-sm'
-                    : 'border-red-500 bg-red-50 shadow-sm'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`"
-              @click="saleForm.sellingStatus = convertStatusStringToNumber(option.value)"
-            >
-              <div class="flex items-center gap-4">
-                <div
-                  :class="`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                    option.color === 'success' ? 'bg-green-100' : 'bg-red-100'
-                  }`"
-                >
-                  <i
-                    :class="`pi ${option.icon} text-xl ${
-                      option.color === 'success' ? 'text-green-600' : 'text-red-600'
-                    }`"
-                  ></i>
-                </div>
-                <div class="flex-1">
-                  <div class="font-bold text-gray-900 text-lg">{{ option.label }}</div>
-                  <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
-                </div>
-                <div
-                  v-if="
-                    (typeof saleForm.sellingStatus === 'number'
-                      ? convertStatusNumberToString(saleForm.sellingStatus)
-                      : saleForm.sellingStatus) === option.value
-                  "
-                  :class="`w-8 h-8 rounded-full flex items-center justify-center ${
-                    option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
-                  }`"
-                >
-                  <i class="pi pi-check text-white text-sm"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Payment Calculation (for order, wait_payment) -->
-        <div
-          v-if="
-            (typeof currentData.sellingStatus === 'number'
-              ? convertStatusNumberToString(currentData.sellingStatus)
-              : currentStatus) === 'order' ||
-            (typeof currentData.sellingStatus === 'number'
-              ? convertStatusNumberToString(currentData.sellingStatus)
-              : currentStatus) === 'wait_payment'
-          "
-          class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
-        >
-          <div
-            class="bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-3 border-b border-gray-200"
-          >
-            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-              <i class="pi pi-calculator text-amber-600"></i>
-              การคำนวณราคา
-            </h4>
-          </div>
-          <div class="p-5">
-            <PaymentCalculationSection
-              :total-amount="totalAmount"
-              :deposit="saleForm.deposit"
-              :discount="saleForm.discount"
-              :delivery-no="saleForm.deliveryNo"
-              :is-submitting="isSubmitting"
-              :read-only="false"
-              @update:deposit="updateDeposit"
-              @update:discount="updateDiscount"
-              @update:delivery-no="updateDeliveryNo"
-            />
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
-            <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-              <i class="pi pi-file-edit text-gray-600"></i>
-              หมายเหตุ
-            </h4>
-          </div>
-          <div class="p-5">
+        <!-- Shipping Address - Read-only -->
+        <div v-if="showShippingAddress" class="mt-4 space-y-2">
+          <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
+          <div>
             <Textarea
-              v-model="saleForm.note"
-              placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
+              :value="
+                `${currentData.shippingAddress}, ${
+                  findProvinceData(currentData.shippingProvince || '')?.label
+                }` || ''
+              "
               rows="3"
               fluid
               size="small"
+              readonly
+              class="opacity-75"
             />
           </div>
+        </div>
+      </div>
+
+      <!-- Slip Upload Sections (for status change actions) -->
+      <div v-if="showSlipUpload || showShippingSlipUpload" class="space-y-5">
+        <!-- Preparing status info -->
+        <div
+          v-if="
+            currentStatus === 'preparing' ||
+            (typeof saleForm.sellingStatus === 'number'
+              ? convertStatusNumberToString(saleForm.sellingStatus)
+              : saleForm.sellingStatus) === 'preparing'
+          "
+          class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200"
+        >
+          <div class="flex items-start gap-3">
+            <div
+              class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
+            >
+              <i class="pi pi-check-circle text-white text-lg"></i>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
+              <p class="text-sm text-green-700">
+                กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slip Upload Section -->
+        <SlipUploadSection
+          v-if="showSlipUpload"
+          :sale-id="currentData._id || ''"
+          :selected-status="currentStatusString"
+          :is-current-status="currentStatusString"
+          :is-submitting="isSubmitting"
+          @slip-status-changed="handleSlipStatusChanged"
+          @slip-pending-upload="handleSlipPendingUpload"
+          @slip-uploaded="handleSlipUploaded"
+        />
+
+        <!-- Shipping Slip Upload Section -->
+        <ShippingSlipUploadSection
+          v-if="showShippingSlipUpload"
+          :sale-id="currentData._id || ''"
+          :selected-status="currentStatusString"
+          :is-current-status="currentStatusString"
+          :is-submitting="isSubmitting"
+          :skip-upload="skipShippingSlipUpload"
+          :require-upload="requireShippingSlipUpload"
+          :delivery="saleForm.delivery"
+          :is-read-only="currentStatusString === 'received' || currentStatusString === 'damaged'"
+          @shipping-slip-status-changed="handleShippingSlipStatusChanged"
+          @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
+          @shipping-slip-uploaded="handleShippingSlipUploaded"
+          @skip-upload-changed="handleSkipShippingSlipUploadChanged"
+          @require-upload-changed="handleRequireShippingSlipUploadChanged"
+          @delivery-changed="handleDeliveryChanged"
+        />
+      </div>
+
+      <!-- Complete Sale: Select received or damaged -->
+      <div
+        v-if="
+          (typeof saleForm.sellingStatus === 'number'
+            ? convertStatusNumberToString(saleForm.sellingStatus)
+            : saleForm.sellingStatus) === 'shipping' || currentStatus === 'shipping'
+        "
+        class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+      >
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-gray-200">
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="pi pi-send text-purple-600"></i>
+            จบการขาย
+          </h4>
+        </div>
+        <div class="p-5 space-y-3">
+          <div
+            v-for="option in [
+              {
+                value: 'received',
+                label: 'ได้รับสินค้าแล้ว',
+                icon: 'pi-check-circle',
+                color: 'success',
+                description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
+              },
+              {
+                value: 'damaged',
+                label: 'สินค้าเสียหาย',
+                icon: 'pi-times-circle',
+                color: 'danger',
+                description: 'สินค้าเสียหายระหว่างการขนส่ง',
+              },
+            ]"
+            :key="option.value"
+            :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+              finalSaleStatus === option.value
+                ? option.color === 'success'
+                  ? 'border-green-500 bg-green-50 shadow-sm'
+                  : 'border-red-500 bg-red-50 shadow-sm'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`"
+            @click="finalSaleStatus = option.value === 'received' ? 'received' : 'damaged'"
+          >
+            <div class="flex items-center gap-4">
+              <div
+                :class="`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                  option.color === 'success' ? 'bg-green-100' : 'bg-red-100'
+                }`"
+              >
+                <i
+                  :class="`pi ${option.icon} text-xl ${
+                    option.color === 'success' ? 'text-green-600' : 'text-red-600'
+                  }`"
+                ></i>
+              </div>
+              <div class="flex-1">
+                <div class="font-bold text-gray-900 text-lg">{{ option.label }}</div>
+                <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
+              </div>
+              <div
+                v-if="finalSaleStatus === option.value"
+                :class="`w-8 h-8 rounded-full flex items-center justify-center ${
+                  option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
+                }`"
+              >
+                <i class="pi pi-check text-white text-sm"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes - Read-only -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
+          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
+            <i class="pi pi-file-edit text-gray-600"></i>
+            หมายเหตุ
+          </h4>
+        </div>
+        <div class="p-5">
+          <Textarea
+            :model-value="saleForm.note || currentData.note || ''"
+            placeholder="ไม่มีหมายเหตุ"
+            rows="3"
+            fluid
+            size="small"
+            disabled
+            class="opacity-60"
+          />
         </div>
       </div>
     </div>
 
     <template #footer>
-      <div class="flex justify-between items-center gap-3">
+      <div class="flex gap-3 ml-auto">
         <Button
-          v-if="showReportView"
-          label="ดาวน์โหลด PDF"
-          icon="pi pi-file-pdf"
-          @click="handleDownloadPDF"
-          severity="info"
+          label="ปิด"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="handleClose"
           size="small"
-          class="font-semibold"
+          outlined
         />
 
-        <div class="flex gap-3 ml-auto">
-          <Button
-            label="ปิด"
-            icon="pi pi-times"
-            severity="secondary"
-            @click="handleClose"
-            size="small"
-            outlined
-          />
-
-          <Button
-            v-if="showFormForCurrentStatus"
-            label="บันทึกการเปลี่ยนแปลง"
-            icon="pi pi-check"
-            severity="success"
-            @click="handleSubmit"
-            size="small"
-            :loading="isSubmitting"
-            :disabled="isSubmitting"
-            class="font-semibold shadow-md"
-          />
-        </div>
+        <Button
+          v-if="currentStatus !== 'received' && currentStatus !== 'damaged'"
+          label="เปลี่ยนสถานะ"
+          icon="pi pi-check"
+          severity="success"
+          @click="handleSubmit"
+          size="small"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          class="font-semibold shadow-md"
+        />
       </div>
     </template>
   </Dialog>
