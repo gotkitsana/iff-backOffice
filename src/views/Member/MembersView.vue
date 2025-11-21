@@ -331,7 +331,13 @@ const filteredMembersCount = computed(() => {
         >
           <Column field="code" header="รหัสลูกค้า" :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }">
             <template #body="slotProps">
-              <p class="capitalize! text-sm">{{ slotProps.data.code }}</p>
+              <span
+                v-tooltip.top="'คลิกเพื่อแก้ไขข้อมูล'"
+                @click="openEditModal(slotProps.data)"
+                class="lowercase text-sm cursor-pointer text-blue-600 transition-colors duration-200"
+                >
+                {{ slotProps.data.code }}
+              </span>
             </template>
           </Column>
 
