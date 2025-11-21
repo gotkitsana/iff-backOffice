@@ -5,6 +5,7 @@ import {
   type CreateMemberPayload,
   type IMember,
   type UpdateMemberPayload,
+  type ResetPasswordPayload,
 } from '@/stores/member/member'
 import { useMemberInterests } from '@/composables/useMemberInterests'
 import { Dialog, Textarea, Select, InputText, Panel } from 'primevue'
@@ -172,6 +173,8 @@ const closeAddModal = () => {
   newlyAddedPurchaseHistory.value = []
   originalPurchaseHistory.value = []
   editingSaleIds.value.clear()
+  // Reset password fields
+  resetPasswordFields()
   emit('onCloseAddModal')
 }
 
@@ -368,6 +371,37 @@ const updateContact = (index: number, field: 'type' | 'value', value: string | u
   newMember.value.contacts = newMember.value.contacts.map((contact) =>
     contact.index === index ? { ...contact, [field]: value || '' } : contact
   )
+}
+
+// State สำหรับเปลี่ยนรหัสผ่าน
+const newPassword = ref('')
+const confirmPassword = ref('')
+
+// Validation functions สำหรับรหัสผ่าน
+const validatePassword = (password: string) => {
+  const minLength = 8
+  const hasNumbers = /\d/.test(password)
+
+  return {
+    isValid: password.length >= minLength && hasNumbers,
+    minLength: password.length >= minLength,
+    hasNumbers,
+  }
+}
+
+const passwordValidation = computed(() => {
+  if (!newPassword.value) return null
+  return validatePassword(newPassword.value)
+})
+
+const isPasswordFormValid = computed(() => {
+  return passwordValidation.value?.isValid && newPassword.value === confirmPassword.value
+})
+
+// Reset password fields
+const resetPasswordFields = () => {
+  newPassword.value = ''
+  confirmPassword.value = ''
 }
 
 watch(
@@ -672,6 +706,48 @@ const { mutate: mutateUpdate, isPending: isPendingUpdate } = useMutation({
     }
   },
 })
+
+// Mutation สำหรับเปลี่ยนรหัสผ่าน
+const { mutate: mutateResetPassword, isPending: isPendingResetPassword } = useMutation({
+  mutationFn: (payload: ResetPasswordPayload) => memberStore.onResetPassword(payload),
+  onSuccess: (data: { data?: { modifiedCount?: number }; error?: unknown }) => {
+    if (data.data?.modifiedCount && data.data.modifiedCount > 0) {
+      toast.success('รีเซ็ตรหัสผ่านสำเร็จ')
+      // Reset password fields
+      resetPasswordFields()
+    } else {
+      toast.error('รีเซ็ตรหัสผ่านไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน')
+  },
+})
+
+// Handler สำหรับเปลี่ยนรหัสผ่าน
+const handleResetPassword = () => {
+  if (!newPassword.value || !confirmPassword.value) {
+    toast.error('กรุณากรอกรหัสผ่านให้ครบถ้วน')
+    return
+  }
+
+  if (!passwordValidation.value?.isValid) {
+    toast.error('รหัสผ่านไม่ตรงตามเงื่อนไข')
+    return
+  }
+
+  if (newPassword.value !== confirmPassword.value) {
+    toast.error('รหัสผ่านไม่ตรงกัน')
+    return
+  }
+
+  if (!props.data?._id) {
+    toast.error('เกิดข้อผิดพลาดกรุณาลองใหม่อีกครั้ง')
+    return
+  }
+
+  mutateResetPassword({ id: props.data._id, password: newPassword.value })
+}
 
 function buildPrefix() {
   // รหัสลูกค้าใช้ Cs เท่านั้น ไม่เปลี่ยนตามสถานะ
@@ -1440,51 +1516,178 @@ const existingPurchaseHistory = computed(() => {
         <template #header>
           <div class="flex items-center gap-2">
             <i class="pi pi-shield text-amber-600"></i>
-            <span class="font-semibold! text-gray-900">ข้อมูลบัญชีประมูล</span>
+            <span class="font-semibold! text-gray-900">จัดการบัญชีประมูล</span>
           </div>
         </template>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อผู้ใช้</label>
-            <InputText
-              v-model="newMember.username"
-              placeholder="กรุณาใส่ชื่อผู้ใช้"
-              fluid
-              size="small"
-              autocomplete="off"
-            />
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อผู้ใช้</label>
+              <InputText
+                v-model="newMember.username"
+                placeholder="กรุณาใส่ชื่อผู้ใช้"
+                fluid
+                size="small"
+                autocomplete="off"
+              />
+            </div>
+
+            <!-- แสดงรหัสผ่านเฉพาะเมื่อสร้างใหม่ และยังไม่มีประวัติการซื้อ -->
+            <div v-if="!props.data">
+              <label class="block text-sm font-semibold! text-gray-700 mb-1">รหัสผ่าน</label>
+              <Password
+                v-model="newMember.password"
+                placeholder="กรุณาใส่รหัสผ่าน"
+                :feedback="false"
+                toggleMask
+                fluid
+                size="small"
+                autocomplete="new-password"
+              />
+            </div>
+
+            <!-- แสดงสถานะยูสเซอร์เฉพาะเมื่อสร้างใหม่ -->
+            <div v-if="!props.data">
+              <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะยูสเซอร์</label>
+              <Select
+                v-model="newMember.bidder"
+                :options="[
+                  { label: 'เปิดใช้งาน', value: true },
+                  { label: 'ล็อค', value: false },
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="เลือกสถานะยูสเซอร์"
+                fluid
+                size="small"
+              />
+            </div>
           </div>
 
-          <!-- แสดงรหัสผ่านเฉพาะเมื่อสร้างใหม่ และยังไม่มีประวัติการซื้อ -->
-          <div v-if="!props.data">
-            <label class="block text-sm font-semibold! text-gray-700 mb-1">รหัสผ่าน</label>
-            <Password
-              v-model="newMember.password"
-              placeholder="กรุณาใส่รหัสผ่าน"
-              :feedback="false"
-              toggleMask
-              fluid
-              size="small"
-              autocomplete="new-password"
-            />
-          </div>
+          <!-- ส่วนเปลี่ยนรหัสผ่าน (แสดงเฉพาะเมื่อแก้ไข) -->
+          <div v-if="props.data" class="border-t border-gray-200 pt-6">
+            <div class="space-y-4">
+              <!-- Header Section -->
+              <div
+                class="flex items-center space-x-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-100"
+              >
+                <div
+                  class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center"
+                >
+                  <i class="pi pi-key text-white text-lg"></i>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-base font-semibold! text-gray-800">รีเซ็ตรหัสผ่าน</h3>
+                  <p class="text-sm text-gray-600">
+                    {{ props.data.displayName || props.data.name }}
+                  </p>
+                </div>
+              </div>
 
-          <!-- แสดงสถานะยูสเซอร์เฉพาะเมื่อสร้างใหม่ -->
-          <div v-if="!props.data">
-            <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะยูสเซอร์</label>
-            <Select
-              v-model="newMember.bidder"
-              :options="[
-                { label: 'เปิดใช้งาน', value: true },
-                { label: 'ล็อค', value: false },
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกสถานะยูสเซอร์"
-              fluid
-              size="small"
-            />
+              <!-- Password Form -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="block text-sm font-semibold! text-gray-700">รหัสผ่านใหม่ *</label>
+                  <Password
+                    v-model="newPassword"
+                    placeholder="กรุณาใส่รหัสผ่านใหม่"
+                    :feedback="true"
+                    :invalid="!passwordValidation?.isValid && newPassword.length > 0"
+                    toggleMask
+                    fluid
+                    size="small"
+                    :pt="{
+                      input: 'w-full',
+                      panel: 'mt-2',
+                    }"
+                  />
+
+                  <!-- Password Requirements -->
+                  <div v-if="newPassword" class="mt-3 space-y-2">
+                    <p class="text-xs font-medium text-gray-600 mb-2">เงื่อนไขรหัสผ่าน:</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                      <div class="flex items-center space-x-2">
+                        <i
+                          :class="
+                            passwordValidation?.minLength
+                              ? 'pi pi-check text-green-500'
+                              : 'pi pi-times text-red-500'
+                          "
+                        ></i>
+                        <span
+                          :class="passwordValidation?.minLength ? 'text-green-600' : 'text-red-600'"
+                        >
+                          อย่างน้อย 8 ตัวอักษร
+                        </span>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <i
+                          :class="
+                            passwordValidation?.hasNumbers
+                              ? 'pi pi-check text-green-500'
+                              : 'pi pi-times text-red-500'
+                          "
+                        ></i>
+                        <span
+                          :class="
+                            passwordValidation?.hasNumbers ? 'text-green-600' : 'text-red-600'
+                          "
+                        >
+                          ตัวเลข 1 ตัวขึ้นไป
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="block text-sm font-semibold! text-gray-700">ยืนยันรหัสผ่าน *</label>
+                  <Password
+                    v-model="confirmPassword"
+                    placeholder="กรุณายืนยันรหัสผ่าน"
+                    :feedback="false"
+                    :invalid="!!(confirmPassword && newPassword !== confirmPassword)"
+                    toggleMask
+                    fluid
+                    size="small"
+                  />
+                  <small
+                    v-if="confirmPassword && newPassword !== confirmPassword"
+                    class="text-red-500 text-xs"
+                  >
+                    รหัสผ่านไม่ตรงกัน
+                  </small>
+                </div>
+              </div>
+
+              <!-- Warning Message -->
+              <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                  <i class="pi pi-exclamation-triangle text-yellow-600 text-lg mt-0.5"></i>
+                  <div>
+                    <h4 class="text-sm font-medium text-yellow-800">คำเตือน</h4>
+                    <p class="text-xs text-yellow-700 mt-1">
+                      การรีเซ็ตรหัสผ่านจะทำให้ผู้ใช้ไม่สามารถเข้าสู่ระบบด้วยรหัสผ่านเดิมได้
+                      กรุณาแจ้งให้ผู้ใช้ทราบถึงรหัสผ่านใหม่
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Reset Password Button -->
+              <div class="flex justify-end">
+                <Button
+                  label="รีเซ็ตรหัสผ่าน"
+                  icon="pi pi-key"
+                  @click="handleResetPassword"
+                  :loading="isPendingResetPassword"
+                  :disabled="!isPasswordFormValid"
+                  severity="danger"
+                  size="small"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Panel>
