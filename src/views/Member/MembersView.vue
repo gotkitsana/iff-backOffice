@@ -506,7 +506,7 @@ const filteredMembersCount = computed(() => {
           >
             <template #body="slotProps">
               <div class="flex space-x-2 justify-end">
-                <Button
+                <!-- <Button
                   icon="pi pi-eye"
                   size="small"
                   text
@@ -514,7 +514,7 @@ const filteredMembersCount = computed(() => {
                   @click="openViewModal(slotProps.data)"
                   severity="info"
                   v-tooltip.top="'รายละเอียด'"
-                />
+                /> -->
                 <Button
                   icon="pi pi-pencil"
                   size="small"
@@ -524,7 +524,7 @@ const filteredMembersCount = computed(() => {
                   severity="warning"
                   v-tooltip.top="'แก้ไขข้อมูล'"
                 />
-                <Button
+                <!-- <Button
                   icon="pi pi-key"
                   size="small"
                   text
@@ -532,7 +532,7 @@ const filteredMembersCount = computed(() => {
                   severity="help"
                   @click="openResetPasswordModal(slotProps.data)"
                   v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
-                />
+                /> -->
 
                 <Button
                   icon="pi pi-trash"
