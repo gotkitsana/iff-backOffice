@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, provide } from 'vue'
-import { Dialog, Button, Tag, Textarea, Select, InputText, InputNumber, DatePicker } from 'primevue'
+import {
+  Dialog,
+  Button,
+  Tag,
+  Textarea,
+  Select,
+  InputText,
+  InputNumber,
+  DatePicker,
+  Image as PrimeImage,
+  TabView,
+  TabPanel,
+} from 'primevue'
 import { useSalesStore } from '@/stores/sales/sales'
 import type {
   StatusWorkflow,
@@ -20,6 +32,10 @@ import ShippingSlipUploadSection from './ShippingSlipUploadSection.vue'
 import BankSelectionSection from './BankSelectionSection.vue'
 import ProductItemForm from './ProductItemForm.vue'
 import PaymentCalculationSection from './PaymentCalculationSection.vue'
+import StatusStepper from './StatusStepper.vue'
+import SummaryCard from './SummaryCard.vue'
+import formatCurrency from '@/utils/formatCurrency'
+import { getSlipUrl, getShippingSlipUrl } from '@/utils/imageUrl'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import {
   useProductStore,
@@ -32,7 +48,11 @@ import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { useProductSelection } from '@/composables/useProductSelection'
 import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
-import { validateStatusForStatusChange, getAvailableStatuses, canEditField } from '@/utils/salesStatusValidation'
+import {
+  validateStatusForStatusChange,
+  getAvailableStatuses,
+  canEditField,
+} from '@/utils/salesStatusValidation'
 import { useAdminStore, type IAdmin } from '@/stores/admin/admin'
 
 // Props
@@ -285,6 +305,104 @@ const showAdditionalInfo = computed(() => {
     return false
   }
   return true
+})
+
+// Computed properties for showing detailed/summary views based on step
+const showDetailedProducts = computed(() => {
+  const status = currentStatusString.value
+  // แสดงรายละเอียดเต็มรูปแบบสำหรับ order, wait_payment, preparing
+  return status === 'order' || status === 'wait_payment' || status === 'preparing'
+})
+
+const showSummaryProducts = computed(() => {
+  const status = currentStatusString.value
+  // แสดงสรุปสำหรับ shipping, received, damaged
+  return status === 'shipping' || status === 'received' || status === 'damaged'
+})
+
+const showDetailedPayment = computed(() => {
+  const status = currentStatusString.value
+  // แสดงรายละเอียดเต็มรูปแบบสำหรับ wait_payment, preparing
+  return status === 'wait_payment' || status === 'preparing'
+})
+
+const showSummaryPayment = computed(() => {
+  const status = currentStatusString.value
+  // แสดงสรุปสำหรับ shipping, received, damaged
+  return status === 'shipping' || status === 'received' || status === 'damaged'
+})
+
+const showDetailedDocuments = computed(() => {
+  const status = currentStatusString.value
+  // แสดงรายละเอียดเต็มรูปแบบสำหรับ wait_payment, preparing, shipping
+  return status === 'wait_payment' || status === 'preparing' || status === 'shipping'
+})
+
+const showSummaryDocuments = computed(() => {
+  const status = currentStatusString.value
+  // แสดงสรุปสำหรับ received, damaged
+  return status === 'received' || status === 'damaged'
+})
+
+// Computed property สำหรับแสดงแทปแก้ไข
+const showEditTab = computed(() => {
+  const status = currentStatusString.value
+  return status !== 'received' && status !== 'damaged'
+})
+
+// Computed properties สำหรับควบคุมการแสดงผลในแทปแก้ไขตาม step ปัจจุบัน
+const showProductsInEditTab = computed(() => {
+  const status = currentStatusString.value
+  const currentStepOrder = salesStore.statusWorkflow[status as keyof StatusWorkflow]?.stepOrder ?? 0
+  const waitPaymentStepOrder = salesStore.statusWorkflow['wait_payment']?.stepOrder ?? 0
+  // แสดงเมื่อ status = order หรือ wait_payment (ก่อน preparing)
+  return currentStepOrder <= waitPaymentStepOrder
+})
+
+const showShippingAddressInEditTab = computed(() => {
+  const status = currentStatusString.value
+  const pm = props.currentData.paymentMethod
+  // แสดงเมื่อ status = wait_payment และ paymentMethod = order
+  return status === 'wait_payment' && pm === 'order'
+})
+
+const showBankInfoInEditTab = computed(() => {
+  const status = currentStatusString.value
+  const pm = props.currentData.paymentMethod
+  // แสดงเมื่อ status = wait_payment และ paymentMethod = transfer/card/order
+  return status === 'wait_payment' && (pm === 'transfer' || pm === 'card' || pm === 'order')
+})
+
+const showSlipUploadInEditTab = computed(() => {
+  const status = currentStatusString.value
+  const pm = props.currentData.paymentMethod
+  // แสดงเมื่อ status = wait_payment หรือ preparing และ paymentMethod ต้องใช้สลิป
+  if (pm === 'cash' || pm === 'cod' || pm === 'credit') return false
+  return status === 'wait_payment' || status === 'preparing'
+})
+
+const showShippingSlipInEditTab = computed(() => {
+  const status = currentStatusString.value
+  // แสดงเมื่อ status = preparing
+  return status === 'preparing'
+})
+
+const showCompleteSaleInEditTab = computed(() => {
+  const status = currentStatusString.value
+  // แสดงเมื่อ status = shipping
+  return status === 'shipping'
+})
+
+// Computed properties for slip URLs
+const slipUrl = computed(() => {
+  if (!props.currentData._id || !hasSlip.value) return ''
+  return getSlipUrl(props.currentData._id)
+})
+
+const shippingSlipUrl = computed(() => {
+  if (!props.currentData._id || !hasShippingSlip.value) return ''
+  // ลองหา extension หลายแบบ (ใช้ jpg เป็น default)
+  return getShippingSlipUrl(props.currentData._id, 'jpg')
 })
 
 // Total amount computed (from ModalEditSale)
@@ -795,7 +913,12 @@ const updateDeliveryNo = (deliveryNo: number) => {
 }
 
 const readOnly = computed(() => {
-  return currentStatusString.value === 'preparing' || currentStatusString.value === 'received' || currentStatusString.value === 'shipping' || currentStatusString.value === 'damaged'
+  return (
+    currentStatusString.value === 'preparing' ||
+    currentStatusString.value === 'received' ||
+    currentStatusString.value === 'shipping' ||
+    currentStatusString.value === 'damaged'
+  )
 })
 
 const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
@@ -814,6 +937,16 @@ const addProduct = () => {
 const canEditProducts = computed(() => {
   return canEditField('products', currentStatusString.value as SellingStatusString)
 })
+
+const deliveryStatusLabel = computed(() => {
+  if (!props.currentData.deliveryStatus) return '-'
+  const map: Record<string, string> = {
+    received: 'ได้รับสินค้าแล้ว',
+    preparing: 'แพ็ครอจัดส่ง',
+    shipping: 'กำลังจัดส่ง',
+  }
+  return map[props.currentData.deliveryStatus] || props.currentData.deliveryStatus
+})
 </script>
 
 <template>
@@ -821,7 +954,7 @@ const canEditProducts = computed(() => {
     :visible="visible"
     @update:visible="handleClose"
     modal
-    :style="{ width: '50rem' }"
+    :style="{ width: '60rem' }"
     :breakpoints="{ '1199px': '90vw', '575px': '99vw' }"
     :pt="{
       header: 'p-4',
@@ -830,429 +963,653 @@ const canEditProducts = computed(() => {
     class="status-manager-dialog"
   >
     <template #header>
-      <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
-          <i class="pi pi-arrow-right-arrow-left text-white text-lg"></i>
+      <div class="flex items-center justify-between gap-3 w-full">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+          >
+            <i class="pi pi-arrow-right-arrow-left text-white text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-medium text-gray-800">เปลี่ยนสถานะการขาย</h3>
+            <p class="text-sm text-gray-600">
+              รายการ: <span class="font-semibold">{{ orderNumber }}</span>
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 class="text-lg font-semibold! text-gray-800">เปลี่ยนสถานะการขาย</h3>
-          <p class="text-sm text-gray-600">
-            รายการ: <span class="font-semibold mr-2">{{ orderNumber }}</span>
-            <Tag
-              :value="currentStatusInfo?.label"
-              :severity="currentStatusInfo?.color"
-              size="small"
-              class="text-xs"
-            />
-          </p>
-        </div>
+        <Tag :value="currentStatusInfo?.label" :severity="currentStatusInfo?.color" size="small" />
       </div>
     </template>
 
     <div class="space-y-4">
-      <!-- Customer Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <!-- Selected Member Details -->
-        <div
-          v-if="selectedMemberDetails"
-          class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center"
-            >
-              <i class="pi pi-user text-green-600 text-xl"></i>
-            </div>
-            <div class="flex-1">
-              <h5 class="font-semibold text-gray-900">
-                {{ selectedMemberDetails.name || selectedMemberDetails.displayName }}
-              </h5>
-              <p class="text-sm text-gray-600">
-                รหัส: <span class="capitalize">{{ selectedMemberDetails.code }}</span> | ชื่อเล่น:
-                {{ selectedMemberDetails.displayName || '-' }} | เบอร์:
-                {{ selectedMemberDetails.phone || '-' }}
-              </p>
-              <p class="text-xs text-gray-500 mt-0.5">
-                ที่อยู่: {{ selectedMemberDetails.address || '-' }},
-                {{
-                  selectedMemberDetails.province
-                    ? memberStore.provinceOptions.find(
-                        (option) => option.value === selectedMemberDetails?.province
-                      )?.label
-                    : '-'
-                }}
-              </p>
-            </div>
-          </div>
-        </div>
+      <StatusStepper :current-status="currentStatusString" />
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Status (Read-only) -->
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะรายการขาย</label>
-            <Select
-              :model-value="
-                typeof saleForm.sellingStatus === 'number'
-                  ? convertStatusNumberToString(saleForm.sellingStatus)
-                  : saleForm.sellingStatus
-              "
-              :options="statusOptionsForSelect"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              disabled
-              class="opacity-60"
-            />
-          </div>
-
-          <!-- Seller (Read-only) -->
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
-            <InputText
-              :value="findAdminData(saleForm.seller)?.name || ''"
-              disabled
-              class="opacity-60"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Custom Products (for order) - Read-only -->
-      <div
-        v-if="
-          showCustomProducts && currentData.customProducts && currentData.customProducts.length > 0
-        "
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
-        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <i class="pi pi-shopping-cart text-orange-600"></i>
-          สินค้านอกเหนือรายการ
-        </h4>
-        <div class="space-y-3">
-          <div
-            v-for="(product, index) in currentData.customProducts"
-            :key="index"
-            class="p-3 bg-gray-50 rounded-lg space-y-3"
-          >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
-                <InputText
-                  :model-value="product.name"
-                  placeholder="ชื่อสินค้า"
-                  fluid
-                  size="small"
-                  disabled
-                  class="opacity-60"
-                />
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
-                <InputNumber
-                  :model-value="product.quantity"
-                  :min="1"
-                  placeholder="จำนวน"
-                  fluid
-                  size="small"
-                  disabled
-                  class="opacity-60"
-                />
-              </div>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
-              <Textarea
-                :model-value="product.description"
-                placeholder="รายละเอียดสินค้า"
-                rows="3"
-                fluid
-                size="small"
-                disabled
-                class="opacity-60"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Product Management - Read-only -->
-      <div
-        v-if="showProductSelection"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <i class="pi pi-box text-blue-600"></i>
-            รายการสินค้า
-          </h4>
-          <Button
-            v-if="canEditProducts"
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="addProduct"
-            :disabled="saleForm.products.length >= 10"
-          />
-        </div>
-
-        <div class="space-y-4">
-          <ProductItemForm
-            v-for="(product, index) in saleForm.products"
-            :key="index"
-            :product="product"
-            :index="index"
-            :is-submitting="isSubmitting"
-            :products-data="productsData"
-            :can-remove="false"
-            :is-read-only="true"
-          />
-        </div>
-      </div>
-
-      <!-- Payment Calculation - Read-only -->
-      <PaymentCalculationSection
-        :total-amount="totalAmount"
-        :deposit="saleForm.deposit"
-        :discount="saleForm.discount"
-        :delivery-no="saleForm.deliveryNo"
-        :is-submitting="isSubmitting"
-        :read-only="readOnly"
-        @update:deposit="updateDeposit"
-        @update:discount="updateDiscount"
-        @update:delivery-no="updateDeliveryNo"
-      />
-
-      <!-- Additional Info - Read-only -->
-      <div
-        v-if="showAdditionalInfo"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
-        <div class="flex items-center gap-2 mb-4">
-          <i class="pi pi-info-circle text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลเพิ่มเติม</h4>
-        </div>
-
-        <!-- Payment Due Date (for credit) - Read-only -->
-        <div v-if="showPaymentDueDate && currentData.paymentDueDate" class="mt-4">
-          <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
-          <DatePicker
-            :model-value="new Date(currentData.paymentDueDate)"
-            dateFormat="dd/mm/yy"
-            showIcon
-            iconDisplay="input"
-            fluid
-            size="small"
-            disabled
-            class="opacity-60"
-          />
-        </div>
-
-        <!-- Delivery Status (for cash) - Read-only -->
-        <div v-if="showDeliveryStatus && currentData.deliveryStatus" class="mt-4">
-          <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
-          <Select
-            :model-value="currentData.deliveryStatus"
-            :options="[
-              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
-              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            fluid
-            size="small"
-            disabled
-            class="opacity-60"
-          />
-        </div>
-
-        <!-- Bank Selection (for transfer/card) - Read-only -->
-        <div v-if="showBankSelection" class="mt-4">
-          <BankSelectionSection
-            :selected-bank-code="saleForm.bankCode || currentData.bankCode || ''"
-            :is-submitting="isSubmitting"
-            :is-current-bank="currentData.bankCode"
-            :is-current-status="currentStatusString"
-            :is-read-only="true"
-          />
-        </div>
-
-        <!-- Shipping Address - Read-only -->
-        <div v-if="showShippingAddress" class="mt-4 space-y-2">
-          <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
-          <div>
-            <Textarea
-              :value="
-                `${currentData.shippingAddress}, ${
-                  findProvinceData(currentData.shippingProvince || '')?.label
-                }` || ''
-              "
-              rows="3"
-              fluid
-              size="small"
-              readonly
-              class="opacity-75"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Slip Upload Sections (for status change actions) -->
-      <div v-if="showSlipUpload || showShippingSlipUpload" class="space-y-5">
-        <!-- Preparing status info -->
-        <div
-          v-if="
-            currentStatus === 'preparing' ||
-            (typeof saleForm.sellingStatus === 'number'
-              ? convertStatusNumberToString(saleForm.sellingStatus)
-              : saleForm.sellingStatus) === 'preparing'
-          "
-          class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200"
-        >
-          <div class="flex items-start gap-3">
-            <div
-              class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
-            >
-              <i class="pi pi-check-circle text-white text-lg"></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
-              <p class="text-sm text-green-700">
-                กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Slip Upload Section -->
-        <SlipUploadSection
-          v-if="showSlipUpload"
-          :sale-id="currentData._id || ''"
-          :selected-status="currentStatusString"
-          :is-current-status="currentStatusString"
-          :is-submitting="isSubmitting"
-          @slip-status-changed="handleSlipStatusChanged"
-          @slip-pending-upload="handleSlipPendingUpload"
-          @slip-uploaded="handleSlipUploaded"
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <SummaryCard
+          icon="pi pi-user"
+          label="ลูกค้า"
+          :value="selectedMemberDetails?.name || selectedMemberDetails?.displayName || '-'"
+          :description="selectedMemberDetails?.phone || '-'"
+          variant="info"
         />
-
-        <!-- Shipping Slip Upload Section -->
-        <ShippingSlipUploadSection
-          v-if="showShippingSlipUpload"
-          :sale-id="currentData._id || ''"
-          :selected-status="currentStatusString"
-          :is-current-status="currentStatusString"
-          :is-submitting="isSubmitting"
-          :skip-upload="skipShippingSlipUpload"
-          :require-upload="requireShippingSlipUpload"
-          :delivery="saleForm.delivery"
-          :is-read-only="currentStatusString === 'received' || currentStatusString === 'damaged'"
-          @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-          @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
-          @shipping-slip-uploaded="handleShippingSlipUploaded"
-          @skip-upload-changed="handleSkipShippingSlipUploadChanged"
-          @require-upload-changed="handleRequireShippingSlipUploadChanged"
-          @delivery-changed="handleDeliveryChanged"
+        <SummaryCard
+          icon="pi pi-box"
+          label="สินค้า"
+          :value="`${saleForm.products.length} รายการ`"
+          :description="`หมวดหมู่ ${currentStatusInfo?.label || '-'}`"
+          variant="primary"
+        />
+        <SummaryCard
+          icon="pi pi-wallet"
+          label="ยอดรวม"
+          :value="formatCurrency(totalAmount || 0)"
+          :description="`เงินมัดจำ ${formatCurrency(saleForm.deposit || 0)}`"
+          variant="success"
+        />
+        <SummaryCard
+          icon="pi pi-truck"
+          label="สถานะขนส่ง"
+          :value="deliveryStatusLabel"
+          :description="currentData.delivery || 'ยังไม่ระบุ'"
+          variant="warning"
         />
       </div>
 
-      <!-- Complete Sale: Select received or damaged -->
-      <div
-        v-if="
-          (typeof saleForm.sellingStatus === 'number'
-            ? convertStatusNumberToString(saleForm.sellingStatus)
-            : saleForm.sellingStatus) === 'shipping' || currentStatus === 'shipping'
-        "
-        class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
-      >
-        <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-5 py-3 border-b border-gray-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-            <i class="pi pi-send text-purple-600"></i>
-            จบการขาย
-          </h4>
-        </div>
-        <div class="p-5 space-y-3">
-          <div
-            v-for="option in [
-              {
-                value: 'received',
-                label: 'ได้รับสินค้าแล้ว',
-                icon: 'pi-check-circle',
-                color: 'success',
-                description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
-              },
-              {
-                value: 'damaged',
-                label: 'สินค้าเสียหาย',
-                icon: 'pi-times-circle',
-                color: 'danger',
-                description: 'สินค้าเสียหายระหว่างการขนส่ง',
-              },
-            ]"
-            :key="option.value"
-            :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-              finalSaleStatus === option.value
-                ? option.color === 'success'
-                  ? 'border-green-500 bg-green-50 shadow-sm'
-                  : 'border-red-500 bg-red-50 shadow-sm'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`"
-            @click="finalSaleStatus = option.value === 'received' ? 'received' : 'damaged'"
-          >
-            <div class="flex items-center gap-4">
+      <TabView>
+        <!-- แทปแก้ไข/ปรับสถานะ -->
+        <TabPanel v-if="showEditTab" value="edit" header="แก้ไข/ปรับสถานะ">
+          <div class="space-y-4 pt-4">
+            <!-- ข้อมูลลูกค้า & รายการสินค้า -->
+            <div v-if="showProductsInEditTab" class="space-y-4">
+              <!-- Summary View -->
               <div
-                :class="`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                  option.color === 'success' ? 'bg-green-100' : 'bg-red-100'
-                }`"
+                v-if="showSummaryProducts"
+                class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
               >
-                <i
-                  :class="`pi ${option.icon} text-xl ${
-                    option.color === 'success' ? 'text-green-600' : 'text-red-600'
-                  }`"
-                ></i>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">จำนวนรายการ</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{ saleForm.products.length + (currentData.customProducts?.length || 0) }}
+                      รายการ
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">ยอดรวมสินค้า</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{ formatCurrency(totalAmount || 0) }}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="flex-1">
-                <div class="font-bold text-gray-900 text-lg">{{ option.label }}</div>
-                <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
+
+              <!-- Detailed View -->
+              <div v-if="showDetailedProducts">
+                <div
+                  v-if="
+                    showCustomProducts &&
+                    currentData.customProducts &&
+                    currentData.customProducts.length > 0
+                  "
+                  class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                >
+                  <h4 class="text-base font-medium text-gray-800 mb-3 flex items-center gap-2">
+                    <i class="pi pi-shopping-cart text-orange-600"></i>
+                    สินค้านอกเหนือรายการ
+                  </h4>
+                  <div class="space-y-3">
+                    <div
+                      v-for="(product, index) in currentData.customProducts"
+                      :key="index"
+                      class="p-3 bg-gray-50 rounded-lg space-y-3"
+                    >
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-sm font-medium text-gray-700 mb-1 block"
+                            >ชื่อสินค้า</label
+                          >
+                          <InputText
+                            :model-value="product.name"
+                            fluid
+                            size="small"
+                            disabled
+                            class="opacity-60"
+                          />
+                        </div>
+                        <div>
+                          <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
+                          <InputNumber
+                            :model-value="product.quantity"
+                            :min="1"
+                            fluid
+                            size="small"
+                            disabled
+                            class="opacity-60"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label class="text-sm font-medium text-gray-700 mb-1 block"
+                          >รายละเอียด</label
+                        >
+                        <Textarea
+                          :model-value="product.description"
+                          rows="3"
+                          fluid
+                          size="small"
+                          disabled
+                          class="opacity-60"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="showProductSelection"
+                  class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                >
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-medium text-gray-800 flex items-center gap-2">
+                      <i class="pi pi-box text-blue-600"></i>
+                      รายการสินค้า
+                    </h4>
+                    <Button
+                      v-if="canEditProducts"
+                      label="เพิ่มสินค้า"
+                      icon="pi pi-plus"
+                      severity="success"
+                      size="small"
+                      @click="addProduct"
+                      :disabled="saleForm.products.length >= 10"
+                    />
+                  </div>
+
+                  <div class="space-y-4">
+                    <ProductItemForm
+                      v-for="(product, index) in saleForm.products"
+                      :key="index"
+                      :product="product"
+                      :index="index"
+                      :is-submitting="isSubmitting"
+                      :products-data="productsData"
+                      :can-remove="false"
+                      :is-read-only="true"
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <!-- การชำระเงิน & ข้อมูลเพิ่มเติม -->
+            <div class="space-y-4">
+              <!-- Summary View -->
               <div
-                v-if="finalSaleStatus === option.value"
-                :class="`w-8 h-8 rounded-full flex items-center justify-center ${
-                  option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
-                }`"
+                v-if="showSummaryPayment"
+                class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
               >
-                <i class="pi pi-check text-white text-sm"></i>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">ยอดรวม</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{ formatCurrency(totalAmount || 0) }}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">วิธีชำระเงิน</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{
+                        salesStore.paymentMethods.find(
+                          (pm) => pm.value === props.currentData.paymentMethod
+                        )?.label || '-'
+                      }}
+                    </div>
+                  </div>
+                  <div v-if="currentData.bankCode">
+                    <div class="text-sm text-gray-600 mb-1">ธนาคาร</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{ currentData.bankCode || '-' }}
+                    </div>
+                  </div>
+                  <div v-if="saleForm.deposit > 0">
+                    <div class="text-sm text-gray-600 mb-1">เงินมัดจำ</div>
+                    <div class="text-lg font-medium text-gray-900">
+                      {{ formatCurrency(saleForm.deposit || 0) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detailed View -->
+              <div v-if="showDetailedPayment">
+                <PaymentCalculationSection
+                  :total-amount="totalAmount"
+                  :deposit="saleForm.deposit"
+                  :discount="saleForm.discount"
+                  :delivery-no="saleForm.deliveryNo"
+                  :is-submitting="isSubmitting"
+                  :read-only="readOnly"
+                  @update:deposit="updateDeposit"
+                  @update:discount="updateDiscount"
+                  @update:delivery-no="updateDeliveryNo"
+                />
+
+                <div
+                  v-if="showAdditionalInfo"
+                  class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                >
+                  <div class="flex items-center gap-2 mb-4">
+                    <i class="pi pi-info-circle text-blue-600"></i>
+                    <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลเพิ่มเติม</h4>
+                  </div>
+
+                  <div v-if="showPaymentDueDate && currentData.paymentDueDate" class="mt-4">
+                    <label class="text-sm font-medium text-gray-700 mb-1 block"
+                      >กำหนดวันชำระเงิน</label
+                    >
+                    <DatePicker
+                      :model-value="new Date(currentData.paymentDueDate)"
+                      dateFormat="dd/mm/yy"
+                      showIcon
+                      iconDisplay="input"
+                      fluid
+                      size="small"
+                      disabled
+                      class="opacity-60"
+                    />
+                  </div>
+
+                  <div v-if="showDeliveryStatus && currentData.deliveryStatus" class="mt-4">
+                    <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
+                    <Select
+                      :model-value="currentData.deliveryStatus"
+                      :options="[
+                        { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+                        { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+                      ]"
+                      optionLabel="label"
+                      optionValue="value"
+                      fluid
+                      size="small"
+                      disabled
+                      class="opacity-60"
+                    />
+                  </div>
+
+                  <div v-if="showBankInfoInEditTab && showBankSelection" class="mt-4">
+                    <BankSelectionSection
+                      :selected-bank-code="saleForm.bankCode || currentData.bankCode || ''"
+                      :is-submitting="isSubmitting"
+                      :is-current-bank="currentData.bankCode"
+                      :is-current-status="currentStatusString"
+                      :is-read-only="false"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showShippingAddressInEditTab && showShippingAddress"
+                    class="mt-4 space-y-2"
+                  >
+                    <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
+                    <Textarea
+                      :value="
+                        `${currentData.shippingAddress || ''}, ${
+                          findProvinceData(currentData.shippingProvince || '')?.label || ''
+                        }` || ''
+                      "
+                      rows="3"
+                      fluid
+                      size="small"
+                      readonly
+                      class="opacity-75"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- เอกสาร & การจัดส่ง -->
+            <div v-if="showSlipUploadInEditTab || showShippingSlipInEditTab" class="space-y-4">
+              <!-- Summary View -->
+              <div v-if="showSummaryDocuments" class="space-y-4">
+                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                    <i class="pi pi-file text-blue-600 text-xs"></i>
+                    เอกสารการชำระเงินและการจัดส่ง
+                  </h4>
+                  <div class="flex flex-wrap gap-4">
+                    <!-- Slip Summary -->
+                    <div v-if="hasSlip" class="space-y-2">
+                      <div class="text-xs font-medium text-gray-700">สลิปการโอนเงิน</div>
+                      <div class="relative">
+                        <PrimeImage
+                          :src="slipUrl"
+                          :alt="'สลิปการโอนเงิน'"
+                          :preview="true"
+                          class="max-w-[120px] object-contain rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </div>
+                    </div>
+                    <div v-else class="space-y-2">
+                      <div class="text-xs font-medium text-gray-700">สลิปการโอนเงิน</div>
+                      <div class="text-xs text-gray-500 italic">ไม่มีสลิป</div>
+                    </div>
+
+                    <!-- Shipping Slip Summary -->
+                    <div v-if="hasShippingSlip" class="space-y-2">
+                      <div class="text-xs font-medium text-gray-700">ใบเสร็จการขนส่ง</div>
+                      <div class="relative">
+                        <PrimeImage
+                          :src="shippingSlipUrl"
+                          :alt="'ใบเสร็จการขนส่ง'"
+                          :preview="true"
+                          class="max-w-[120px] object-contain rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </div>
+                    </div>
+                    <div v-else class="space-y-2">
+                      <div class="text-xs font-medium text-gray-700">ใบเสร็จการขนส่ง</div>
+                      <div class="text-xs text-gray-500 italic">ไม่มีใบเสร็จ</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detailed View -->
+              <div v-if="showDetailedDocuments">
+                <div
+                  v-if="currentStatus === 'preparing' || currentStatusString === 'preparing'"
+                  class="mb-4"
+                >
+                  <div
+                    class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200"
+                  >
+                    <div class="flex items-start gap-3">
+                      <div
+                        class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
+                      >
+                        <i class="pi pi-check-circle text-white text-lg"></i>
+                      </div>
+                      <div class="flex-1">
+                        <h4 class="font-medium text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
+                        <p class="text-sm text-green-700">
+                          กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <SlipUploadSection
+                    v-if="showSlipUploadInEditTab && showSlipUpload"
+                    :sale-id="currentData._id || ''"
+                    :selected-status="currentStatusString"
+                    :is-current-status="currentStatusString"
+                    :is-submitting="isSubmitting"
+                    @slip-status-changed="handleSlipStatusChanged"
+                    @slip-pending-upload="handleSlipPendingUpload"
+                    @slip-uploaded="handleSlipUploaded"
+                  />
+
+                  <ShippingSlipUploadSection
+                    v-if="showShippingSlipInEditTab && showShippingSlipUpload"
+                    :sale-id="currentData._id || ''"
+                    :selected-status="currentStatusString"
+                    :is-current-status="currentStatusString"
+                    :is-submitting="isSubmitting"
+                    :skip-upload="skipShippingSlipUpload"
+                    :require-upload="requireShippingSlipUpload"
+                    :delivery="saleForm.delivery"
+                    :is-read-only="
+                      currentStatusString === 'received' || currentStatusString === 'damaged'
+                    "
+                    @shipping-slip-status-changed="handleShippingSlipStatusChanged"
+                    @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
+                    @shipping-slip-uploaded="handleShippingSlipUploaded"
+                    @skip-upload-changed="handleSkipShippingSlipUploadChanged"
+                    @require-upload-changed="handleRequireShippingSlipUploadChanged"
+                    @delivery-changed="handleDeliveryChanged"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- จบการขาย & หมายเหตุ -->
+            <div v-if="showCompleteSaleInEditTab" class="space-y-4">
+              <div
+                v-if="
+                  (typeof saleForm.sellingStatus === 'number'
+                    ? convertStatusNumberToString(saleForm.sellingStatus)
+                    : saleForm.sellingStatus) === 'shipping' || currentStatus === 'shipping'
+                "
+                class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
+              >
+                <div
+                  class="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 border-b border-gray-200"
+                >
+                  <h4 class="font-medium text-gray-900 flex items-center gap-2">
+                    <i class="pi pi-send text-purple-600"></i>
+                    จบการขาย
+                  </h4>
+                </div>
+                <div class="p-4 space-y-3">
+                  <div
+                    v-for="option in [
+                      {
+                        value: 'received',
+                        label: 'ได้รับสินค้าแล้ว',
+                        icon: 'pi-check-circle',
+                        color: 'success',
+                        description: 'ลูกค้าได้รับสินค้าเรียบร้อยแล้ว',
+                      },
+                      {
+                        value: 'damaged',
+                        label: 'สินค้าเสียหาย',
+                        icon: 'pi-times-circle',
+                        color: 'danger',
+                        description: 'สินค้าเสียหายระหว่างการขนส่ง',
+                      },
+                    ]"
+                    :key="option.value"
+                    :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                      finalSaleStatus === option.value
+                        ? option.color === 'success'
+                          ? 'border-green-500 bg-green-50 shadow-sm'
+                          : 'border-red-500 bg-red-50 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`"
+                    @click="finalSaleStatus = option.value === 'received' ? 'received' : 'damaged'"
+                  >
+                    <div class="flex items-center gap-4">
+                      <div
+                        :class="`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                          option.color === 'success' ? 'bg-green-100' : 'bg-red-100'
+                        }`"
+                      >
+                        <i
+                          :class="`pi ${option.icon} text-xl ${
+                            option.color === 'success' ? 'text-green-600' : 'text-red-600'
+                          }`"
+                        ></i>
+                      </div>
+                      <div class="flex-1">
+                        <div class="font-semibold text-gray-900 text-lg">{{ option.label }}</div>
+                        <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
+                      </div>
+                      <div
+                        v-if="finalSaleStatus === option.value"
+                        :class="`w-8 h-8 rounded-full flex items-center justify-center ${
+                          option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
+                        }`"
+                      >
+                        <i class="pi pi-check text-white text-sm"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div
+                  class="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200"
+                >
+                  <h4 class="font-medium text-gray-900 flex items-center gap-2">
+                    <i class="pi pi-file-edit text-gray-600"></i>
+                    หมายเหตุ
+                  </h4>
+                </div>
+                <div class="p-4">
+                  <Textarea
+                    :model-value="saleForm.note || currentData.note || ''"
+                    placeholder="ไม่มีหมายเหตุ"
+                    rows="3"
+                    fluid
+                    size="small"
+                    disabled
+                    class="opacity-60"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </TabPanel>
 
-      <!-- Notes - Read-only -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
-          <h4 class="font-semibold text-gray-900 flex items-center gap-2">
-            <i class="pi pi-file-edit text-gray-600"></i>
-            หมายเหตุ
-          </h4>
-        </div>
-        <div class="p-5">
-          <Textarea
-            :model-value="saleForm.note || currentData.note || ''"
-            placeholder="ไม่มีหมายเหตุ"
-            rows="3"
-            fluid
-            size="small"
-            disabled
-            class="opacity-60"
-          />
-        </div>
-      </div>
+        <!-- แทปประวัติการอัพเดทสถานะ -->
+        <TabPanel value="history" header="ประวัติการอัพเดท">
+          <div class="space-y-4 pt-4">
+            <!-- สินค้า -->
+            <div
+              v-if="currentData.products && currentData.products.length > 0"
+              class="bg-white border border-gray-200 rounded-lg p-4"
+            >
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-box text-blue-600 text-xs"></i>
+                สินค้าที่เพิ่มแล้ว
+              </h4>
+              <div class="space-y-3">
+                <div
+                  v-for="(product, index) in currentData.products"
+                  :key="index"
+                  class="p-3 bg-gray-50 rounded-lg"
+                >
+                  <div class="text-sm font-medium text-gray-900">
+                    {{ product.name || `สินค้า ${index + 1}` }}
+                  </div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    จำนวน: {{ product.quantity }} {{ product.unit || 'ชิ้น' }} | ราคา:
+                    {{ formatCurrency(product.price || 0) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- สินค้านอกเหนือรายการ -->
+            <div
+              v-if="currentData.customProducts && currentData.customProducts.length > 0"
+              class="bg-white border border-gray-200 rounded-lg p-4"
+            >
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-shopping-cart text-orange-600 text-xs"></i>
+                สินค้านอกเหนือรายการ
+              </h4>
+              <div class="space-y-3">
+                <div
+                  v-for="(product, index) in currentData.customProducts"
+                  :key="index"
+                  class="p-3 bg-gray-50 rounded-lg"
+                >
+                  <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                  <div class="text-xs text-gray-600 mt-1">จำนวน: {{ product.quantity }} ชิ้น</div>
+                  <div v-if="product.description" class="text-xs text-gray-500 mt-1">
+                    {{ product.description }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ที่อยู่จัดส่ง -->
+            <div
+              v-if="currentData.shippingAddress || currentData.shippingProvince"
+              class="bg-white border border-gray-200 rounded-lg p-4"
+            >
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-map-marker text-green-600 text-xs"></i>
+                ที่อยู่จัดส่ง
+              </h4>
+              <div class="text-sm text-gray-700">
+                {{ currentData.shippingAddress }}
+                <span v-if="currentData.shippingProvince">
+                  , {{ findProvinceData(currentData.shippingProvince)?.label }}
+                </span>
+              </div>
+            </div>
+
+            <!-- ข้อมูลธนาคาร -->
+            <div v-if="currentData.bankCode" class="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-building text-purple-600 text-xs"></i>
+                ข้อมูลธนาคาร
+              </h4>
+              <div class="space-y-2">
+                <div class="text-sm text-gray-700">
+                  <span class="font-medium">ธนาคาร:</span> {{ currentData.bankCode }}
+                </div>
+                <div v-if="currentData.bankAccount" class="text-sm text-gray-700">
+                  <span class="font-medium">เลขบัญชี:</span> {{ currentData.bankAccount }}
+                </div>
+              </div>
+            </div>
+
+            <!-- สลิปการโอนเงิน -->
+            <div v-if="hasSlip" class="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-file text-blue-600 text-xs"></i>
+                สลิปการโอนเงิน
+              </h4>
+              <div class="relative">
+                <PrimeImage
+                  :src="slipUrl"
+                  :alt="'สลิปการโอนเงิน'"
+                  :preview="true"
+                  class="max-w-[120px] object-contain rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                />
+              </div>
+            </div>
+
+            <!-- ใบเสร็จการขนส่ง -->
+            <div v-if="hasShippingSlip" class="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <i class="pi pi-truck text-orange-600 text-xs"></i>
+                ใบเสร็จการขนส่ง
+              </h4>
+              <div class="relative">
+                <PrimeImage
+                  :src="shippingSlipUrl"
+                  :alt="'ใบเสร็จการขนส่ง'"
+                  :preview="true"
+                  class="max-w-[120px] object-contain rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                />
+              </div>
+            </div>
+
+            <!-- ข้อความเมื่อไม่มีข้อมูล -->
+            <div
+              v-if="
+                (!currentData.products || currentData.products.length === 0) &&
+                (!currentData.customProducts || currentData.customProducts.length === 0) &&
+                !currentData.shippingAddress &&
+                !currentData.bankCode &&
+                !hasSlip &&
+                !hasShippingSlip
+              "
+              class="bg-white border border-gray-200 rounded-lg p-4 text-center"
+            >
+              <div class="text-sm text-gray-500 italic">ยังไม่มีข้อมูลประวัติการอัพเดท</div>
+            </div>
+          </div>
+        </TabPanel>
+      </TabView>
     </div>
 
     <template #footer>
