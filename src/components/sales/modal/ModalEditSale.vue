@@ -693,21 +693,17 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
         salesStore.statusWorkflow[statusString as keyof StatusWorkflow]?.stepOrder >=
         salesStore.statusWorkflow['preparing'].stepOrder
       ) {
-        // A. อัพเดทสถานะสมาชิก
+        // A. อัพเดทสถานะสมาชิก, purchaseHistory และ customerLevel ในครั้งเดียว
+        // ใช้ฟังก์ชันรวมเพื่อป้องกัน race condition
         const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
-        memberStatusUpdate.updateMemberStatusIfNeeded(
+        memberStatusUpdate.updateMemberStatusAndPurchaseHistory(
           variables,
           members.value,
-        )
-
-        // A.1. อัพเดท customerLevel เมื่อ status >= preparing
-        // (จะทำงานเมื่อมีการยืนยันสลิปผ่าน handleSlipUploaded หรือเปลี่ยน status เป็น preparing ขึ้นไป)
-        memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
-          variables,
-          members.value,
-          allSales.value,
-          productsData.value || [],
-          preparingStepOrder
+          preparingStepOrder,
+          {
+            allSales: allSales.value,
+            allProducts: productsData.value || [],
+          }
         )
 
         // B. ตัดสต็อกสินค้า - ตัดเฉพาะเมื่อ status เดิมน้อยกว่า preparing

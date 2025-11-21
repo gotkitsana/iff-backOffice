@@ -476,27 +476,21 @@ const { mutate: updateSalesStatus } = useMutation({
       const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
 
       if (targetStepOrder && targetStepOrder >= preparingStepOrder) {
-        // A. Update member status
-        memberStatusUpdate.updateMemberStatusIfNeeded(
+        // A. Update member status, purchaseHistory และ customerLevel ในครั้งเดียว
+        // ใช้ฟังก์ชันรวมเพื่อป้องกัน race condition
+        memberStatusUpdate.updateMemberStatusAndPurchaseHistory(
           variables,
           members.value,
+          preparingStepOrder,
+          {
+            allSales: allSales.value,
+            allProducts: productsData.value || [],
+          }
         )
 
-        // A.1. Update member customer level (when slip is confirmed)
-        // อัพเดท customerLevel เมื่อยืนยันสลิปแล้วและ status >= preparing
-        if (hasSlip.value) {
-          memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
-            variables,
-            members.value,
-            allSales.value,
-            productsData.value || [],
-            preparingStepOrder
-          )
-        }
-
-        // B. Deduct stock using utility function (only if slip is confirmed)
-        // ตัดสต็อกเมื่อยืนยันสลิปแล้วและ status >= preparing
-        if (productsData.value && hasSlip.value) {
+        // B. Deduct stock when status >= preparing
+        // ตัดสต็อกเมื่อ status >= preparing
+        if (productsData.value) {
           executeStockDeduction(variables, productsData.value, updateProduct, (warning) =>
             toast.warning(warning)
           )
