@@ -40,6 +40,11 @@ import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { executeStockDeduction } from '@/utils/stockDeduction'
 import { useProductSelection } from '@/composables/useProductSelection'
 import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
+import { useSlipManagement } from '@/composables/useSlipManagement'
+import { useProductManagement } from '@/composables/useProductManagement'
+import { useFormFieldUpdates } from '@/composables/useFormFieldUpdates'
+import { useSalesVisibility } from '@/composables/useSalesVisibility'
+import { useStatusHelpers } from '@/composables/useStatusHelpers'
 import {
   getAvailableStatuses,
   canEditField,
@@ -108,53 +113,43 @@ const { data: productsData, refetch: refetchProducts } = useQuery<IProduct[]>({
   queryFn: () => productStore.onGetProducts(),
 })
 
-// Use composable for product selection
-const productSelection = useProductSelection(
-  productsData,
-  categories,
-  ref(undefined), // foodSales not used in edit mode
-  computed(() => saleForm.value.products || [])
-)
-
-// Provide composable to child components
-provide(Symbol.for('productSelection'), productSelection)
-
 // Use composable for member status update
 const memberStatusUpdate = useMemberStatusUpdate()
 
-// Computed
-const totalAmount = computed(() => {
-  return (
-    saleForm.value.products?.reduce((sum, product) => {
-      if (!product.id) return 0
-
-      const productDetail = productSelection.availableProducts.value?.find(
-        (p) => p._id === product.id
-      )
-      if (productDetail && productDetail.price) {
-        return sum + (productDetail.price || 0) * product.quantity
-      }
-      // ถ้าไม่มี productDetail ให้ใช้ price จาก form
-      return sum + (product.price || 0) * product.quantity
-    }, 0) || 0
-  )
+// Use status helpers
+const { getStatusStepIndex, currentStatusString } = useStatusHelpers({
+  sellingStatus: computed(() => props.saleData.sellingStatus),
 })
 
+// Selected member details
 const selectedMemberDetails = computed(() => {
   if (!saleForm.value.user || !members.value) return null
   return members.value.find((m) => m._id === saleForm.value.user)
 })
 
-// Status step checking
-const getStatusStepIndex = (status: SellingStatus | number | string) => {
-  const statusString =
-    typeof status === 'number'
-      ? convertStatusNumberToString(status)
-      : typeof status === 'string'
-      ? status
-      : convertStatusNumberToString(status)
-  return salesStore.sellingStatusOptions.findIndex((option) => option.value === statusString)
-}
+// Use product management
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+const productManagement = useProductManagement({
+  products: computed(() => saleForm.value.products || []),
+  productsData,
+  foodSales: ref(undefined),
+  categories,
+  customProducts,
+  maxProducts: 10,
+  minProducts: 1,
+})
+
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productManagement.productSelection)
+
+// Use sales visibility
+const visibility = useSalesVisibility({
+  paymentMethod: computed(() => saleForm.value.paymentMethod as string | undefined),
+  deliveryStatus: computed(() => saleForm.value.deliveryStatus as string | undefined),
+  currentStatusString: computed(() => currentStatusString.value),
+  products: computed(() => saleForm.value.products || []),
+  getStatusStepIndex,
+})
 
 // Note: requiresBankSelection removed - using showBankSelection instead
 
@@ -165,36 +160,6 @@ const requiresSlipUpload = computed(() => {
   const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
   // แสดงเมื่อ status >= wait_payment (รวม wait_payment ด้วย)
   return currentStepIndex >= waitPaymentStepIndex
-})
-
-// Computed สำหรับแสดง SlipUploadSection
-const showSlipUpload = computed(() => {
-  const pm = saleForm.value.paymentMethod
-  const statusStr = currentStatusString.value
-
-  // สำหรับ cash: ซ่อนเมื่อ deliveryStatus = preparing
-  if (pm === 'cash' && saleForm.value.deliveryStatus === 'preparing') {
-    return false
-  }
-
-  // สำหรับ cod: ไม่ต้องแสดง
-  if (pm === 'cod') {
-    return false
-  }
-
-  if (pm === 'credit') {
-    return false
-  }
-
-  // สำหรับ order: แสดงเมื่อ status = wait_payment หรือมากกว่า
-  if (pm === 'order') {
-    const currentStepIndex = getStatusStepIndex(statusStr)
-    const waitPaymentStepIndex = getStatusStepIndex('wait_payment')
-    return currentStepIndex >= waitPaymentStepIndex
-  }
-
-  // สำหรับ transfer/card: แสดงเมื่อ showBankSelection หรือ requiresSlipUpload
-  return showBankSelection.value || requiresSlipUpload.value
 })
 
 // Disable selecting steps that are earlier than current persisted status
@@ -211,11 +176,6 @@ const statusOptionsForSelect = computed(() => {
 })
 
 // Check if can edit fields based on current status
-const currentStatusString = computed(() => {
-  return typeof props.saleData.sellingStatus === 'number'
-    ? convertStatusNumberToString(props.saleData.sellingStatus)
-    : props.saleData.sellingStatus
-})
 
 const canEditProducts = computed(() => {
   return canEditField('products', currentStatusString.value as SellingStatusString)
@@ -239,46 +199,6 @@ const showProductSelection = computed(() => {
   return true // แสดงได้เสมอ แต่จะควบคุมด้วยเงื่อนไขอื่น
 })
 
-const showCustomProducts = computed(() => {
-  // แสดงเฉพาะเมื่อ paymentMethod === 'order' และไม่มีสินค้าปกติ
-  const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
-  return saleForm.value.paymentMethod === 'order' && !hasProducts
-})
-
-const showDeliveryStatus = computed(() => {
-  return saleForm.value.paymentMethod === 'cash'
-})
-
-const showPaymentDueDate = computed(() => {
-  return saleForm.value.paymentMethod === 'credit'
-})
-
-const showBankSelection = computed(() => {
-  const pm = saleForm.value.paymentMethod
-  // สำหรับ order: แสดงเมื่อมีสินค้า
-  if (pm === 'order') {
-    const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
-    return hasProducts
-  }
-  // สำหรับ transfer/card: แสดงเสมอ
-  return pm === 'transfer' || pm === 'card'
-})
-
-const showShippingAddress = computed(() => {
-  const pm = saleForm.value.paymentMethod
-  if (pm === 'cash') {
-    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
-    return saleForm.value.deliveryStatus === 'preparing'
-  }
-  if (pm === 'order') {
-    // สำหรับ order: แสดงเมื่อมีสินค้า
-    const hasProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
-    return hasProducts
-  }
-  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
-  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
-})
-
 const requiresShippingAddress = computed(() => {
   const pm = saleForm.value.paymentMethod
   if (pm === 'cash') {
@@ -292,18 +212,7 @@ const requiresShippingAddress = computed(() => {
   return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
 })
 
-// Computed สำหรับแสดง/ซ่อนส่วน "ข้อมูลเพิ่มเติม"
-const showAdditionalInfo = computed(() => {
-  // ซ่อนเมื่อ paymentMethod = cash และ deliveryStatus = received
-  if (saleForm.value.paymentMethod === 'cash' && saleForm.value.deliveryStatus === 'received') {
-    return false
-  }
-  return true
-})
-
 // Custom products management
-const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
-
 const addCustomProduct = () => {
   // ถ้ามี products ที่มี id (valid products) ให้ clear ออก
   const hasValidProducts = saleForm.value.products.some((p) => p.id && p.quantity > 0)
@@ -318,86 +227,10 @@ const removeCustomProduct = (index: number) => {
   customProducts.value.splice(index, 1)
 }
 
-// Product management functions
-const addProduct = () => {
-  if (saleForm.value.products.length < 10) {
-    // ถ้ามี customProducts ให้ clear ออก
-    if (customProducts.value.length > 0) {
-      customProducts.value = []
-    }
-    saleForm.value.products.push({ id: '', quantity: 1, category: '', price: 0 })
-  } else {
-    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 10 รายการ')
-  }
-}
-
-const removeProduct = (index: number) => {
-  if (saleForm.value.products.length > 1) {
-    saleForm.value.products.splice(index, 1)
-  } else {
-    toast.warning('ต้องมีสินค้าอย่างน้อย 1 รายการ')
-  }
-}
-
-const updateProductForIndex = (index: number, value: string | Record<string, unknown>) => {
-  let selectedId: string
-  if (typeof value === 'string') {
-    selectedId = value
-  } else if (value && typeof value === 'object') {
-    selectedId = Object.keys(value)[0] || ''
-  } else {
-    return
-  }
-
-  if (!selectedId) return
-
-  const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
-  if (!product) return
-
-  let price = product.price || 0
-  if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
-    price = product.food.customerPrice
-  }
-
-  saleForm.value.products[index] = {
-    id: product._id,
-    category: product.category?._id || '',
-    price: price,
-    quantity: saleForm.value.products[index].quantity || 1,
-  }
-}
-
-const updateDeposit = (deposit: number) => {
-  saleForm.value.deposit = deposit
-}
-
-const updateDiscount = (discount: number) => {
-  saleForm.value.discount = discount
-}
-
-const updateDeliveryNo = (deliveryNo: number) => {
-  saleForm.value.deliveryNo = deliveryNo
-}
-
-const updateBankCode = (bankCode: string) => {
-  saleForm.value.bankCode = bankCode
-}
-
-// Update shipping address from member
-const updateShippingAddressFromMember = () => {
-  if (selectedMemberDetails.value) {
-    saleForm.value.shippingAddress = selectedMemberDetails.value.address || ''
-    saleForm.value.shippingProvince = selectedMemberDetails.value.province || ''
-  }
-}
-
-// Computed for showing shipping slip upload
-const showShippingSlipUpload = computed(() => {
-  // แสดงเฉพาะเมื่อ status = preparing เท่านั้น
-  const statusStr = currentStatusString.value
-  const currentStepIndex = getStatusStepIndex(statusStr)
-  const preparingStepIndex = getStatusStepIndex('preparing')
-  return currentStepIndex >= preparingStepIndex
+// Use form field updates
+const formFieldUpdates = useFormFieldUpdates({
+  saleForm,
+  selectedMemberDetails: computed(() => selectedMemberDetails.value || null),
 })
 
 // Handlers
@@ -493,15 +326,15 @@ const handleSubmit = () => {
     paymentMethod: saleForm.value.paymentMethod,
     hasProducts: hasAnyProductsForValidation,
     hasBankInfo: !!saleForm.value.bankCode,
-    hasSlip: hasSlip.value,
-    hasShippingSlip: hasShippingSlip.value,
+    hasSlip: slipManagement.hasSlip.value,
+    hasShippingSlip: slipManagement.hasShippingSlip.value,
     hasShippingAddress: !!(saleForm.value.shippingAddress && saleForm.value.shippingProvince),
     deliveryStatus: saleForm.value.deliveryStatus,
     hasPaymentDueDate: !!saleForm.value.paymentDueDate,
     hasCustomProducts: hasCustomProducts,
     mode: 'edit',
     currentStatus: currentStatusString.value as SellingStatusString, // ส่ง currentStatus เพื่อตรวจสอบเงื่อนไข
-    skipShippingSlipUpload: skipShippingSlipUpload.value, // ส่ง skipShippingSlipUpload เพื่อรองรับการข้ามการอัพโหลด
+    skipShippingSlipUpload: slipManagement.skipShippingSlipUpload.value, // ส่ง skipShippingSlipUpload เพื่อรองรับการข้ามการอัพโหลด
   })
 
   // Show validation errors
@@ -513,12 +346,12 @@ const handleSubmit = () => {
   }
 
   // ตรวจสอบว่ามี pending upload หรือไม่
-  if (hasPendingSlipUpload.value) {
+  if (slipManagement.hasPendingSlipUpload.value) {
     toast.error('กรุณากด ยืนยันการอัปโหลด')
     return
   }
 
-  if (hasPendingShippingSlipUpload.value) {
+  if (slipManagement.hasPendingShippingSlipUpload.value) {
     toast.error('กรุณากด ยืนยันการอัปโหลด')
     return
   }
@@ -530,9 +363,9 @@ const handleSubmit = () => {
   // ตรวจสอบ shipping slip validation
   // ถ้า requireShippingSlipUpload = true และ skipShippingSlipUpload = false และไม่มี shipping slip → แสดง error
   if (
-    requireShippingSlipUpload.value &&
-    !skipShippingSlipUpload.value &&
-    !hasShippingSlip.value &&
+    slipManagement.requireShippingSlipUpload.value &&
+    !slipManagement.skipShippingSlipUpload.value &&
+    !slipManagement.hasShippingSlip.value &&
     currentStatusStr === 'preparing'
   ) {
     toast.error('กรุณาอัพโหลดสลิปการจัดส่งหรือเลือกข้ามการอัพโหลด')
@@ -591,9 +424,9 @@ const handleSubmit = () => {
         typeof props.saleData.sellingStatus === 'number'
           ? props.saleData.sellingStatus
           : convertStatusStringToNumber(currentStatusStr)
-    } else if (hasSlip.value) {
+    } else if (slipManagement.hasSlip.value) {
       // ถ้ามี shipping slip → shipping
-      if (hasShippingSlip.value) {
+      if (slipManagement.hasShippingSlip.value) {
         finalStatus = SellingStatus.shipping
       } else {
         finalStatus = SellingStatus.preparing
@@ -620,7 +453,10 @@ const handleSubmit = () => {
   }
 
   // ถ้า currentStatus เป็น preparing และมี shipping slip หรือเลือกข้าม → shipping
-  if (currentStatusStr === 'preparing' && (hasShippingSlip.value || skipShippingSlipUpload.value)) {
+  if (
+    currentStatusStr === 'preparing' &&
+    (slipManagement.hasShippingSlip.value || slipManagement.skipShippingSlipUpload.value)
+  ) {
     finalStatus = SellingStatus.shipping
   }
 
@@ -673,6 +509,10 @@ const { data: allSales } = useQuery<ISales[]>({
 })
 
 const queryClient = useQueryClient()
+const { mutate: updateProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+})
+
 const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   mutationFn: (sale: IUpdateSalesPayload) => salesStore.onUpdateSales(sale),
   onSuccess: async (data: unknown, variables: IUpdateSalesPayload) => {
@@ -724,10 +564,6 @@ const { mutate: updateSale, isPending: isUpdatingSale } = useMutation({
   },
 })
 
-const { mutate: updateProduct } = useMutation({
-  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
-})
-
 const handleClose = () => {
   resetForm()
   isSubmitting.value = false
@@ -762,160 +598,22 @@ const resetForm = () => {
   finalSaleStatus.value = null
   deliveryPhoto.value = null
   deliveryPhotoPreview.value = ''
-  hasPendingSlipUpload.value = false
-  hasPendingShippingSlipUpload.value = false
-  skipShippingSlipUpload.value = false
-  requireShippingSlipUpload.value = true // Reset เป็นค่าเริ่มต้น
+  slipManagement.resetSlipStates()
 }
-
-const hasSlip = ref(false)
-const hasShippingSlip = ref(false)
-
-// Track pending upload states
-const hasPendingSlipUpload = ref(false)
-const hasPendingShippingSlipUpload = ref(false)
-
-// Track shipping slip upload option
-const skipShippingSlipUpload = ref(false)
-const requireShippingSlipUpload = ref(true) // ค่าเริ่มต้น = true (ต้องอัพโหลด)
 
 // สำหรับจบการขายเมื่อ status = shipping
 const finalSaleStatus = ref<'received' | 'damaged' | null>(null)
 const deliveryPhoto = ref<File | null>(null)
 const deliveryPhotoPreview = ref<string>('')
 
-const handleSlipStatusChanged = (status: boolean) => {
-  hasSlip.value = status
-}
-
-const handleShippingSlipStatusChanged = (status: boolean) => {
-  hasShippingSlip.value = status
-}
-
-// Handler สำหรับเมื่ออัพโหลดสลิปสำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
-const handleSlipUploaded = async (saleId: string) => {
-  // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
-  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
-
-  // ตรวจสอบว่าสถานะปัจจุบันเป็น wait_payment หรือไม่
-  const currentStatusStr = currentStatusString.value
-  if (currentStatusStr !== 'wait_payment') return
-
-  // ตรวจสอบว่ามีสลิปแล้วจริงๆ โดย query ด้วย saleId
-  try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL as string
-    const slipUrl = `${apiUrl}/erp/download/slip?saleId=${saleId}`
-
-    // ตรวจสอบว่ามีสลิปจริงๆ หรือไม่
-    const slipExists = await new Promise<boolean>((resolve) => {
-      const img = new Image()
-      const timeout = setTimeout(() => {
-        resolve(false)
-      }, 5000)
-
-      img.onload = () => {
-        clearTimeout(timeout)
-        resolve(true)
-      }
-
-      img.onerror = () => {
-        clearTimeout(timeout)
-        resolve(false)
-      }
-
-      img.src = slipUrl
-    })
-
-    // ถ้ามีสลิปแล้ว ให้เปลี่ยนสถานะเป็น preparing
-    if (slipExists) {
-      // อัพเดทสถานะเป็น preparing
-      const payload: IUpdateSalesPayload = {
-        ...saleForm.value,
-        sellingStatus: SellingStatus.preparing,
-      }
-
-      updateSale(payload)
-    }
-  } catch (error) {
-    console.error('Error checking slip:', error)
-  }
-}
-
-const handleSlipPendingUpload = (isPending: boolean) => {
-  hasPendingSlipUpload.value = isPending
-}
-
-const handleShippingSlipPendingUpload = (isPending: boolean) => {
-  hasPendingShippingSlipUpload.value = isPending
-}
-
-const handleSkipShippingSlipUploadChanged = (skip: boolean) => {
-  skipShippingSlipUpload.value = skip
-}
-
-const handleRequireShippingSlipUploadChanged = (require: boolean) => {
-  requireShippingSlipUpload.value = require
-}
-
-const handleDeliveryChanged = (delivery: string) => {
-  saleForm.value.delivery = delivery
-}
-
-// Handler สำหรับเมื่ออัพโหลด shipping slip สำเร็จ - ตรวจสอบและเปลี่ยนสถานะอัตโนมัติ
-const handleShippingSlipUploaded = async (saleId: string) => {
-  // ตรวจสอบว่า saleId ตรงกับ current sale หรือไม่
-  if (!saleId || !props.saleData._id || saleId !== props.saleData._id) return
-
-  // ตรวจสอบว่าสถานะปัจจุบันเป็น preparing หรือไม่
-  const currentStatusStr = currentStatusString.value
-  if (currentStatusStr !== 'preparing') return
-
-  // ตรวจสอบว่ามี shipping slip แล้วจริงๆ โดย query ด้วย saleId
-  try {
-    const extensions = ['jpg', 'jpeg', 'png']
-    let found = false
-
-    for (const ext of extensions) {
-      const shippingSlipUrl = getShippingSlipUrl(saleId, ext)
-      const slipExists = await new Promise<boolean>((resolve) => {
-        const img = new Image()
-        const timeout = setTimeout(() => {
-          resolve(false)
-        }, 5000)
-
-        img.onload = () => {
-          clearTimeout(timeout)
-          resolve(true)
-        }
-
-        img.onerror = () => {
-          clearTimeout(timeout)
-          resolve(false)
-        }
-
-        img.src = shippingSlipUrl
-      })
-
-      if (slipExists) {
-        found = true
-        break
-      }
-    }
-
-    // ถ้ามี shipping slip แล้ว ให้เปลี่ยนสถานะเป็น shipping
-    if (found) {
-      // อัพเดทสถานะเป็น shipping
-      const payload: IUpdateSalesPayload = {
-        ...saleForm.value,
-        sellingStatus: SellingStatus.shipping,
-      }
-
-      updateSale(payload)
-    }
-  } catch (error) {
-    console.error('Error checking shipping slip:', error)
-  }
-}
+// Use slip management
+const slipManagement = useSlipManagement({
+  saleId: props.saleData._id || '',
+  currentStatusString: computed(() => currentStatusString.value),
+  onStatusUpdate: (payload: IUpdateSalesPayload) => {
+    updateSale(payload)
+  },
+})
 
 // Handler สำหรับจบการขาย
 const handleCompleteSale = async () => {
@@ -957,10 +655,10 @@ watch(
       const slipUrl = `${apiUrl}/erp/download/slip?saleId=${props.saleData._id}`
       const img = new Image()
       img.onload = () => {
-        hasSlip.value = true
+        slipManagement.hasSlip.value = true
       }
       img.onerror = () => {
-        hasSlip.value = false
+        slipManagement.hasSlip.value = false
       }
       img.src = slipUrl
 
@@ -992,14 +690,14 @@ watch(
 
         const exists = await checkPromise
         if (exists) {
-          hasShippingSlip.value = true
+          slipManagement.hasShippingSlip.value = true
           found = true
           break
         }
       }
 
       if (!found) {
-        hasShippingSlip.value = false
+        slipManagement.hasShippingSlip.value = false
       }
     }
   },
@@ -1017,7 +715,12 @@ const sellers = computed(() => {
 })
 
 const readOnly = computed(() => {
-  return currentStatusString.value === 'preparing' || currentStatusString.value === 'received' || currentStatusString.value === 'shipping' || currentStatusString.value === 'damaged'
+  return (
+    currentStatusString.value === 'preparing' ||
+    currentStatusString.value === 'received' ||
+    currentStatusString.value === 'shipping' ||
+    currentStatusString.value === 'damaged'
+  )
 })
 </script>
 
@@ -1138,7 +841,7 @@ const readOnly = computed(() => {
 
       <!-- Custom Products (for order) -->
       <div
-        v-if="showCustomProducts"
+        v-if="visibility.showCustomProducts.value"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center justify-between mb-4">
@@ -1228,7 +931,7 @@ const readOnly = computed(() => {
             icon="pi pi-plus"
             severity="success"
             size="small"
-            @click="addProduct"
+            @click="productManagement.addProduct"
             :disabled="saleForm.products.length >= 10"
           />
         </div>
@@ -1243,28 +946,28 @@ const readOnly = computed(() => {
             :products-data="productsData"
             :can-remove="saleForm.products.length > 1 && canEditProducts"
             :is-read-only="!canEditProducts"
-            @update:product="updateProductForIndex"
+            @update:product="productManagement.updateProductForIndex"
             @update:quantity="(idx, qty) => (saleForm.products[idx].quantity = qty)"
-            @remove="removeProduct"
+            @remove="productManagement.removeProduct"
           />
         </div>
       </div>
 
       <!-- Payment Calculation -->
       <PaymentCalculationSection
-        :total-amount="totalAmount"
+        :total-amount="productManagement.totalAmount.value"
         :deposit="saleForm.deposit"
         :discount="saleForm.discount"
         :delivery-no="saleForm.deliveryNo"
         :is-submitting="isSubmitting"
         :read-only="readOnly"
-        @update:deposit="updateDeposit"
-        @update:discount="updateDiscount"
-        @update:delivery-no="updateDeliveryNo"
+        @update:deposit="formFieldUpdates.updateDeposit"
+        @update:discount="formFieldUpdates.updateDiscount"
+        @update:delivery-no="formFieldUpdates.updateDeliveryNo"
       />
 
       <div
-        v-if="showAdditionalInfo"
+        v-if="visibility.showAdditionalInfo.value"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <!-- Payment Due Date (for credit) -->
@@ -1273,7 +976,7 @@ const readOnly = computed(() => {
           <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลเพิ่มเติม</h4>
         </div>
 
-        <div v-if="showPaymentDueDate" class="mt-4">
+        <div v-if="visibility.showPaymentDueDate.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
           <DatePicker
             v-model="saleForm.paymentDueDate as Date"
@@ -1291,7 +994,7 @@ const readOnly = computed(() => {
         </div>
 
         <!-- Delivery Status (for cash) -->
-        <div v-if="showDeliveryStatus" class="mt-4">
+        <div v-if="visibility.showDeliveryStatus.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
           <Select
             v-model="saleForm.deliveryStatus"
@@ -1313,19 +1016,19 @@ const readOnly = computed(() => {
         </div>
 
         <!-- Bank Selection (for transfer/card) -->
-        <div v-if="showBankSelection" class="mt-4">
+        <div v-if="visibility.showBankSelection.value" class="mt-4">
           <BankSelectionSection
             :selected-bank-code="saleForm.bankCode || ''"
             :is-submitting="isSubmitting"
             :is-current-bank="props.saleData.bankCode"
             :is-current-status="currentStatusString"
             :is-read-only="!canEditBankInfo"
-            @update:selected-bank-code="updateBankCode"
+            @update:selected-bank-code="formFieldUpdates.updateBankCode"
           />
         </div>
 
         <!-- Shipping Address -->
-        <div v-if="showShippingAddress" class="mt-4 space-y-2">
+        <div v-if="visibility.showShippingAddress.value" class="mt-4 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
             <Button
@@ -1335,7 +1038,7 @@ const readOnly = computed(() => {
               severity="secondary"
               size="small"
               outlined
-              @click="updateShippingAddressFromMember"
+              @click="formFieldUpdates.updateShippingAddressFromMember"
             />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1377,33 +1080,35 @@ const readOnly = computed(() => {
 
         <!-- Slip Upload Section (for order/transfer/card when status >= wait_payment) -->
         <SlipUploadSection
-          v-if="showSlipUpload"
+          v-if="visibility.showSlipUpload.value"
           :sale-id="props.saleData._id || ''"
           :selected-status="currentStatusString"
           :is-current-status="currentStatusString"
           :is-submitting="isSubmitting"
-          @slip-status-changed="handleSlipStatusChanged"
-          @slip-pending-upload="handleSlipPendingUpload"
-          @slip-uploaded="handleSlipUploaded"
+          @slip-status-changed="slipManagement.handleSlipStatusChanged"
+          @slip-pending-upload="slipManagement.handleSlipPendingUpload"
+          @slip-uploaded="(saleId) => slipManagement.handleSlipUploaded(saleId, saleForm)"
         />
 
         <!-- Shipping Slip Upload Section -->
         <ShippingSlipUploadSection
-          v-if="showShippingSlipUpload"
+          v-if="visibility.showShippingSlipUpload.value"
           :sale-id="props.saleData._id || ''"
           :selected-status="currentStatusString"
           :is-current-status="currentStatusString"
           :is-submitting="isSubmitting"
-          :skip-upload="skipShippingSlipUpload"
-          :require-upload="requireShippingSlipUpload"
+          :skip-upload="slipManagement.skipShippingSlipUpload.value"
+          :require-upload="slipManagement.requireShippingSlipUpload.value"
           :delivery="saleForm.delivery"
           :is-read-only="currentStatusString === 'received' || currentStatusString === 'damaged'"
-          @shipping-slip-status-changed="handleShippingSlipStatusChanged"
-          @shipping-slip-pending-upload="handleShippingSlipPendingUpload"
-          @shipping-slip-uploaded="handleShippingSlipUploaded"
-          @skip-upload-changed="handleSkipShippingSlipUploadChanged"
-          @require-upload-changed="handleRequireShippingSlipUploadChanged"
-          @delivery-changed="handleDeliveryChanged"
+          @shipping-slip-status-changed="slipManagement.handleShippingSlipStatusChanged"
+          @shipping-slip-pending-upload="slipManagement.handleShippingSlipPendingUpload"
+          @shipping-slip-uploaded="
+            (saleId) => slipManagement.handleShippingSlipUploaded(saleId, saleForm)
+          "
+          @skip-upload-changed="slipManagement.handleSkipShippingSlipUploadChanged"
+          @require-upload-changed="slipManagement.handleRequireShippingSlipUploadChanged"
+          @delivery-changed="formFieldUpdates.handleDeliveryChanged"
         />
 
         <!-- Complete Sale Section (for shipping status) -->
