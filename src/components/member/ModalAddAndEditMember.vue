@@ -526,7 +526,6 @@ const handleAddMember = () => {
   // Validation: ถ้าเลือกใช้จุลินทรีย์ ต้องกรอกยี่ห้อ
   if (newMember.value.bacteriaUsage === 'yes' && !newMember.value.bacteriaBrand?.trim()) {
     toast.error('กรุณากรอกยี่ห้อจุลินทรีย์')
-    isSubmitting.value = false
     return
   }
 
@@ -536,7 +535,6 @@ const handleAddMember = () => {
     !newMember.value.filterCleaningCompany?.trim()
   ) {
     toast.error('กรุณากรอกชื่อบริษัทรับล้างกรอง')
-    isSubmitting.value = false
     return
   }
 

@@ -352,30 +352,25 @@ const { mutate: createSale, isPending: isCreatingSale } = useMutation({
 
       // Check if should deduct stock (status = preparing or received)
       if (initialStatus === SellingStatus.preparing || initialStatus === SellingStatus.received) {
-        // Update member status if needed
+        // Update member status, purchaseHistory และ customerLevel ในครั้งเดียว
+        // ใช้ฟังก์ชันรวมเพื่อป้องกัน race condition
         if (variables.products) {
           const preparingStepOrder = salesStore.statusWorkflow['preparing'].stepOrder
-          memberStatusUpdate.updateMemberStatusIfNeeded(
-            {
-              ...variables,
-              _id: createdSale._id,
-              sellingStatus: initialStatus,
-            } as IUpdateSalesPayload,
-            members.value,
-          )
+          const updatePayload = {
+            ...variables,
+            _id: createdSale._id,
+            sellingStatus: initialStatus,
+          } as IUpdateSalesPayload
 
-          // Update member customer level
-          // อัพเดท customerLevel เมื่อ status = preparing หรือ received (มีการยืนยันสลิปแล้ว)
-          memberStatusUpdate.updateMemberCustomerLevelIfNeeded(
-            {
-              ...variables,
-              _id: createdSale._id,
-              sellingStatus: initialStatus,
-            } as IUpdateSalesPayload,
+          // Update member status, purchaseHistory และ customerLevel เมื่อ status >= preparing
+          memberStatusUpdate.updateMemberStatusAndPurchaseHistory(
+            updatePayload,
             members.value,
-            allSales.value,
-            products.value || [],
-            preparingStepOrder
+            preparingStepOrder,
+            {
+              allSales: allSales.value,
+              allProducts: products.value || [],
+            }
           )
         }
 
