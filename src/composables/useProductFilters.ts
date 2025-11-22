@@ -46,6 +46,8 @@ export function useProductFilters() {
     age: '',
     farm: '',
     gender: '',
+    greenhouse: '',
+    fishpond: '',
     size: null,
     price: null,
     priceMin: 0,
@@ -101,6 +103,12 @@ export function useProductFilters() {
     if (fishFilters.value.gender) {
       filtered = filtered.filter((p) => p.gender === fishFilters.value.gender)
     }
+    if (fishFilters.value.greenhouse) {
+      filtered = filtered.filter((p) => p.fishpond?.greenhouse === fishFilters.value.greenhouse)
+    }
+    if (fishFilters.value.fishpond) {
+      filtered = filtered.filter((p) => p.fishpond?._id === fishFilters.value.fishpond)
+    }
     if (fishFilters.value.sizeMin && fishFilters.value.sizeMax) {
       filtered = filtered.filter(
         (p) => p.size && p.size >= fishFilters.value.sizeMin && p.size <= fishFilters.value.sizeMax,
@@ -150,7 +158,8 @@ export function useProductFilters() {
   const applyFoodRetailFilters = (products: IFoodSale[]) => {
     let filtered = [...products]
     if (foodRetailFilters.value.sku) {
-      filtered = filtered.filter((p) => p.product.sku?.toLowerCase().includes(foodRetailFilters.value.sku.toLowerCase()),
+      filtered = filtered.filter((p) =>
+        p.product.sku?.toLowerCase().includes(foodRetailFilters.value.sku.toLowerCase()),
       )
     }
     if (foodRetailFilters.value.lotNumber) {

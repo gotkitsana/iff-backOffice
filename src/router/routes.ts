@@ -18,6 +18,7 @@ import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
 import Product from '@/views/Product/ProductView.vue'
 import ProductOptionSetting from '@/views/Product/ProductOptionSetting.vue'
+import GreenhouseMapView from '@/views/Product/GreenhouseMapView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
@@ -327,6 +328,20 @@ export default [
             { label: 'ระบบ POS' },
             { label: 'จัดการสินค้า' },
             { label: 'ตั้งค่าตัวเลือกสินค้า' },
+          ],
+        },
+      },
+      {
+        path: '/product/greenhouse-map',
+        name: 'greenhouse-map',
+        component: GreenhouseMapView,
+        meta: {
+          title: 'แผนผังกรีนเฮาส์',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบ POS' },
+            { label: 'จัดการสินค้า' },
+            { label: 'แผนผังกรีนเฮาส์' },
           ],
         },
       },

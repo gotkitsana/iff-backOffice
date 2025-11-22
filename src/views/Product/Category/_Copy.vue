@@ -66,6 +66,8 @@ const fishFilters = ref<IFishFilters>({
   priceMax: 500000,
   sizeMin: 0,
   sizeMax: 200,
+  greenhouse: '',
+  fishpond: '',
 })
 
 const selectedCategoryId = computed(() => selectedCategory.value?._id)

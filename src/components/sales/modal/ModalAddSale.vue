@@ -19,13 +19,16 @@ import { type IAdmin } from '@/stores/admin/admin'
 import BankSelectionSection from '../BankSelectionSection.vue'
 import { useFoodSaleStore, type IFoodSale } from '@/stores/product/food_sale'
 import { executeStockDeduction } from '@/utils/stockDeduction'
-import { useProductSelection } from '@/composables/useProductSelection'
 import { validatePaymentMethod } from '@/utils/salesStatusValidation'
 import { calculateInitialStatus } from '@/utils/salesStatusCalculation'
 import { useMemberStatusUpdate } from '@/composables/useMemberStatusUpdate'
 import { DatePicker } from 'primevue'
 import InputText from 'primevue/inputtext'
 import { watch } from 'vue'
+import { useProductManagement } from '@/composables/useProductManagement'
+import { useFormFieldUpdates } from '@/composables/useFormFieldUpdates'
+import { useSalesVisibility } from '@/composables/useSalesVisibility'
+import { useStatusHelpers } from '@/composables/useStatusHelpers'
 
 // Props
 const props = defineProps<{
@@ -86,44 +89,49 @@ const { data: foodSales } = useQuery<IFoodSale[]>({
   queryFn: () => foodSaleStore.onGetFoodSales(),
 })
 
-// Use composable for product selection
-const productSelection = useProductSelection(
-  products,
-  categories,
-  foodSales,
-  computed(() => saleForm.value.products || [])
-)
-
-// Provide composable to child components
-provide(Symbol.for('productSelection'), productSelection)
-
 // Use composable for member status update
 const memberStatusUpdate = useMemberStatusUpdate()
 
-const totalAmount = computed(() => {
-  return saleForm.value.products?.reduce((sum, product) => {
-    if (!product.id) return 0
+// Use status helpers
+const { getStatusStepIndex } = useStatusHelpers({
+  sellingStatus: computed(() => saleForm.value.sellingStatus),
+})
 
-    // ตรวจสอบว่าเป็น food sale
-    const foodSale = foodSales.value?.find((fs) => fs._id === product.id)
-    if (foodSale) {
-      return sum + (foodSale.customerPriceKilo || 0) * (product.quantity || 0)
-    }
+// Use product management
+const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+const productManagement = useProductManagement({
+  products: computed(() => saleForm.value.products || []),
+  productsData: products,
+  foodSales: foodSales,
+  categories: categories,
+  customProducts,
+  maxProducts: 20,
+  minProducts: 1,
+})
 
-    // กรณี product ปกติ
-    const productDetail = productSelection.availableProducts.value?.find(
-      (p) => p._id === product.id
-    )
-    if (productDetail && productDetail.price) {
-      return sum + (productDetail.price || 0) * product.quantity
-    }
-    return sum
-  }, 0)
+// Provide composable to child components
+provide(Symbol.for('productSelection'), productManagement.productSelection)
+
+// Use sales visibility
+const visibility = useSalesVisibility({
+  paymentMethod: computed(() => saleForm.value.paymentMethod as string | undefined),
+  deliveryStatus: computed(() => saleForm.value.deliveryStatus as string | undefined),
+  currentStatusString: computed(() => 'order'), // ModalAddSale always starts with 'order'
+  products: computed(() => saleForm.value.products || []),
+  getStatusStepIndex,
+})
+
+// Use form field updates
+const formFieldUpdates = useFormFieldUpdates({
+  saleForm: saleForm as any, // Type assertion needed for ICreateSalesPayload
+  selectedMemberDetails: computed(() => selectedMemberDetails.value || null),
 })
 
 const netAmount = computed(() => {
   const netAmount =
-    (totalAmount.value || 0) - (saleForm.value.deliveryNo || 0) - (saleForm.value.discount || 0)
+    (productManagement.totalAmount.value || 0) -
+    (saleForm.value.deliveryNo || 0) -
+    (saleForm.value.discount || 0)
   return netAmount < 0 ? 0 : netAmount
 })
 
@@ -143,80 +151,9 @@ const selectedMemberDetails = computed(() => {
   return members.value.find((m) => m._id === saleForm.value.user)
 })
 
-// Product management functions
-const addProduct = () => {
-  if (!saleForm.value.products) {
-    saleForm.value.products = [{ id: '', category: '', price: 0, quantity: 1 }]
-    return
-  }
-
-  if (saleForm.value.products.length < 20) {
-    saleForm.value.products.push({ id: '', category: '', price: 0, quantity: 1 })
-  } else {
-    toast.warning('สามารถเพิ่มสินค้าได้สูงสุด 20 รายการ')
-  }
-}
-
-const removeProduct = (index: number) => {
-  if (saleForm.value.products && saleForm.value.products.length > 1) {
-    saleForm.value.products?.splice(index, 1)
-  } else {
-    toast.warning('ต้องมีสินค้าอย่างน้อย 1 รายการ')
-  }
-}
-
+// Product validation helper
 const isProductValid = (product: { id: string; quantity: number }) => {
   return product.id && product.quantity > 0
-}
-
-// Computed สำหรับการแสดงผลตาม payment method
-const showProductSelection = computed(() => {
-  return saleForm.value.paymentMethod !== 'order'
-})
-
-const showCustomProducts = computed(() => {
-  return saleForm.value.paymentMethod === 'order'
-})
-
-const showDeliveryStatus = computed(() => {
-  return saleForm.value.paymentMethod === 'cash'
-})
-
-const showPaymentDueDate = computed(() => {
-  return saleForm.value.paymentMethod === 'credit'
-})
-
-const showBankSelection = computed(() => {
-  return saleForm.value.paymentMethod === 'transfer' || saleForm.value.paymentMethod === 'card'
-})
-
-const showShippingAddress = computed(() => {
-  const pm = saleForm.value.paymentMethod
-  if (pm === 'cash') {
-    // เงินสด: แสดงถ้าเลือก "แพ็ครอจัดส่ง"
-    return saleForm.value.deliveryStatus === 'preparing'
-  }
-  // เครดิต, โอน, บัตร, ปลายทาง: บังคับ
-  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
-})
-
-const requiresShippingAddress = computed(() => {
-  const pm = saleForm.value.paymentMethod
-  if (pm === 'cash') {
-    return saleForm.value.deliveryStatus === 'preparing'
-  }
-  return pm === 'credit' || pm === 'transfer' || pm === 'card' || pm === 'cod'
-})
-
-// Custom products management
-const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
-
-const addCustomProduct = () => {
-  customProducts.value.push({ name: '', quantity: 1, description: '' })
-}
-
-const removeCustomProduct = (index: number) => {
-  customProducts.value.splice(index, 1)
 }
 
 // Handlers
@@ -242,6 +179,11 @@ const handleSubmit = () => {
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products?.some((p) => isProductValid(p)) || false
   const hasCustomProducts = customProducts.value.some((p) => p.name && p.quantity > 0)
+
+  // Note: ModalAddSale doesn't use slip management in the same way as ModalEditSale
+  // Slips are handled after creation, so we set hasSlip and hasShippingSlip to false
+  const hasSlip = ref(false)
+  const hasShippingSlip = ref(false)
 
   // Validate payment method
   const paymentValidation = validatePaymentMethod({
@@ -446,8 +388,6 @@ const resetForm = () => {
     _id: '',
     submit: false,
   }
-  hasSlip.value = false
-  hasShippingSlip.value = false
   bankForm.value = {
     bankCode: '',
     bankAccount: '',
@@ -464,26 +404,16 @@ const sellers = computed(() => {
     }))
 })
 
-// Update shipping address from member
-const updateShippingAddressFromMember = () => {
-  if (selectedMemberDetails.value) {
-    saleForm.value.shippingAddress = selectedMemberDetails.value.address || ''
-    saleForm.value.shippingProvince = selectedMemberDetails.value.province || ''
-  }
-}
-
 // Watch member change to auto-fill shipping address
 watch(
   () => saleForm.value.user,
   () => {
     if (saleForm.value.user && !saleForm.value.shippingAddress) {
-      updateShippingAddressFromMember()
+      formFieldUpdates.updateShippingAddressFromMember()
     }
   }
 )
 
-const hasSlip = ref(false)
-const hasShippingSlip = ref(false)
 const bankForm = ref({
   bankCode: '',
   bankAccount: '',
@@ -497,10 +427,7 @@ const shippingSlipData = ref({
   submit: false,
 })
 
-const updateBankCode = (bankCode: string) => {
-  bankForm.value.bankCode = bankCode
-}
-
+// Update products handler - ModalAddSale has special logic for foodSales
 const updateProducts = (index: number, value: string | Record<string, any>) => {
   // TreeSelect ส่ง value เป็น string หรือ object
   let selectedId: string
@@ -530,25 +457,19 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
       unit: 'kilo',
     }
   } else {
-    // กรณีสินค้าปกติ
-    const product = productSelection.availableProducts.value?.find((p) => p._id === selectedId)
+    // กรณีสินค้าปกติ - ใช้ productManagement
+    productManagement.updateProductForIndex(index, selectedId)
 
-    if (!product) return
-
-    // หาราคาตาม category
-    let price = product.price || 0
-    if (product.category?.name != 'ปลา' && product.food?.customerPrice) {
-      price = product.food.customerPrice
-    }
-
-    saleForm.value.products![index] = {
-      id: product._id,
-      category: product.category?._id || '',
-      price: price, // ราคาต่อกระสอบ
-      quantity: saleForm.value.products![index].quantity || 1, // คงค่า quantity เดิม
-      // ไม่มี retailID
-      name: product.name || '',
-      unit: 'piece',
+    // Update additional fields for ModalAddSale
+    const product = productManagement.productSelection.availableProducts.value?.find(
+      (p) => p._id === selectedId
+    )
+    if (product && saleForm.value.products) {
+      saleForm.value.products[index] = {
+        ...saleForm.value.products[index],
+        name: product.name || '',
+        unit: 'piece',
+      }
     }
   }
 }
@@ -621,7 +542,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           </div>
 
           <!-- Delivery Status (for cash) -->
-          <div v-if="showDeliveryStatus">
+          <div v-if="visibility.showDeliveryStatus.value">
             <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
             <Select
               v-model="saleForm.deliveryStatus"
@@ -694,7 +615,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         </div>
 
         <!-- Payment Due Date (for credit) -->
-        <div v-if="showPaymentDueDate" class="mt-4">
+        <div v-if="visibility.showPaymentDueDate.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
           <DatePicker
             v-model="saleForm.paymentDueDate as Date | undefined"
@@ -711,18 +632,18 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         </div>
 
         <!-- Bank Selection (for transfer/card) -->
-        <div v-if="showBankSelection" class="mt-4">
+        <div v-if="visibility.showBankSelection.value" class="mt-4">
           <BankSelectionSection
             :selected-bank-code="bankForm.bankCode || ''"
             :is-submitting="isSubmitting"
             :is-current-bank="''"
             :is-current-status="''"
-            @update:selected-bank-code="updateBankCode"
+            @update:selected-bank-code="formFieldUpdates.updateBankCode"
           />
         </div>
 
         <!-- Shipping Address -->
-        <div v-if="showShippingAddress" class="mt-4 space-y-2">
+        <div v-if="visibility.showShippingAddress.value" class="mt-4 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
             <Button
@@ -732,7 +653,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
               severity="secondary"
               size="small"
               outlined
-              @click="updateShippingAddressFromMember"
+              @click="formFieldUpdates.updateShippingAddressFromMember"
             />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -742,10 +663,18 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
                 placeholder="ที่อยู่"
                 fluid
                 size="small"
-                :invalid="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+                :invalid="
+                  !saleForm.shippingAddress &&
+                  isSubmitting &&
+                  visibility.requiresShippingAddress.value
+                "
               />
               <small
-                v-if="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+                v-if="
+                  !saleForm.shippingAddress &&
+                  isSubmitting &&
+                  visibility.requiresShippingAddress.value
+                "
                 class="text-red-500"
                 >กรุณากรอกที่อยู่จัดส่ง</small
               >
@@ -759,10 +688,18 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
                 placeholder="เลือกจังหวัด"
                 fluid
                 size="small"
-                :invalid="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+                :invalid="
+                  !saleForm.shippingProvince &&
+                  isSubmitting &&
+                  visibility.requiresShippingAddress.value
+                "
               />
               <small
-                v-if="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+                v-if="
+                  !saleForm.shippingProvince &&
+                  isSubmitting &&
+                  visibility.requiresShippingAddress.value
+                "
                 class="text-red-500"
                 >กรุณาเลือกจังหวัด</small
               >
@@ -773,7 +710,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
 
       <!-- Custom Products (for order) -->
       <div
-        v-if="showCustomProducts"
+        v-if="visibility.showCustomProducts.value"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center justify-between mb-4">
@@ -786,7 +723,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             icon="pi pi-plus"
             severity="success"
             size="small"
-            @click="addCustomProduct"
+            @click="() => customProducts.push({ name: '', quantity: 1, description: '' })"
           />
         </div>
         <div class="space-y-3">
@@ -828,7 +765,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
                 severity="danger"
                 size="small"
                 outlined
-                @click="removeCustomProduct(index)"
+                @click="() => customProducts.splice(index, 1)"
               />
             </div>
           </div>
@@ -840,7 +777,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
 
       <!-- Product Information -->
       <div
-        v-if="showProductSelection"
+        v-if="visibility.showProductSelection.value"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
         <div class="flex items-center justify-between mb-4">
@@ -853,7 +790,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             icon="pi pi-plus"
             severity="success"
             size="small"
-            @click="addProduct"
+            @click="productManagement.addProduct"
           />
         </div>
 
@@ -870,7 +807,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             @update:quantity="
               (idx, qty) => (saleForm.products ? (saleForm.products[idx].quantity = qty) : 1)
             "
-            @remove="removeProduct"
+            @remove="productManagement.removeProduct"
           />
         </div>
 
@@ -932,7 +869,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">มูลค่าสินค้า:</span>
               <span class="text-sm font-medium text-gray-800">{{
-                formatCurrency(totalAmount || 0)
+                formatCurrency(productManagement.totalAmount.value || 0)
               }}</span>
             </div>
 
