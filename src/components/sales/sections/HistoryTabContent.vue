@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Image as PrimeImage } from 'primevue'
 import ProductHistorySection from '../shared/ProductHistorySection.vue'
+import PaymentCalculationSection from '../forms/PaymentCalculationSection.vue'
 import { useMemberStore } from '@/stores/member/member'
 import type { IProduct } from '@/stores/product/product'
 import type { ISales } from '@/types/sales'
@@ -13,6 +14,7 @@ const props = defineProps<{
   productsData?: IProduct[]
   hasSlip: boolean
   hasShippingSlip: boolean
+  totalAmount?: number
 }>()
 
 const memberStore = useMemberStore()
@@ -31,24 +33,61 @@ const shippingSlipUrl = computed(() => {
   if (!props.currentData._id || !props.hasShippingSlip) return ''
   return getShippingSlipUrl(props.currentData._id, 'jpg')
 })
+
+// Calculate total amount from products
+const totalAmount = computed(() => {
+  if (props.totalAmount !== undefined) {
+    return props.totalAmount
+  }
+
+  // Calculate from products if totalAmount not provided
+  if (!props.currentData.products || props.currentData.products.length === 0) {
+    return 0
+  }
+
+  return props.currentData.products.reduce((sum, product) => {
+    return sum + (product.price || 0) * (product.quantity || 1)
+  }, 0)
+})
+
+// Note: netAmount is calculated inside PaymentCalculationSection component
 </script>
 
 <template>
-  <div class="space-y-4 pt-4">
+  <div class="space-y-4">
     <!-- สินค้า -->
     <ProductHistorySection
-      :products="currentData.products || []"
+      :products="
+        (currentData.products || []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          quantity: p.quantity,
+          unit: p.unit,
+          price: p.price,
+          category: p.category || undefined,
+        }))
+      "
       :custom-products="currentData.customProducts"
       :products-data="productsData"
+    />
+
+    <!-- การคำนวณยอดเงิน -->
+    <PaymentCalculationSection
+      :total-amount="totalAmount"
+      :deposit="currentData.deposit || 0"
+      :discount="currentData.discount || 0"
+      :delivery-no="currentData.deliveryNo || 0"
+      :is-submitting="false"
+      :read-only="true"
     />
 
     <!-- ที่อยู่จัดส่ง -->
     <div
       v-if="currentData.shippingAddress || currentData.shippingProvince"
-      class="bg-white border border-gray-200 rounded-lg p-4"
+      class="bg-white border border-gray-200 rounded-xl p-4"
     >
-      <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
-        <i class="pi pi-map-marker text-green-600 text-xs"></i>
+      <h4 class="font-medium text-gray-800 mb-3 flex items-center gap-2">
+        <i class="pi pi-map-marker text-green-600"></i>
         ที่อยู่จัดส่ง
       </h4>
       <div class="text-sm text-gray-700">
@@ -60,9 +99,9 @@ const shippingSlipUrl = computed(() => {
     </div>
 
     <!-- ข้อมูลธนาคาร -->
-    <div v-if="currentData.bankCode" class="bg-white border border-gray-200 rounded-lg p-4">
-      <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
-        <i class="pi pi-building text-purple-600 text-xs"></i>
+    <div v-if="currentData.bankCode" class="bg-white border border-gray-200 rounded-xl p-4">
+      <h4 class="font-medium text-gray-800 mb-3 flex items-center gap-2">
+        <i class="pi pi-building text-purple-600"></i>
         ข้อมูลธนาคาร
       </h4>
       <div class="space-y-2">
@@ -76,9 +115,9 @@ const shippingSlipUrl = computed(() => {
     </div>
 
     <!-- สลิปการโอนเงิน -->
-    <div v-if="hasSlip" class="bg-white border border-gray-200 rounded-lg p-4">
-      <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
-        <i class="pi pi-file text-blue-600 text-xs"></i>
+    <div v-if="hasSlip" class="bg-white border border-gray-200 rounded-xl p-4">
+      <h4 class="font-medium text-gray-800 mb-3 flex items-center gap-2">
+        <i class="pi pi-file text-blue-600"></i>
         สลิปการโอนเงิน
       </h4>
       <div class="relative">
@@ -92,9 +131,9 @@ const shippingSlipUrl = computed(() => {
     </div>
 
     <!-- ใบเสร็จการขนส่ง -->
-    <div v-if="hasShippingSlip" class="bg-white border border-gray-200 rounded-lg p-4">
-      <h4 class="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
-        <i class="pi pi-truck text-orange-600 text-xs"></i>
+    <div v-if="hasShippingSlip" class="bg-white border border-gray-200 rounded-xl p-4">
+      <h4 class="font-medium text-gray-800 mb-3 flex items-center gap-2">
+        <i class="pi pi-truck text-orange-600"></i>
         ใบเสร็จการขนส่ง
       </h4>
       <div class="relative">

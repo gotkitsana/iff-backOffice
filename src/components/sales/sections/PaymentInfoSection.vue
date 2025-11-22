@@ -38,7 +38,6 @@ const emit = defineEmits<{
   'update:delivery-no': [value: number]
 }>()
 
-const salesStore = useSalesStore()
 const memberStore = useMemberStore()
 
 const findProvinceData = (id: string) => {
@@ -48,22 +47,13 @@ const findProvinceData = (id: string) => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div v-if="showSummary || showDetailed" class="flex flex-col gap-4">
     <!-- Summary View -->
-    <div v-if="showSummary" class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+    <div
+      v-if="showSummary"
+      class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+    >
       <div class="grid grid-cols-2 gap-4">
-        <div>
-          <div class="text-sm text-gray-600 mb-1">ยอดรวม</div>
-          <div class="text-lg font-medium text-gray-900">
-            {{ formatCurrency(totalAmount || 0) }}
-          </div>
-        </div>
-        <div>
-          <div class="text-sm text-gray-600 mb-1">วิธีชำระเงิน</div>
-          <div class="text-lg font-medium text-gray-900">
-            {{ salesStore.paymentMethods.find((pm) => pm.value === paymentMethod)?.label || '-' }}
-          </div>
-        </div>
         <div v-if="bankCode">
           <div class="text-sm text-gray-600 mb-1">ธนาคาร</div>
           <div class="text-lg font-medium text-gray-900">{{ bankCode || '-' }}</div>
@@ -76,7 +66,7 @@ const findProvinceData = (id: string) => {
     </div>
 
     <!-- Detailed View -->
-    <div v-if="showDetailed">
+    <div v-if="showDetailed" class="space-y-4">
       <PaymentCalculationSection
         :total-amount="totalAmount"
         :deposit="deposit"

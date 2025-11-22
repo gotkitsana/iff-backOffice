@@ -26,12 +26,12 @@ const updateStatus = (status: 'received' | 'damaged') => {
   <div v-if="showCompleteSale" class="space-y-4">
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 border-b border-gray-200">
-        <h4 class="font-medium text-gray-900 flex items-center gap-2">
-          <i class="pi pi-send text-purple-600"></i>
+        <h4 class="text-base font-medium text-gray-900 flex items-center gap-2">
+          <i class="pi pi-send text-purple-600 text-base"></i>
           จบการขาย
         </h4>
       </div>
-      <div class="p-4 space-y-3">
+      <div class="p-4 grid md:grid-cols-2 gap-3">
         <div
           v-for="option in [
             {
@@ -50,7 +50,7 @@ const updateStatus = (status: 'received' | 'damaged') => {
             },
           ]"
           :key="option.value"
-          :class="`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+          :class="`p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
             localFinalSaleStatus === option.value
               ? option.color === 'success'
                 ? 'border-green-500 bg-green-50 shadow-sm'
@@ -66,13 +66,13 @@ const updateStatus = (status: 'received' | 'damaged') => {
               }`"
             >
               <i
-                :class="`pi ${option.icon} text-xl ${
+                :class="`pi ${option.icon} text-base ${
                   option.color === 'success' ? 'text-green-600' : 'text-red-600'
                 }`"
               ></i>
             </div>
             <div class="flex-1">
-              <div class="font-semibold text-gray-900 text-lg">{{ option.label }}</div>
+              <div class="font-semibold text-gray-900 text-base">{{ option.label }}</div>
               <div class="text-sm text-gray-600 mt-0.5">{{ option.description }}</div>
             </div>
             <div
@@ -81,7 +81,7 @@ const updateStatus = (status: 'received' | 'damaged') => {
                 option.color === 'success' ? 'bg-green-500' : 'bg-red-500'
               }`"
             >
-              <i class="pi pi-check text-white text-sm"></i>
+              <i class="pi pi-check text-white text-xs"></i>
             </div>
           </div>
         </div>
@@ -90,8 +90,8 @@ const updateStatus = (status: 'received' | 'damaged') => {
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
-        <h4 class="font-medium text-gray-900 flex items-center gap-2">
-          <i class="pi pi-file-edit text-gray-600"></i>
+        <h4 class="text-base font-medium text-gray-900 flex items-center gap-2">
+          <i class="pi pi-file-edit text-gray-600 text-base"></i>
           หมายเหตุ
         </h4>
       </div>
