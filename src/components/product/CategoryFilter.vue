@@ -374,6 +374,15 @@ const { navigateWithQuery } = useProductQuery()
             @click="navigateWithQuery('/product/options-settings')"
           />
 
+          <Button
+            v-if="isFishSelected"
+            label="แผนผัง"
+            icon="pi pi-map"
+            severity="secondary"
+            size="small"
+            @click="navigateWithQuery('/product/greenhouse-map')"
+          />
+
           <!-- <Button
             label="เปลี่ยนหมวดหมู่"
             icon="pi pi-sync"
