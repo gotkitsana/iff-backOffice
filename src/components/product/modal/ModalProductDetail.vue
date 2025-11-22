@@ -229,12 +229,341 @@ const selectedMediaItems = computed(() => {
       </div>
     </template>
 
-    <div v-if="productData" class="space-y-8">
-      <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-if="productData" class="space-y-4">
+      <!-- Fish Product Layout -->
+      <template v-if="selectedCategory?.value === 'fish'">
+        <!-- 1. ข้อมูล (3 sections) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- ข้อมูลสายพันธุ์ (Breed Information) -->
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-star text-blue-600 text-sm"></i>
+              </div>
+              ข้อมูลสายพันธุ์
+            </h5>
+            <div class="space-y-3">
+              <div v-if="getFieldValue('species')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  สายพันธุ์
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('species') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('breeders')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  แม่พันธุ์
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('breeders') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('birth')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  วันเกิด
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ formatFieldValue('birth') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('age')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  อายุ
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('age') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('farm')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  ฟาร์ม
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('farm') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('quality')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  คุณภาพเกรด
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('quality') }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ข้อมูลตัวปลา (Fish Information) -->
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-fish text-green-600 text-sm"></i>
+              </div>
+              ข้อมูลตัวปลา
+            </h5>
+            <div class="space-y-3">
+              <div v-if="productData.uat">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  วันที่บันทึก
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('size')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  ไซต์
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('size') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('weight')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  น้ำหนัก (กก.)
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('weight') }}
+                </p>
+              </div>
+              <div v-if="productData.gender">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  เพศ
+                </label>
+                <Tag
+                  :value="getGenderTag(productData.gender || '').label"
+                  :severity="getGenderTag(productData.gender || '').severity"
+                  class="px-2 py-1 text-xs"
+                />
+              </div>
+              <div v-if="productData.price">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  ราคา
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ formatFieldValue('price') }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ข้อมูลการจัดเก็บ (Stock Information) -->
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-inbox text-purple-600 text-sm"></i>
+              </div>
+              ข้อมูลการจัดเก็บ
+            </h5>
+            <div class="space-y-3">
+              <div v-if="getFieldValue('lotNumber')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  ล็อต
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('lotNumber') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('sku')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  รหัสปลา
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('sku') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('greenhouse')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  กรีนเฮ้า
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('greenhouse') }}
+                </p>
+              </div>
+              <div v-if="getFieldValue('fishpond')">
+                <label
+                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                >
+                  บ่อ
+                </label>
+                <p class="text-sm text-gray-900 font-medium">
+                  {{ getFieldValue('fishpond') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. รูปภาพ + ใบรับรอง -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Images -->
+          <div
+            v-if="productData.images.length > 0"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
+          >
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-image text-gray-600 text-sm"></i>
+              </div>
+              รูปภาพปลา
+            </h5>
+
+            <Galleria
+              :value="
+                productData.images.map((image) => ({
+                  itemImageSrc: getImageUrl(image.filename),
+                  thumbnailImageSrc: getImageUrl(image.filename),
+                  alt: 'product image',
+                }))
+              "
+              :numVisible="productData.images.length"
+              :circular="true"
+              :showItemNavigators="true"
+              :showThumbnails="true"
+              :showItemNavigatorsOnHover="true"
+              :pt="{
+                root: { class: 'max-w-full' },
+                content: { class: 'bg-gray-50 rounded-lg' },
+                thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-1' },
+              }"
+            >
+              <template #item="{ item }">
+                <div class="flex justify-center items-center overflow-hidden">
+                  <img
+                    :src="item.itemImageSrc"
+                    :alt="item.alt"
+                    class="w-full h-auto max-h-[40vh] object-contain"
+                    loading="lazy"
+                    fetchpriority="low"
+                    crossorigin="anonymous"
+                  />
+                </div>
+              </template>
+
+              <template #thumbnail="{ item }">
+                <div class="p-1">
+                  <img
+                    :src="item.thumbnailImageSrc"
+                    :alt="item.alt"
+                    class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
+                    loading="lazy"
+                    fetchpriority="low"
+                    crossorigin="anonymous"
+                  />
+                </div>
+              </template>
+            </Galleria>
+          </div>
+
+          <!-- Certificate -->
+          <div
+            v-if="productData.certificate"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
+          >
+             <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-file text-purple-600 text-sm"></i>
+              </div>
+              ใบรับรอง
+            </h5>
+            <div class="text-center">
+              <img
+                :src="getCertificateUrl(productData.certificate)"
+                alt="Certificate"
+                class="w-full h-auto max-h-[35vh] object-contain rounded-lg border border-gray-200"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. วิดีโอ -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div
+          v-if="productData.detail || productData.youtube"
+          class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2"
+        >
+          <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
+            <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-video text-gray-600 text-sm"></i>
+            </div>
+            วิดีโอสินค้า
+          </h5>
+          <div v-if="productData.youtube">
+            <div class="bg-black rounded-lg py-0">
+              <video :src="productData.youtube" class="w-full h-auto max-h-[55vh]" controls>
+                <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+              </video>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. อื่นๆ (Supplier Info, System Info) -->
+          <div class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
+              <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-cog text-gray-600 text-sm"></i>
+              </div>
+              ข้อมูลระบบ
+            </h5>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  >อัปเดตล่าสุด</label
+                >
+                <p class="text-sm text-gray-900 mt-1">
+                  {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </template>
+
+      <!-- Default Layout for Other Categories -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Left Column - Product Information -->
         <div class="lg:col-span-2 space-y-4">
-          <!-- Dynamic Form Fields Display -->
           <div
             v-if="selectedCategoryInfo"
             class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
