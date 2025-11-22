@@ -16,6 +16,8 @@ import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { usePondStore, type IPond } from '@/stores/product/pond'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useProductQuery } from '@/composables/useProductQuery'
 
@@ -74,6 +76,8 @@ const localFishFilters = ref<IFishFilters>({
   age: props.fishFilters?.age || '',
   farm: props.fishFilters?.farm || '',
   gender: props.fishFilters?.gender || '',
+  greenhouse: props.fishFilters?.greenhouse || '',
+  fishpond: props.fishFilters?.fishpond || '',
   size: props.fishFilters?.size || null,
   price: props.fishFilters?.price || null,
   priceMin: props.fishFilters?.priceMin || 0,
@@ -179,6 +183,8 @@ const clearFilters = () => {
       age: '',
       farm: '',
       gender: '',
+      greenhouse: '',
+      fishpond: '',
       size: null,
       price: null,
       priceMin: 0,
@@ -222,6 +228,40 @@ const farmOptions = computed(() => {
     label: p.name,
     value: p._id,
   }))
+})
+
+const greenhouseStore = useGreenhouseStore()
+const { data: greenhouses } = useQuery<IGreenhouse[]>({
+  queryKey: ['get_greenhouses'],
+  queryFn: () => greenhouseStore.onGetGreenhouses(),
+})
+const greenhouseOptions = computed(() => {
+  return greenhouses.value?.map((p) => ({
+    label: p.name,
+    value: p._id,
+  }))
+})
+
+const pondStore = usePondStore()
+const { data: ponds } = useQuery<IPond[]>({
+  queryKey: ['get_ponds'],
+  queryFn: () => pondStore.onGetPonds(),
+})
+const pondOptions = computed(() => {
+  if (!ponds.value) return []
+  const ghId = localFishFilters.value.greenhouse || ''
+  if (!ghId) {
+    return ponds.value.map((p) => ({
+      label: p.code,
+      value: p._id,
+    }))
+  }
+  return ponds.value
+    .filter((p) => p.greenhouse?._id === ghId)
+    .map((p) => ({
+      label: p.code,
+      value: p._id,
+    }))
 })
 
 const getImageUrl = (image: string) => {
@@ -296,7 +336,6 @@ const formatSize = (value: number) => {
 }
 
 const { navigateWithQuery } = useProductQuery()
-
 </script>
 
 <template>
@@ -403,6 +442,37 @@ const { navigateWithQuery } = useProductQuery()
               size="small"
               fluid
               filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
+            <Select
+              :model-value="localFishFilters.greenhouse"
+              @update:model-value="updateFishFilter('greenhouse', $event)"
+              :options="greenhouseOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกกรีนเฮาส์"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">บ่อปลา</label>
+            <Select
+              :model-value="localFishFilters.fishpond"
+              @update:model-value="updateFishFilter('fishpond', $event)"
+              :options="pondOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกบ่อปลา"
+              size="small"
+              fluid
+              filter
+              :disabled="!localFishFilters.greenhouse"
             />
           </div>
 

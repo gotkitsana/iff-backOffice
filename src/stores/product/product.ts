@@ -33,7 +33,6 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
-
   const seedTypeOptions = [
     {
       label: 'ลอย',
@@ -237,7 +236,15 @@ export interface ICreateProductPayload {
 export interface IUpdateProductPayload
   extends Omit<
     IProduct,
-    'fishpond' | 'species' | 'farm' | 'quality' | 'lotNumber' | 'seedSize' | 'foodtype' | 'brand' | 'fishStatus'
+    | 'fishpond'
+    | 'species'
+    | 'farm'
+    | 'quality'
+    | 'lotNumber'
+    | 'seedSize'
+    | 'foodtype'
+    | 'brand'
+    | 'fishStatus'
   > {
   _id: string
   fishpond?: string
@@ -356,6 +363,8 @@ export interface IFishFilters {
   age: string
   farm: string
   gender: string
+  greenhouse: string
+  fishpond: string
   size: number | null
   price: number | null
   priceMin: number
