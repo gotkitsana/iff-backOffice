@@ -229,13 +229,13 @@ const selectedMediaItems = computed(() => {
       </div>
     </template>
 
-    <div v-if="productData" class="space-y-6">
+    <div v-if="productData" class="space-y-4">
       <!-- Fish Product Layout -->
       <template v-if="selectedCategory?.value === 'fish'">
         <!-- 1. ข้อมูล (3 sections) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- ข้อมูลสายพันธุ์ (Breed Information) -->
-          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
             <h5
               class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
             >
@@ -309,7 +309,7 @@ const selectedMediaItems = computed(() => {
           </div>
 
           <!-- ข้อมูลตัวปลา (Fish Information) -->
-          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
             <h5
               class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
             >
@@ -375,7 +375,7 @@ const selectedMediaItems = computed(() => {
           </div>
 
           <!-- ข้อมูลการจัดเก็บ (Stock Information) -->
-          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
             <h5
               class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
             >
@@ -436,11 +436,13 @@ const selectedMediaItems = computed(() => {
             v-if="productData.images.length > 0"
             class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
-            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-image text-gray-600"></i>
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-image text-gray-600 text-sm"></i>
               </div>
-              รูปภาพสินค้า
+              รูปภาพปลา
             </h5>
 
             <Galleria
@@ -493,11 +495,13 @@ const selectedMediaItems = computed(() => {
           <!-- Certificate -->
           <div
             v-if="productData.certificate"
-            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
-            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-file text-purple-600"></i>
+             <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-file text-purple-600 text-sm"></i>
               </div>
               ใบรับรอง
             </h5>
@@ -512,13 +516,14 @@ const selectedMediaItems = computed(() => {
         </div>
 
         <!-- 3. วิดีโอ -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div
           v-if="productData.detail || productData.youtube"
-          class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
+          class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2"
         >
-          <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-video text-gray-600"></i>
+          <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
+            <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-video text-gray-600 text-sm"></i>
             </div>
             วิดีโอสินค้า
           </h5>
@@ -532,202 +537,10 @@ const selectedMediaItems = computed(() => {
         </div>
 
         <!-- 4. อื่นๆ (Supplier Info, System Info) -->
-        <div class="space-y-4">
-          <!-- Supplier Information -->
-          <div
-            v-if="!!selectedSupplier"
-            class="bg-gradient-to-br from-blue-50/50 via-white to-purple-50/30 rounded-2xl p-6 shadow-sm border border-blue-100/50 backdrop-blur-sm"
-          >
-            <!-- Header Section -->
-            <div class="flex items-center justify-between mb-6">
-              <h5 class="font-bold text-gray-900 flex items-center gap-3">
-                <div
-                  class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30"
-                >
-                  <i class="pi pi-truck text-white"></i>
-                </div>
-                <span
-                  class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                >
-                  ข้อมูลซัพพลายเออร์
-                </span>
-              </h5>
-            </div>
-
-            <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <!-- Left Column: Supplier Info -->
-
-              <!-- Brand Card -->
-              <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
-                <div class="flex items-start gap-4">
-                  <div class="flex-1 min-w-0">
-                    <div v-if="selectedSupplier.brand" class="flex items-center gap-3">
-                      <!-- Brand Image -->
-                      <div
-                        class="w-auto h-10 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0"
-                      >
-                        <img
-                          v-if="selectedSupplier.brand.image"
-                          :src="getProductImageUrl(selectedSupplier.brand.image)"
-                          :alt="selectedSupplier.brand.name"
-                          class="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                        <i v-else class="pi pi-image text-gray-400 text-2xl"></i>
-                      </div>
-
-                      <!-- Brand Info -->
-                      <div class="flex-1 min-w-0">
-                        <label
-                          class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                        >
-                          แบรนด์/ยี่ห้อ
-                        </label>
-                        <p class="text-base font-bold text-gray-900 truncate mb-0.5">
-                          {{ selectedSupplier.brand.name }}
-                        </p>
-                      </div>
-                    </div>
-
-                    <p v-else class="text-sm text-gray-500 italic">ไม่ระบุแบรนด์</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Supplier Name Card -->
-              <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
-                <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <i class="pi pi-building text-blue-600 text-lg"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
-                      ชื่อซัพพลายเออร์
-                    </label>
-                    <p class="text-base font-bold text-gray-900 truncate">
-                      {{ selectedSupplier.name || '-' }}
-                    </p>
-                    <p v-if="selectedSupplier.company" class="text-sm text-gray-600 mt-1 truncate">
-                      {{ selectedSupplier.company }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Phone Number Card -->
-              <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
-                <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <i class="pi pi-phone text-green-600 text-lg"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
-                      เบอร์โทรศัพท์
-                    </label>
-                    <a
-                      :href="`tel:${selectedSupplier.phoneNo}`"
-                      class="text-base font-semibold text-green-600 hover:text-green-700 transition-colors inline-flex items-center gap-2 group"
-                    >
-                      {{ selectedSupplier.phoneNo || '-' }}
-                      <i
-                        class="pi pi-external-link text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      ></i>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Contact Method Card -->
-              <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
-                <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <i
-                      :class="[
-                        'text-purple-600 text-lg',
-                        selectedSupplier.contact === 'facebook'
-                          ? 'pi pi-facebook'
-                          : selectedSupplier.contact === 'line'
-                          ? 'pi pi-comments'
-                          : selectedSupplier.contact === 'tiktok'
-                          ? 'pi pi-video'
-                          : selectedSupplier.contact === 'email'
-                          ? 'pi pi-envelope'
-                          : selectedSupplier.contact === 'phone'
-                          ? 'pi pi-phone'
-                          : 'pi pi-at',
-                      ]"
-                    ></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
-                      ช่องทางติดต่อ
-                    </label>
-                    <p class="text-base font-semibold text-gray-900">
-                      {{
-                        supplierStore.supplierContactOptions.find(
-                          (opt) => opt.value === selectedSupplier?.contact
-                        )?.label || '-'
-                      }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Notes Card -->
-              <div
-                class="lg:col-span-2 bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
-                <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <i class="pi pi-file-edit text-amber-600 text-lg"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block"
-                    >
-                      หมายเหตุ
-                    </label>
-                    <p
-                      v-if="selectedSupplier.note"
-                      class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"
-                    >
-                      {{ selectedSupplier.note }}
-                    </p>
-                    <p v-else class="text-sm text-gray-400 italic">ไม่มีหมายเหตุ</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- System Information -->
           <div class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-cog text-gray-600"></i>
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
+              <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-cog text-gray-600 text-sm"></i>
               </div>
               ข้อมูลระบบ
             </h5>
@@ -742,6 +555,8 @@ const selectedMediaItems = computed(() => {
               </div>
             </div>
           </div>
+
+
         </div>
       </template>
 
