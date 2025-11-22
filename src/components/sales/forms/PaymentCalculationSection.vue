@@ -41,9 +41,9 @@ const updateDeliveryNo = (value: number | null) => {
 
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-    <div class="flex items-center gap-2 mb-4">
+    <div class="flex items-center gap-2 mb-3">
       <i class="pi pi-calculator text-purple-600"></i>
-      <h4 class="text-lg font-[500]! text-gray-800">การคำนวณยอดเงิน</h4>
+      <h4 class="font-[500]! text-gray-800">การคำนวณยอดเงิน</h4>
     </div>
 
     <!-- Input Fields -->

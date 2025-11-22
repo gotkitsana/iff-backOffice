@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Image as PrimeImage } from 'primevue'
-import SlipUploadSection from './SlipUploadSection.vue'
-import ShippingSlipUploadSection from './ShippingSlipUploadSection.vue'
+import SlipUploadSection from '../documents/SlipUploadSection.vue'
+import ShippingSlipUploadSection from '../documents/ShippingSlipUploadSection.vue'
 
 // Props
 const props = defineProps<{
@@ -86,26 +86,6 @@ const emit = defineEmits<{
 
     <!-- Detailed View -->
     <div v-if="showDetailed">
-      <div v-if="currentStatus === 'preparing' || currentStatusString === 'preparing'" class="mb-4">
-        <div
-          class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-200"
-        >
-          <div class="flex items-start gap-3">
-            <div
-              class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0"
-            >
-              <i class="pi pi-check-circle text-white text-lg"></i>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-medium text-green-900 mb-1">สลิปการโอนเงินยืนยันแล้ว</h4>
-              <p class="text-sm text-green-700">
-                กรุณาอัปโหลดใบเสร็จการขนส่งเพื่อดำเนินการจัดส่งสินค้า
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="space-y-4">
         <SlipUploadSection
           v-if="showSlipUpload"

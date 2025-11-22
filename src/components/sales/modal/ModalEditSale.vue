@@ -25,11 +25,11 @@ import {
   convertStatusNumberToString,
   convertStatusStringToNumber,
 } from '@/types/sales'
-import BankSelectionSection from '../BankSelectionSection.vue'
-import SlipUploadSection from '../SlipUploadSection.vue'
-import ShippingSlipUploadSection from '../ShippingSlipUploadSection.vue'
-import ProductItemForm from '../ProductItemForm.vue'
-import PaymentCalculationSection from '../PaymentCalculationSection.vue'
+import BankSelectionSection from '../forms/BankSelectionSection.vue'
+import SlipUploadSection from '../documents/SlipUploadSection.vue'
+import ShippingSlipUploadSection from '../documents/ShippingSlipUploadSection.vue'
+import ProductItemForm from '../forms/ProductItemForm.vue'
+import PaymentCalculationSection from '../forms/PaymentCalculationSection.vue'
 import type { IAdmin } from '@/stores/admin/admin'
 import {
   useProductStore,

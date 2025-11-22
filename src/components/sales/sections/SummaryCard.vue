@@ -6,7 +6,6 @@
     <div class="summary-card__content">
       <small>{{ label }}</small>
       <strong>{{ value }}</strong>
-      <p v-if="description">{{ description }}</p>
     </div>
     <slot />
   </div>
@@ -40,7 +39,7 @@ const variantClass = computed(() => {
 .summary-card {
   position: relative;
   border-radius: 1rem;
-  padding: 1rem;
+  padding: 0.75rem;
   display: flex;
   gap: 0.75rem;
   border: 1px solid transparent;
@@ -60,7 +59,7 @@ const variantClass = computed(() => {
 .summary-card__content {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+
 }
 
 .summary-card__content small {

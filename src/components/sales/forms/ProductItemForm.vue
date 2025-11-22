@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { TreeSelect, InputNumber, Button, Tag } from 'primevue'
-import CardProductList from './CardProductList.vue'
+import CardProductList from '../shared/CardProductList.vue'
 import type { IProduct } from '@/stores/product/product'
 import type { ICategory } from '@/stores/product/category'
 

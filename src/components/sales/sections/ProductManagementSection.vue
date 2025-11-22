@@ -4,7 +4,7 @@ import { Button, Select, InputNumber } from 'primevue'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
-import CardProductList from './CardProductList.vue'
+import CardProductList from '../shared/CardProductList.vue'
 import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
@@ -167,9 +167,6 @@ const removeProduct = (index: number) => {
   }
 }
 
-const isProductValid = (product: { id: string; quantity: number }) => {
-  return product.id && product.quantity > 0
-}
 </script>
 
 <template>

@@ -375,7 +375,7 @@ const { mutate: uploadShippingSlip, isPending: isUploadingSlip } = useMutation({
 </script>
 
 <template>
-  <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+  <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
     <!-- Header -->
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">

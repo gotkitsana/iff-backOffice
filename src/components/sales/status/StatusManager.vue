@@ -16,13 +16,13 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { toast } from 'vue3-toastify'
 import StatusStepper from './StatusStepper.vue'
-import SummaryCard from './SummaryCard.vue'
-import ProductEditSection from './ProductEditSection.vue'
-import CustomProductsSection from './CustomProductsSection.vue'
-import PaymentInfoSection from './PaymentInfoSection.vue'
-import DocumentSection from './DocumentSection.vue'
+import SummaryCard from '../sections/SummaryCard.vue'
+import ProductEditSection from '../sections/ProductEditSection.vue'
+import CustomProductsSection from '../sections/CustomProductsSection.vue'
+import PaymentInfoSection from '../sections/PaymentInfoSection.vue'
+import DocumentSection from '../sections/DocumentSection.vue'
 import CompleteSaleSection from './CompleteSaleSection.vue'
-import HistoryTabContent from './HistoryTabContent.vue'
+import HistoryTabContent from '../sections/HistoryTabContent.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import { getSlipUrl, getShippingSlipUrl } from '@/utils/imageUrl'
 import { useMemberStore, type IMember } from '@/stores/member/member'
@@ -41,7 +41,13 @@ import { useProductManagement } from '@/composables/useProductManagement'
 import { useFormFieldUpdates } from '@/composables/useFormFieldUpdates'
 import { useSalesVisibility } from '@/composables/useSalesVisibility'
 import { useStatusHelpers } from '@/composables/useStatusHelpers'
-import { validateStatusForStatusChange, canEditField } from '@/utils/salesStatusValidation'
+import {
+  validateStatusForStatusChange,
+  canEditField,
+  getAvailableStatuses,
+} from '@/utils/salesStatusValidation'
+import BankData from '@/config/BankData'
+import dayjs from 'dayjs'
 
 // Props
 const props = defineProps<{
@@ -181,11 +187,26 @@ const visibility = useSalesVisibility({
 // Watch totalAmount and update ref
 const totalAmount = ref(0)
 watch(
-  productManagement.totalAmount,
+  () => productManagement.totalAmount.value,
   (newAmount) => {
     totalAmount.value = newAmount
   },
   { immediate: true }
+)
+
+// Watch products and productsData to recalculate totalAmount when modal opens
+watch(
+  [() => saleForm.value.products, productsData],
+  () => {
+    if (props.visible && saleForm.value.products && saleForm.value.products.length > 0) {
+      // Force recalculation by accessing the computed value
+      // Use nextTick to ensure all reactive updates are complete
+      setTimeout(() => {
+        totalAmount.value = productManagement.totalAmount.value
+      }, 0)
+    }
+  },
+  { immediate: true, deep: true }
 )
 
 // Computed properties for showing detailed/summary views based on step
@@ -203,12 +224,20 @@ const showSummaryProducts = computed(() => {
 
 const showDetailedPayment = computed(() => {
   const status = currentStatusString.value
-  // แสดงรายละเอียดเต็มรูปแบบสำหรับ wait_payment, preparing
-  return status === 'wait_payment' || status === 'preparing'
+  // แสดงรายละเอียดเต็มรูปแบบสำหรับ wait_payment เท่านั้น
+  // preparing (แพ็ครอจัดส่ง) ไม่ต้องแสดง เพราะมีสินค้าแล้ว
+  return status === 'wait_payment'
 })
 
 const showSummaryPayment = computed(() => {
   const status = currentStatusString.value
+  const paymentMethod = props.currentData.paymentMethod
+
+  // ถ้าชำระด้วยเครดิต ไม่แสดง summary (เพราะไม่มีธนาคารและสลิป)
+  if (paymentMethod === 'credit') {
+    return false
+  }
+
   // แสดงสรุปสำหรับ shipping, received, damaged
   return status === 'shipping' || status === 'received' || status === 'damaged'
 })
@@ -401,7 +430,7 @@ const resetForm = () => {
     deliveryNo: props.currentData.deliveryNo || 0,
     delivery: props.currentData.delivery || '',
   }
-  totalAmount.value = 0
+  // Don't reset totalAmount here, let it be recalculated from products
   isSubmitting.value = false
   finalSaleStatus.value = null
   slipManagement.resetSlipStates()
@@ -417,6 +446,13 @@ watch(
       if (props.targetStatus) {
         saleForm.value.sellingStatus = convertStatusStringToNumber(props.targetStatus)
       }
+      // Recalculate totalAmount after form is reset and products are loaded
+      // Use nextTick to ensure products are loaded
+      setTimeout(() => {
+        if (saleForm.value.products && saleForm.value.products.length > 0) {
+          totalAmount.value = productManagement.totalAmount.value
+        }
+      }, 100)
     } else {
       resetForm()
     }
@@ -428,6 +464,12 @@ watch(
   () => {
     if (props.visible) {
       resetForm()
+      // Recalculate totalAmount after form is reset
+      setTimeout(() => {
+        if (saleForm.value.products && saleForm.value.products.length > 0) {
+          totalAmount.value = productManagement.totalAmount.value
+        }
+      }, 100)
     }
   },
   { deep: true }
@@ -471,10 +513,27 @@ const handleSubmit = () => {
   isSubmitting.value = true
 
   const currentStatusStr = currentStatusString.value
-  const selectedStatusString =
+  let selectedStatusString =
     typeof saleForm.value.sellingStatus === 'number'
       ? convertStatusNumberToString(saleForm.value.sellingStatus)
       : (saleForm.value.sellingStatus as string) || currentStatusStr
+
+  // ตรวจสอบว่าถ้า selectedStatus เท่ากับ currentStatus ให้ใช้สถานะถัดไปที่ถูกต้อง
+  if (selectedStatusString === currentStatusStr) {
+    const availableStatuses = getAvailableStatuses(
+      currentStatusStr as SellingStatusString,
+      'status-change'
+    )
+    if (availableStatuses.length > 0) {
+      // ใช้สถานะถัดไปที่ถูกต้องตาม workflow
+      selectedStatusString = availableStatuses[0]
+    } else {
+      // ไม่มีสถานะถัดไป ให้แสดง error
+      toast.error('ไม่สามารถเปลี่ยนสถานะได้ เนื่องจากสถานะปัจจุบันไม่สามารถเปลี่ยนได้')
+      isSubmitting.value = false
+      return
+    }
+  }
 
   // Check if all products are valid
   const hasValidProducts = saleForm.value.products?.some((p) => p.id && p.quantity > 0) || false
@@ -488,6 +547,7 @@ const handleSubmit = () => {
     hasShippingSlip: slipManagement.hasShippingSlip.value,
     currentStatus: currentStatusStr as SellingStatusString,
     mode: 'status-change',
+    skipShippingSlipUpload: slipManagement.skipShippingSlipUpload.value,
   })
 
   // Show validation errors
@@ -522,6 +582,24 @@ const handleSubmit = () => {
     toast.error('กรุณาอัพโหลดสลิปการจัดส่งหรือเลือกข้ามการอัพโหลด')
     isSubmitting.value = false
     return
+  }
+
+  // หลังจาก validation (หลังบรรทัด 556)
+  // ตรวจสอบว่าถ้าจะจบการขาย (เปลี่ยนจาก shipping เป็น received/damaged) ต้องเลือกสถานะจบการขายก่อน
+  if (currentStatusStr === 'shipping') {
+    const willCompleteSale =
+      selectedStatusString === 'received' ||
+      selectedStatusString === 'damaged' ||
+      (selectedStatusString === 'shipping' &&
+        getAvailableStatuses('shipping' as SellingStatusString, 'status-change').includes(
+          'received'
+        ))
+
+    if (willCompleteSale && !finalSaleStatus.value) {
+      toast.error('กรุณาเลือกสถานะจบการขาย (ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย)')
+      isSubmitting.value = false
+      return
+    }
   }
 
   let finalStatus: SellingStatus
@@ -602,6 +680,19 @@ const handleSubmit = () => {
   // ถ้า currentStatus เป็น shipping → ยังคงเป็น shipping (ไม่เปลี่ยน)
   // แต่ถ้ามี finalSaleStatus ให้ใช้ finalSaleStatus แทน
   if (currentStatusStr === 'shipping') {
+    // ตรวจสอบว่าถ้าจะเปลี่ยนสถานะ (selectedStatusString เป็น received/damaged) ต้องมี finalSaleStatus
+    const willChangeStatus =
+      selectedStatusString === 'received' ||
+      selectedStatusString === 'damaged' ||
+      (selectedStatusString === 'shipping' &&
+        getAvailableStatuses('shipping' as SellingStatusString, 'status-change').length > 0)
+
+    if (willChangeStatus && !finalSaleStatus.value) {
+      toast.error('กรุณาเลือกสถานะจบการขาย (ได้รับสินค้าแล้ว หรือ สินค้าเสียหาย)')
+      isSubmitting.value = false
+      return
+    }
+
     if (finalSaleStatus.value === 'received') {
       finalStatus = SellingStatus.received
     } else if (finalSaleStatus.value === 'damaged') {
@@ -633,14 +724,10 @@ const canEditProducts = computed(() => {
   return canEditField('products', currentStatusString.value as SellingStatusString)
 })
 
-const deliveryStatusLabel = computed(() => {
-  if (!props.currentData.deliveryStatus) return '-'
-  const map: Record<string, string> = {
-    received: 'ได้รับสินค้าแล้ว',
-    preparing: 'แพ็ครอจัดส่ง',
-    shipping: 'กำลังจัดส่ง',
-  }
-  return map[props.currentData.deliveryStatus] || props.currentData.deliveryStatus
+const paymentMethodLabel = computed(() => {
+  if (!props.currentData.paymentMethod) return '-'
+  const method = salesStore.paymentMethods.find((m) => m.value === props.currentData.paymentMethod)
+  return method?.label || props.currentData.paymentMethod
 })
 </script>
 
@@ -663,10 +750,10 @@ const deliveryStatusLabel = computed(() => {
           <div
             class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
           >
-            <i class="pi pi-arrow-right-arrow-left text-white text-lg"></i>
+            <i class="pi pi-arrow-right-arrow-left text-white text-base"></i>
           </div>
           <div>
-            <h3 class="text-lg font-medium text-gray-800">เปลี่ยนสถานะการขาย</h3>
+            <h3 class="text-base font-medium text-gray-800">เปลี่ยนสถานะการขาย</h3>
             <p class="text-sm text-gray-600">
               รายการ: <span class="font-semibold">{{ orderNumber }}</span>
             </p>
@@ -676,46 +763,47 @@ const deliveryStatusLabel = computed(() => {
       </div>
     </template>
 
-    <div class="space-y-4">
+    <div class="flex flex-col gap-4">
       <StatusStepper :current-status="currentStatusString" />
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <SummaryCard
           icon="pi pi-user"
           label="ลูกค้า"
           :value="selectedMemberDetails?.name || selectedMemberDetails?.displayName || '-'"
-          :description="selectedMemberDetails?.phone || '-'"
           variant="info"
         />
         <SummaryCard
           icon="pi pi-box"
           label="สินค้า"
           :value="`${saleForm.products.length} รายการ`"
-          :description="`หมวดหมู่ ${currentStatusInfo?.label || '-'}`"
           variant="primary"
         />
         <SummaryCard
           icon="pi pi-wallet"
           label="ยอดรวม"
           :value="formatCurrency(totalAmount || 0)"
-          :description="`เงินมัดจำ ${formatCurrency(saleForm.deposit || 0)}`"
           variant="success"
         />
         <SummaryCard
-          icon="pi pi-truck"
-          label="สถานะขนส่ง"
-          :value="deliveryStatusLabel"
-          :description="currentData.delivery || 'ยังไม่ระบุ'"
+          icon="pi pi-credit-card"
+          label="วิธีชำระเงิน"
+          :value="paymentMethodLabel"
           variant="warning"
         />
       </div>
 
-      <TabView>
+      <TabView :pt="{ root: 'px-0', nav: 'px-0', panelContainer: 'px-0' }">
         <!-- แทปแก้ไข/ปรับสถานะ -->
-        <TabPanel v-if="showEditTab" value="edit" header="แก้ไข/ปรับสถานะ">
-          <div class="space-y-4 pt-4">
+        <TabPanel
+          v-if="showEditTab"
+          value="edit"
+          header="แก้ไข/ปรับสถานะ"
+          :pt="{ root: 'px-0', content: 'px-0' }"
+        >
+          <div class="flex flex-col gap-4">
             <!-- ข้อมูลลูกค้า & รายการสินค้า -->
-            <div v-if="showProductsInEditTab" class="space-y-4">
+            <div v-if="showProductsInEditTab" class="flex flex-col gap-4">
               <!-- Summary View -->
               <div
                 v-if="showSummaryProducts"
@@ -723,15 +811,15 @@ const deliveryStatusLabel = computed(() => {
               >
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <div class="text-sm text-gray-600 mb-1">จำนวนรายการ</div>
-                    <div class="text-lg font-medium text-gray-900">
+                    <div class="text-xs text-gray-600 mb-1">จำนวนรายการ</div>
+                    <div class="text-base font-medium text-gray-900">
                       {{ saleForm.products.length + (currentData.customProducts?.length || 0) }}
                       รายการ
                     </div>
                   </div>
                   <div>
-                    <div class="text-sm text-gray-600 mb-1">ยอดรวมสินค้า</div>
-                    <div class="text-lg font-medium text-gray-900">
+                    <div class="text-xs text-gray-600 mb-1">ยอดรวมสินค้า</div>
+                    <div class="text-base font-medium text-gray-900">
                       {{ formatCurrency(totalAmount || 0) }}
                     </div>
                   </div>
@@ -759,7 +847,12 @@ const deliveryStatusLabel = computed(() => {
             </div>
 
             <!-- การชำระเงิน & ข้อมูลเพิ่มเติม -->
+            <!-- แสดงเฉพาะเมื่อยังอยู่ใน step ที่ต้องเลือกสินค้า (order, wait_payment) -->
+            <!-- preparing (แพ็ครอจัดส่ง) ไม่แสดง เพราะมีสินค้าแล้ว -->
             <PaymentInfoSection
+              v-if="
+                (showDetailedPayment || showSummaryPayment) && currentStatusString !== 'preparing'
+              "
               :total-amount="totalAmount"
               :deposit="saleForm.deposit"
               :discount="saleForm.discount"
@@ -840,12 +933,13 @@ const deliveryStatusLabel = computed(() => {
         </TabPanel>
 
         <!-- แทปประวัติการอัพเดทสถานะ -->
-        <TabPanel value="history" header="ประวัติการอัพเดท">
+        <TabPanel value="history" header="ประวัติการอัพเดท" :pt="{ root: 'px-0', content: 'px-0' }">
           <HistoryTabContent
             :current-data="currentData"
             :products-data="productsData"
             :has-slip="slipManagement.hasSlip.value"
             :has-shipping-slip="slipManagement.hasShippingSlip.value"
+            :total-amount="totalAmount"
           />
         </TabPanel>
       </TabView>
