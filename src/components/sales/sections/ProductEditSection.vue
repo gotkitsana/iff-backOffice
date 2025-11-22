@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'primevue'
-import ProductItemForm from './ProductItemForm.vue'
+import ProductItemForm from '../forms/ProductItemForm.vue'
 import type { IProduct } from '@/stores/product/product'
 
 // Props

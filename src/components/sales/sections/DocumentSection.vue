@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Image as PrimeImage } from 'primevue'
-import SlipUploadSection from './SlipUploadSection.vue'
-import ShippingSlipUploadSection from './ShippingSlipUploadSection.vue'
+import SlipUploadSection from '../documents/SlipUploadSection.vue'
+import ShippingSlipUploadSection from '../documents/ShippingSlipUploadSection.vue'
 
 // Props
 const props = defineProps<{

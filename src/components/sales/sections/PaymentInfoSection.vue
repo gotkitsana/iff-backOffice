@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DatePicker, Select, Textarea } from 'primevue'
-import PaymentCalculationSection from './PaymentCalculationSection.vue'
-import BankSelectionSection from './BankSelectionSection.vue'
+import PaymentCalculationSection from '../forms/PaymentCalculationSection.vue'
+import BankSelectionSection from '../forms/BankSelectionSection.vue'
 import formatCurrency from '@/utils/formatCurrency'
 import { useSalesStore } from '@/stores/sales/sales'
 import { useMemberStore } from '@/stores/member/member'

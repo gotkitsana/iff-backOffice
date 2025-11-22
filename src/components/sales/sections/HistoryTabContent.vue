@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Image as PrimeImage } from 'primevue'
-import ProductHistorySection from './ProductHistorySection.vue'
+import ProductHistorySection from '../shared/ProductHistorySection.vue'
 import { useMemberStore } from '@/stores/member/member'
 import type { IProduct } from '@/stores/product/product'
 import type { ISales } from '@/types/sales'
