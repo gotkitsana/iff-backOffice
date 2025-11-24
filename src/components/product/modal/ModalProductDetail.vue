@@ -206,10 +206,10 @@ const selectedMediaItems = computed(() => {
 
 // Fish Growth History Logic
 const showUpdateModal = ref(false)
-const selectedHistoryRecord = ref<IFishGrowthHistory | null>(null)
+const selectedHistoryRecord = ref<IFishGrowthHistory | undefined>(undefined)
 
 const productStore = useProductStore()
-const { data: growthHistoryData } = useQuery({
+const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
   queryKey: ['get_fish_growth_history', props.productData?._id],
   queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
   enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish')
@@ -231,6 +231,16 @@ watch(historyRecords, (records) => {
 }, { immediate: true })
 
 
+const handleUpdateHistory = (item: IFishGrowthHistory) => {
+  selectedHistoryRecord.value = item
+  showUpdateModal.value = true
+}
+
+const handleAddHistory = () => {
+  const isLatestRecord = historyRecords.value[historyRecords.value.length - 1]
+  selectedHistoryRecord.value = {...isLatestRecord, _id: ''}
+  showUpdateModal.value = true
+}
 </script>
 
 <template>
@@ -245,11 +255,7 @@ watch(historyRecords, (records) => {
       footer: 'p-6',
     }"
   >
-    <ModalUpdateFishData
-      v-if="productData"
-      v-model:visible="showUpdateModal"
-      :product-id="productData._id"
-    />
+
     <template #header>
       <div class="flex items-center gap-4">
         <div
@@ -355,13 +361,11 @@ watch(historyRecords, (records) => {
                 ข้อมูลตัวปลา
               </h5>
               <Button
-                icon="pi pi-pencil"
                 text
-                rounded
-                severity="secondary"
+                severity="success"
                 size="small"
-                @click="showUpdateModal = true"
-                v-tooltip.top="'อัปเดตข้อมูล'"
+                label="อัปเดตข้อมูล"
+                @click="handleAddHistory"
               />
             </div>
 
@@ -370,6 +374,8 @@ watch(historyRecords, (records) => {
               <!-- Selected Record Details -->
               <Panel
                 toggleable
+                collapsed
+                class="mb-2"
                 :pt="{
                   root: '!rounded-lg',
                   header: 'px-2 py-1.5 min-h-[2.5rem]',
@@ -380,8 +386,9 @@ watch(historyRecords, (records) => {
                   size: 'small',
                   rounded: true,
                   text: true,
-                  severity: 'success'
+                  severity: 'secondary'
                 }"
+
               >
                 <template #header>
                   <div class="flex items-center gap-2">
@@ -389,6 +396,17 @@ watch(historyRecords, (records) => {
                       บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm') }}
                     </span>
                   </div>
+                </template>
+                <template #icons>
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    rounded
+                    severity="warn"
+                    size="small"
+                    @click="handleUpdateHistory(item)"
+                    v-tooltip.top="'แก้ไขข้อมูล'"
+                  />
                 </template>
                 <div class="grid grid-cols-2 gap-2">
                    <div>
@@ -1031,4 +1049,11 @@ watch(historyRecords, (records) => {
       </div>
     </template>
   </Dialog>
+
+    <ModalUpdateFishData
+      v-if="productData"
+      v-model:visible="showUpdateModal"
+      :existing-record="selectedHistoryRecord"
+      :product-id="productData._id"
+    />
 </template>

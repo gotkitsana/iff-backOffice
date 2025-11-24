@@ -400,15 +400,6 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
   },
 })
 
-const { mutate: updateFishGrowthHistory } = useMutation({
-  mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onUpdateFishGrowthHistory(payload),
-  onSuccess: (_, payload) => {
-    queryClient.invalidateQueries({ queryKey: ['get_fish_growth_history', payload.product] })
-  }
-})
-
-
-
 const handleClose = () => {
   isSubmitting.value = false
   productForm.value.images = []
@@ -447,22 +438,6 @@ const handleUpdateVideoFile = (filename: string | undefined) => {
   productForm.value.youtube = filename || ''
 }
 
-const showUpdateFishModal = ref(false)
-const handleFishDataUpdate = () => {
-    // Refresh product data or just close modal?
-    // Ideally we should refresh the product data to show updated values in the Panel
-    // But for now, we can just rely on the parent to refresh or manual refresh if needed.
-    // Since we are inside Edit Modal, maybe we should close it or keep it open?
-    // The user said "If sending data to edit, it updates. If not, it adds."
-    // And "ModalUpdateFishData" is opened from here.
-    // Let's just close the update modal.
-    showUpdateFishModal.value = false
-    emit('close-edit-modal') // Close edit modal too to force refresh from parent? Or maybe just emit an event to refresh?
-    // Better to just close update modal and let user decide.
-    // Actually, if we update fish data, the main product data (size, weight etc) might be updated on backend too.
-    // So we should probably refresh the form data here if possible, or just close everything.
-    // Let's close everything for simplicity as it ensures data consistency on re-open.
-}
 </script>
 
 <template>
@@ -490,47 +465,7 @@ const handleFishDataUpdate = () => {
       </div>
     </template>
 
-    <!-- Fish Data Update Modal -->
-    <ModalUpdateFishData
-      v-if="isFishCategory && productData"
-      v-model:visible="showUpdateFishModal"
-      :product-id="productData._id"
-      @save="handleFishDataUpdate"
-    />
-
     <div v-if="selectedCategoryInfo" class="space-y-4">
-      <!-- Fish Growth History Panel -->
-      <Panel v-if="isFishCategory" toggleable class="mb-4">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <i class="pi pi-chart-line text-blue-600"></i>
-            </div>
-            <span class="font-bold text-gray-700">ข้อมูลการเติบโตล่าสุด</span>
-          </div>
-        </template>
-        <template #icons>
-            <Button icon="pi pi-cog" severity="secondary" rounded text @click="showUpdateFishModal = true" v-tooltip.top="'อัปเดตข้อมูล'" />
-        </template>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-                <label class="text-xs text-gray-500 uppercase font-semibold">ไซต์</label>
-                <p class="font-medium text-gray-900">{{ productForm.size ? `${productForm.size} ซม.` : '-' }}</p>
-            </div>
-            <div>
-                <label class="text-xs text-gray-500 uppercase font-semibold">น้ำหนัก</label>
-                <p class="font-medium text-gray-900">{{ productForm.weight ? `${productForm.weight} กก.` : '-' }}</p>
-            </div>
-             <div>
-                <label class="text-xs text-gray-500 uppercase font-semibold">เพศ</label>
-                <p class="font-medium text-gray-900">{{ productForm.gender || '-' }}</p>
-            </div>
-             <div>
-                <label class="text-xs text-gray-500 uppercase font-semibold">ราคา</label>
-                <p class="font-medium text-gray-900">{{ productForm.price ? productForm.price.toLocaleString() : '-' }}</p>
-            </div>
-        </div>
-      </Panel>
       <!-- Dynamic Form Fields -->
       <DynamicFormField
         v-if="dynamicFormData"
@@ -540,6 +475,7 @@ const handleFishDataUpdate = () => {
         :is-submitting="isSubmitting"
         :pond-options="filteredPondOptions"
         @update-field="updateDynamicField"
+        :is-edit="true"
       />
 
       <!-- File Upload Section -->

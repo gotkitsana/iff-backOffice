@@ -30,24 +30,36 @@ const { data: products, isLoading } = useQuery<IProduct[]>({
 })
 
 const { data: growthHistoryData } = useQuery({
-  queryKey: ['get_fish_growth_history', props.selectedCategory?._id],
-  queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.selectedCategory?._id || ''),
-  enabled: computed(() => !!props.selectedCategory?._id && props.selectedCategory?.value === 'fish')
+  queryKey: ['get_all_fish_growth_history'],
+  queryFn: () => productStore.onGetAllFishGrowthHistory(),
 })
 
 const processedProducts = computed(() => {
   if (!products.value) return []
   return products.value.map((product: IProduct) => {
-    if (growthHistoryData.value && Array.isArray(growthHistoryData.value) && growthHistoryData.value.length > 0) {
-      // Sort by date descending to get the latest record
-      const sortedHistory = [...growthHistoryData.value].sort((a: IFishGrowthHistory, b: IFishGrowthHistory) => b.date - a.date)
-      const latest = sortedHistory[0]
-      return {
-        ...product,
-        size: latest.size ?? product.size,
-        weight: latest.weight ?? product.weight,
-        gender: latest.gender ?? product.gender,
-        price: latest.price ?? product.price
+    // หา growth history records ที่ match กับ product._id
+    if (
+      growthHistoryData.value &&
+      Array.isArray(growthHistoryData.value) &&
+      growthHistoryData.value.length > 0
+    ) {
+      const productHistory = growthHistoryData.value.filter(
+        (history: IFishGrowthHistory) => history.product === product._id
+      )
+      // ถ้ามี history ของ product นี้ ให้ใช้ latest record
+      if (productHistory.length > 0) {
+        // Sort by date descending to get the latest record
+        const sortedHistory = [...productHistory].sort(
+          (a: IFishGrowthHistory, b: IFishGrowthHistory) => b.date - a.date
+        )
+        const latest = sortedHistory[0]
+        return {
+          ...product,
+          size: latest.size ?? product.size,
+          weight: latest.weight ?? product.weight,
+          gender: latest.gender ?? product.gender,
+          price: latest.price ?? product.price,
+        }
       }
     }
     return product
@@ -55,10 +67,9 @@ const processedProducts = computed(() => {
 })
 
 const filteredProducts = computed(() => {
+  if (!products.value) return []
   return applyFishFilters(processedProducts.value)
 })
-
-
 </script>
 
 <template>

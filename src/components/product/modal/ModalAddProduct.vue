@@ -301,10 +301,13 @@ const handleSubmit = async () => {
       selectedCategory.value.value !== 'fish'
         ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name}`
         : `${speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name}`,
-    price: selectedCategory.value.value != 'fish' ? productForm.value.food.customerPrice : 0,
-    gender: selectedCategory.value.value != 'fish' ? productForm.value.gender : 'unknown',
-    weight: selectedCategory.value.value != 'fish' ? productForm.value.weight : 0,
-    size: selectedCategory.value.value != 'fish' ? productForm.value.size : 0,
+    price:
+        selectedCategory.value.value == 'fish' ?
+        productForm.value.price
+        : selectedCategory.value.value == 'food' ?
+        productForm.value.food.customerPrice
+        : selectedCategory.value.value == 'microorganism' ?
+        productForm.value.food.customerPrice : 0,
   }
 
   createProduct(payload)
@@ -316,22 +319,13 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
   mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
   onSuccess: async (data: any) => {
     if (data.data) {
-      // If fish category, add initial growth history
-      if (isFishCategory.value && data.data._id) {
-            addFishGrowthHistory({
-              product: data.data._id,
-              date: dayjs().valueOf(),
-              size: productForm.value.size || 0,
-              weight: productForm.value.weight || 0,
-              gender: productForm.value.gender || 'unknown',
-              price: productForm.value.price || 0,
-              note: ''
-            })
-      }
-
       toast.success('เพิ่มสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
       queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
+
+      if(selectedCategory.value?.value === 'fish') {
+        queryClient.invalidateQueries({ queryKey: ['get_all_fish_growth_history'] })
+      }
       handleClose()
     } else {
       toast.error(data.error.message || 'เพิ่มสินค้าไม่สำเร็จ')
@@ -343,13 +337,6 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
     toast.error(error.response?.data?.message || 'เพิ่มสินค้าไม่สำเร็จ')
     isSubmitting.value = false
   },
-})
-
-const { mutate: addFishGrowthHistory } = useMutation({
-  mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onAddFishGrowthHistory(payload),
-  onSuccess: (_, payload) => {
-    queryClient.invalidateQueries({ queryKey: ['get_fish_growth_history', payload.product] })
-  }
 })
 
 const handleClose = () => {
@@ -452,17 +439,18 @@ const { data: salePercents } = useQuery<ISalePercent[]>({
   queryFn: () => salePercentStore.onGetSalePercents(),
 })
 const validatePricePercent = (): boolean => {
-  if (selectedCategory.value?.value === 'food' || selectedCategory.value?.value === 'microorganism') {
+  if (
+    selectedCategory.value?.value === 'food' ||
+    selectedCategory.value?.value === 'microorganism'
+  ) {
     const hasCustomerPercent = salePercents.value?.some(
-      sp => sp.name === 'customerPrice' &&
-           sp.category._id === selectedCategory.value?._id &&
-           sp.active
+      (sp) =>
+        sp.name === 'customerPrice' && sp.category._id === selectedCategory.value?._id && sp.active
     )
 
     const hasDealerPercent = salePercents.value?.some(
-      sp => sp.name === 'dealerPrice' &&
-           sp.category._id === selectedCategory.value?._id &&
-           sp.active
+      (sp) =>
+        sp.name === 'dealerPrice' && sp.category._id === selectedCategory.value?._id && sp.active
     )
 
     if (!hasCustomerPercent || !hasDealerPercent) {
@@ -502,6 +490,7 @@ const validatePricePercent = (): boolean => {
           :pond-options="filteredPondOptions"
           @update-field="updateDynamicField"
           :category-id="selectedCategory"
+          :is-edit="false"
         />
 
         <!-- File Upload Section -->

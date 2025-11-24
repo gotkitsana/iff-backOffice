@@ -26,12 +26,14 @@ const emit = defineEmits<{
 // Utility functions
 const getGenderTag = (gender: string) => {
   switch (gender) {
-    case 'ตัวผู้':
+    case 'male':
       return { label: 'ตัวผู้', severity: 'info' }
-    case 'ตัวเมีย':
+    case 'female':
       return { label: 'ตัวเมีย', severity: 'warning' }
-    case 'ไม่ระบุ':
+    case 'unknown':
       return { label: 'ไม่ระบุ', severity: 'secondary' }
+    default:
+      return { label: '-', severity: 'secondary' }
   }
 }
 

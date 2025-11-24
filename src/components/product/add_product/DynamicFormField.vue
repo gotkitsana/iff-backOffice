@@ -21,6 +21,7 @@ const props = defineProps<{
   isSubmitting: boolean
   pondOptions: { label: string; value: string; group?: string }[]
   categoryId: ICategory | null
+  isEdit: boolean
 }>()
 
 const emit = defineEmits<{
@@ -327,9 +328,14 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
       <small>กรุณาไปที่ ตั้งค่าเปอร์เซ็นต์กำไร เพื่อตั้งค่า</small>
     </Message>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div  class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
-        v-for="field in fields"
+        v-for="field in fields.filter((field) => {
+          if (isEdit && categoryId?.value === 'fish' && field.closeInEdit) {
+            return false
+          }
+          return true
+        })"
         :key="field.key"
         :class="field.type === 'textarea' ? 'md:col-span-2' : ''"
       >

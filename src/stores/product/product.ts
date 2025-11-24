@@ -33,6 +33,11 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
+  async function onGetAllFishGrowthHistory() {
+    const { data } = await api.get(`/growth/history`)
+    return data.data
+  }
+
   async function onGetFishGrowthHistoryProduct(id: string) {
     const { data } = await api.get(`/growth/history?product=${id}`)
     return data.data
@@ -48,7 +53,7 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
-  async function onUpdateFishGrowthHistory(payload: IFishGrowthHistoryPayload) {
+  async function onUpdateFishGrowthHistory(payload: IUpdateFishGrowthHistoryPayload) {
     const { data } = await api.put(`/growth/history`, payload)
     return data
   }
@@ -69,10 +74,10 @@ export const useProductStore = defineStore('product', () => {
   const genderOptions = [
     {
       label: 'ตัวผู้',
-      value: 'ตัวผู้',
+      value: 'male',
     },
-    { label: 'ตัวเมีย', value: 'ตัวเมีย' },
-    { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
+    { label: 'ตัวเมีย', value: 'female' },
+    { label: 'ไม่ระบุ', value: 'unknown' },
   ]
 
   const ageOptions = [
@@ -91,6 +96,7 @@ export const useProductStore = defineStore('product', () => {
     onGetFishGrowthHistoryID,
     onAddFishGrowthHistory,
     onUpdateFishGrowthHistory,
+    onGetAllFishGrowthHistory,
 
     onCreateProduct,
     onUpdateProduct,
@@ -241,6 +247,10 @@ export interface IFishGrowthHistoryPayload {
   note: string // note of fish
 }
 
+export interface IUpdateFishGrowthHistoryPayload extends IFishGrowthHistoryPayload {
+  _id: string
+}
+
 export interface ICreateProductPayload {
   type: IType // 0 = ปลา, 1 = สินค้าอื่นๆ
   name: string // ชื่อสินค้า
@@ -374,6 +384,7 @@ export interface IFields {
   type: IFieldsType
   required: IFieldsRequired
   options?: IFieldsOptions
+  closeInEdit?: boolean
 }
 
 export interface ICategoryOption extends ICategory {
