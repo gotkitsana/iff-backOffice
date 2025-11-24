@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Dialog, Button, InputNumber, Select } from 'primevue'
-import { useProductStore, type IProduct, type IFishGrowthRecord, type IUpdateProductPayload } from '../../../stores/product/product'
+import { useProductStore, type IFishGrowthHistory } from '../../../stores/product/product'
 import dayjs from 'dayjs'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
@@ -9,7 +9,7 @@ import 'vue3-toastify/dist/index.css'
 const props = defineProps<{
   visible: boolean
   productId: string
-  existingRecord?: IFishGrowthRecord // If provided, we are editing this record
+  existingRecord?: IFishGrowthHistory // If provided, we are editing this record
 }>()
 
 const emit = defineEmits<{

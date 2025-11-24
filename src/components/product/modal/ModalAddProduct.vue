@@ -6,6 +6,7 @@ import {
   type ICategoryOption,
   type ICreateProductPayload,
   type IFieldsKey,
+  type IFishGrowthHistoryPayload,
   type IProductImage,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
@@ -300,14 +301,10 @@ const handleSubmit = async () => {
       selectedCategory.value.value !== 'fish'
         ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name}`
         : `${speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name}`,
-    price:
-      selectedCategory.value.value == 'fish'
-        ? productForm.value.price
-        : selectedCategory.value.value === 'food'
-        ? productForm.value.food.customerPrice
-        : selectedCategory.value.value === 'microorganism'
-        ? productForm.value.food.customerPrice
-        : 0,
+    price: selectedCategory.value.value != 'fish' ? productForm.value.food.customerPrice : 0,
+    gender: selectedCategory.value.value != 'fish' ? productForm.value.gender : 'unknown',
+    weight: selectedCategory.value.value != 'fish' ? productForm.value.weight : 0,
+    size: selectedCategory.value.value != 'fish' ? productForm.value.size : 0,
   }
 
   createProduct(payload)
@@ -321,20 +318,15 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
     if (data.data) {
       // If fish category, add initial growth history
       if (isFishCategory.value && data.data._id) {
-         try {
-            await productStore.onAddFishGrowthHistory({
+            addFishGrowthHistory({
               product: data.data._id,
               date: dayjs().valueOf(),
               size: productForm.value.size || 0,
               weight: productForm.value.weight || 0,
               gender: productForm.value.gender || 'unknown',
               price: productForm.value.price || 0,
-              note: 'Initial record'
+              note: ''
             })
-         } catch (error) {
-            console.error('Failed to create initial growth history', error)
-            toast.error('สร้างประวัติการเติบโตเริ่มต้นไม่สำเร็จ แต่สินค้าถูกสร้างแล้ว')
-         }
       }
 
       toast.success('เพิ่มสินค้าสำเร็จ')
@@ -351,6 +343,13 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
     toast.error(error.response?.data?.message || 'เพิ่มสินค้าไม่สำเร็จ')
     isSubmitting.value = false
   },
+})
+
+const { mutate: addFishGrowthHistory } = useMutation({
+  mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onAddFishGrowthHistory(payload),
+  onSuccess: (_, payload) => {
+    queryClient.invalidateQueries({ queryKey: ['get_fish_growth_history', payload.product] })
+  }
 })
 
 const handleClose = () => {

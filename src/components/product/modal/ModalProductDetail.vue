@@ -29,7 +29,6 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
   'close-detail-modal': []
-  'refresh-data': []
 }>()
 
 // Stores
@@ -210,7 +209,7 @@ const showUpdateModal = ref(false)
 const selectedHistoryRecord = ref<IFishGrowthHistory | null>(null)
 
 const productStore = useProductStore()
-const { data: growthHistoryData, refetch: refetchGrowthHistory } = useQuery({
+const { data: growthHistoryData } = useQuery({
   queryKey: ['get_fish_growth_history', props.productData?._id],
   queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
   enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish')
@@ -231,14 +230,7 @@ watch(historyRecords, (records) => {
   }
 }, { immediate: true })
 
-const handleHistorySelect = (record: IFishGrowthHistory) => {
-  selectedHistoryRecord.value = record
-}
 
-const handleUpdateSuccess = () => {
-  refetchGrowthHistory()
-  emit('refresh-data')
-}
 </script>
 
 <template>
@@ -257,7 +249,6 @@ const handleUpdateSuccess = () => {
       v-if="productData"
       v-model:visible="showUpdateModal"
       :product-id="productData._id"
-      @save="handleUpdateSuccess"
     />
     <template #header>
       <div class="flex items-center gap-4">

@@ -9,6 +9,7 @@ import {
   type ICategoryOption,
   type IFieldsKey,
   type IProductImage,
+  type IFishGrowthHistoryPayload,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
@@ -384,6 +385,7 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
       queryClient.invalidateQueries({
         queryKey: ['get_products_by_category', selectedCategoryById],
       })
+
       handleClose()
       isSubmitting.value = false
     } else {
@@ -397,6 +399,15 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
     isSubmitting.value = false
   },
 })
+
+const { mutate: updateFishGrowthHistory } = useMutation({
+  mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onUpdateFishGrowthHistory(payload),
+  onSuccess: (_, payload) => {
+    queryClient.invalidateQueries({ queryKey: ['get_fish_growth_history', payload.product] })
+  }
+})
+
+
 
 const handleClose = () => {
   isSubmitting.value = false
