@@ -204,7 +204,6 @@ const handleSubmit = () => {
     paymentValidation.errors.forEach((error) => {
       toast.error(error)
     })
-    isSubmitting.value = false
     return
   }
 
@@ -638,7 +637,7 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
             :is-submitting="isSubmitting"
             :is-current-bank="''"
             :is-current-status="''"
-            @update:selected-bank-code="formFieldUpdates.updateBankCode"
+            @update:selected-bank-code="(bankCode) => bankForm.bankCode = bankCode"
           />
         </div>
 
