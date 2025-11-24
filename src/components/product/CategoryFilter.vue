@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Button, Select, InputText, InputNumber, Slider } from 'primevue'
 import {
   useProductStore,
@@ -69,6 +69,16 @@ const localFoodFilters = ref<IFoodFilters>({
   priceMax: props.foodFilters?.priceMax || maxProductPrice,
 })
 
+watch(
+  () => props.foodFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localFoodFilters.value = { ...localFoodFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
+
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
   lotNumber: props.fishFilters?.lotNumber || '',
@@ -86,6 +96,16 @@ const localFishFilters = ref<IFishFilters>({
   sizeMax: props.fishFilters?.sizeMax || 200,
 })
 
+watch(
+  () => props.fishFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localFishFilters.value = { ...localFishFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
+
 const localMicroorganismFilters = ref<IMicroorganismFilters>({
   sku: props.microorganismFilters?.sku || '',
   lotNumber: props.microorganismFilters?.lotNumber || '',
@@ -93,6 +113,16 @@ const localMicroorganismFilters = ref<IMicroorganismFilters>({
   priceMin: props.microorganismFilters?.priceMin || 0,
   priceMax: props.microorganismFilters?.priceMax || maxFishPrice,
 })
+
+watch(
+  () => props.microorganismFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localMicroorganismFilters.value = { ...localMicroorganismFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
 
 const fishSizeRange = computed({
   get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSize],
@@ -398,7 +428,7 @@ const { navigateWithQuery } = useProductQuery()
           v-if="isFishSelected"
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
-        <div>
+          <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
             <Select
               :model-value="localFishFilters.lotNumber"
@@ -469,7 +499,6 @@ const { navigateWithQuery } = useProductQuery()
             />
           </div>
 
-
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
             <Select
@@ -485,7 +514,7 @@ const { navigateWithQuery } = useProductQuery()
             />
           </div>
 
-                    <div>
+          <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
             <Select
               :model-value="localFishFilters.age"
@@ -515,10 +544,6 @@ const { navigateWithQuery } = useProductQuery()
               :disabled="!localFishFilters.greenhouse"
             />
           </div>
-
-
-
-
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>

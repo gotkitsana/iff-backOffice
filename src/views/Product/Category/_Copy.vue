@@ -14,7 +14,10 @@ import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
 import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
 import ProductHeader from '@/components/product/ProductHeader.vue'
-import ProductStatsCards from '@/components/product/ProductStatsCards.vue'
+import FishStatsCards from '@/components/product/ProductStatsCards/FishStatsCards.vue'
+import FoodStatsCards from '@/components/product/ProductStatsCards/FoodStatsCards.vue'
+import MicroorganismStatsCards from '@/components/product/ProductStatsCards/MicroorganismStatsCards.vue'
+import OverviewStatsCards from '@/components/product/ProductStatsCards/OverviewStatsCards.vue'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
@@ -91,7 +94,9 @@ const filteredProducts = computed(() => {
     }
 
     if (foodFilters.value.lotNumber) {
-      filtered = filtered.filter((product) => product.lotNumber?._id === foodFilters.value.lotNumber)
+      filtered = filtered.filter(
+        (product) => product.lotNumber?._id === foodFilters.value.lotNumber
+      )
     }
 
     if (foodFilters.value.brandName) {
@@ -129,7 +134,9 @@ const filteredProducts = computed(() => {
     }
 
     if (microorganismFilters.value.lotNumber) {
-      filtered = filtered.filter((product) => product.lotNumber?._id === microorganismFilters.value.lotNumber)
+      filtered = filtered.filter(
+        (product) => product.lotNumber?._id === microorganismFilters.value.lotNumber
+      )
     }
 
     if (microorganismFilters.value.brandName) {
@@ -156,7 +163,9 @@ const filteredProducts = computed(() => {
       )
     }
     if (fishFilters.value.lotNumber) {
-      filtered = filtered.filter((product) => product.lotNumber?._id === fishFilters.value.lotNumber)
+      filtered = filtered.filter(
+        (product) => product.lotNumber?._id === fishFilters.value.lotNumber
+      )
     }
     if (fishFilters.value.species) {
       filtered = filtered.filter((product) => product.species?._id === fishFilters.value.species)
@@ -235,7 +244,7 @@ const categoryOptionsUI = computed(() => {
         { key: 'marketPrice', label: 'ราคาท้องตลาด', type: 'number', required: true },
         { key: 'costPrice', label: 'ราคาทุน', type: 'number', required: true },
         { key: 'customerPrice', label: 'ราคาลูกค้า', type: 'number', required: true },
-        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true},
+        { key: 'dealerPrice', label: 'ราคาพ่อค้า', type: 'number', required: true },
         { key: 'balance', label: 'สินค้าคงเหลือ', type: 'number', required: false },
       ],
     },
@@ -263,6 +272,21 @@ const categoryOptionsUI = computed(() => {
   }))
 
   return categoryFields as ICategoryOption[]
+})
+
+const statsComponent = computed(() => {
+  if (!selectedCategory.value) return OverviewStatsCards
+
+  switch (selectedCategory.value.value) {
+    case 'fish':
+      return FishStatsCards
+    case 'food':
+      return FoodStatsCards
+    case 'microorganism':
+      return MicroorganismStatsCards
+    default:
+      return OverviewStatsCards
+  }
 })
 // Handlers
 const openAddModal = () => {
@@ -334,7 +358,7 @@ const updateCategorySelector = () => {
     <ProductHeader title="ภาพรวมคลังสินค้า" description="" />
 
     <!-- Product Stats -->
-    <ProductStatsCards :selected-category="selectedCategory" />
+    <component :is="statsComponent" :selected-category="selectedCategory" />
 
     <div v-if="showCategorySelector">
       <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">

@@ -356,7 +356,7 @@ const handleAddHistory = () => {
             >
               <h5 class="flex items-center gap-2">
                 <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i class="pi pi-fish text-green-600 text-sm"></i>
+                  <i class="pi pi-tag text-green-600 text-sm"></i>
                 </div>
                 ข้อมูลตัวปลา
               </h5>

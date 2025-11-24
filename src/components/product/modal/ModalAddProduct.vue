@@ -92,6 +92,7 @@ const productForm = ref<ICreateProductPayload>({
   foodtype: undefined,
   seedSize: undefined,
   fishStatus: undefined,
+  waitQC: true,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -390,6 +391,7 @@ const resetForm = () => {
     foodtype: undefined,
     seedSize: undefined,
     fishStatus: undefined,
+    waitQC: true,
   }
 
   dynamicFormData.value = null

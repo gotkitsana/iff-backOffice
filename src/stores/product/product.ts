@@ -219,6 +219,7 @@ export interface IProduct {
   certificate?: string
   images: IProductImage[]
   auctionOnly: IAuctionOnly
+  waitQC: boolean // สถานะการรอการตรวจสอบคุณภาพ true = รอการตรวจสอบคุณภาพ, false = ผ่านการตรวจสอบคุณภาพ
   cat: number
   uat: number
 }
@@ -260,6 +261,7 @@ export interface ICreateProductPayload {
   detail?: string // รายละเอียดสินค้า
   category: string // หมวดหมู่ของสินค้า
   sold: boolean // สถานะขายสินค้า true = ขายแล้ว, false = ยังไม่ขาย
+  waitQC: boolean // สถานะการรอการตรวจสอบคุณภาพ true = รอการตรวจสอบคุณภาพ, false = ผ่านการตรวจสอบคุณภาพ
   youtube: string // url ของวิดีโอ ไม่บังคับ
   images?: { filename: string; type: string }[] // รูปภาพของสินค้า ไม่บังคับ
   certificate?: string // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
@@ -308,6 +310,7 @@ export interface IUpdateProductPayload
     | 'foodtype'
     | 'brand'
     | 'fishStatus'
+    | 'waitQC'
   > {
   _id: string
   fishpond?: string
@@ -319,6 +322,7 @@ export interface IUpdateProductPayload
   foodtype?: string
   brand?: string
   fishStatus?: string
+  waitQC?: boolean
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
