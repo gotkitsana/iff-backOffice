@@ -398,41 +398,15 @@ const { navigateWithQuery } = useProductQuery()
           v-if="isFishSelected"
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
-            <InputText
-              :model-value="localFishFilters.sku"
-              @update:model-value="updateFishFilter('sku', $event)"
-              placeholder="ระบุรหัสปลา"
-              size="small"
-              fluid
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
+        <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
             <Select
-              :model-value="localFishFilters.species"
-              @update:model-value="updateFishFilter('species', $event)"
-              :options="speciesOptions"
+              :model-value="localFishFilters.lotNumber"
+              @update:model-value="updateFishFilter('lotNumber', $event)"
+              :options="lotNumberOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="เลือกสายพันธุ์"
-              size="small"
-              fluid
-              filter
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
-            <Select
-              :model-value="localFishFilters.age"
-              @update:model-value="updateFishFilter('age', $event)"
-              :options="ageOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกอายุ"
+              placeholder="เลือกเลขล็อต"
               size="small"
               fluid
               filter
@@ -455,6 +429,48 @@ const { navigateWithQuery } = useProductQuery()
           </div>
 
           <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
+            <InputText
+              :model-value="localFishFilters.sku"
+              @update:model-value="updateFishFilter('sku', $event)"
+              placeholder="ระบุรหัสปลา"
+              size="small"
+              fluid
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เพศ</label>
+            <Select
+              :model-value="localFishFilters.gender"
+              @update:model-value="updateFishFilter('gender', $event)"
+              :options="productStore.genderOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกเพศ"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
+            <Select
+              :model-value="localFishFilters.species"
+              @update:model-value="updateFishFilter('species', $event)"
+              :options="speciesOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกสายพันธุ์"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+
+          <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
             <Select
               :model-value="localFishFilters.greenhouse"
@@ -463,6 +479,21 @@ const { navigateWithQuery } = useProductQuery()
               optionLabel="label"
               optionValue="value"
               placeholder="เลือกกรีนเฮาส์"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+                    <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
+            <Select
+              :model-value="localFishFilters.age"
+              @update:model-value="updateFishFilter('age', $event)"
+              :options="ageOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกอายุ"
               size="small"
               fluid
               filter
@@ -485,35 +516,9 @@ const { navigateWithQuery } = useProductQuery()
             />
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">เพศ</label>
-            <Select
-              :model-value="localFishFilters.gender"
-              @update:model-value="updateFishFilter('gender', $event)"
-              :options="productStore.genderOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเพศ"
-              size="small"
-              fluid
-              filter
-            />
-          </div>
 
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
-            <Select
-              :model-value="localFishFilters.lotNumber"
-              @update:model-value="updateFishFilter('lotNumber', $event)"
-              :options="lotNumberOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเลขล็อต"
-              size="small"
-              fluid
-              filter
-            />
-          </div>
+
+
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
