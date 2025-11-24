@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useProductStore, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IFishGrowthHistory, type IProduct } from '@/stores/product/product'
 import { useProductFilters } from '@/composables/useProductFilters'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
@@ -23,20 +23,24 @@ const emit = defineEmits<{
 const productStore = useProductStore()
 const { fishFilters, applyFishFilters } = useProductFilters()
 
-const { data: products, isLoading } = useQuery({
+const { data: products, isLoading } = useQuery<IProduct[]>({
   queryKey: ['get_products_by_category', props.selectedCategory?._id],
   queryFn: () => productStore.onGetProductsByCategory(props.selectedCategory?._id),
   enabled: computed(() => !!props.selectedCategory?._id),
 })
 
-
+const { data: growthHistoryData } = useQuery({
+  queryKey: ['get_fish_growth_history', props.selectedCategory?._id],
+  queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.selectedCategory?._id || ''),
+  enabled: computed(() => !!props.selectedCategory?._id && props.selectedCategory?.value === 'fish')
+})
 
 const processedProducts = computed(() => {
   if (!products.value) return []
-  return products.value.map((product: any) => {
-    if (product.growth_history && Array.isArray(product.growth_history) && product.growth_history.length > 0) {
+  return products.value.map((product: IProduct) => {
+    if (growthHistoryData.value && Array.isArray(growthHistoryData.value) && growthHistoryData.value.length > 0) {
       // Sort by date descending to get the latest record
-      const sortedHistory = [...product.growth_history].sort((a: any, b: any) => b.date - a.date)
+      const sortedHistory = [...growthHistoryData.value].sort((a: IFishGrowthHistory, b: IFishGrowthHistory) => b.date - a.date)
       const latest = sortedHistory[0]
       return {
         ...product,
