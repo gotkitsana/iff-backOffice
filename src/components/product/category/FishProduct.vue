@@ -29,9 +29,29 @@ const { data: products, isLoading } = useQuery({
   enabled: computed(() => !!props.selectedCategory?._id),
 })
 
-const filteredProducts = computed(() => {
+
+
+const processedProducts = computed(() => {
   if (!products.value) return []
-  return applyFishFilters(products.value)
+  return products.value.map((product: any) => {
+    if (product.growth_history && Array.isArray(product.growth_history) && product.growth_history.length > 0) {
+      // Sort by date descending to get the latest record
+      const sortedHistory = [...product.growth_history].sort((a: any, b: any) => b.date - a.date)
+      const latest = sortedHistory[0]
+      return {
+        ...product,
+        size: latest.size ?? product.size,
+        weight: latest.weight ?? product.weight,
+        gender: latest.gender ?? product.gender,
+        price: latest.price ?? product.price
+      }
+    }
+    return product
+  })
+})
+
+const filteredProducts = computed(() => {
+  return applyFishFilters(processedProducts.value)
 })
 
 

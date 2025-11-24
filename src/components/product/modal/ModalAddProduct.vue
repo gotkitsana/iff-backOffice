@@ -280,7 +280,7 @@ const handleSubmit = async () => {
     isSubmitting.value = false
     return
   }
-  
+
   if (!validateForm()) {
     return
   }
@@ -317,8 +317,26 @@ const selectedCategoryId = computed(() => selectedCategory.value?._id)
 const queryClient = useQueryClient()
 const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
   mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
-  onSuccess: (data: any) => {
+  onSuccess: async (data: any) => {
     if (data.data) {
+      // If fish category, add initial growth history
+      if (isFishCategory.value && data.data._id) {
+         try {
+            await productStore.onAddFishGrowthHistory({
+              product: data.data._id,
+              date: dayjs().valueOf(),
+              size: productForm.value.size || 0,
+              weight: productForm.value.weight || 0,
+              gender: productForm.value.gender || 'unknown',
+              price: productForm.value.price || 0,
+              note: 'Initial record'
+            })
+         } catch (error) {
+            console.error('Failed to create initial growth history', error)
+            toast.error('สร้างประวัติการเติบโตเริ่มต้นไม่สำเร็จ แต่สินค้าถูกสร้างแล้ว')
+         }
+      }
+
       toast.success('เพิ่มสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
       queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
