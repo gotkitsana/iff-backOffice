@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useProductQuery } from '@/composables/useProductQuery'
@@ -8,11 +8,15 @@ import { useProductModals } from '@/composables/useProductModals'
 import { useCategoryFields } from '@/composables/useCategoryFields'
 
 import ProductHeader from '@/components/product/ProductHeader.vue'
-import ProductStatsCards from '@/components/product/ProductStatsCards.vue'
 import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
 import FishProductContent from '@/components/product/category/FishProduct.vue'
 import FoodProductContent from '@/components/product/category/FoodProduct.vue'
 import MicroorganismProductContent from '@/components/product/category/MicroorganismProduct.vue'
+
+import FishStatsCards from '@/components/product/ProductStatsCards/FishStatsCards.vue'
+import FoodStatsCards from '@/components/product/ProductStatsCards/FoodStatsCards.vue'
+import MicroorganismStatsCards from '@/components/product/ProductStatsCards/MicroorganismStatsCards.vue'
+import OverviewStatsCards from '@/components/product/ProductStatsCards/OverviewStatsCards.vue'
 
 import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
 import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
@@ -76,7 +80,7 @@ watch(
 const handleCategorySelect = (category: ICategory, type: SaleFoodType) => {
   selectedCategory.value = category
   showCategorySelector.value = false
-  updateQuery({category: category.value, saleType: type })
+  updateQuery({ category: category.value, saleType: type })
 }
 
 // ฟังก์ชันกลับไปหน้าเลือก category
@@ -85,12 +89,27 @@ const updateCategorySelector = () => {
   selectedCategory.value = null
   clearAllQuery() // ลบ query ทั้งหมด
 }
+
+const statsComponent = computed(() => {
+  if (!selectedCategory.value) return OverviewStatsCards
+
+  switch (selectedCategory.value.value) {
+    case 'fish':
+      return FishStatsCards
+    case 'food':
+      return FoodStatsCards
+    case 'microorganism':
+      return MicroorganismStatsCards
+    default:
+      return OverviewStatsCards
+  }
+})
 </script>
 
 <template>
   <div class="md:space-y-4 space-y-3">
     <ProductHeader title="ภาพรวมคลังสินค้า" description="" />
-    <ProductStatsCards :selected-category="selectedCategory" />
+    <component :is="statsComponent" :selected-category="selectedCategory" />
 
     <div v-if="showCategorySelector">
       <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">

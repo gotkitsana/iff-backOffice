@@ -112,6 +112,10 @@ const navigateTo = (routeName: string) => {
 }
 
 const navigateToStorageCategory = (categoryValue: string) => {
+  if (categoryValue === 'fish') {
+    router.push({ name: 'storage-fish' })
+    return
+  }
   router.push({ name: 'storage', query: { category: categoryValue } })
 }
 
@@ -242,6 +246,11 @@ const menuSections = [
             label: 'ระบบบริหารการผลิต MES',
             route: 'production-mes',
           },
+          {
+            icon: 'pi pi-list',
+            label: 'วางแผนความต้องการวัตถุดิบ MRP',
+            route: 'production-mrp',
+          }
         ],
       },
       // {
@@ -372,22 +381,13 @@ onUnmounted(() => {
                   @click="toggleDropdown(item)"
                   :class="[
                     'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-300 group',
-
                   ]"
                 >
                   <div class="flex items-center space-x-3 flex-1">
-                    <i
-                      :class="[
-                        item.icon,
-                        'text-sm',
- 'text-gray-600 group-hover:text-black',
-                      ]"
-                    ></i>
+                    <i :class="[item.icon, 'text-sm', 'text-gray-600 group-hover:text-black']"></i>
                     <span
                       class="flex-1 text-left font-[500]!"
-                      :class="
-                         'text-gray-600 group-hover:text-black'
-                      "
+                      :class="'text-gray-600 group-hover:text-black'"
                       >{{ item.label }}</span
                     >
                   </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, computed } from 'vue'
+import { ref, h, computed, watch } from 'vue'
 import { DataTable, Column, Tag, Button, Dialog, Galleria } from 'primevue'
 import type { IProduct, IProductImage } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
@@ -14,6 +14,7 @@ const props = defineProps<{
   filteredProducts: IProduct[]
   isLoadingProducts: boolean
   selectedCategory: ICategory | null
+  selectable?: boolean
 }>()
 
 // Emits
@@ -21,17 +22,20 @@ const emit = defineEmits<{
   'open-detail-modal': [product: IProduct]
   'open-edit-modal': [product: IProduct]
   'open-delete-modal': [product: IProduct]
+  'update-selection': [products: IProduct[]]
 }>()
 
 // Utility functions
 const getGenderTag = (gender: string) => {
   switch (gender) {
-    case 'ตัวผู้':
+    case 'male':
       return { label: 'ตัวผู้', severity: 'info' }
-    case 'ตัวเมีย':
+    case 'female':
       return { label: 'ตัวเมีย', severity: 'warning' }
-    case 'ไม่ระบุ':
+    case 'unknown':
       return { label: 'ไม่ระบุ', severity: 'secondary' }
+    default:
+      return { label: '-', severity: 'secondary' }
   }
 }
 
@@ -91,6 +95,22 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
 // >([])
 // const activeMediaIndex = ref(0)
 // const selectedProduct = ref<IProduct | null>(null)
+const selectedRows = ref<IProduct[]>([])
+
+const handleSelectionChange = (value: IProduct[]) => {
+  selectedRows.value = value
+  emit('update-selection', value)
+}
+
+watch(
+  () => props.filteredProducts,
+  () => {
+    if (selectedRows.value.length > 0) {
+      selectedRows.value = []
+      emit('update-selection', [])
+    }
+  }
+)
 
 // const openMediaGalleryModal = (
 //   product: IProduct,
@@ -865,6 +885,8 @@ const displayColumns = computed(() => {
       :rowsPerPageOptions="[20, 50, 100]"
       scrollHeight="600px"
       scrollable
+      v-model:selection="selectedRows"
+      dataKey="_id"
       :pt="{
         table: 'text-sm',
         header: 'py-2',
@@ -873,7 +895,16 @@ const displayColumns = computed(() => {
         cell: 'py-1 px-2',
         columnHeader: 'py-2 px-2',
       }"
+      @update:selection="handleSelectionChange"
     >
+      <Column
+        v-if="props.selectable"
+        selectionMode="multiple"
+        headerClass="w-12 text-center"
+        bodyClass="text-center"
+        style="width: 3rem"
+      />
+
       <Column
         v-for="(item, index) in displayColumns"
         :key="index"

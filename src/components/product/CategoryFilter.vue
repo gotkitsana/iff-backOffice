@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Button, Select, InputText, InputNumber, Slider } from 'primevue'
 import {
   useProductStore,
@@ -69,6 +69,16 @@ const localFoodFilters = ref<IFoodFilters>({
   priceMax: props.foodFilters?.priceMax || maxProductPrice,
 })
 
+watch(
+  () => props.foodFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localFoodFilters.value = { ...localFoodFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
+
 const localFishFilters = ref<IFishFilters>({
   sku: props.fishFilters?.sku || '',
   lotNumber: props.fishFilters?.lotNumber || '',
@@ -86,6 +96,16 @@ const localFishFilters = ref<IFishFilters>({
   sizeMax: props.fishFilters?.sizeMax || 200,
 })
 
+watch(
+  () => props.fishFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localFishFilters.value = { ...localFishFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
+
 const localMicroorganismFilters = ref<IMicroorganismFilters>({
   sku: props.microorganismFilters?.sku || '',
   lotNumber: props.microorganismFilters?.lotNumber || '',
@@ -93,6 +113,16 @@ const localMicroorganismFilters = ref<IMicroorganismFilters>({
   priceMin: props.microorganismFilters?.priceMin || 0,
   priceMax: props.microorganismFilters?.priceMax || maxFishPrice,
 })
+
+watch(
+  () => props.microorganismFilters,
+  (newFilters) => {
+    if (newFilters) {
+      localMicroorganismFilters.value = { ...localMicroorganismFilters.value, ...newFilters }
+    }
+  },
+  { deep: true }
+)
 
 const fishSizeRange = computed({
   get: () => [localFishFilters.value.sizeMin || 0, localFishFilters.value.sizeMax || maxSize],
@@ -399,40 +429,14 @@ const { navigateWithQuery } = useProductQuery()
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
         >
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
-            <InputText
-              :model-value="localFishFilters.sku"
-              @update:model-value="updateFishFilter('sku', $event)"
-              placeholder="ระบุรหัสปลา"
-              size="small"
-              fluid
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
             <Select
-              :model-value="localFishFilters.species"
-              @update:model-value="updateFishFilter('species', $event)"
-              :options="speciesOptions"
+              :model-value="localFishFilters.lotNumber"
+              @update:model-value="updateFishFilter('lotNumber', $event)"
+              :options="lotNumberOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="เลือกสายพันธุ์"
-              size="small"
-              fluid
-              filter
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
-            <Select
-              :model-value="localFishFilters.age"
-              @update:model-value="updateFishFilter('age', $event)"
-              :options="ageOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกอายุ"
+              placeholder="เลือกเลขล็อต"
               size="small"
               fluid
               filter
@@ -455,33 +459,13 @@ const { navigateWithQuery } = useProductQuery()
           </div>
 
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
-            <Select
-              :model-value="localFishFilters.greenhouse"
-              @update:model-value="updateFishFilter('greenhouse', $event)"
-              :options="greenhouseOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกกรีนเฮาส์"
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
+            <InputText
+              :model-value="localFishFilters.sku"
+              @update:model-value="updateFishFilter('sku', $event)"
+              placeholder="ระบุรหัสปลา"
               size="small"
               fluid
-              filter
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">บ่อปลา</label>
-            <Select
-              :model-value="localFishFilters.fishpond"
-              @update:model-value="updateFishFilter('fishpond', $event)"
-              :options="pondOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกบ่อปลา"
-              size="small"
-              fluid
-              filter
-              :disabled="!localFishFilters.greenhouse"
             />
           </div>
 
@@ -501,17 +485,63 @@ const { navigateWithQuery } = useProductQuery()
           </div>
 
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
             <Select
-              :model-value="localFishFilters.lotNumber"
-              @update:model-value="updateFishFilter('lotNumber', $event)"
-              :options="lotNumberOptions"
+              :model-value="localFishFilters.species"
+              @update:model-value="updateFishFilter('species', $event)"
+              :options="speciesOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="เลือกเลขล็อต"
+              placeholder="เลือกสายพันธุ์"
               size="small"
               fluid
               filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
+            <Select
+              :model-value="localFishFilters.greenhouse"
+              @update:model-value="updateFishFilter('greenhouse', $event)"
+              :options="greenhouseOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกกรีนเฮาส์"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
+            <Select
+              :model-value="localFishFilters.age"
+              @update:model-value="updateFishFilter('age', $event)"
+              :options="ageOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกอายุ"
+              size="small"
+              fluid
+              filter
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">บ่อปลา</label>
+            <Select
+              :model-value="localFishFilters.fishpond"
+              @update:model-value="updateFishFilter('fishpond', $event)"
+              :options="pondOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกบ่อปลา"
+              size="small"
+              fluid
+              filter
+              :disabled="!localFishFilters.greenhouse"
             />
           </div>
 

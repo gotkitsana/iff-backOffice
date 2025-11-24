@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Tag, Galleria } from 'primevue'
+import { Dialog, Button, Tag, Galleria, Panel, VirtualScroller } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
@@ -14,6 +14,9 @@ import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
 import DownloadZipButton from '../DownloadZipButton.vue'
+import ModalUpdateFishData from './ModalUpdateFishData.vue'
+import type { IFishGrowthHistory } from '@/stores/product/product'
+import { ref, watch } from 'vue'
 
 // Props
 const props = defineProps<{
@@ -46,7 +49,6 @@ const getGenderTag = (gender: string) => {
   }
 }
 
-const productStore = useProductStore()
 const greenhouseStore = useGreenhouseStore()
 const { data: greenhouseData } = useQuery<IGreenhouse[]>({
   queryKey: ['get_greenhouses'],
@@ -201,6 +203,44 @@ const selectedMediaItems = computed(() => {
 
   return mediaItems
 })
+
+// Fish Growth History Logic
+const showUpdateModal = ref(false)
+const selectedHistoryRecord = ref<IFishGrowthHistory | undefined>(undefined)
+
+const productStore = useProductStore()
+const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
+  queryKey: ['get_fish_growth_history', props.productData?._id],
+  queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
+  enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish')
+})
+console.log(growthHistoryData)
+
+const historyRecords = computed(() => {
+  if (!growthHistoryData.value) return []
+
+  // Sort ascending (Oldest to Newest)
+  return [...growthHistoryData.value].sort((a, b) => a.date - b.date)
+})
+
+// Select the latest record by default when history data changes
+watch(historyRecords, (records) => {
+  if (records.length > 0) {
+    selectedHistoryRecord.value = records[records.length - 1]
+  }
+}, { immediate: true })
+
+
+const handleUpdateHistory = (item: IFishGrowthHistory) => {
+  selectedHistoryRecord.value = item
+  showUpdateModal.value = true
+}
+
+const handleAddHistory = () => {
+  const isLatestRecord = historyRecords.value[historyRecords.value.length - 1]
+  selectedHistoryRecord.value = {...isLatestRecord, _id: ''}
+  showUpdateModal.value = true
+}
 </script>
 
 <template>
@@ -215,6 +255,7 @@ const selectedMediaItems = computed(() => {
       footer: 'p-6',
     }"
   >
+
     <template #header>
       <div class="flex items-center gap-4">
         <div
@@ -310,68 +351,104 @@ const selectedMediaItems = computed(() => {
 
           <!-- ข้อมูลตัวปลา (Fish Information) -->
           <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            <div
+              class="text-base font-bold text-gray-900 mb-4 flex items-center justify-between pb-2 border-b border-gray-200"
             >
-              <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-fish text-green-600 text-sm"></i>
-              </div>
-              ข้อมูลตัวปลา
-            </h5>
-            <div class="space-y-3">
-              <div v-if="productData.uat">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
-                  วันที่บันทึก
-                </label>
-                <p class="text-sm text-gray-900 font-medium">
-                  {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
-                </p>
-              </div>
-              <div v-if="getFieldValue('size')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
-                  ไซต์
-                </label>
-                <p class="text-sm text-gray-900 font-medium">
-                  {{ getFieldValue('size') }}
-                </p>
-              </div>
-              <div v-if="getFieldValue('weight')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
-                  น้ำหนัก (กก.)
-                </label>
-                <p class="text-sm text-gray-900 font-medium">
-                  {{ getFieldValue('weight') }}
-                </p>
-              </div>
-              <div v-if="productData.gender">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
-                  เพศ
-                </label>
-                <Tag
-                  :value="getGenderTag(productData.gender || '').label"
-                  :severity="getGenderTag(productData.gender || '').severity"
-                  class="px-2 py-1 text-xs"
-                />
-              </div>
-              <div v-if="productData.price">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
-                  ราคา
-                </label>
-                <p class="text-sm text-gray-900 font-medium">
-                  {{ formatFieldValue('price') }}
-                </p>
-              </div>
+              <h5 class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="pi pi-tag text-green-600 text-sm"></i>
+                </div>
+                ข้อมูลตัวปลา
+              </h5>
+              <Button
+                text
+                severity="success"
+                size="small"
+                label="อัปเดตข้อมูล"
+                @click="handleAddHistory"
+              />
             </div>
+
+            <VirtualScroller :items="historyRecords" :item-size="25" class="space-y-2" style="max-height: 300px;">
+              <template v-slot:item="{ item, options }">
+              <!-- Selected Record Details -->
+              <Panel
+                toggleable
+                collapsed
+                class="mb-2"
+                :pt="{
+                  root: '!rounded-lg',
+                  header: 'px-2 py-1.5 min-h-[2.5rem]',
+                  title: 'text-sm',
+                  content: 'p-2 pt-0',
+                }"
+                :toggleButtonProps="{
+                  size: 'small',
+                  rounded: true,
+                  text: true,
+                  severity: 'secondary'
+                }"
+
+              >
+                <template #header>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-gray-900">
+                      บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm') }}
+                    </span>
+                  </div>
+                </template>
+                <template #icons>
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    rounded
+                    severity="warn"
+                    size="small"
+                    @click="handleUpdateHistory(item)"
+                    v-tooltip.top="'แก้ไขข้อมูล'"
+                  />
+                </template>
+                <div class="grid grid-cols-2 gap-2">
+                   <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                      ไซต์
+                    </label>
+                    <p class="text-sm text-gray-900 font-medium">
+                      {{ item.size ? `${item.size} ซม.` : '-' }}
+                    </p>
+                  </div>
+                  <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                      น้ำหนัก
+                    </label>
+                    <p class="text-sm text-gray-900 font-medium">
+                      {{ item.weight ? `${item.weight} กก.` : '-' }}
+                    </p>
+                  </div>
+                   <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                      เพศ
+                    </label>
+                    <Tag
+                      v-if="item.gender"
+                      :value="getGenderTag(item.gender).label"
+                      :severity="getGenderTag(item.gender).severity"
+                      class="px-2 py-1 text-xs"
+                    />
+                    <span v-else>-</span>
+                  </div>
+                  <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                      ราคา
+                    </label>
+                    <p class="text-sm text-gray-900 font-medium">
+                      {{ item.price ? formatCurrency(item.price) : '-' }}
+                    </p>
+                  </div>
+                </div>
+              </Panel>
+              </template>
+            </VirtualScroller>
           </div>
 
           <!-- ข้อมูลการจัดเก็บ (Stock Information) -->
@@ -972,4 +1049,11 @@ const selectedMediaItems = computed(() => {
       </div>
     </template>
   </Dialog>
+
+    <ModalUpdateFishData
+      v-if="productData"
+      v-model:visible="showUpdateModal"
+      :existing-record="selectedHistoryRecord"
+      :product-id="productData._id"
+    />
 </template>

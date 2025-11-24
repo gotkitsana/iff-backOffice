@@ -33,6 +33,36 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
+  async function onGetAllFishGrowthHistory() {
+    const { data } = await api.get(`/growth/history`)
+    return data.data
+  }
+
+  async function onGetFishGrowthHistoryProduct(id: string) {
+    const { data } = await api.get(`/growth/history?product=${id}`)
+    return data.data
+  }
+
+  async function onGetFishGrowthHistoryID(id: string) {
+    const { data } = await api.get(`/growth/history?id=${id}`)
+    return data.data
+  }
+
+  async function onAddFishGrowthHistory(payload: IFishGrowthHistoryPayload) {
+    const { data } = await api.post(`/growth/history`, payload)
+    return data
+  }
+
+  async function onUpdateFishGrowthHistory(payload: IUpdateFishGrowthHistoryPayload) {
+    const { data } = await api.put(`/growth/history`, payload)
+    return data
+  }
+
+  async function onDeleteFishGrowthHistory(id: string) {
+    const { data } = await api.delete(`/growth/history?id=${id}`)
+    return data
+  }
+
   const seedTypeOptions = [
     {
       label: 'ลอย',
@@ -44,10 +74,10 @@ export const useProductStore = defineStore('product', () => {
   const genderOptions = [
     {
       label: 'ตัวผู้',
-      value: 'ตัวผู้',
+      value: 'male',
     },
-    { label: 'ตัวเมีย', value: 'ตัวเมีย' },
-    { label: 'ไม่ระบุ', value: 'ไม่ระบุ' },
+    { label: 'ตัวเมีย', value: 'female' },
+    { label: 'ไม่ระบุ', value: 'unknown' },
   ]
 
   const ageOptions = [
@@ -62,6 +92,11 @@ export const useProductStore = defineStore('product', () => {
     onGetProducts,
     onGetProductsByID,
     onGetProductsByCategory,
+    onGetFishGrowthHistoryProduct,
+    onGetFishGrowthHistoryID,
+    onAddFishGrowthHistory,
+    onUpdateFishGrowthHistory,
+    onGetAllFishGrowthHistory,
 
     onCreateProduct,
     onUpdateProduct,
@@ -184,8 +219,37 @@ export interface IProduct {
   certificate?: string
   images: IProductImage[]
   auctionOnly: IAuctionOnly
+  waitQC: boolean // สถานะการรอการตรวจสอบคุณภาพ true = รอการตรวจสอบคุณภาพ, false = ผ่านการตรวจสอบคุณภาพ
   cat: number
   uat: number
+}
+
+export interface IFishGrowthHistory {
+  _id: string
+  product: string
+  date: number
+  size: number
+  weight: number
+  gender: string
+  price: number
+  note: string
+  cat: number
+  uat: number
+  __v: number
+}
+
+export interface IFishGrowthHistoryPayload {
+  product: string // id of product
+  date: number // timestamp
+  size: number // size of fish
+  weight: number // weight of fish
+  gender: string // gender of fish
+  price: number // price of fish
+  note: string // note of fish
+}
+
+export interface IUpdateFishGrowthHistoryPayload extends IFishGrowthHistoryPayload {
+  _id: string
 }
 
 export interface ICreateProductPayload {
@@ -197,6 +261,7 @@ export interface ICreateProductPayload {
   detail?: string // รายละเอียดสินค้า
   category: string // หมวดหมู่ของสินค้า
   sold: boolean // สถานะขายสินค้า true = ขายแล้ว, false = ยังไม่ขาย
+  waitQC: boolean // สถานะการรอการตรวจสอบคุณภาพ true = รอการตรวจสอบคุณภาพ, false = ผ่านการตรวจสอบคุณภาพ
   youtube: string // url ของวิดีโอ ไม่บังคับ
   images?: { filename: string; type: string }[] // รูปภาพของสินค้า ไม่บังคับ
   certificate?: string // หนังสือรับรองของสินค้า ถ้า type = 0 ไม่ต้องระบุ
@@ -245,6 +310,7 @@ export interface IUpdateProductPayload
     | 'foodtype'
     | 'brand'
     | 'fishStatus'
+    | 'waitQC'
   > {
   _id: string
   fishpond?: string
@@ -256,6 +322,7 @@ export interface IUpdateProductPayload
   foodtype?: string
   brand?: string
   fishStatus?: string
+  waitQC?: boolean
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
@@ -321,6 +388,7 @@ export interface IFields {
   type: IFieldsType
   required: IFieldsRequired
   options?: IFieldsOptions
+  closeInEdit?: boolean
 }
 
 export interface ICategoryOption extends ICategory {

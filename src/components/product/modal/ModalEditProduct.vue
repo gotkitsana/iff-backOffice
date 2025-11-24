@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Button } from 'primevue'
+import { Dialog, Button, Panel } from 'primevue'
+import ModalUpdateFishData from './ModalUpdateFishData.vue'
 import {
   useProductStore,
   type IUpdateProductPayload,
@@ -8,6 +9,7 @@ import {
   type ICategoryOption,
   type IFieldsKey,
   type IProductImage,
+  type IFishGrowthHistoryPayload,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
@@ -365,8 +367,7 @@ const handleSubmit = async () => {
     name:
       selectedCategoryId.value?.value !== 'fish'
         ? brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name || ''
-        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || ''
-
+        : speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name || '',
   }
 
   updateProduct(payload)
@@ -384,6 +385,7 @@ const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
       queryClient.invalidateQueries({
         queryKey: ['get_products_by_category', selectedCategoryById],
       })
+
       handleClose()
       isSubmitting.value = false
     } else {
@@ -435,6 +437,7 @@ const updateCertificateFile = (file: string | undefined) => {
 const handleUpdateVideoFile = (filename: string | undefined) => {
   productForm.value.youtube = filename || ''
 }
+
 </script>
 
 <template>
@@ -472,6 +475,7 @@ const handleUpdateVideoFile = (filename: string | undefined) => {
         :is-submitting="isSubmitting"
         :pond-options="filteredPondOptions"
         @update-field="updateDynamicField"
+        :is-edit="true"
       />
 
       <!-- File Upload Section -->

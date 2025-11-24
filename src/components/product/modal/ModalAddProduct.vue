@@ -6,6 +6,7 @@ import {
   type ICategoryOption,
   type ICreateProductPayload,
   type IFieldsKey,
+  type IFishGrowthHistoryPayload,
   type IProductImage,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
@@ -91,6 +92,7 @@ const productForm = ref<ICreateProductPayload>({
   foodtype: undefined,
   seedSize: undefined,
   fishStatus: undefined,
+  waitQC: true,
 })
 
 const dynamicFormData = ref<Record<IFieldsKey, string | number | Date | null> | null>(null)
@@ -280,7 +282,7 @@ const handleSubmit = async () => {
     isSubmitting.value = false
     return
   }
-  
+
   if (!validateForm()) {
     return
   }
@@ -301,13 +303,12 @@ const handleSubmit = async () => {
         ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name}`
         : `${speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name}`,
     price:
-      selectedCategory.value.value == 'fish'
-        ? productForm.value.price
-        : selectedCategory.value.value === 'food'
-        ? productForm.value.food.customerPrice
-        : selectedCategory.value.value === 'microorganism'
-        ? productForm.value.food.customerPrice
-        : 0,
+        selectedCategory.value.value == 'fish' ?
+        productForm.value.price
+        : selectedCategory.value.value == 'food' ?
+        productForm.value.food.customerPrice
+        : selectedCategory.value.value == 'microorganism' ?
+        productForm.value.food.customerPrice : 0,
   }
 
   createProduct(payload)
@@ -317,11 +318,15 @@ const selectedCategoryId = computed(() => selectedCategory.value?._id)
 const queryClient = useQueryClient()
 const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
   mutationFn: (payload: ICreateProductPayload) => productStore.onCreateProduct(payload),
-  onSuccess: (data: any) => {
+  onSuccess: async (data: any) => {
     if (data.data) {
       toast.success('เพิ่มสินค้าสำเร็จ')
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
       queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
+
+      if(selectedCategory.value?.value === 'fish') {
+        queryClient.invalidateQueries({ queryKey: ['get_all_fish_growth_history'] })
+      }
       handleClose()
     } else {
       toast.error(data.error.message || 'เพิ่มสินค้าไม่สำเร็จ')
@@ -386,6 +391,7 @@ const resetForm = () => {
     foodtype: undefined,
     seedSize: undefined,
     fishStatus: undefined,
+    waitQC: true,
   }
 
   dynamicFormData.value = null
@@ -435,17 +441,18 @@ const { data: salePercents } = useQuery<ISalePercent[]>({
   queryFn: () => salePercentStore.onGetSalePercents(),
 })
 const validatePricePercent = (): boolean => {
-  if (selectedCategory.value?.value === 'food' || selectedCategory.value?.value === 'microorganism') {
+  if (
+    selectedCategory.value?.value === 'food' ||
+    selectedCategory.value?.value === 'microorganism'
+  ) {
     const hasCustomerPercent = salePercents.value?.some(
-      sp => sp.name === 'customerPrice' &&
-           sp.category._id === selectedCategory.value?._id &&
-           sp.active
+      (sp) =>
+        sp.name === 'customerPrice' && sp.category._id === selectedCategory.value?._id && sp.active
     )
 
     const hasDealerPercent = salePercents.value?.some(
-      sp => sp.name === 'dealerPrice' &&
-           sp.category._id === selectedCategory.value?._id &&
-           sp.active
+      (sp) =>
+        sp.name === 'dealerPrice' && sp.category._id === selectedCategory.value?._id && sp.active
     )
 
     if (!hasCustomerPercent || !hasDealerPercent) {
@@ -485,6 +492,7 @@ const validatePricePercent = (): boolean => {
           :pond-options="filteredPondOptions"
           @update-field="updateDynamicField"
           :category-id="selectedCategory"
+          :is-edit="false"
         />
 
         <!-- File Upload Section -->
