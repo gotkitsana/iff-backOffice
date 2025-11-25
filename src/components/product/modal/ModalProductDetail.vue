@@ -392,7 +392,7 @@ const handleAddHistory = () => {
                 <template #header>
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-gray-900">
-                      บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm') }}
+                      บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm:ss') }}
                     </span>
                   </div>
                 </template>
