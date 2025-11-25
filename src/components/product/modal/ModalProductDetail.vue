@@ -12,6 +12,7 @@ import type { ICategory } from '../../../stores/product/category'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/fish/greenhouse'
 import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import html2canvas from 'html2canvas'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
 import DownloadZipButton from '../DownloadZipButton.vue'
 import ModalUpdateFishData from './ModalUpdateFishData.vue'
@@ -245,6 +246,45 @@ const handleAddHistory = () => {
   const isLatestRecord = historyRecords.value[historyRecords.value.length - 1]
   selectedHistoryRecord.value = { ...isLatestRecord, _id: '' }
   showUpdateModal.value = true
+}
+
+const isDownloading = ref(false)
+
+const downloadWithOverlay = async (event: Event) => {
+  if (!props.productData) return
+
+  try {
+    isDownloading.value = true
+    const button = event.currentTarget as HTMLElement
+    // Navigate up to find the common parent, then find the container
+    const wrapper = button.parentElement?.parentElement
+    const container = wrapper?.querySelector('.relative.group') as HTMLElement
+
+    if (!container) {
+      console.error('Image container not found')
+      return
+    }
+
+    // Capture the container
+    const canvas = await html2canvas(container, {
+      useCORS: true,
+      scale: 2,
+      backgroundColor: null,
+      logging: false,
+    })
+
+    // Download
+    const link = document.createElement('a')
+    link.download = `fish-${props.productData.sku || 'image'}.png`
+    link.href = canvas.toDataURL('image/png')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Error downloading image:', error)
+  } finally {
+    isDownloading.value = false
+  }
 }
 </script>
 
@@ -485,24 +525,35 @@ const handleAddHistory = () => {
                       <img :src="item.itemImageSrc" alt="image" width="220" />
                     </template>
                     <template #preview="slotProps">
+                      <div class="relative group" :id="`preview-container-${productData._id}`">
+                        <img :src="item.itemImageSrc" alt="preview" :style="slotProps.style"
+                          class="max-h-[75vh] md:max-h-[95vh] w-auto h-auto object-contain block shadow-lg" />
 
-                      <img :src="item.itemImageSrc" alt="preview" :style="slotProps.style"
-                        class="max-h-[75vh] md:max-h-[95vh] w-auto h-auto object-contain block shadow-lg" />
-
+                        <!-- Overlay Info -->
+                        <div class="absolute top-0 left-0 w-full h-full p-4 pointer-events-none">
+                          <div
+                            class="text-white  drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] space-y-0.5 leading-snug select-none">
+                            <p class="text-base lg:text-lg font-[600]! ">{{ productData.sku }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">เพศ: {{ getGenderTag(productData.gender || '').label || '-'
+                              }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">แม่พันธุ์: {{ productData.breeders || '-' }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">วันเกิด: {{ formatBirthDate(productData.birth || '') }}</p>
+                            <p class="mt-3 text-sm lg:text-base font-[500]! ">วันที่บันทึก: {{ dayjs(productData.uat).add(543, 'year').format('D-M-YY')
+                              }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">ไซต์: {{ productData.size || '-' }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">น้ำหนัก: {{ productData.weight || '-' }}</p>
+                          </div>
+                        </div>
+                      </div>
                       <div class="absolute top-22 right-4 z-[10000] lg:hidden">
-                        <Button icon="pi pi-download" severity="contrast" rounded size="large" @click.stop />
+                        <Button icon="pi pi-download" severity="contrast" rounded size="large"
+                          @click.stop="downloadWithOverlay($event)" :loading="isDownloading" />
                       </div>
-
                       <div class="absolute top-[25px] right-80 z-[10000] hidden lg:block">
-                        <Button icon="pi pi-download" severity="secondary" rounded size="large" @click.stop />
+                        <Button icon="pi pi-download" severity="secondary" rounded size="large"
+                          @click.stop="downloadWithOverlay($event)" :loading="isDownloading" />
                       </div>
-
-                      <!-- <div class="absolute top-2 right-2 hidden ">
-                          <Button icon="pi pi-download" severity="contrast" rounded size="large" />
-                        </div> -->
-
                     </template>
-
                   </Image>
                 </div>
               </template>
@@ -526,7 +577,7 @@ const handleAddHistory = () => {
               ใบรับรอง
             </h5>
             <div class="text-center">
-              <Image :src="getCertificateUrl(productData.certificate)" alt="Certificate" width="280" preview />
+              <Image :src="getCertificateUrl(productData.certificate || '')" alt="Certificate" width="280" preview />
             </div>
           </div>
         </div>
