@@ -214,7 +214,6 @@ const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
   queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
   enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish')
 })
-console.log(growthHistoryData)
 
 const historyRecords = computed(() => {
   if (!growthHistoryData.value) return []
