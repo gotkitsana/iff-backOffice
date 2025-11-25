@@ -8,7 +8,7 @@ import {
   type IGreenhouse,
   type ICreateGreenhousePayload,
   type IUpdateGreenhousePayload,
-} from '../../../stores/product/greenhouse'
+} from '../../../stores/fish/greenhouse'
 
 interface IApiResponse {
   data?: unknown

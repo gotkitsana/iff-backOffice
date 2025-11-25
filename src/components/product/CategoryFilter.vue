@@ -3,21 +3,21 @@ import { computed, ref, watch } from 'vue'
 import { Button, Select, InputText, InputNumber, Slider } from 'primevue'
 import {
   useProductStore,
-  type IFishFilters,
   type IFoodFilters,
   type IMicroorganismFilters,
   type IProduct,
 } from '../../stores/product/product'
+import type { IFishFilters } from '../../stores/fish/fish_filters'
 import { type ICategory } from '../../stores/product/category'
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
 import { useQuery } from '@tanstack/vue-query'
-import { useFarmStore, type IFarm } from '@/stores/product/farm'
+import { useFarmStore, type IFarm } from '@/stores/fish/farm'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
-import { usePondStore, type IPond } from '@/stores/product/pond'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/fish/greenhouse'
+import { usePondStore, type IPond } from '@/stores/fish/pond'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useProductQuery } from '@/composables/useProductQuery'
 

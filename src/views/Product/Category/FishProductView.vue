@@ -13,12 +13,12 @@ import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
 import ModalDeleteProduct from '@/components/product/modal/ModalDeleteProduct.vue'
 
+import { useProductStore, type IProduct } from '@/stores/product/product'
 import {
-  useProductStore,
+  useFishGrowthHistoryStore,
   type IFishGrowthHistory,
-  type IFishFilters,
-  type IProduct,
-} from '@/stores/product/product'
+} from '@/stores/fish/fish_growth_history'
+import type { IFishFilters } from '@/stores/fish/fish_filters'
 import { useCategoryStore, type ICategory } from '@/stores/product/category'
 import { useCategoryFields } from '@/composables/useCategoryFields'
 import { useProductFilters } from '@/composables/useProductFilters'
@@ -28,6 +28,7 @@ const route = useRoute()
 const router = useRouter()
 
 const productStore = useProductStore()
+const fishGrowthHistoryStore = useFishGrowthHistoryStore()
 const categoryStore = useCategoryStore()
 
 const { data: categories } = useQuery({
@@ -88,7 +89,7 @@ const { data: products, isLoading } = useQuery<IProduct[]>({
 
 const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
   queryKey: ['get_all_fish_growth_history'],
-  queryFn: () => productStore.onGetAllFishGrowthHistory(),
+  queryFn: () => fishGrowthHistoryStore.onGetAllFishGrowthHistory(),
 })
 
 const processedProducts = computed(() => {

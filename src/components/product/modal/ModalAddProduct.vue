@@ -6,7 +6,6 @@ import {
   type ICategoryOption,
   type ICreateProductPayload,
   type IFieldsKey,
-  type IFishGrowthHistoryPayload,
   type IProductImage,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
@@ -19,8 +18,8 @@ import FileUploadSection from '@/components/product/add_product/FileUploadSectio
 import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
 import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
 import dayjs from 'dayjs'
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
-import { usePondStore } from '@/stores/product/pond'
+import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
+import { usePondStore } from '@/stores/fish/pond'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 
@@ -303,12 +302,13 @@ const handleSubmit = async () => {
         ? `${brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name}`
         : `${speciesData.value?.find((specie) => specie._id === productForm.value.species)?.name}`,
     price:
-        selectedCategory.value.value == 'fish' ?
-        productForm.value.price
-        : selectedCategory.value.value == 'food' ?
-        productForm.value.food.customerPrice
-        : selectedCategory.value.value == 'microorganism' ?
-        productForm.value.food.customerPrice : 0,
+      selectedCategory.value.value == 'fish'
+        ? productForm.value.price
+        : selectedCategory.value.value == 'food'
+        ? productForm.value.food.customerPrice
+        : selectedCategory.value.value == 'microorganism'
+        ? productForm.value.food.customerPrice
+        : 0,
   }
 
   createProduct(payload)
@@ -324,7 +324,7 @@ const { mutate: createProduct, isPending: isCreatingProduct } = useMutation({
       queryClient.invalidateQueries({ queryKey: ['get_products'] })
       queryClient.invalidateQueries({ queryKey: ['get_products_by_category', selectedCategoryId] })
 
-      if(selectedCategory.value?.value === 'fish') {
+      if (selectedCategory.value?.value === 'fish') {
         queryClient.invalidateQueries({ queryKey: ['get_all_fish_growth_history'] })
       }
       handleClose()

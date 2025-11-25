@@ -9,13 +9,16 @@ import {
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
 import type { ICategory } from '../../../stores/product/category'
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/fish/greenhouse'
 import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
 import DownloadZipButton from '../DownloadZipButton.vue'
 import ModalUpdateFishData from './ModalUpdateFishData.vue'
-import type { IFishGrowthHistory } from '@/stores/product/product'
+import {
+  useFishGrowthHistoryStore,
+  type IFishGrowthHistory,
+} from '@/stores/fish/fish_growth_history'
 import { ref, watch } from 'vue'
 
 // Props
@@ -209,10 +212,11 @@ const showUpdateModal = ref(false)
 const selectedHistoryRecord = ref<IFishGrowthHistory | undefined>(undefined)
 
 const productStore = useProductStore()
+const fishGrowthHistoryStore = useFishGrowthHistoryStore()
 const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
   queryKey: ['get_fish_growth_history', props.productData?._id],
-  queryFn: () => productStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
-  enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish')
+  queryFn: () => fishGrowthHistoryStore.onGetFishGrowthHistoryProduct(props.productData?._id || ''),
+  enabled: computed(() => !!props.productData?._id && props.selectedCategory?.value === 'fish'),
 })
 
 const historyRecords = computed(() => {
@@ -223,12 +227,15 @@ const historyRecords = computed(() => {
 })
 
 // Select the latest record by default when history data changes
-watch(historyRecords, (records) => {
-  if (records.length > 0) {
-    selectedHistoryRecord.value = records[records.length - 1]
-  }
-}, { immediate: true })
-
+watch(
+  historyRecords,
+  (records) => {
+    if (records.length > 0) {
+      selectedHistoryRecord.value = records[records.length - 1]
+    }
+  },
+  { immediate: true }
+)
 
 const handleUpdateHistory = (item: IFishGrowthHistory) => {
   selectedHistoryRecord.value = item
@@ -237,7 +244,7 @@ const handleUpdateHistory = (item: IFishGrowthHistory) => {
 
 const handleAddHistory = () => {
   const isLatestRecord = historyRecords.value[historyRecords.value.length - 1]
-  selectedHistoryRecord.value = {...isLatestRecord, _id: ''}
+  selectedHistoryRecord.value = { ...isLatestRecord, _id: '' }
   showUpdateModal.value = true
 }
 </script>
@@ -254,7 +261,6 @@ const handleAddHistory = () => {
       footer: 'p-6',
     }"
   >
-
     <template #header>
       <div class="flex items-center gap-4">
         <div
@@ -368,84 +374,96 @@ const handleAddHistory = () => {
               />
             </div>
 
-            <VirtualScroller :items="historyRecords" :item-size="25" class="space-y-2" style="max-height: 300px;">
+            <VirtualScroller
+              :items="historyRecords"
+              :item-size="25"
+              class="space-y-2"
+              style="max-height: 300px"
+            >
               <template v-slot:item="{ item, options }">
-              <!-- Selected Record Details -->
-              <Panel
-                toggleable
-                collapsed
-                class="mb-2"
-                :pt="{
-                  root: '!rounded-lg',
-                  header: 'px-2 py-1.5 min-h-[2.5rem]',
-                  title: 'text-sm',
-                  content: 'p-2 pt-0',
-                }"
-                :toggleButtonProps="{
-                  size: 'small',
-                  rounded: true,
-                  text: true,
-                  severity: 'secondary'
-                }"
-
-              >
-                <template #header>
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-bold text-gray-900">
-                      บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm:ss') }}
-                    </span>
-                  </div>
-                </template>
-                <template #icons>
-                  <Button
-                    icon="pi pi-pencil"
-                    text
-                    rounded
-                    severity="warn"
-                    size="small"
-                    @click="handleUpdateHistory(item)"
-                    v-tooltip.top="'แก้ไขข้อมูล'"
-                  />
-                </template>
-                <div class="grid grid-cols-2 gap-2">
-                   <div>
-                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
-                      ไซต์
-                    </label>
-                    <p class="text-sm text-gray-900 font-medium">
-                      {{ item.size ? `${item.size} ซม.` : '-' }}
-                    </p>
-                  </div>
-                  <div>
-                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
-                      น้ำหนัก
-                    </label>
-                    <p class="text-sm text-gray-900 font-medium">
-                      {{ item.weight ? `${item.weight} กก.` : '-' }}
-                    </p>
-                  </div>
-                   <div>
-                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
-                      เพศ
-                    </label>
-                    <Tag
-                      v-if="item.gender"
-                      :value="getGenderTag(item.gender).label"
-                      :severity="getGenderTag(item.gender).severity"
-                      class="px-2 py-1 text-xs"
+                <!-- Selected Record Details -->
+                <Panel
+                  toggleable
+                  collapsed
+                  class="mb-2"
+                  :pt="{
+                    root: '!rounded-lg',
+                    header: 'px-2 py-1.5 min-h-[2.5rem]',
+                    title: 'text-sm',
+                    content: 'p-2 pt-0',
+                  }"
+                  :toggleButtonProps="{
+                    size: 'small',
+                    rounded: true,
+                    text: true,
+                    severity: 'secondary',
+                  }"
+                >
+                  <template #header>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-gray-900">
+                        บันทึกเมื่อ {{ dayjs(item.date).format('DD/MM/YYYY HH:mm:ss') }}
+                      </span>
+                    </div>
+                  </template>
+                  <template #icons>
+                    <Button
+                      icon="pi pi-pencil"
+                      text
+                      rounded
+                      severity="warn"
+                      size="small"
+                      @click="handleUpdateHistory(item)"
+                      v-tooltip.top="'แก้ไขข้อมูล'"
                     />
-                    <span v-else>-</span>
+                  </template>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                      >
+                        ไซต์
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ item.size ? `${item.size} ซม.` : '-' }}
+                      </p>
+                    </div>
+                    <div>
+                      <label
+                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                      >
+                        น้ำหนัก
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ item.weight ? `${item.weight} กก.` : '-' }}
+                      </p>
+                    </div>
+                    <div>
+                      <label
+                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                      >
+                        เพศ
+                      </label>
+                      <Tag
+                        v-if="item.gender"
+                        :value="getGenderTag(item.gender).label"
+                        :severity="getGenderTag(item.gender).severity"
+                        class="px-2 py-1 text-xs"
+                      />
+                      <span v-else>-</span>
+                    </div>
+                    <div>
+                      <label
+                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
+                      >
+                        ราคา
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ item.price ? formatCurrency(item.price) : '-' }}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
-                      ราคา
-                    </label>
-                    <p class="text-sm text-gray-900 font-medium">
-                      {{ item.price ? formatCurrency(item.price) : '-' }}
-                    </p>
-                  </div>
-                </div>
-              </Panel>
+                </Panel>
               </template>
             </VirtualScroller>
           </div>
@@ -573,7 +591,7 @@ const handleAddHistory = () => {
             v-if="productData.certificate"
             class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
           >
-             <h5
+            <h5
               class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
             >
               <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -593,28 +611,32 @@ const handleAddHistory = () => {
 
         <!-- 3. วิดีโอ -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div
-          v-if="productData.detail || productData.youtube"
-          class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2"
-        >
-          <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
-            <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-video text-gray-600 text-sm"></i>
-            </div>
-            วิดีโอสินค้า
-          </h5>
-          <div v-if="productData.youtube">
-            <div class="bg-black rounded-lg py-0">
-              <video :src="productData.youtube" class="w-full h-auto max-h-[55vh]" controls>
-                <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
-              </video>
+          <div
+            v-if="productData.detail || productData.youtube"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2"
+          >
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
+              <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="pi pi-video text-gray-600 text-sm"></i>
+              </div>
+              วิดีโอสินค้า
+            </h5>
+            <div v-if="productData.youtube">
+              <div class="bg-black rounded-lg py-0">
+                <video :src="productData.youtube" class="w-full h-auto max-h-[55vh]" controls>
+                  <p class="text-white p-4">เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ</p>
+                </video>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 4. อื่นๆ (Supplier Info, System Info) -->
+          <!-- 4. อื่นๆ (Supplier Info, System Info) -->
           <div class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
+            <h5
+              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
+            >
               <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-cog text-gray-600 text-sm"></i>
               </div>
@@ -631,8 +653,6 @@ const handleAddHistory = () => {
               </div>
             </div>
           </div>
-
-
         </div>
       </template>
 
@@ -1049,10 +1069,10 @@ const handleAddHistory = () => {
     </template>
   </Dialog>
 
-    <ModalUpdateFishData
-      v-if="productData"
-      v-model:visible="showUpdateModal"
-      :existing-record="selectedHistoryRecord"
-      :product-id="productData._id"
-    />
+  <ModalUpdateFishData
+    v-if="productData"
+    v-model:visible="showUpdateModal"
+    :existing-record="selectedHistoryRecord"
+    :product-id="productData._id"
+  />
 </template>

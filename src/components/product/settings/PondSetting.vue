@@ -18,8 +18,8 @@ import {
   type IPond,
   type ICreatePondPayload,
   type IUpdatePondPayload,
-} from '../../../stores/product/pond'
-import { useGreenhouseStore, type IGreenhouse } from '../../../stores/product/greenhouse'
+} from '../../../stores/fish/pond'
+import { useGreenhouseStore, type IGreenhouse } from '../../../stores/fish/greenhouse'
 
 interface IPondImage {
   filename: string
@@ -276,7 +276,9 @@ const handleSubmit = () => {
   if (!validate()) return
 
   const payload: ICreatePondPayload = {
-    name: `${greenhouses.value.find((g) => g._id === form.value.greenhouse)?.name || ''} - ${form.value.code}`,
+    name: `${greenhouses.value.find((g) => g._id === form.value.greenhouse)?.name || ''} - ${
+      form.value.code
+    }`,
     greenhouse: form.value.greenhouse,
     code: form.value.code,
     width: Number(form.value.width),

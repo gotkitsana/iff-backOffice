@@ -8,7 +8,7 @@ import {
   type IFarm,
   type ICreateFarmPayload,
   type IUpdateFarmPayload,
-} from '../../../stores/product/farm'
+} from '../../../stores/fish/farm'
 
 interface IApiResponse {
   data?: unknown

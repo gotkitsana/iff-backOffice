@@ -9,7 +9,6 @@ import {
   type ICategoryOption,
   type IFieldsKey,
   type IProductImage,
-  type IFishGrowthHistoryPayload,
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
@@ -17,8 +16,8 @@ import DynamicFormField from '@/components/product/add_product/DynamicFormField.
 import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
-import { usePondStore } from '@/stores/product/pond'
+import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
+import { usePondStore } from '@/stores/fish/pond'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 
 // Props
@@ -314,7 +313,7 @@ const mapDynamicFormToProductForm = () => {
         productForm.value.species = value as string
         break
       case 'fishStatus':
-        productForm.value.fishStatus = value as string || undefined
+        productForm.value.fishStatus = (value as string) || undefined
         break
     }
   })
@@ -437,7 +436,6 @@ const updateCertificateFile = (file: string | undefined) => {
 const handleUpdateVideoFile = (filename: string | undefined) => {
   productForm.value.youtube = filename || ''
 }
-
 </script>
 
 <template>

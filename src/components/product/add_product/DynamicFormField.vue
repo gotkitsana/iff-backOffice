@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import type { ICategory } from '@/stores/product/category'
-import { useFarmStore, type IFarm } from '@/stores/product/farm'
-import { useFishStatusStore, type IFishStatus } from '@/stores/product/fish_status'
+import { useFarmStore, type IFarm } from '@/stores/fish/farm'
+import { useFishStatusStore, type IFishStatus } from '@/stores/fish/fish_status'
 import { useFoodBrandStore, type IFoodBrand } from '@/stores/product/food_brand'
 import { useFoodTypeStore, type IFoodType } from '@/stores/product/food_type'
-import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
+import { useGreenhouseStore, type IGreenhouse } from '@/stores/fish/greenhouse'
 import { useLotNumberStore, type ILotNumber } from '@/stores/product/lot_number'
 import { useProductStore, type IFields, type IFieldsKey } from '@/stores/product/product'
 import { useQualityStore, type IQuality } from '@/stores/product/quality'
 import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 import { useSeedSizeStore, type ISeedSize } from '@/stores/product/seed_size'
-import { useSpeciesStore, type ISpecies } from '@/stores/product/species'
+import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
 import { useQuery } from '@tanstack/vue-query'
 import { InputText, InputNumber, Select, Textarea, DatePicker, Checkbox, Message } from 'primevue'
 import { computed, watch } from 'vue'
@@ -314,7 +314,6 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
 
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-
     <Message
       v-if="
         hasMissingPercent && (categoryId?.value === 'food' || categoryId?.value === 'microorganism')
@@ -328,7 +327,7 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
       <small>กรุณาไปที่ ตั้งค่าเปอร์เซ็นต์กำไร เพื่อตั้งค่า</small>
     </Message>
 
-    <div  class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
         v-for="field in fields.filter((field) => {
           if (isEdit && categoryId?.value === 'fish' && field.closeInEdit) {
@@ -377,7 +376,9 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
             :min="field.key === 'balance' || field.key === 'weight' ? 0 : 1"
             :minFractionDigits="1"
             :maxFractionDigits="5"
-            :disabled="(field.key === 'customerPrice' || field.key === 'dealerPrice') && !!formData.costPrice"
+            :disabled="
+              (field.key === 'customerPrice' || field.key === 'dealerPrice') && !!formData.costPrice
+            "
             fluid
             size="small"
             :invalid="field.required && formData[field.key] == null && isSubmitting"
@@ -388,13 +389,15 @@ const isGroupedSelect = (fieldKey: IFieldsKey) => {
             v-if="field.key === 'customerPrice' && formData.customerPrice && formData.costPrice"
             class="text-green-600 text-xs mt-1"
           >
-            กำไร: {{ getProfitPercentage(formData.customerPrice as number, formData.costPrice as number) }}
+            กำไร:
+            {{ getProfitPercentage(formData.customerPrice as number, formData.costPrice as number) }}
           </small>
           <small
             v-if="field.key === 'dealerPrice' && formData.dealerPrice && formData.costPrice"
             class="text-green-600 text-xs mt-1"
           >
-            กำไร: {{ getProfitPercentage(formData.dealerPrice as number, formData.costPrice as number) }}
+            กำไร:
+            {{ getProfitPercentage(formData.dealerPrice as number, formData.costPrice as number) }}
           </small>
         </div>
 

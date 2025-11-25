@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useProductStore, type IFishGrowthHistory, type IProduct } from '@/stores/product/product'
+import { useProductStore, type IProduct } from '@/stores/product/product'
+import {
+  useFishGrowthHistoryStore,
+  type IFishGrowthHistory,
+} from '@/stores/fish/fish_growth_history'
 import { useProductFilters } from '@/composables/useProductFilters'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import ProductTable from '@/components/product/ProductTable.vue'
@@ -21,6 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const productStore = useProductStore()
+const fishGrowthHistoryStore = useFishGrowthHistoryStore()
 const { fishFilters, applyFishFilters } = useProductFilters()
 
 const { data: products, isLoading } = useQuery<IProduct[]>({
@@ -31,7 +36,7 @@ const { data: products, isLoading } = useQuery<IProduct[]>({
 
 const { data: growthHistoryData } = useQuery({
   queryKey: ['get_all_fish_growth_history'],
-  queryFn: () => productStore.onGetAllFishGrowthHistory(),
+  queryFn: () => fishGrowthHistoryStore.onGetAllFishGrowthHistory(),
 })
 
 const processedProducts = computed(() => {
