@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Dialog, Button, InputNumber, Select } from 'primevue'
+import { useProductStore } from '../../../stores/product/product'
 import {
-  useProductStore,
+  useFishGrowthHistoryStore,
   type IFishGrowthHistory,
   type IFishGrowthHistoryPayload,
   type IUpdateFishGrowthHistoryPayload,
-} from '../../../stores/product/product'
+} from '../../../stores/fish/fish_growth_history'
 import dayjs from 'dayjs'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
 
-const productStore = useProductStore()
+const fishGrowthHistoryStore = useFishGrowthHistoryStore()
 
 const formData = ref<{
   size: number | null
@@ -103,7 +104,8 @@ const handleSave = async () => {
 
 const queryClient = useQueryClient()
 const { mutate: addFishGrowthHistory, isPending: isAddingFishGrowthHistory } = useMutation({
-  mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onAddFishGrowthHistory(payload),
+  mutationFn: (payload: IFishGrowthHistoryPayload) =>
+    fishGrowthHistoryStore.onAddFishGrowthHistory(payload),
   onSuccess: (data: any, payload: IFishGrowthHistoryPayload) => {
     if (data.data) {
       toast.success('บันทึกข้อมูลเรียบร้อยแล้ว')
@@ -122,7 +124,7 @@ const { mutate: addFishGrowthHistory, isPending: isAddingFishGrowthHistory } = u
 
 const { mutate: updateFishGrowthHistory, isPending: isUpdatingFishGrowthHistory } = useMutation({
   mutationFn: (payload: IUpdateFishGrowthHistoryPayload) =>
-    productStore.onUpdateFishGrowthHistory(payload),
+    fishGrowthHistoryStore.onUpdateFishGrowthHistory(payload),
   onSuccess: (data: any, payload: IUpdateFishGrowthHistoryPayload) => {
     if (data.data) {
       toast.success('แก้ไขข้อมูลเรียบร้อยแล้ว')

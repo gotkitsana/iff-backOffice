@@ -8,7 +8,7 @@ import {
   type IFishStatus,
   type ICreateFishStatusPayload,
   type IUpdateFishStatusPayload,
-} from '../../../stores/product/fish_status'
+} from '../../../stores/fish/fish_status'
 
 interface IApiResponse {
   data?: unknown
@@ -161,7 +161,7 @@ const getModalTitle = () => {
 </script>
 
 <template>
-  <div >
+  <div>
     <!-- Content Header -->
     <div class="p-4 border-b border-gray-200">
       <div class="flex items-center justify-between">

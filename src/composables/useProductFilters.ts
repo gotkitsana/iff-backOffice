@@ -1,10 +1,6 @@
 import type { IFoodSale } from '@/stores/product/food_sale'
-import type {
-  IFishFilters,
-  IFoodFilters,
-  IMicroorganismFilters,
-  IProduct,
-} from '@/stores/product/product'
+import type { IFoodFilters, IMicroorganismFilters, IProduct } from '@/stores/product/product'
+import type { IFishFilters } from '@/stores/fish/fish_filters'
 import { computed, ref } from 'vue'
 
 // src/composables/useProductFilters.ts
