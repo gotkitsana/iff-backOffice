@@ -632,7 +632,7 @@ const fishColumns = ref([
           Tag,
           {
             value: 'รอ QC',
-            severity: 'danger',
+            severity: 'warn',
             size: 'small',
             style: { cursor: 'pointer' },
             onClick: () => handleQcStatusClick(product, 'ready'),

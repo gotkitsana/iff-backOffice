@@ -71,8 +71,6 @@ watch(
   }
 )
 
-const loading = ref(false)
-
 const handleSave = async () => {
   if (!props.productId) return
 
@@ -104,7 +102,7 @@ const handleSave = async () => {
 }
 
 const queryClient = useQueryClient()
-const { mutate: addFishGrowthHistory } = useMutation({
+const { mutate: addFishGrowthHistory, isPending: isAddingFishGrowthHistory } = useMutation({
   mutationFn: (payload: IFishGrowthHistoryPayload) => productStore.onAddFishGrowthHistory(payload),
   onSuccess: (data: any, payload: IFishGrowthHistoryPayload) => {
     if (data.data) {
@@ -122,7 +120,7 @@ const { mutate: addFishGrowthHistory } = useMutation({
   },
 })
 
-const { mutate: updateFishGrowthHistory } = useMutation({
+const { mutate: updateFishGrowthHistory, isPending: isUpdatingFishGrowthHistory } = useMutation({
   mutationFn: (payload: IUpdateFishGrowthHistoryPayload) =>
     productStore.onUpdateFishGrowthHistory(payload),
   onSuccess: (data: any, payload: IUpdateFishGrowthHistoryPayload) => {
@@ -225,7 +223,7 @@ const handleClose = () => {
         <Button
           label="บันทึก"
           icon="pi pi-check"
-          :loading="loading"
+          :loading="isAddingFishGrowthHistory || isUpdatingFishGrowthHistory"
           @click="handleSave"
           size="small"
         />
