@@ -41,6 +41,7 @@ const productSelection = inject<{
       sold?: boolean
       balance?: number
       isFish?: boolean
+      waitQC?: boolean
     }>
   }>
   selectedProductDetails: {
@@ -173,7 +174,14 @@ const selectedProductDetail = computed(() => {
               <div v-if="node.value" class="flex-shrink-0">
                 <!-- ปลา -->
                 <Tag
-                  v-if="node.isFish && node.sold"
+                  v-if="node.isFish && node.waitQC"
+                  value="รอ QC"
+                  severity="danger"
+                  size="small"
+                  class="text-xs"
+                />
+                <Tag
+                  v-else-if="node.isFish && node.sold"
                   value="ขายแล้ว"
                   severity="danger"
                   size="small"

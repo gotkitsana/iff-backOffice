@@ -54,6 +54,12 @@ const ageOptions = [
   { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
 
+const saleStatusOptions = [
+  { label: 'รอ QC', value: 'wait-qc' },
+  { label: 'พร้อมขาย', value: 'ready' },
+  { label: 'ขายแล้ว', value: 'sold' },
+]
+
 const maxFishPrice = 500000
 const maxProductPrice = 50000
 const maxSize = 200
@@ -88,6 +94,7 @@ const localFishFilters = ref<IFishFilters>({
   gender: props.fishFilters?.gender || '',
   greenhouse: props.fishFilters?.greenhouse || '',
   fishpond: props.fishFilters?.fishpond || '',
+  saleStatus: props.fishFilters?.saleStatus || '',
   size: props.fishFilters?.size || null,
   price: props.fishFilters?.price || null,
   priceMin: props.fishFilters?.priceMin || 0,
@@ -215,6 +222,7 @@ const clearFilters = () => {
       gender: '',
       greenhouse: '',
       fishpond: '',
+      saleStatus: '',
       size: null,
       price: null,
       priceMin: 0,
@@ -542,6 +550,20 @@ const { navigateWithQuery } = useProductQuery()
               fluid
               filter
               :disabled="!localFishFilters.greenhouse"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะขาย</label>
+            <Select
+              :model-value="localFishFilters.saleStatus"
+              @update:model-value="updateFishFilter('saleStatus', $event)"
+              :options="saleStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="เลือกสถานะขาย"
+              size="small"
+              fluid
             />
           </div>
 
