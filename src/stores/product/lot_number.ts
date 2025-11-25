@@ -41,12 +41,20 @@ export interface ILotNumber {
     _id: string
     name: string
   }
+  breeder?: string
+  age_quality?: string
+  grade?: string
+  year?: string
 }
 
 export interface ICreateLotNumberPayload {
   name: string
   note: string
   category: string
+  breeder?: string
+  age_quality?: string
+  grade?: string
+  year?: string
 }
 
 export interface IUpdateLotNumberPayload extends Omit<ILotNumber, 'category'> {
