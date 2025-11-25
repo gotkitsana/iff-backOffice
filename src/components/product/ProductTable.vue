@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, h, computed, watch } from 'vue'
 import { DataTable, Column, Tag, Button, Dialog, Galleria } from 'primevue'
-import type { IProduct, IProductImage } from '../../stores/product/product'
+import type { IProduct, IProductImage, IUpdateProductPayload } from '../../stores/product/product'
 import formatCurrency from '../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useGreenhouseStore, type IGreenhouse } from '@/stores/product/greenhouse'
 import { getProductImageUrl } from '@/utils/imageUrl'
+import { useProductStore } from '@/stores/product/product'
+import { toast } from 'vue3-toastify'
 
 // Props
 const props = defineProps<{
@@ -111,6 +113,74 @@ watch(
     }
   }
 )
+
+// QC Status Modal State
+const showQcConfirmModal = ref(false)
+const selectedQcProduct = ref<IProduct | null>(null)
+const qcActionType = ref<'ready' | 'wait-qc'>('ready')
+
+const productStore = useProductStore()
+const queryClient = useQueryClient()
+
+const { mutate: updateProduct, isPending: isUpdatingProduct } = useMutation({
+  mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
+  onSuccess: (data: any) => {
+    if (data.data.modifiedCount > 0) {
+      toast.success('อัปเดตสถานะสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_products'] })
+      if (props.selectedCategory?._id) {
+        queryClient.invalidateQueries({
+          queryKey: ['get_products_by_category', props.selectedCategory._id],
+        })
+      }
+      showQcConfirmModal.value = false
+      selectedQcProduct.value = null
+    } else {
+      toast.error(data.error?.message || 'อัปเดตสถานะไม่สำเร็จ')
+    }
+  },
+  onError: (error: any) => {
+    console.error('Update error:', error)
+    toast.error(error.response?.data?.message || 'อัปเดตสถานะไม่สำเร็จ')
+  },
+})
+
+const handleQcStatusClick = (product: IProduct, action: 'ready' | 'wait-qc') => {
+  selectedQcProduct.value = product
+  qcActionType.value = action
+  showQcConfirmModal.value = true
+}
+
+const confirmQcStatusChange = () => {
+  if (!selectedQcProduct.value) return
+
+  const payload: IUpdateProductPayload = {
+    ...selectedQcProduct.value,
+    _id: selectedQcProduct.value._id,
+    waitQC: qcActionType.value === 'wait-qc',
+    category: selectedQcProduct.value.category || { _id: '', name: '' },
+    fishpond: selectedQcProduct.value.fishpond?._id,
+    species: selectedQcProduct.value.species?._id,
+    farm: selectedQcProduct.value.farm?._id,
+    quality: selectedQcProduct.value.quality?._id,
+    lotNumber: selectedQcProduct.value.lotNumber?._id,
+    foodtype: selectedQcProduct.value.foodtype?._id,
+    seedSize: selectedQcProduct.value.seedSize?._id,
+    brand: selectedQcProduct.value.brand?._id,
+    fishStatus: selectedQcProduct.value.fishStatus?._id,
+    images: selectedQcProduct.value.images.map((img) => ({
+      filename: img.filename,
+      type: img.type,
+    })),
+  }
+
+  updateProduct(payload)
+}
+
+const closeQcModal = () => {
+  showQcConfirmModal.value = false
+  selectedQcProduct.value = null
+}
 
 // const openMediaGalleryModal = (
 //   product: IProduct,
@@ -492,6 +562,7 @@ const fishColumns = ref([
   {
     field: 'lotNumber',
     header: 'ล็อต',
+    headCell: '!min-w-[6.25rem]',
     render: (slotProps: any) =>
       h('span', { class: 'text-sm text-gray-900' }, slotProps.data.lotNumber.name),
   },
@@ -552,12 +623,46 @@ const fishColumns = ref([
     header: 'สถานะขาย',
     headCell: 'justify-center',
     bodyCell: 'text-center',
-    render: (slotProps: any) =>
-      h(Tag, {
-        value: slotProps.data.sold ? 'ขายแล้ว' : 'พร้อมขาย',
-        severity: slotProps.data.sold ? 'danger' : 'success',
+    render: (slotProps: any) => {
+      const product = slotProps.data as IProduct
+
+      // ถ้า waitQC = true แสดง "รอ QC" และคลิกได้
+      if (product.waitQC) {
+        return h(
+          Tag,
+          {
+            value: 'รอ QC',
+            severity: 'danger',
+            size: 'small',
+            style: { cursor: 'pointer' },
+            onClick: () => handleQcStatusClick(product, 'ready'),
+          },
+          { default: () => 'รอ QC' }
+        )
+      }
+
+      // ถ้า waitQC = false และ sold = false แสดง "พร้อมขาย" และคลิกได้
+      if (!product.sold) {
+        return h(
+          Tag,
+          {
+            value: 'พร้อมขาย',
+            severity: 'success',
+            size: 'small',
+            style: { cursor: 'pointer' },
+            onClick: () => handleQcStatusClick(product, 'wait-qc'),
+          },
+          { default: () => 'พร้อมขาย' }
+        )
+      }
+
+      // ถ้า waitQC = false และ sold = true แสดง "ขายแล้ว" และไม่คลิกได้
+      return h(Tag, {
+        value: 'ขายแล้ว',
+        severity: 'danger',
         size: 'small',
-      }),
+      })
+    },
   },
   {
     field: 'fishStatus',
@@ -958,6 +1063,63 @@ const displayColumns = computed(() => {
       </Column>
     </DataTable>
   </div>
+
+  <!-- QC Status Confirmation Modal -->
+  <Dialog
+    v-model:visible="showQcConfirmModal"
+    modal
+    :style="{ width: '30rem' }"
+    :pt="{
+      header: 'p-4',
+      footer: 'p-4',
+    }"
+  >
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center"
+        >
+          <i class="pi pi-exclamation-triangle text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold! text-gray-800">ยืนยันการเปลี่ยนสถานะ</h3>
+        </div>
+      </div>
+    </template>
+
+    <div class="pt-4">
+      <p class="text-gray-700 mb-2">
+        {{
+          qcActionType === 'ready'
+            ? 'คุณต้องการเปลี่ยนสถานะจาก "รอ QC" เป็น "พร้อมขาย" หรือไม่?'
+            : 'คุณต้องการเปลี่ยนสถานะจาก "พร้อมขาย" เป็น "รอ QC" หรือไม่?'
+        }}
+      </p>
+      <p v-if="selectedQcProduct" class="text-sm text-gray-600">
+        รหัสปลา: <span class="font-semibold">{{ selectedQcProduct.sku }}</span>
+      </p>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <Button
+          label="ยกเลิก"
+          icon="pi pi-times"
+          severity="secondary"
+          @click="closeQcModal"
+          size="small"
+        />
+        <Button
+          label="ยืนยัน"
+          icon="pi pi-check"
+          @click="confirmQcStatusChange"
+          severity="success"
+          size="small"
+          :loading="isUpdatingProduct"
+        />
+      </div>
+    </template>
+  </Dialog>
 
   <!-- Image Gallery Modal with Carousel -->
   <!-- <Dialog

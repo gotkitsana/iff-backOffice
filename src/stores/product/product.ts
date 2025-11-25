@@ -224,34 +224,6 @@ export interface IProduct {
   uat: number
 }
 
-export interface IFishGrowthHistory {
-  _id: string
-  product: string
-  date: number
-  size: number
-  weight: number
-  gender: string
-  price: number
-  note: string
-  cat: number
-  uat: number
-  __v: number
-}
-
-export interface IFishGrowthHistoryPayload {
-  product: string // id of product
-  date: number // timestamp
-  size: number // size of fish
-  weight: number // weight of fish
-  gender: string // gender of fish
-  price: number // price of fish
-  note: string // note of fish
-}
-
-export interface IUpdateFishGrowthHistoryPayload extends IFishGrowthHistoryPayload {
-  _id: string
-}
-
 export interface ICreateProductPayload {
   type: IType // 0 = ปลา, 1 = สินค้าอื่นๆ
   name: string // ชื่อสินค้า
@@ -323,6 +295,34 @@ export interface IUpdateProductPayload
   brand?: string
   fishStatus?: string
   waitQC?: boolean
+}
+
+export interface IFishGrowthHistory {
+  _id: string
+  product: string
+  date: number
+  size: number
+  weight: number
+  gender: string
+  price: number
+  note: string
+  cat: number
+  uat: number
+  __v: number
+}
+
+export interface IFishGrowthHistoryPayload {
+  product: string // id of product
+  date: number // timestamp
+  size: number // size of fish
+  weight: number // weight of fish
+  gender: string // gender of fish
+  price: number // price of fish
+  note: string // note of fish
+}
+
+export interface IUpdateFishGrowthHistoryPayload extends IFishGrowthHistoryPayload {
+  _id: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ
@@ -433,6 +433,7 @@ export interface IFishFilters {
   gender: string
   greenhouse: string
   fishpond: string
+  saleStatus: string
   size: number | null
   price: number | null
   priceMin: number

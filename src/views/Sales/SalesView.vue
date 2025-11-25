@@ -200,7 +200,6 @@ const totalDelivery = computed(() => {
   )
 })
 
-
 // Utility functions
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('th-TH', {
@@ -343,46 +342,43 @@ const getPaymentMethodSeverity = (
         <h1 class="text-xl font-semibold! text-gray-900">ระบบขาย</h1>
         <p class="text-gray-600">จัดการการขายและติดตามยอดขาย</p>
       </div>
-      <Button
-        @click="openKPIModal"
-        icon="pi pi-chart-line"
-        label="ดูรายงาน KPI"
-        class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-0 shadow-md hover:shadow-lg transition-all duration-200"
-        :pt="{
-          root: { class: 'text-white font-medium' },
-        }"
-      />
     </div>
 
     <!-- Sales KPI Dashboard -->
     <div class="space-y-4">
       <!-- Dashboard Header -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white">
+        <div
+          class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white cursor-pointer hover:shadow-lg !transition !ease-in-out !duration-150 hover:scale-105"
+          @click="openKPIModal"
+        >
           <div class="flex flex-col">
-            <h2 class="text-lg font-semibold! mb-1">สรุปยอดขาย</h2>
-            <p class="text-xl font-semibold!">{{ formatCurrency(totalRevenue) }}</p>
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="text-lg font-semibold!">สรุปยอดขาย</h2>
+              <i class="pi pi-chart-line text-xl"></i>
+            </div>
+            <p class="text-xl font-semibold">{{ formatCurrency(totalRevenue) }}</p>
           </div>
         </div>
 
         <div class="bg-gradient-to-r from-violet-600 to-violet-700 rounded-2xl p-4 text-white">
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">สรุปยอดส่วนลด</h2>
-            <p class="text-xl font-semibold!">{{ formatCurrency(totalDiscount) }}</p>
+            <p class="text-xl font-semibold">{{ formatCurrency(totalDiscount) }}</p>
           </div>
         </div>
 
         <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-4 text-white">
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">สรุปยอดรอชำระ</h2>
-            <p class="text-xl font-semibold!">{{ formatCurrency(totalDeposit) }}</p>
+            <p class="text-xl font-semibold">{{ formatCurrency(totalDeposit) }}</p>
           </div>
         </div>
 
         <div class="bg-gradient-to-r from-pink-700 to-pink-900 rounded-2xl p-4 text-white">
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold! mb-1">ยอดค่าจัดส่ง</h2>
-            <p class="text-xl font-semibold!">{{ formatCurrency(totalDelivery) }}</p>
+            <p class="text-xl font-semibold">{{ formatCurrency(totalDelivery) }}</p>
           </div>
         </div>
       </div>
@@ -541,10 +537,7 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-           <Column
-            field="user.displayName"
-            header="ชื่อเล่น"
-          >
+          <Column field="user.displayName" header="ชื่อเล่น">
             <template #body="slotProps">
               <div
                 class="cursor-pointer duration-200"
@@ -595,8 +588,6 @@ const getPaymentMethodSeverity = (
               />
             </template>
           </Column>
-
-
 
           <Column
             field="products"
@@ -832,8 +823,5 @@ const getPaymentMethodSeverity = (
   />
 
   <!-- KPI Modal -->
-  <ModalKPI
-    v-model:visible="showKPIModal"
-    :sales-data="salesData || []"
-  />
+  <ModalKPI v-model:visible="showKPIModal" :sales-data="salesData || []" />
 </template>

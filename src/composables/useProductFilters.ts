@@ -48,6 +48,7 @@ export function useProductFilters() {
     gender: '',
     greenhouse: '',
     fishpond: '',
+    saleStatus: '',
     size: null,
     price: null,
     priceMin: 0,
@@ -108,6 +109,15 @@ export function useProductFilters() {
     }
     if (fishFilters.value.fishpond) {
       filtered = filtered.filter((p) => p.fishpond?._id === fishFilters.value.fishpond)
+    }
+    if (fishFilters.value.saleStatus) {
+      if (fishFilters.value.saleStatus === 'wait-qc') {
+        filtered = filtered.filter((p) => p.waitQC === true)
+      } else if (fishFilters.value.saleStatus === 'ready') {
+        filtered = filtered.filter((p) => p.waitQC === false && p.sold === false)
+      } else if (fishFilters.value.saleStatus === 'sold') {
+        filtered = filtered.filter((p) => p.waitQC === false && p.sold === true)
+      }
     }
     if (fishFilters.value.sizeMin && fishFilters.value.sizeMax) {
       filtered = filtered.filter(

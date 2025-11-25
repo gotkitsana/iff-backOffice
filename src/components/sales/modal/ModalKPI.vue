@@ -79,7 +79,7 @@ const constructionRevenue = computed(() => calculateCategoryRevenue('constructio
     modal
     :closable="true"
     :draggable="false"
-    :style="{ width: '90vw', maxWidth: '1200px' }"
+    :style="{ width: '90vw', maxWidth: '1000px' }"
     :pt="{
       root: { class: 'rounded-2xl' },
       header: { class: 'border-b border-gray-200 p-4' },

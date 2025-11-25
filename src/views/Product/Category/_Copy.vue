@@ -56,7 +56,7 @@ const microorganismFilters = ref<IMicroorganismFilters>({
   lotNumber: '',
 })
 
-const fishFilters = ref<IFishFilters>({
+const fishFilters = ref<any>({
   sku: '',
   lotNumber: '',
   species: '',
@@ -71,6 +71,7 @@ const fishFilters = ref<IFishFilters>({
   sizeMax: 200,
   greenhouse: '',
   fishpond: '',
+  waitQC: false,
 })
 
 const selectedCategoryId = computed(() => selectedCategory.value?._id)

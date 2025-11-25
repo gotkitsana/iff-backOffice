@@ -77,6 +77,7 @@ export function useProductSelection(
           isFoodSale?: boolean
           kilo?: number
           customerPriceKilo?: number
+          waitQC?: boolean
         }>
       }
     >()
@@ -99,17 +100,19 @@ export function useProductSelection(
           : undefined
 
       const isSold = isFish ? product.sold : product.sold || (product.balance || 0) === 0
+      const isDisabled = isFish ? product.waitQC || isSold : isSold
 
       group.children.push({
         label: `${product.name || `${product.species?.name}`}`,
         sku: product.sku || '',
         value: product._id,
         image: imageUrl,
-        disabled: isSold,
+        disabled: isDisabled,
         sold: product.sold,
         balance: product.balance,
         isFish: isFish,
         isFoodSale: false,
+        waitQC: isFish ? product.waitQC : false,
       })
 
       groupsMap.set(catId, group)
@@ -138,6 +141,7 @@ export function useProductSelection(
           balance: item.balance,
           isFish: item.isFish,
           isFoodSale: item.isFoodSale,
+          waitQC: item.waitQC,
           kilo: item.kilo,
           customerPriceKilo: item.customerPriceKilo,
         })),
