@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Tag, Galleria, Panel, VirtualScroller } from 'primevue'
+import { Dialog, Button, Tag, Galleria, Panel, VirtualScroller, Image } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
@@ -211,7 +211,6 @@ const selectedMediaItems = computed(() => {
 const showUpdateModal = ref(false)
 const selectedHistoryRecord = ref<IFishGrowthHistory | undefined>(undefined)
 
-const productStore = useProductStore()
 const fishGrowthHistoryStore = useFishGrowthHistoryStore()
 const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
   queryKey: ['get_fish_growth_history', props.productData?._id],
@@ -250,22 +249,15 @@ const handleAddHistory = () => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '75rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '75rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-6',
       footer: 'p-6',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-4">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
           <i class="pi pi-eye text-white text-xl"></i>
         </div>
         <div>
@@ -282,9 +274,7 @@ const handleAddHistory = () => {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- ข้อมูลสายพันธุ์ (Breed Information) -->
           <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-star text-blue-600 text-sm"></i>
               </div>
@@ -292,9 +282,7 @@ const handleAddHistory = () => {
             </h5>
             <div class="space-y-3">
               <div v-if="getFieldValue('species')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   สายพันธุ์
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -302,9 +290,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('breeders')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   แม่พันธุ์
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -312,9 +298,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('birth')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   วันเกิด
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -322,9 +306,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('age')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   อายุ
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -332,9 +314,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('farm')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   ฟาร์ม
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -342,9 +322,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('quality')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   คุณภาพเกรด
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -357,48 +335,31 @@ const handleAddHistory = () => {
           <!-- ข้อมูลตัวปลา (Fish Information) -->
           <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
             <div
-              class="text-base font-bold text-gray-900 mb-4 flex items-center justify-between pb-2 border-b border-gray-200"
-            >
+              class="text-base font-bold text-gray-900 mb-4 flex items-center justify-between pb-2 border-b border-gray-200">
               <h5 class="flex items-center gap-2">
                 <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
                   <i class="pi pi-tag text-green-600 text-sm"></i>
                 </div>
                 ข้อมูลตัวปลา
               </h5>
-              <Button
-                text
-                severity="success"
-                size="small"
-                label="อัปเดตข้อมูล"
-                @click="handleAddHistory"
-              />
+              <Button text severity="success" size="small" label="อัปเดตข้อมูล" @click="handleAddHistory" />
             </div>
 
-            <VirtualScroller
-              :items="historyRecords"
-              :item-size="25"
-              class="space-y-2"
-              style="max-height: 300px"
-            >
+            <VirtualScroller :items="historyRecords" :item-size="25" class="space-y-2"
+              style="max-height: 300px; min-height: 300px">
               <template v-slot:item="{ item, options }">
                 <!-- Selected Record Details -->
-                <Panel
-                  toggleable
-                  collapsed
-                  class="mb-2"
-                  :pt="{
-                    root: '!rounded-lg',
-                    header: 'px-2 py-1.5 min-h-[2.5rem]',
-                    title: 'text-sm',
-                    content: 'p-2 pt-0',
-                  }"
-                  :toggleButtonProps="{
-                    size: 'small',
-                    rounded: true,
-                    text: true,
-                    severity: 'secondary',
-                  }"
-                >
+                <Panel toggleable collapsed class="mb-2" :pt="{
+                  root: '!rounded-lg',
+                  header: 'px-2 py-1.5 min-h-[2.5rem]',
+                  title: 'text-sm',
+                  content: 'p-2 pt-0',
+                }" :toggleButtonProps="{
+                  size: 'small',
+                  rounded: true,
+                  text: true,
+                  severity: 'secondary',
+                }">
                   <template #header>
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-bold text-gray-900">
@@ -407,21 +368,12 @@ const handleAddHistory = () => {
                     </div>
                   </template>
                   <template #icons>
-                    <Button
-                      icon="pi pi-pencil"
-                      text
-                      rounded
-                      severity="warn"
-                      size="small"
-                      @click="handleUpdateHistory(item)"
-                      v-tooltip.top="'แก้ไขข้อมูล'"
-                    />
+                    <Button icon="pi pi-pencil" text rounded severity="warn" size="small"
+                      @click="handleUpdateHistory(item)" v-tooltip.top="'แก้ไขข้อมูล'" />
                   </template>
                   <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label
-                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                      >
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                         ไซต์
                       </label>
                       <p class="text-sm text-gray-900 font-medium">
@@ -429,9 +381,7 @@ const handleAddHistory = () => {
                       </p>
                     </div>
                     <div>
-                      <label
-                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                      >
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                         น้ำหนัก
                       </label>
                       <p class="text-sm text-gray-900 font-medium">
@@ -439,23 +389,15 @@ const handleAddHistory = () => {
                       </p>
                     </div>
                     <div>
-                      <label
-                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                      >
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                         เพศ
                       </label>
-                      <Tag
-                        v-if="item.gender"
-                        :value="getGenderTag(item.gender).label"
-                        :severity="getGenderTag(item.gender).severity"
-                        class="px-2 py-1 text-xs"
-                      />
+                      <Tag v-if="item.gender" :value="getGenderTag(item.gender).label"
+                        :severity="getGenderTag(item.gender).severity" class="px-2 py-1 text-xs" />
                       <span v-else>-</span>
                     </div>
                     <div>
-                      <label
-                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                      >
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                         ราคา
                       </label>
                       <p class="text-sm text-gray-900 font-medium">
@@ -470,9 +412,7 @@ const handleAddHistory = () => {
 
           <!-- ข้อมูลการจัดเก็บ (Stock Information) -->
           <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-inbox text-purple-600 text-sm"></i>
               </div>
@@ -480,9 +420,7 @@ const handleAddHistory = () => {
             </h5>
             <div class="space-y-3">
               <div v-if="getFieldValue('lotNumber')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   ล็อต
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -490,9 +428,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('sku')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   รหัสปลา
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -500,9 +436,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('greenhouse')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   กรีนเฮ้า
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -510,9 +444,7 @@ const handleAddHistory = () => {
                 </p>
               </div>
               <div v-if="getFieldValue('fishpond')">
-                <label
-                  class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1"
-                >
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
                   บ่อ
                 </label>
                 <p class="text-sm text-gray-900 font-medium">
@@ -526,98 +458,76 @@ const handleAddHistory = () => {
         <!-- 2. รูปภาพ + ใบรับรอง -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Images -->
-          <div
-            v-if="productData.images.length > 0"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
-          >
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+          <div v-if="productData.images.length > 0"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-image text-gray-600 text-sm"></i>
               </div>
               รูปภาพปลา
             </h5>
 
-            <Galleria
-              :value="
-                productData.images.map((image) => ({
-                  itemImageSrc: getImageUrl(image.filename),
-                  thumbnailImageSrc: getImageUrl(image.filename),
-                  alt: 'product image',
-                }))
-              "
-              :numVisible="productData.images.length"
-              :circular="true"
-              :showItemNavigators="true"
-              :showThumbnails="true"
-              :showItemNavigatorsOnHover="true"
-              :pt="{
+            <Galleria :value="productData.images.map((image) => ({
+              itemImageSrc: getImageUrl(image.filename),
+              thumbnailImageSrc: getImageUrl(image.filename),
+              alt: 'product image',
+            }))
+              " :numVisible="productData.images.length" :circular="true" :showItemNavigators="true"
+              :showThumbnails="true" :showItemNavigatorsOnHover="true" :pt="{
                 root: { class: 'max-w-full' },
                 content: { class: 'bg-gray-50 rounded-lg' },
                 thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-1' },
-              }"
-            >
+              }">
               <template #item="{ item }">
                 <div class="flex justify-center items-center overflow-hidden">
-                  <img
-                    :src="item.itemImageSrc"
-                    :alt="item.alt"
-                    class="w-full h-auto max-h-[40vh] object-contain"
-                    loading="lazy"
-                    fetchpriority="low"
-                    crossorigin="anonymous"
-                  />
+                  <Image alt="Image" preview>
+                    <template #image>
+                      <img :src="item.itemImageSrc" alt="image" width="220" />
+                    </template>
+                    <template #preview="slotProps">
+                      <div class="relative">
+                        <img :src="item.itemImageSrc" alt="preview" :style="slotProps.style"
+                          class="max-h-[75vh] md:max-h-[95vh] w-auto h-auto object-contain" />
+                        <div class="fixed top-6 right-[75vw] z-[10000]" @click.stop>
+                          <Button icon="pi pi-download" severity="contrast" rounded size="large"
+                            @click="() => console.log(item.itemImageSrc)" />
+                        </div>
+                      </div>
+                    </template>
+
+                  </Image>
                 </div>
               </template>
 
               <template #thumbnail="{ item }">
                 <div class="p-1">
-                  <img
-                    :src="item.thumbnailImageSrc"
-                    :alt="item.alt"
+                  <img :src="item.thumbnailImageSrc" :alt="item.alt"
                     class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
-                    loading="lazy"
-                    fetchpriority="low"
-                    crossorigin="anonymous"
-                  />
+                    loading="lazy" fetchpriority="low" crossorigin="anonymous" />
                 </div>
               </template>
             </Galleria>
           </div>
 
           <!-- Certificate -->
-          <div
-            v-if="productData.certificate"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
-          >
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+          <div v-if="productData.certificate" class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-file text-purple-600 text-sm"></i>
               </div>
               ใบรับรอง
             </h5>
             <div class="text-center">
-              <img
-                :src="getCertificateUrl(productData.certificate)"
-                alt="Certificate"
-                class="w-full h-auto max-h-[35vh] object-contain rounded-lg border border-gray-200"
-              />
+              <Image :src="getCertificateUrl(productData.certificate)" alt="Certificate" width="280" preview />
             </div>
           </div>
         </div>
 
         <!-- 3. วิดีโอ -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div
-            v-if="productData.detail || productData.youtube"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2"
-          >
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+          <div v-if="productData.detail || productData.youtube"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100 md:col-span-2">
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-video text-gray-600 text-sm"></i>
               </div>
@@ -634,9 +544,7 @@ const handleAddHistory = () => {
 
           <!-- 4. อื่นๆ (Supplier Info, System Info) -->
           <div class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h5
-              class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200"
-            >
+            <h5 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-200">
               <div class="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-cog text-gray-600 text-sm"></i>
               </div>
@@ -644,9 +552,7 @@ const handleAddHistory = () => {
             </h5>
             <div class="space-y-4">
               <div>
-                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >อัปเดตล่าสุด</label
-                >
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide">อัปเดตล่าสุด</label>
                 <p class="text-sm text-gray-900 mt-1">
                   {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
                 </p>
@@ -660,10 +566,7 @@ const handleAddHistory = () => {
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Left Column - Product Information -->
         <div class="lg:col-span-2 space-y-4">
-          <div
-            v-if="selectedCategoryInfo"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
-          >
+          <div v-if="selectedCategoryInfo" class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-info-circle text-blue-600"></i>
@@ -680,50 +583,31 @@ const handleAddHistory = () => {
 
                   <div>
                     <!-- Special handling for different field types -->
-                    <Tag
-                      v-if="field.key === 'gender'"
-                      :value="getGenderTag(productData.gender || '').label"
-                      :severity="getGenderTag(productData.gender || '').severity"
-                      class="px-3 py-1"
-                    />
-                    <p
-                      v-else-if="
-                        field.key === 'birth' ||
-                        field.key === 'produceDate' ||
-                        field.key === 'expireDate'
-                      "
-                      class="text-base text-gray-900 font-medium"
-                    >
+                    <Tag v-if="field.key === 'gender'" :value="getGenderTag(productData.gender || '').label"
+                      :severity="getGenderTag(productData.gender || '').severity" class="px-3 py-1" />
+                    <p v-else-if="
+                      field.key === 'birth' ||
+                      field.key === 'produceDate' ||
+                      field.key === 'expireDate'
+                    " class="text-base text-gray-900 font-medium">
                       {{ formatFieldValue(field.key) }}
                     </p>
-                    <p
-                      v-else-if="
-                        field.key === 'marketPrice' ||
-                        field.key === 'costPrice' ||
-                        field.key === 'customerPrice' ||
-                        field.key === 'dealerPrice' ||
-                        field.key === 'price'
-                      "
-                      class="text-base text-gray-900 font-medium"
-                    >
+                    <p v-else-if="
+                      field.key === 'marketPrice' ||
+                      field.key === 'costPrice' ||
+                      field.key === 'customerPrice' ||
+                      field.key === 'dealerPrice' ||
+                      field.key === 'price'
+                    " class="text-base text-gray-900 font-medium">
                       {{ formatFieldValue(field.key) }}
                     </p>
-                    <p
-                      v-else-if="field.key === 'seedSize'"
-                      class="text-base text-gray-900 font-medium"
-                    >
+                    <p v-else-if="field.key === 'seedSize'" class="text-base text-gray-900 font-medium">
                       {{ productData?.seedSize?.name || '-' }}
                     </p>
-                    <p
-                      v-else-if="field.key === 'brand'"
-                      class="text-base text-gray-900 font-medium"
-                    >
+                    <p v-else-if="field.key === 'brand'" class="text-base text-gray-900 font-medium">
                       {{ productData?.brand?.name || '-' }}
                     </p>
-                    <p
-                      v-else-if="field.key === 'foodtype'"
-                      class="text-base text-gray-900 font-medium"
-                    >
+                    <p v-else-if="field.key === 'foodtype'" class="text-base text-gray-900 font-medium">
                       {{ productData?.foodtype?.name || '-' }}
                     </p>
 
@@ -736,21 +620,16 @@ const handleAddHistory = () => {
             </div>
           </div>
 
-          <div
-            v-if="!!selectedSupplier"
-            class="bg-gradient-to-br from-blue-50/50 via-white to-purple-50/30 rounded-2xl p-6 shadow-sm border border-blue-100/50 backdrop-blur-sm"
-          >
+          <div v-if="!!selectedSupplier"
+            class="bg-gradient-to-br from-blue-50/50 via-white to-purple-50/30 rounded-2xl p-6 shadow-sm border border-blue-100/50 backdrop-blur-sm">
             <!-- Header Section -->
             <div class="flex items-center justify-between mb-6">
               <h5 class="font-bold text-gray-900 flex items-center gap-3">
                 <div
-                  class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30"
-                >
+                  class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
                   <i class="pi pi-truck text-white"></i>
                 </div>
-                <span
-                  class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                >
+                <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   ข้อมูลซัพพลายเออร์
                 </span>
               </h5>
@@ -762,30 +641,21 @@ const handleAddHistory = () => {
 
               <!-- Brand Card -->
               <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start gap-4">
                   <div class="flex-1 min-w-0">
                     <div v-if="selectedSupplier.brand" class="flex items-center gap-3">
                       <!-- Brand Image -->
                       <div
-                        class="w-auto h-10 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0"
-                      >
-                        <img
-                          v-if="selectedSupplier.brand.image"
-                          :src="getProductImageUrl(selectedSupplier.brand.image)"
-                          :alt="selectedSupplier.brand.name"
-                          class="w-full h-full object-contain"
-                          loading="lazy"
-                        />
+                        class="w-auto h-10 rounded-lg overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                        <img v-if="selectedSupplier.brand.image" :src="getProductImageUrl(selectedSupplier.brand.image)"
+                          :alt="selectedSupplier.brand.name" class="w-full h-full object-contain" loading="lazy" />
                         <i v-else class="pi pi-image text-gray-400 text-2xl"></i>
                       </div>
 
                       <!-- Brand Info -->
                       <div class="flex-1 min-w-0">
-                        <label
-                          class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                        >
+                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block">
                           แบรนด์/ยี่ห้อ
                         </label>
                         <p class="text-base font-bold text-gray-900 truncate mb-0.5">
@@ -801,18 +671,13 @@ const handleAddHistory = () => {
 
               <!-- Supplier Name Card -->
               <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
+                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="pi pi-building text-blue-600 text-lg"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block">
                       ชื่อซัพพลายเออร์
                     </label>
                     <p class="text-base font-bold text-gray-900 truncate">
@@ -827,28 +692,19 @@ const handleAddHistory = () => {
 
               <!-- Phone Number Card -->
               <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
+                  <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="pi pi-phone text-green-600 text-lg"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block">
                       เบอร์โทรศัพท์
                     </label>
-                    <a
-                      :href="`tel:${selectedSupplier.phoneNo}`"
-                      class="text-base font-semibold text-green-600 hover:text-green-700 transition-colors inline-flex items-center gap-2 group"
-                    >
+                    <a :href="`tel:${selectedSupplier.phoneNo}`"
+                      class="text-base font-semibold text-green-600 hover:text-green-700 transition-colors inline-flex items-center gap-2 group">
                       {{ selectedSupplier.phoneNo || '-' }}
-                      <i
-                        class="pi pi-external-link text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      ></i>
+                      <i class="pi pi-external-link text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
                     </a>
                   </div>
                 </div>
@@ -856,40 +712,33 @@ const handleAddHistory = () => {
 
               <!-- Contact Method Card -->
               <div
-                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
+                class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <i
-                      :class="[
-                        'text-purple-600 text-lg',
-                        selectedSupplier.contact === 'facebook'
-                          ? 'pi pi-facebook'
-                          : selectedSupplier.contact === 'line'
+                  <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i :class="[
+                      'text-purple-600 text-lg',
+                      selectedSupplier.contact === 'facebook'
+                        ? 'pi pi-facebook'
+                        : selectedSupplier.contact === 'line'
                           ? 'pi pi-comments'
                           : selectedSupplier.contact === 'tiktok'
-                          ? 'pi pi-video'
-                          : selectedSupplier.contact === 'email'
-                          ? 'pi pi-envelope'
-                          : selectedSupplier.contact === 'phone'
-                          ? 'pi pi-phone'
-                          : 'pi pi-at',
-                      ]"
-                    ></i>
+                            ? 'pi pi-video'
+                            : selectedSupplier.contact === 'email'
+                              ? 'pi pi-envelope'
+                              : selectedSupplier.contact === 'phone'
+                                ? 'pi pi-phone'
+                                : 'pi pi-at',
+                    ]"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block"
-                    >
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 block">
                       ช่องทางติดต่อ
                     </label>
                     <p class="text-base font-semibold text-gray-900">
                       {{
-                        supplierStore.supplierContactOptions.find(
-                          (opt) => opt.value === selectedSupplier?.contact
-                        )?.label || '-'
+                      supplierStore.supplierContactOptions.find(
+                      (opt) => opt.value === selectedSupplier?.contact
+                      )?.label || '-'
                       }}
                     </p>
                   </div>
@@ -898,24 +747,16 @@ const handleAddHistory = () => {
 
               <!-- Notes Card -->
               <div
-                class="lg:col-span-2 bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-              >
+                class="lg:col-span-2 bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-start gap-3">
-                  <div
-                    class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
+                  <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="pi pi-file-edit text-amber-600 text-lg"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <label
-                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block"
-                    >
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
                       หมายเหตุ
                     </label>
-                    <p
-                      v-if="selectedSupplier.note"
-                      class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"
-                    >
+                    <p v-if="selectedSupplier.note" class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
                       {{ selectedSupplier.note }}
                     </p>
                     <p v-else class="text-sm text-gray-400 italic">ไม่มีหมายเหตุ</p>
@@ -926,10 +767,8 @@ const handleAddHistory = () => {
           </div>
 
           <!-- Additional Information -->
-          <div
-            v-if="productData.detail || productData.youtube"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
-          >
+          <div v-if="productData.detail || productData.youtube"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-video text-gray-600"></i>
@@ -949,10 +788,8 @@ const handleAddHistory = () => {
         <!-- Right Column - Price & Certificate -->
         <div class="space-y-4">
           <!-- Images -->
-          <div
-            v-if="productData.images.length > 0"
-            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100"
-          >
+          <div v-if="productData.images.length > 0"
+            class="bg-gray-50/30 rounded-2xl p-4 shadow-sm border border-gray-100">
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-image text-gray-600"></i>
@@ -960,58 +797,36 @@ const handleAddHistory = () => {
               รูปภาพสินค้า
             </h5>
 
-            <Galleria
-              :value="
-                productData.images.map((image) => ({
-                  itemImageSrc: getImageUrl(image.filename),
-                  thumbnailImageSrc: getImageUrl(image.filename),
-                  alt: 'product image',
-                }))
-              "
-              :numVisible="productData.images.length"
-              :circular="true"
-              :showItemNavigators="true"
-              :showThumbnails="true"
-              :showItemNavigatorsOnHover="true"
-              :pt="{
+            <Galleria :value="productData.images.map((image) => ({
+              itemImageSrc: getImageUrl(image.filename),
+              thumbnailImageSrc: getImageUrl(image.filename),
+              alt: 'product image',
+            }))
+              " :numVisible="productData.images.length" :circular="true" :showItemNavigators="true"
+              :showThumbnails="true" :showItemNavigatorsOnHover="true" :pt="{
                 root: { class: 'max-w-full' },
                 content: { class: 'bg-gray-50 rounded-lg' },
                 thumbnailsContent: { class: 'bg-gray-100 rounded-lg mt-1' },
-              }"
-            >
+              }">
               <template #item="{ item }">
                 <div class="flex justify-center items-center overflow-hidden">
-                  <img
-                    :src="item.itemImageSrc"
-                    :alt="item.alt"
-                    class="w-full h-auto max-h-[40vh] object-contain"
-                    loading="lazy"
-                    fetchpriority="low"
-                    crossorigin="anonymous"
-                  />
+                  <img :src="item.itemImageSrc" :alt="item.alt" class="w-full h-auto max-h-[40vh] object-contain"
+                    loading="lazy" fetchpriority="low" crossorigin="anonymous" />
                 </div>
               </template>
 
               <template #thumbnail="{ item }">
                 <div class="p-1">
-                  <img
-                    :src="item.thumbnailImageSrc"
-                    :alt="item.alt"
+                  <img :src="item.thumbnailImageSrc" :alt="item.alt"
                     class="w-full h-16 object-contain rounded cursor-pointer hover:ring-2 hover:ring-blue-500/50 duration-150 transition-all"
-                    loading="lazy"
-                    fetchpriority="low"
-                    crossorigin="anonymous"
-                  />
+                    loading="lazy" fetchpriority="low" crossorigin="anonymous" />
                 </div>
               </template>
             </Galleria>
           </div>
 
           <!-- Certificate -->
-          <div
-            v-if="productData.certificate"
-            class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100"
-          >
+          <div v-if="productData.certificate" class="bg-gray-50/30 rounded-2xl p-6 shadow-sm border border-gray-100">
             <h5 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                 <i class="pi pi-file text-purple-600"></i>
@@ -1019,11 +834,8 @@ const handleAddHistory = () => {
               ใบรับรอง
             </h5>
             <div class="text-center">
-              <img
-                :src="getCertificateUrl(productData.certificate)"
-                alt="Certificate"
-                class="w-full h-auto max-h-[35vh] object-contain rounded-lg border border-gray-200"
-              />
+              <img :src="getCertificateUrl(productData.certificate)" alt="Certificate"
+                class="w-full h-auto max-h-[35vh] object-contain rounded-lg border border-gray-200" />
             </div>
           </div>
 
@@ -1037,9 +849,7 @@ const handleAddHistory = () => {
             </h5>
             <div class="space-y-4">
               <div>
-                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >อัปเดตล่าสุด</label
-                >
+                <label class="text-sm font-semibold text-gray-700 uppercase tracking-wide">อัปเดตล่าสุด</label>
                 <p class="text-sm text-gray-900 mt-1">
                   {{ dayjs(productData.uat).format('DD/MM/YYYY HH:mm') }}
                 </p>
@@ -1052,27 +862,14 @@ const handleAddHistory = () => {
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <DownloadZipButton
-          :selected-media-items="selectedMediaItems"
-          :selected-product="productData"
-        />
+        <DownloadZipButton :selected-media-items="selectedMediaItems" :selected-product="productData" />
 
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-          class="px-6 py-2"
-        />
+        <Button label="ปิด" icon="pi pi-times" severity="secondary" @click="handleClose" size="small"
+          class="px-6 py-2" />
       </div>
     </template>
   </Dialog>
 
-  <ModalUpdateFishData
-    v-if="productData"
-    v-model:visible="showUpdateModal"
-    :existing-record="selectedHistoryRecord"
-    :product-id="productData._id"
-  />
+  <ModalUpdateFishData v-if="productData" v-model:visible="showUpdateModal" :existing-record="selectedHistoryRecord"
+    :product-id="productData._id" />
 </template>

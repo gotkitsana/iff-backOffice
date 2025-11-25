@@ -77,12 +77,18 @@ export interface IProduct {
   weight?: number
   breeders?: string
   lotNumber: {
-    active: boolean
-    cat: number
-    name: string
-    note: string
-    uat: number
+    breeder: string
+    age_quality: string
+    grade: string
+    year: string
+    image: string
     _id: string
+    name: string
+    active: true
+    note: string
+    cat: number
+    uat: number
+    category: string
   }
   quality?: {
     active: true

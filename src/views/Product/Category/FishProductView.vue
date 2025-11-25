@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
-import ProductTable from '@/components/product/ProductTable.vue'
+import FishProductTable from '@/components/product/fish/FishProductTable.vue'
 import FishStatsCards from '@/components/product/ProductStatsCards/FishStatsCards.vue'
 
 import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
@@ -197,7 +197,7 @@ watch(
       @update-category-selector="handleBackToStorage"
     />
 
-    <ProductTable
+    <FishProductTable
       v-if="selectedCategory"
       :filtered-products="filteredProducts"
       :is-loading-products="isLoading"
