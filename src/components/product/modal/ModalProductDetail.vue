@@ -485,14 +485,22 @@ const handleAddHistory = () => {
                       <img :src="item.itemImageSrc" alt="image" width="220" />
                     </template>
                     <template #preview="slotProps">
-                      <div class="relative">
-                        <img :src="item.itemImageSrc" alt="preview" :style="slotProps.style"
-                          class="max-h-[75vh] md:max-h-[95vh] w-auto h-auto object-contain" />
-                        <div class="fixed top-6 right-[75vw] z-[10000]" @click.stop>
-                          <Button icon="pi pi-download" severity="contrast" rounded size="large"
-                            @click="() => console.log(item.itemImageSrc)" />
-                        </div>
+
+                      <img :src="item.itemImageSrc" alt="preview" :style="slotProps.style"
+                        class="max-h-[75vh] md:max-h-[95vh] w-auto h-auto object-contain block shadow-lg" />
+
+                      <div class="absolute top-22 right-4 z-[10000] lg:hidden">
+                        <Button icon="pi pi-download" severity="contrast" rounded size="large" @click.stop />
                       </div>
+
+                      <div class="absolute top-[25px] right-80 z-[10000] hidden lg:block">
+                        <Button icon="pi pi-download" severity="secondary" rounded size="large" @click.stop />
+                      </div>
+
+                      <!-- <div class="absolute top-2 right-2 hidden ">
+                          <Button icon="pi pi-download" severity="contrast" rounded size="large" />
+                        </div> -->
+
                     </template>
 
                   </Image>
