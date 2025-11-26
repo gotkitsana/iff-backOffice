@@ -20,6 +20,7 @@ import { useGreenhouseStore, type IGreenhouse } from '@/stores/fish/greenhouse'
 import { usePondStore, type IPond } from '@/stores/fish/pond'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import { useProductQuery } from '@/composables/useProductQuery'
+import { useFishStatusStore, type IFishStatus } from '@/stores/fish/fish_status'
 
 // Props
 const props = defineProps<{
@@ -54,11 +55,29 @@ const ageOptions = [
   { label: 'Rokusai (4-5ปี)', value: 'rokusai' },
 ]
 
-const saleStatusOptions = [
-  { label: 'รอประเมินราคา', value: 'wait-qc' },
-  { label: 'พร้อมขาย', value: 'ready' },
-  { label: 'ขายแล้ว', value: 'sold' },
-]
+const fishStatusStore = useFishStatusStore()
+const { data: fishStatuses } = useQuery<IFishStatus[]>({
+  queryKey: ['get_fish_statuses'],
+  queryFn: () => fishStatusStore.onGetFishStatus(),
+})
+
+const saleStatusOptions = computed(() => {
+  const defaultOptions = [
+    { label: 'รอประเมินราคา', value: 'wait-qc' },
+    { label: 'พร้อมขาย', value: 'ready' },
+    { label: 'ขายแล้ว', value: 'sold' },
+  ]
+
+  if (fishStatuses.value) {
+    const statusOptions = fishStatuses.value.map((status) => ({
+      label: status.name,
+      value: status._id,
+    }))
+    return [...defaultOptions, ...statusOptions]
+  }
+
+  return defaultOptions
+})
 
 const maxFishPrice = 500000
 const maxProductPrice = 50000
@@ -388,38 +407,17 @@ const { navigateWithQuery } = useProductQuery()
         </div>
 
         <div class="flex items-center flex-wrap gap-2">
-          <Button
-            label="นำเข้า"
-            icon="pi pi-file-import"
-            severity="success"
-            size="small"
-            @click="$emit('open-add-modal')"
-          />
+          <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small"
+            @click="$emit('open-add-modal')" />
 
-          <Button
-            label="เบิกออก"
-            icon="pi pi-file-export"
-            severity="success"
-            size="small"
-            @click="$emit('open-export-modal')"
-          />
+          <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small"
+            @click="$emit('open-export-modal')" />
 
-          <Button
-            label="ตั้งค่า"
-            icon="pi pi-cog"
-            severity="info"
-            size="small"
-            @click="navigateWithQuery('/product/options-settings')"
-          />
+          <Button label="ตั้งค่า" icon="pi pi-cog" severity="info" size="small"
+            @click="navigateWithQuery('/product/options-settings')" />
 
-          <Button
-            v-if="isFishSelected"
-            label="แผนผัง"
-            icon="pi pi-map"
-            severity="secondary"
-            size="small"
-            @click="navigateWithQuery('/product/greenhouse-map')"
-          />
+          <Button v-if="isFishSelected" label="แผนผัง" icon="pi pi-map" severity="secondary" size="small"
+            @click="navigateWithQuery('/product/greenhouse-map')" />
 
           <!-- <Button
             label="เปลี่ยนหมวดหมู่"
@@ -432,154 +430,74 @@ const { navigateWithQuery } = useProductQuery()
       </div>
 
       <div class="space-y-3">
-        <div
-          v-if="isFishSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
-        >
+        <div v-if="isFishSelected" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
-            <Select
-              :model-value="localFishFilters.lotNumber"
-              @update:model-value="updateFishFilter('lotNumber', $event)"
-              :options="lotNumberOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเลขล็อต"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.lotNumber"
+              @update:model-value="updateFishFilter('lotNumber', $event)" :options="lotNumberOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกเลขล็อต" size="small" fluid filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ฟาร์ม</label>
-            <Select
-              :model-value="localFishFilters.farm"
-              @update:model-value="updateFishFilter('farm', $event)"
-              :options="farmOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกฟาร์ม"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.farm" @update:model-value="updateFishFilter('farm', $event)"
+              :options="farmOptions" optionLabel="label" optionValue="value" placeholder="เลือกฟาร์ม" size="small" fluid
+              filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสปลา</label>
-            <InputText
-              :model-value="localFishFilters.sku"
-              @update:model-value="updateFishFilter('sku', $event)"
-              placeholder="ระบุรหัสปลา"
-              size="small"
-              fluid
-            />
+            <InputText :model-value="localFishFilters.sku" @update:model-value="updateFishFilter('sku', $event)"
+              placeholder="ระบุรหัสปลา" size="small" fluid />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เพศ</label>
-            <Select
-              :model-value="localFishFilters.gender"
-              @update:model-value="updateFishFilter('gender', $event)"
-              :options="productStore.genderOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเพศ"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.gender" @update:model-value="updateFishFilter('gender', $event)"
+              :options="productStore.genderOptions" optionLabel="label" optionValue="value" placeholder="เลือกเพศ"
+              size="small" fluid filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">สายพันธุ์</label>
-            <Select
-              :model-value="localFishFilters.species"
-              @update:model-value="updateFishFilter('species', $event)"
-              :options="speciesOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกสายพันธุ์"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.species" @update:model-value="updateFishFilter('species', $event)"
+              :options="speciesOptions" optionLabel="label" optionValue="value" placeholder="เลือกสายพันธุ์"
+              size="small" fluid filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">กรีนเฮาส์</label>
-            <Select
-              :model-value="localFishFilters.greenhouse"
-              @update:model-value="updateFishFilter('greenhouse', $event)"
-              :options="greenhouseOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกกรีนเฮาส์"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.greenhouse"
+              @update:model-value="updateFishFilter('greenhouse', $event)" :options="greenhouseOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกกรีนเฮาส์" size="small" fluid filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">อายุ</label>
-            <Select
-              :model-value="localFishFilters.age"
-              @update:model-value="updateFishFilter('age', $event)"
-              :options="ageOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกอายุ"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFishFilters.age" @update:model-value="updateFishFilter('age', $event)"
+              :options="ageOptions" optionLabel="label" optionValue="value" placeholder="เลือกอายุ" size="small" fluid
+              filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">บ่อปลา</label>
-            <Select
-              :model-value="localFishFilters.fishpond"
-              @update:model-value="updateFishFilter('fishpond', $event)"
-              :options="pondOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกบ่อปลา"
-              size="small"
-              fluid
-              filter
-              :disabled="!localFishFilters.greenhouse"
-            />
+            <Select :model-value="localFishFilters.fishpond" @update:model-value="updateFishFilter('fishpond', $event)"
+              :options="pondOptions" optionLabel="label" optionValue="value" placeholder="เลือกบ่อปลา" size="small"
+              fluid filter :disabled="!localFishFilters.greenhouse" />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะขาย</label>
-            <Select
-              :model-value="localFishFilters.saleStatus"
-              @update:model-value="updateFishFilter('saleStatus', $event)"
-              :options="saleStatusOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกสถานะขาย"
-              size="small"
-              fluid
-            />
+            <Select :model-value="localFishFilters.saleStatus"
+              @update:model-value="updateFishFilter('saleStatus', $event)" :options="saleStatusOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกสถานะขาย" size="small" fluid />
           </div>
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block">ไซด์ (ซม.)</label>
             <div class="px-2 py-1.5">
-              <Slider
-                v-model="fishSizeRange"
-                @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
-                :min="0"
-                :max="maxSize"
-                :step="0.5"
-                range
-                fluid
-                class="px-2"
-              />
+              <Slider v-model="fishSizeRange" @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
+                :min="0" :max="maxSize" :step="0.5" range fluid class="px-2" />
             </div>
             <div class="flex justify-between text-xs text-gray-500 mt-1">
               <span>{{ formatSize(fishSizeRange[0]) }}</span>
@@ -590,16 +508,9 @@ const { navigateWithQuery } = useProductQuery()
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคา </label>
             <div class="px-2 py-1.5">
-              <Slider
-                v-model="fishPriceRange"
-                @update:model-value="emit('update-fish-filters', { ...localFishFilters })"
-                :min="0"
-                :max="maxFishPrice"
-                :step="1000"
-                range
-                fluid
-                class="px-2"
-              />
+              <Slider v-model="fishPriceRange"
+                @update:model-value="emit('update-fish-filters', { ...localFishFilters })" :min="0" :max="maxFishPrice"
+                :step="1000" range fluid class="px-2" />
             </div>
 
             <div class="flex justify-between text-xs text-gray-500 mt-1">
@@ -609,45 +520,24 @@ const { navigateWithQuery } = useProductQuery()
           </div>
         </div>
 
-        <div
-          v-if="isFoodSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
-        >
+        <div v-if="isFoodSelected" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
           <!-- รหัสอาหาร -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสอาหาร</label>
-            <InputText
-              :model-value="localFoodFilters.sku"
-              @update:model-value="updateFoodFilter('sku', $event)"
-              placeholder="ระบุรหัสอาหาร"
-              size="small"
-              fluid
-              showClear
-            />
+            <InputText :model-value="localFoodFilters.sku" @update:model-value="updateFoodFilter('sku', $event)"
+              placeholder="ระบุรหัสอาหาร" size="small" fluid showClear />
           </div>
 
           <!-- ชื่อแบรนด์ -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
-            <Select
-              :model-value="localFoodFilters.brandName"
-              @update:model-value="updateFoodFilter('brandName', $event)"
-              :options="foodBrandOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกชื่อแบรนด์"
-              size="small"
-              fluid
-              filter
-            >
+            <Select :model-value="localFoodFilters.brandName"
+              @update:model-value="updateFoodFilter('brandName', $event)" :options="foodBrandOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกชื่อแบรนด์" size="small" fluid filter>
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <img
-                    v-if="slotProps.option.image"
-                    :src="slotProps.option.image"
-                    alt="Brand Image"
-                    class="w-auto h-8 rounded"
-                  />
+                  <img v-if="slotProps.option.image" :src="slotProps.option.image" alt="Brand Image"
+                    class="w-auto h-8 rounded" />
                   <i v-else class="pi pi-image text-gray-400 text-lg"></i>
                   <span>{{ slotProps.option.label }}</span>
                 </div>
@@ -658,79 +548,40 @@ const { navigateWithQuery } = useProductQuery()
           <!-- ประเภทอาหาร -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทอาหาร</label>
-            <Select
-              :model-value="localFoodFilters.foodtype"
-              @update:model-value="updateFoodFilter('foodtype', $event)"
-              placeholder="เลือกประเภทอาหาร"
-              :options="foodTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFoodFilters.foodtype" @update:model-value="updateFoodFilter('foodtype', $event)"
+              placeholder="เลือกประเภทอาหาร" :options="foodTypeOptions" optionLabel="label" optionValue="value"
+              size="small" fluid filter />
           </div>
 
           <!-- ชนิดเม็ด -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชนิดเม็ด</label>
-            <Select
-              :model-value="localFoodFilters.seedType"
-              @update:model-value="updateFoodFilter('seedType', $event)"
-              :options="foodSeedTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกชนิดเม็ด"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFoodFilters.seedType" @update:model-value="updateFoodFilter('seedType', $event)"
+              :options="foodSeedTypeOptions" optionLabel="label" optionValue="value" placeholder="เลือกชนิดเม็ด"
+              size="small" fluid filter />
           </div>
 
           <!-- ขนาดเม็ด -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ขนาดเม็ด</label>
-            <Select
-              :model-value="localFoodFilters.seedSize"
-              @update:model-value="updateFoodFilter('seedSize', $event)"
-              :options="seedSizeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกขนาดเม็ด"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFoodFilters.seedSize" @update:model-value="updateFoodFilter('seedSize', $event)"
+              :options="seedSizeOptions" optionLabel="label" optionValue="value" placeholder="เลือกขนาดเม็ด"
+              size="small" fluid filter />
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
-            <Select
-              :model-value="localFoodFilters.lotNumber"
-              @update:model-value="updateFoodFilter('lotNumber', $event)"
-              :options="lotNumberOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเลขล็อต"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localFoodFilters.lotNumber"
+              @update:model-value="updateFoodFilter('lotNumber', $event)" :options="lotNumberOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกเลขล็อต" size="small" fluid filter />
           </div>
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
             <div class="px-2 py-1.5">
-              <Slider
-                v-model="foodPriceRange"
-                @update:model-value="emit('update-food-filters', { ...localFoodFilters })"
-                :min="0"
-                :max="maxProductPrice"
-                :step="500"
-                range
-                fluid
-                class="px-2"
-              />
+              <Slider v-model="foodPriceRange"
+                @update:model-value="emit('update-food-filters', { ...localFoodFilters })" :min="0"
+                :max="maxProductPrice" :step="500" range fluid class="px-2" />
             </div>
 
             <div class="flex justify-between text-xs text-gray-500 mt-1">
@@ -740,45 +591,25 @@ const { navigateWithQuery } = useProductQuery()
           </div>
         </div>
 
-        <div
-          v-if="isMicroorganismSelected"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end"
-        >
+        <div v-if="isMicroorganismSelected" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
           <!-- รหัสสารปรับสภาพน้ำ -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสสารปรับสภาพน้ำ</label>
-            <InputText
-              :model-value="localMicroorganismFilters.sku"
-              @update:model-value="updateMicroorganismFilter('sku', $event)"
-              placeholder="รหัสสารปรับสภาพน้ำ"
-              size="small"
-              fluid
-              showClear
-            />
+            <InputText :model-value="localMicroorganismFilters.sku"
+              @update:model-value="updateMicroorganismFilter('sku', $event)" placeholder="รหัสสารปรับสภาพน้ำ"
+              size="small" fluid showClear />
           </div>
 
           <!-- ชื่อแบรนด์ -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแบรนด์</label>
-            <Select
-              :model-value="localMicroorganismFilters.brandName"
-              @update:model-value="updateMicroorganismFilter('brandName', $event)"
-              :options="foodBrandOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกชื่อแบรนด์"
-              size="small"
-              fluid
-              filter
-            >
+            <Select :model-value="localMicroorganismFilters.brandName"
+              @update:model-value="updateMicroorganismFilter('brandName', $event)" :options="foodBrandOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกชื่อแบรนด์" size="small" fluid filter>
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <img
-                    v-if="slotProps.option.image"
-                    :src="slotProps.option.image"
-                    alt="Brand Image"
-                    class="w-auto h-8 rounded"
-                  />
+                  <img v-if="slotProps.option.image" :src="slotProps.option.image" alt="Brand Image"
+                    class="w-auto h-8 rounded" />
                   <i v-else class="pi pi-image text-gray-400 text-lg"></i>
                   <span>{{ slotProps.option.label }}</span>
                 </div>
@@ -788,34 +619,17 @@ const { navigateWithQuery } = useProductQuery()
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เลขล็อต</label>
-            <Select
-              :model-value="localMicroorganismFilters.lotNumber"
-              @update:model-value="updateMicroorganismFilter('lotNumber', $event)"
-              :options="lotNumberOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกเลขล็อต"
-              size="small"
-              fluid
-              filter
-            />
+            <Select :model-value="localMicroorganismFilters.lotNumber"
+              @update:model-value="updateMicroorganismFilter('lotNumber', $event)" :options="lotNumberOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกเลขล็อต" size="small" fluid filter />
           </div>
 
           <div class="col-span-2">
             <label class="text-sm font-medium text-gray-700 mb-1 block"> ราคาท้องตลาด </label>
             <div class="px-2 py-1.5">
-              <Slider
-                v-model="microorganismPriceRange"
-                @update:model-value="
-                  emit('update-microorganism-filters', { ...localMicroorganismFilters })
-                "
-                :min="0"
-                :max="maxProductPrice"
-                :step="500"
-                range
-                fluid
-                class="px-2"
-              />
+              <Slider v-model="microorganismPriceRange" @update:model-value="
+                emit('update-microorganism-filters', { ...localMicroorganismFilters })
+                " :min="0" :max="maxProductPrice" :step="500" range fluid class="px-2" />
             </div>
 
             <div class="flex justify-between text-xs text-gray-500 mt-1">
@@ -825,14 +639,8 @@ const { navigateWithQuery } = useProductQuery()
           </div>
         </div>
 
-        <Button
-          label="ล้างกรอง"
-          icon="pi pi-times"
-          variant="text"
-          severity="danger"
-          size="small"
-          @click="clearFilters"
-        />
+        <Button label="ล้างกรอง" icon="pi pi-times" variant="text" severity="danger" size="small"
+          @click="clearFilters" />
       </div>
     </div>
   </div>
