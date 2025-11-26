@@ -26,6 +26,8 @@ import Finance from '@/views/finance/FinanceView.vue'
 import ProductionElectricView from '@/views/Production/ProductionElectricView.vue'
 
 import FishProductView from '@/views/Product/Fish/FishProductView.vue'
+import FoodProductView from '@/views/Product/Food/FoodProductView.vue'
+import MicroorganismView from '@/views/Product/Microorganism/MicroorganismView.vue'
 
 export default [
   {
@@ -112,6 +114,34 @@ export default [
             { label: 'ระบบหลัก' },
             { label: 'คลังสินค้า', path: '/storage' },
             { label: 'คลังปลา' },
+          ],
+        },
+      },
+      {
+        path: '/storage/food',
+        name: 'storage-food',
+        component: FoodProductView,
+        meta: {
+          title: 'คลังอาหาร',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'คลังสินค้า', path: '/storage' },
+            { label: 'คลังอาหาร' },
+          ],
+        },
+      },
+      {
+        path: '/storage/microorganism',
+        name: 'storage-microorganism',
+        component: MicroorganismView,
+        meta: {
+          title: 'คลังจุลินทรีย์',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'คลังสินค้า', path: '/storage' },
+            { label: 'คลังจุลินทรีย์' },
           ],
         },
       },

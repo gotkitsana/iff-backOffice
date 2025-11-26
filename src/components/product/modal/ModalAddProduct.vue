@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog } from 'primevue'
+import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
   type ICategoryOption,
