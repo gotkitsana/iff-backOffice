@@ -14,7 +14,7 @@ import { type ICategory } from '@/stores/product/category'
 
 // Import components
 import DynamicFormField from '@/components/product/modal/add_product/DynamicFormField.vue'
-import FileUploadSection from '@/components/product/modal/add_product/FileUploadSection.vue'
+import FileUploadSection from '@/components/product/UI/FileUploadSection.vue'
 import ModalHeader from '@/components/product/modal/add_product/ModalHeader.vue'
 import ModalFooter from '@/components/product/modal/add_product/ModalFooter.vue'
 import dayjs from 'dayjs'
@@ -305,10 +305,10 @@ const handleSubmit = async () => {
       selectedCategory.value.value == 'fish'
         ? productForm.value.price
         : selectedCategory.value.value == 'food'
-        ? productForm.value.food.customerPrice
-        : selectedCategory.value.value == 'microorganism'
-        ? productForm.value.food.customerPrice
-        : 0,
+          ? productForm.value.food.customerPrice
+          : selectedCategory.value.value == 'microorganism'
+            ? productForm.value.food.customerPrice
+            : 0,
   }
 
   createProduct(payload)
@@ -465,17 +465,11 @@ const validatePricePercent = (): boolean => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '70rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '70rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <ModalHeader :selected-category="selectedCategory" />
     </template>
@@ -484,28 +478,15 @@ const validatePricePercent = (): boolean => {
       <!-- Step 2: Dynamic Form -->
       <div v-if="selectedCategoryInfo" class="space-y-4">
         <!-- Dynamic Form Fields -->
-        <DynamicFormField
-          v-if="dynamicFormData"
-          :fields="selectedCategoryInfo.fields"
-          :form-data="dynamicFormData"
-          :is-submitting="isSubmitting"
-          :pond-options="filteredPondOptions"
-          @update-field="updateDynamicField"
-          :category-id="selectedCategory"
-          :is-edit="false"
-        />
+        <DynamicFormField v-if="dynamicFormData" :fields="selectedCategoryInfo.fields" :form-data="dynamicFormData"
+          :is-submitting="isSubmitting" :pond-options="filteredPondOptions" @update-field="updateDynamicField"
+          :category-id="selectedCategory" :is-edit="false" />
 
         <!-- File Upload Section -->
-        <FileUploadSection
-          :show-certificate="isFishCategory"
-          :show-video="isFishCategory"
-          :product-images="productForm.images || []"
-          :certificate-file="productForm.certificate"
-          :video-file="productForm.youtube"
-          @update-product-images="updateProductImages"
-          @update-certificate-file="updateCertificateFile"
-          @update-video-file="handleUpdateVideoFile"
-        />
+        <FileUploadSection :show-certificate="isFishCategory" :show-video="isFishCategory"
+          :product-images="productForm.images || []" :certificate-file="productForm.certificate"
+          :video-file="productForm.youtube" @update-product-images="updateProductImages"
+          @update-certificate-file="updateCertificateFile" @update-video-file="handleUpdateVideoFile" />
       </div>
     </div>
 

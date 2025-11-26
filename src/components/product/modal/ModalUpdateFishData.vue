@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Dialog, Button, InputNumber, Select } from 'primevue'
-import { useProductStore } from '../../../stores/product/product'
 import {
   useFishGrowthHistoryStore,
   type IFishGrowthHistory,

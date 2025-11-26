@@ -7,7 +7,6 @@ import { useProductQuery } from '@/composables/useProductQuery'
 import { useProductModals } from '@/composables/useProductModals'
 import { useCategoryFields } from '@/composables/useCategoryFields'
 
-import ProductHeader from '@/components/product/ProductHeader.vue'
 import FoodProductContent from '@/components/product/category/food/FoodProduct.vue'
 import MicroorganismProductContent from '@/components/product/category/microorganism/MicroorganismProduct.vue'
 
@@ -104,34 +103,22 @@ const statsComponent = computed(() => {
 
 <template>
   <div class="md:space-y-4 space-y-3">
-    <ProductHeader title="ภาพรวมคลังสินค้า" description="" />
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div>
+        <h1 class="text-xl font-semibold! text-gray-900">ภาพรวมคลังสินค้า</h1>
+      </div>
+    </div>
     <component :is="statsComponent" :selected-category="selectedCategory" />
 
-    <!-- <div v-if="showCategorySelector">
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-        <h2 class="font-semibold! text-gray-900 mb-2">เลือกหมวดหมู่สินค้า</h2>
+    <FoodProductContent v-if="selectedCategory?.value === 'food'" :selected-category="selectedCategory"
+      :sale-type="saleTypeFromQuery || 'wholesale'" @open-edit-modal="openEditModal"
+      @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal"
+      @open-export-modal="openExportModal" @update-category-selector="updateCategorySelector" />
 
-        <CategorySelectionStep :category-options="categoryOptionsUI" @select-category="handleCategorySelect"
-          show-count />
-      </div>
-    </div> -->
-
-    <template>
-      <!-- <FishProductContent v-if="selectedCategory?.value === 'fish'" :selected-category="selectedCategory"
-        @open-edit-modal="openEditModal" @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal"
-        @open-add-modal="openAddModal" @open-export-modal="openExportModal"
-        @update-category-selector="updateCategorySelector" /> -->
-
-      <FoodProductContent v-if="selectedCategory?.value === 'food'" :selected-category="selectedCategory"
-        :sale-type="saleTypeFromQuery || 'wholesale'" @open-edit-modal="openEditModal"
-        @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal"
-        @open-export-modal="openExportModal" @update-category-selector="updateCategorySelector" />
-
-      <MicroorganismProductContent v-if="selectedCategory?.value === 'microorganism'"
-        :selected-category="selectedCategory" @open-edit-modal="openEditModal" @open-detail-modal="openDetailModal"
-        @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal" @open-export-modal="openExportModal"
-        @update-category-selector="updateCategorySelector" />
-    </template>
+    <MicroorganismProductContent v-if="selectedCategory?.value === 'microorganism'"
+      :selected-category="selectedCategory" @open-edit-modal="openEditModal" @open-detail-modal="openDetailModal"
+      @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal" @open-export-modal="openExportModal"
+      @update-category-selector="updateCategorySelector" />
   </div>
 
   <!-- Modal Components -->
