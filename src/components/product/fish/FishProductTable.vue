@@ -144,6 +144,49 @@ const closeQcModal = () => {
   selectedQcProduct.value = null
 }
 
+// Status Selection Modal State
+const showStatusSelectModal = ref(false)
+const selectedStatusProduct = ref<IProduct | null>(null)
+
+const handleSelectStatusClick = (product: IProduct) => {
+  selectedStatusProduct.value = product
+  showStatusSelectModal.value = true
+}
+
+const confirmStatusChange = (type: 'wait-qc' | 'ready') => {
+  if (!selectedStatusProduct.value) return
+
+  const payload: IUpdateProductPayload = {
+    ...selectedStatusProduct.value,
+    _id: selectedStatusProduct.value._id,
+    category: selectedStatusProduct.value.category || { _id: '', name: '' },
+    fishpond: selectedStatusProduct.value.fishpond?._id,
+    species: selectedStatusProduct.value.species?._id,
+    farm: selectedStatusProduct.value.farm?._id,
+    quality: selectedStatusProduct.value.quality?._id,
+    lotNumber: selectedStatusProduct.value.lotNumber?._id,
+    foodtype: selectedStatusProduct.value.foodtype?._id,
+    seedSize: selectedStatusProduct.value.seedSize?._id,
+    brand: selectedStatusProduct.value.brand?._id,
+    images: selectedStatusProduct.value.images.map((img) => ({
+      filename: img.filename,
+      type: img.type,
+    })),
+    fishStatus: null,
+  }
+
+  if (type === 'wait-qc') {
+    payload.waitQC = true
+  } else if (type === 'ready') {
+    payload.waitQC = false
+    payload.sold = false
+  }
+
+  updateProduct(payload)
+  showStatusSelectModal.value = false
+  selectedStatusProduct.value = null
+}
+
 const fishColumns = ref([
   {
     field: 'images',
@@ -281,59 +324,72 @@ const fishColumns = ref([
         : h('span', '-'),
   },
   {
-    field: 'sold',
-    header: 'สถานะขาย',
-    headCell: 'justify-center',
+    field: 'product.fishStatus',
+    header: 'สถานะ',
+    headCell: 'justify-center !min-w-[7.5rem]',
     bodyCell: 'text-center',
     render: (slotProps: any) => {
       const product = slotProps.data as IProduct
 
       // ถ้า waitQC = true แสดง "รอ QC" และคลิกได้
-      if (product.waitQC) {
+      if (product.fishStatus) {
         return h(
           Tag,
           {
-            value: 'รอ QC',
-            severity: 'warn',
+            value: product.fishStatus.name || '-',
+            severity: 'info',
             size: 'small',
             style: { cursor: 'pointer' },
-            onClick: () => handleQcStatusClick(product, 'ready'),
-          },
-          { default: () => 'รอ QC' }
+            onClick: () => handleSelectStatusClick(product),
+          }
         )
-      }
+      } else {
+        if (product.waitQC) {
+          return h(
+            Tag,
+            {
+              value: 'รอประเมิณราคา',
+              severity: 'warn',
+              size: 'small',
+              style: { cursor: 'pointer' },
+              onClick: () => handleQcStatusClick(product, 'ready'),
+            },
+            { default: () => 'รอประเมิณราคา' }
+          )
+        }
 
-      // ถ้า waitQC = false และ sold = false แสดง "พร้อมขาย" และคลิกได้
-      if (!product.sold) {
-        return h(
-          Tag,
-          {
-            value: 'พร้อมขาย',
-            severity: 'success',
-            size: 'small',
-            style: { cursor: 'pointer' },
-            onClick: () => handleQcStatusClick(product, 'wait-qc'),
-          },
-          { default: () => 'พร้อมขาย' }
-        )
-      }
+        // ถ้า waitQC = false และ sold = false แสดง "พร้อมขาย" และคลิกได้
+        if (!product.sold) {
+          return h(
+            Tag,
+            {
+              value: 'พร้อมขาย',
+              severity: 'success',
+              size: 'small',
+              style: { cursor: 'pointer' },
+              onClick: () => handleQcStatusClick(product, 'wait-qc'),
+            },
+            { default: () => 'พร้อมขาย' }
+          )
+        }
 
-      // ถ้า waitQC = false และ sold = true แสดง "ขายแล้ว" และไม่คลิกได้
-      return h(Tag, {
-        value: 'ขายแล้ว',
-        severity: 'danger',
-        size: 'small',
-      })
+        // ถ้า waitQC = false และ sold = true แสดง "ขายแล้ว" และไม่คลิกได้
+        return h(Tag, {
+          value: 'ขายแล้ว',
+          severity: 'danger',
+          size: 'small',
+        })
+      }
     },
   },
-  {
-    field: 'fishStatus',
-    header: 'สถานะ',
-    render: (slotProps: any) =>
-      slotProps.data.fishStatus
-        ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.fishStatus.name)
-        : h('span', '-'),
-  },
+  // {
+  //   field: 'fishStatus',
+  //   header: 'สถานะ',
+  //   render: (slotProps: any) =>
+  //     slotProps.data.fishStatus
+  //       ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.fishStatus.name)
+  //       : h('span', '-'),
+  // },
   {
     field: 'size',
     header: 'ไซต์',
@@ -515,8 +571,8 @@ const displayColumns = computed(() => {
       <p class="text-gray-700 mb-2">
         {{
           qcActionType === 'ready'
-            ? 'คุณต้องการเปลี่ยนสถานะจาก "รอ QC" เป็น "พร้อมขาย" หรือไม่?'
-            : 'คุณต้องการเปลี่ยนสถานะจาก "พร้อมขาย" เป็น "รอ QC" หรือไม่?'
+            ? 'คุณต้องการเปลี่ยนสถานะจาก "รอประเมินราคา" เป็น "พร้อมขาย" หรือไม่?'
+            : 'คุณต้องการเปลี่ยนสถานะจาก "พร้อมขาย" เป็น "รอประเมินราคา" หรือไม่?'
         }}
       </p>
       <p v-if="selectedQcProduct" class="text-sm text-gray-600">
@@ -531,6 +587,17 @@ const displayColumns = computed(() => {
           :loading="isUpdatingProduct" />
       </div>
     </template>
+  </Dialog>
+
+  <!-- Status Selection Modal -->
+  <Dialog v-model:visible="showStatusSelectModal" modal header="เลือกสถานะ" :style="{ width: '30rem' }">
+    <div class="flex flex-col gap-4">
+      <p class="text-gray-700">กรุณาเลือกสถานะที่ต้องการเปลี่ยน</p>
+      <div class="flex flex-col gap-2">
+        <Button label="รอประเมิณราคา" icon="pi pi-exclamation-triangle" severity="warn" @click="confirmStatusChange('wait-qc')" />
+        <Button label="พร้อมขาย" icon="pi pi-check" severity="success" @click="confirmStatusChange('ready')" />
+      </div>
+    </div>
   </Dialog>
 
   <!-- Print Modal -->

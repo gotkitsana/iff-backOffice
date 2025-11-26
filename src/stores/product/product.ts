@@ -263,7 +263,7 @@ export interface IUpdateProductPayload
   seedSize?: string
   foodtype?: string
   brand?: string
-  fishStatus?: string
+  fishStatus?: string | null
   waitQC?: boolean
 }
 
