@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Tag, Galleria, Panel, VirtualScroller, Image } from 'primevue'
+import { Dialog, Button, Tag, Galleria, Panel, Image } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
@@ -222,8 +222,16 @@ const { data: growthHistoryData } = useQuery<IFishGrowthHistory[]>({
 const historyRecords = computed(() => {
   if (!growthHistoryData.value) return []
 
-  // Sort ascending (Oldest to Newest)
-  return [...growthHistoryData.value].sort((a, b) => a.date - b.date)
+  // Sort descending (Newest to Oldest)
+  return [...growthHistoryData.value].sort((a, b) => b.date - a.date)
+})
+
+const latestRecord = computed(() => {
+  return historyRecords.value.length > 0 ? historyRecords.value[0] : null
+})
+
+const olderRecords = computed(() => {
+  return historyRecords.value.length > 1 ? historyRecords.value.slice(1) : []
 })
 
 // Select the latest record by default when history data changes
@@ -231,7 +239,7 @@ watch(
   historyRecords,
   (records) => {
     if (records.length > 0) {
-      selectedHistoryRecord.value = records[records.length - 1]
+      selectedHistoryRecord.value = records[0]
     }
   },
   { immediate: true }
@@ -385,15 +393,73 @@ const downloadWithOverlay = async (event: Event) => {
               <Button text severity="success" size="small" label="อัปเดตข้อมูล" @click="handleAddHistory" />
             </div>
 
-            <VirtualScroller :items="historyRecords" :item-size="25" class="space-y-2"
-              style="max-height: 300px; min-height: 300px">
-              <template v-slot:item="{ item, options }">
-                <!-- Selected Record Details -->
-                <Panel toggleable collapsed class="mb-2" :pt="{
+            <div class="space-y-2 overflow-y-auto pr-1 custom-scrollbar" style="max-height: 355px; min-height: 355px">
+              <!-- Latest Record -->
+              <div v-if="latestRecord" class="mb-3">
+                <Panel class="mb-2" :pt="{
+                  root: '!rounded-lg border border-gray-200',
+                  header: 'px-3 py-2 min-h-[2.5rem]',
+                  title: 'text-sm',
+                  content: 'p-3 pt-0',
+                }">
+                  <template #header>
+                    <div class="flex items-center gap-2 w-full justify-between">
+                      <span class="text-sm font-bold text-gray-900">
+                        ข้อมูลล่าสุด {{ dayjs(latestRecord.date).format('DD/MM/YYYY HH:mm:ss') }}
+                      </span>
+                      <Button icon="pi pi-pencil" text rounded severity="warn" size="small"
+                        @click="handleUpdateHistory(latestRecord)" v-tooltip.top="'แก้ไขข้อมูล'" />
+                    </div>
+                  </template>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                        ไซต์
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ latestRecord.size ? `${latestRecord.size} ซม.` : '-' }}
+                      </p>
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                        น้ำหนัก
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ latestRecord.weight ? `${latestRecord.weight} กก.` : '-' }}
+                      </p>
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                        เพศ
+                      </label>
+                      <Tag v-if="latestRecord.gender" :value="getGenderTag(latestRecord.gender).label"
+                        :severity="getGenderTag(latestRecord.gender).severity" class="px-2 py-1 text-xs" />
+                      <span v-else>-</span>
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+                        ราคา
+                      </label>
+                      <p class="text-sm text-gray-900 font-medium">
+                        {{ latestRecord.price ? formatCurrency(latestRecord.price) : '-' }}
+                      </p>
+                    </div>
+                  </div>
+                </Panel>
+              </div>
+
+              <!-- History Header -->
+              <div v-if="olderRecords.length > 0" class="mb-1">
+                <h6 class="text-sm font-semibold! text-gray-700">ประวัติการบันทึกข้อมูล</h6>
+              </div>
+
+              <!-- Older Records Loop -->
+              <template v-for="item in olderRecords" :key="item._id || item.date">
+                <Panel toggleable collapsed class="mb-1" :pt="{
                   root: '!rounded-lg',
                   header: 'px-2 py-1.5 min-h-[2.5rem]',
                   title: 'text-sm',
-                  content: 'p-2 pt-0',
+                  content: 'p-3 pt-0',
                 }" :toggleButtonProps="{
                   size: 'small',
                   rounded: true,
@@ -447,7 +513,7 @@ const downloadWithOverlay = async (event: Event) => {
                   </div>
                 </Panel>
               </template>
-            </VirtualScroller>
+            </div>
           </div>
 
           <!-- ข้อมูลการจัดเก็บ (Stock Information) -->
@@ -534,12 +600,16 @@ const downloadWithOverlay = async (event: Event) => {
                           <div
                             class="text-white  drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] space-y-0.5 leading-snug select-none">
                             <p class="text-base lg:text-lg font-[600]! ">{{ productData.sku }}</p>
-                            <p class="text-sm lg:text-base font-[500]! ">เพศ: {{ getGenderTag(productData.gender || '').label || '-'
-                              }}</p>
-                            <p class="text-sm lg:text-base font-[500]! ">แม่พันธุ์: {{ productData.breeders || '-' }}</p>
-                            <p class="text-sm lg:text-base font-[500]! ">วันเกิด: {{ formatBirthDate(productData.birth || '') }}</p>
-                            <p class="mt-3 text-sm lg:text-base font-[500]! ">วันที่บันทึก: {{ dayjs(productData.uat).add(543, 'year').format('D-M-YY')
-                              }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">เพศ: {{ getGenderTag(productData.gender ||
+                              '').label || '-'
+                            }}</p>
+                            <p class="text-sm lg:text-base font-[500]! ">แม่พันธุ์: {{ productData.breeders || '-' }}
+                            </p>
+                            <p class="text-sm lg:text-base font-[500]! ">วันเกิด: {{ formatBirthDate(productData.birth
+                              || '') }}</p>
+                            <p class="mt-3 text-sm lg:text-base font-[500]! ">วันที่บันทึก: {{
+                              dayjs(productData.uat).add(543, 'year').format('D-M-YY')
+                            }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">ไซต์: {{ productData.size || '-' }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">น้ำหนัก: {{ productData.weight || '-' }}</p>
                           </div>
@@ -795,9 +865,9 @@ const downloadWithOverlay = async (event: Event) => {
                     </label>
                     <p class="text-base font-semibold text-gray-900">
                       {{
-                      supplierStore.supplierContactOptions.find(
-                      (opt) => opt.value === selectedSupplier?.contact
-                      )?.label || '-'
+                        supplierStore.supplierContactOptions.find(
+                          (opt) => opt.value === selectedSupplier?.contact
+                        )?.label || '-'
                       }}
                     </p>
                   </div>
