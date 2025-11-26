@@ -13,10 +13,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { type ICategory } from '@/stores/product/category'
 
 // Import components
-import DynamicFormField from '@/components/product/modal/add_product/DynamicFormField.vue'
+import DynamicFormField from '@/components/product/UI/DynamicFormField.vue'
 import FileUploadSection from '@/components/product/UI/FileUploadSection.vue'
-import ModalHeader from '@/components/product/modal/add_product/ModalHeader.vue'
-import ModalFooter from '@/components/product/modal/add_product/ModalFooter.vue'
+
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
 import { usePondStore } from '@/stores/fish/pond'
@@ -471,7 +470,18 @@ const validatePricePercent = (): boolean => {
       footer: 'p-4',
     }">
     <template #header>
-      <ModalHeader :selected-category="selectedCategory" />
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-plus text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold! text-gray-800">เพิ่มสินค้า {{ selectedCategory?.name }}</h3>
+          <p class="text-sm text-gray-600">
+            กรอกข้อมูลสินค้า
+          </p>
+        </div>
+      </div>
     </template>
 
     <div class="space-y-4">
@@ -491,7 +501,9 @@ const validatePricePercent = (): boolean => {
     </div>
 
     <template #footer>
-      <ModalFooter :is-submitting="isCreatingProduct" @close="handleClose" @submit="handleSubmit" />
+      <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+      <Button label="เพิ่มสินค้า" icon="pi pi-check" @click="handleSubmit" severity="success" size="small"
+        :loading="isCreatingProduct" />
     </template>
   </Dialog>
 </template>

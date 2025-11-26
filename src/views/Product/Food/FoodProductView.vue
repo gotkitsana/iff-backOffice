@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import FoodFilter from '@/components/product/category/food/FoodFilter.vue'
 
-import ModalAddProduct from '@/components/product/modal/add_product/ModalAddProduct.vue'
+import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
 import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
 import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'

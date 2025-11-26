@@ -8,7 +8,6 @@ import dayjs from 'dayjs'
 
 // Import components
 import DynamicRetailFormField from '@/components/product/category/food-retail/DynamicRetailFormField.vue'
-import ModalFooter from '@/components/product/modal/add_product/ModalFooter.vue'
 import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 import {
   useFoodSaleStore,
@@ -273,22 +272,15 @@ const validatePricePercent = (): boolean => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '70rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '70rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-plus text-white text-lg"></i>
         </div>
         <div>
@@ -298,21 +290,14 @@ const validatePricePercent = (): boolean => {
       </div>
     </template>
 
-    <DynamicRetailFormField
-      v-if="fieldsRetailUI && dynamicFormData"
-      :fields="fieldsRetailUI.fields"
-      :form-data="dynamicFormData"
-      :is-submitting="isSubmitting"
-      @update-field="updateDynamicField"
-      :category-id="props.selectedCategory"
-    />
+    <DynamicRetailFormField v-if="fieldsRetailUI && dynamicFormData" :fields="fieldsRetailUI.fields"
+      :form-data="dynamicFormData" :is-submitting="isSubmitting" @update-field="updateDynamicField"
+      :category-id="props.selectedCategory" />
 
     <template #footer>
-      <ModalFooter
-        :is-submitting="isCreatingFoodSale || isUpdatingProduct"
-        @close="handleClose"
-        @submit="handleSubmit"
-      />
+      <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+      <Button label="เพิ่มสินค้า" icon="pi pi-check" @click="handleSubmit" severity="success" size="small"
+        :loading="isCreatingFoodSale" />
     </template>
   </Dialog>
 </template>

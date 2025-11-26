@@ -7,7 +7,7 @@ import FishFilter from '@/components/product/category/fish/FishFilter.vue'
 import FishProductTable from '@/components/product/category/fish/FishProductTable.vue'
 import FishStatsCards from '@/components/product/category/fish/FishStatsCards.vue'
 
-import ModalAddProduct from '@/components/product/modal/add_product/ModalAddProduct.vue'
+import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
 import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
 import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'

@@ -11,7 +11,7 @@ import {
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
-import DynamicFormField from '@/components/product/modal/add_product/DynamicFormField.vue'
+import DynamicFormField from '@/components/product/UI/DynamicFormField.vue'
 import FileUploadSection from '@/components/product/UI/FileUploadSection.vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
