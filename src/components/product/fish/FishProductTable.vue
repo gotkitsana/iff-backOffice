@@ -348,13 +348,13 @@ const fishColumns = ref([
           return h(
             Tag,
             {
-              value: 'รอประเมิณราคา',
+              value: 'รอประเมินราคา',
               severity: 'warn',
               size: 'small',
               style: { cursor: 'pointer' },
               onClick: () => handleQcStatusClick(product, 'ready'),
             },
-            { default: () => 'รอประเมิณราคา' }
+            { default: () => 'รอประเมินราคา' }
           )
         }
 
@@ -594,7 +594,7 @@ const displayColumns = computed(() => {
     <div class="flex flex-col gap-4">
       <p class="text-gray-700">กรุณาเลือกสถานะที่ต้องการเปลี่ยน</p>
       <div class="flex flex-col gap-2">
-        <Button label="รอประเมิณราคา" icon="pi pi-exclamation-triangle" severity="warn" @click="confirmStatusChange('wait-qc')" />
+        <Button label="รอประเมินราคา" icon="pi pi-exclamation-triangle" severity="warn" @click="confirmStatusChange('wait-qc')" />
         <Button label="พร้อมขาย" icon="pi pi-check" severity="success" @click="confirmStatusChange('ready')" />
       </div>
     </div>

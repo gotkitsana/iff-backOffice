@@ -55,7 +55,7 @@ const ageOptions = [
 ]
 
 const saleStatusOptions = [
-  { label: 'รอ QC', value: 'wait-qc' },
+  { label: 'รอประเมินราคา', value: 'wait-qc' },
   { label: 'พร้อมขาย', value: 'ready' },
   { label: 'ขายแล้ว', value: 'sold' },
 ]
