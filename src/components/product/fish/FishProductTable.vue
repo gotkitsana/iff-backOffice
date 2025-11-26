@@ -328,7 +328,7 @@ const fishColumns = ref([
   },
   {
     field: 'fishStatus',
-    header: 'สถานะปลา',
+    header: 'สถานะ',
     render: (slotProps: any) =>
       slotProps.data.fishStatus
         ? h('span', { class: 'text-sm text-gray-900' }, slotProps.data.fishStatus.name)
