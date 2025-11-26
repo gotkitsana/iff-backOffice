@@ -1,7 +1,8 @@
 import Dashboard from '@/views/DashboardView.vue'
 import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
-import IncomeExpense from '@/views/Accounting/IncomeExpenseView.vue'
+import Income from '@/views/Accounting/IncomeView.vue'
+import Expense from '@/views/Accounting/ExpenseView.vue'
 import Assets from '@/views/Accounting/AssetsView.vue'
 import Debt from '@/views/Accounting/DebtView.vue'
 import Loan from '@/views/Accounting/LoanView.vue'
@@ -124,13 +125,23 @@ export default [
         },
       },
       {
-        path: '/accounting/income-expense',
-        name: 'income-expense',
-        component: IncomeExpense,
+        path: '/accounting/income',
+        name: 'income',
+        component: Income,
         meta: {
-          title: 'รายรับ/รายจ่าย',
+          title: 'รายรับ',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'รายรับ/รายจ่าย' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'รายรับ' }],
+        },
+      },
+      {
+        path: '/accounting/expense',
+        name: 'expense',
+        component: Expense,
+        meta: {
+          title: 'รายจ่าย',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'รายจ่าย' }],
         },
       },
       {

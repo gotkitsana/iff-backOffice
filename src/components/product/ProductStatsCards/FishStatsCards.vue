@@ -40,7 +40,6 @@ const formatCurrency = (value: number) => {
 const totalValue = computed(() =>
   fishProducts.value.reduce((sum, product) => sum + (product.price || 0), 0)
 )
-
 const totalCount = computed(() => fishProducts.value.length)
 
 const missingDataCount = computed(
@@ -57,28 +56,38 @@ const soldValue = computed(() =>
     .filter((product) => product.sold)
     .reduce((sum, product) => sum + (product.price || 0), 0)
 )
+const soldCount = computed(() => fishProducts.value.filter((product) => product.sold).length)
 
 const waitQcCount = computed(() => fishProducts.value.filter((product) => product.waitQC).length)
 
 const summaryCards = computed(() => [
   {
     id: 'totalValue',
-    label: 'มูลค่าปลาทั้งหมด',
-    value: formatCurrency(totalValue.value),
+    label: 'มูลค่าปลาในคลัง',
+    value: `${formatCurrency(totalValue.value)} / ${totalCount.value} ตัว`,
     iconClass: 'pi pi-wallet text-white ',
     iconBgClass: 'bg-gradient-to-br from-green-500 to-green-600',
     valueClass: 'text-green-600',
-    cardClass: 'md:col-span-2',
+    cardClass: 'col-span-2 md:col-span-3 lg:col-span-2',
   },
   {
-    id: 'totalCount',
-    label: 'จำนวนปลาทั้งหมด',
-    value: totalCount.value,
-    iconClass: 'pi pi-box text-white ',
-    iconBgClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
-    valueClass: ' text-blue-600',
-    cardClass: 'md:col-span-2',
+    id: 'soldValue',
+    label: 'มูลค่าปลาขายแล้ว',
+    value: `${formatCurrency(soldValue.value)} / ${soldCount.value} ตัว`,
+    iconClass: 'pi pi-shopping-bag text-white ',
+    iconBgClass: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    valueClass: ' text-purple-600',
+    cardClass: 'col-span-2 md:col-span-3 lg:col-span-2',
   },
+  // {
+  //   id: 'totalCount',
+  //   label: 'จำนวนปลาทั้งหมด',
+  //   value: totalCount.value,
+  //   iconClass: 'pi pi-box text-white ',
+  //   iconBgClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
+  //   valueClass: ' text-blue-600',
+  //   cardClass: 'md:col-span-2',
+  // },
   {
     id: 'missingData',
     label: 'ข้อมูลไม่ครบ',
@@ -88,23 +97,15 @@ const summaryCards = computed(() => [
     valueClass: ' text-amber-600',
     cardClass: 'md:col-span-2',
   },
-  {
-    id: 'soldValue',
-    label: 'มูลค่าปลาที่ขายแล้ว',
-    value: formatCurrency(soldValue.value),
-    iconClass: 'pi pi-shopping-bag text-white ',
-    iconBgClass: 'bg-gradient-to-br from-purple-500 to-purple-600',
-    valueClass: ' text-purple-600',
-    cardClass: 'md:col-span-3 xl:col-span-2',
-  },
+
   {
     id: 'waitQcCount',
     label: 'รอประเมิน QC',
-    value: waitQcCount.value,
+    value: `${waitQcCount.value} รายการ`,
     iconClass: 'pi pi-hourglass text-white ',
     iconBgClass: 'bg-gradient-to-br from-red-500 to-red-600',
     valueClass: ' text-red-600',
-    cardClass: 'col-span-2 md:col-span-3',
+    cardClass: 'md:col-span-2',
   },
 ])
 
