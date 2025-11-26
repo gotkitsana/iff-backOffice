@@ -256,7 +256,12 @@ const menuSections = [
             icon: 'pi pi-list',
             label: 'วางแผนความต้องการวัตถุดิบ MRP',
             route: 'production-mrp',
-          }
+          },
+          {
+            icon: 'pi pi-bolt',
+            label: 'ระบบวิเคราะห์ควบคุมการใช้ไฟฟ้า',
+            route: 'production-electricity-analysis',
+          },
         ],
       },
       // {

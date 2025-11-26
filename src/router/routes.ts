@@ -23,6 +23,7 @@ import GreenhouseMapView from '@/views/Product/GreenhouseMapView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
+import ProductionElectricView from '@/views/Production/ProductionElectricView.vue'
 
 import FishProductView from '@/views/Product/Category/FishProductView.vue'
 
@@ -229,7 +230,20 @@ export default [
           ],
         },
       },
-
+      {
+        path: '/production/electricity-analysis',
+        name: 'production-electricity-analysis',
+        component: ProductionElectricView,
+        meta: {
+          title: 'ระบบวิเคราะห์ควบคุมการใช้ไฟฟ้า',
+        },
+        roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+        breadcrumb: [
+          { label: 'ระบบการผลิต' },
+          { label: 'ผลิต' },
+          { label: 'ระบบวิเคราะห์ควบคุมการใช้ไฟฟ้า' },
+        ],
+      },
       {
         path: '/promotion',
         name: 'promotion',
