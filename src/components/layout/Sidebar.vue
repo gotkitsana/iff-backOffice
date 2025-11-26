@@ -71,7 +71,7 @@ const isDropdownActive = (item: {
   if (!item.label) return false
 
   // Special case for storage dropdown (uses query parameter)
-  if (item.label === 'คลังสินค้า' || item.route === 'storage') {
+  if (item.label === 'คลัง' || item.route === 'storage') {
     return currentRoute.value === 'storage' && !!route.query.category
   }
 
@@ -162,7 +162,7 @@ const menuSections = [
       },
       {
         icon: 'pi pi-building-columns',
-        label: 'คลังสินค้า',
+        label: 'คลัง',
         route: 'storage',
         isDropdown: true,
         submenu: [], // Will be populated dynamically from categories
@@ -179,19 +179,25 @@ const menuSections = [
         submenu: [
           {
             icon: 'pi pi-money-bill',
-            label: 'รายรับ/รายจ่าย',
-            route: 'income-expense',
+            label: 'รายรับ',
+            route: 'income',
           },
           {
-            icon: 'pi pi-database',
-            label: 'สินทรัพย์',
-            route: 'assets',
+            icon: 'pi pi-money-bill',
+            label: 'รายจ่าย',
+            route: 'expense',
           },
           {
             icon: 'pi pi-credit-card',
             label: 'ลูกหนี้',
             route: 'debt',
           },
+          {
+            icon: 'pi pi-database',
+            label: 'สินทรัพย์',
+            route: 'assets',
+          },
+
           {
             icon: 'pi pi-receipt',
             label: 'กู้ยืม/หนี้สิน',
@@ -238,7 +244,7 @@ const menuSections = [
         submenu: [
           {
             icon: 'pi pi-book',
-            label: 'คู้มือ',
+            label: 'คู่มือ',
             route: 'production-guide',
           },
           {
@@ -312,7 +318,7 @@ watch(
         if (!item.isDropdown || !item.label) return
 
         // Special case for storage dropdown
-        if (item.label === 'คลังสินค้า' || item.route === 'storage') {
+        if (item.label === 'คลัง' || item.route === 'storage') {
           if (routeName === 'storage' && route.query.category) {
             dropdownStates.value[item.label] = true
           }
@@ -341,19 +347,13 @@ onUnmounted(() => {
 
 <template>
   <!-- Mobile Overlay -->
-  <div
-    v-if="isMobile && isOpen"
-    class="fixed inset-0 bg-black/30 z-40 lg:hidden"
-    @click="$emit('close')"
-  ></div>
+  <div v-if="isMobile && isOpen" class="fixed inset-0 bg-black/30 z-40 lg:hidden" @click="$emit('close')"></div>
 
   <!-- Sidebar -->
-  <aside
-    :class="[
-      'fixed inset-y-0 left-0 z-50 w-64 bg-white  lg:bg-transparent transform transition-transform duration-300 ease-in-out sidebar-slide',
-      isOpen ? 'translate-x-0' : '-translate-x-full',
-    ]"
-  >
+  <aside :class="[
+    'fixed inset-y-0 left-0 z-50 w-64 bg-white  lg:bg-transparent transform transition-transform duration-300 ease-in-out sidebar-slide',
+    isOpen ? 'translate-x-0' : '-translate-x-full',
+  ]">
     <div class="flex flex-col h-full">
       <!-- Logo Section -->
       <div class="flex items-center space-x-3 p-4">
@@ -365,11 +365,8 @@ onUnmounted(() => {
 
       <!-- Navigation Menu -->
       <nav class="flex-1 p-2 overflow-y-auto sidebar-scroll">
-        <div
-          v-for="(section, sectionIndex) in menuSections"
-          :key="section.title"
-          :class="sectionIndex > 0 ? 'mt-5' : ''"
-        >
+        <div v-for="(section, sectionIndex) in menuSections" :key="section.title"
+          :class="sectionIndex > 0 ? 'mt-5' : ''">
           <h3 class="text-sm text-gray-500 uppercase tracking-wider mb-1.5 px-3">
             {{ section.title }}
           </h3>
@@ -377,74 +374,45 @@ onUnmounted(() => {
             <template v-for="item in section.items" :key="item.route || item.label">
               <!-- Dropdown Menu Item -->
               <div v-if="item.isDropdown" class="space-y-1">
-                <button
-                  @click="toggleDropdown(item)"
-                  :class="[
-                    'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-300 group',
-                  ]"
-                >
+                <button @click="toggleDropdown(item)" :class="[
+                  'w-full flex items-center justify-between space-x-3 px-3 py-1.5 text-sm rounded-full transition-all duration-300 group',
+                ]">
                   <div class="flex items-center space-x-3 flex-1">
                     <i :class="[item.icon, 'text-sm', 'text-gray-600 group-hover:text-black']"></i>
-                    <span
-                      class="flex-1 text-left font-[500]!"
-                      :class="'text-gray-600 group-hover:text-black'"
-                      >{{ item.label }}</span
-                    >
+                    <span class="flex-1 text-left font-[500]!" :class="'text-gray-600 group-hover:text-black'">{{
+                      item.label }}</span>
                   </div>
-                  <i
-                    :class="[
-                      'pi text-xs transition-transform duration-300',
-                      isDropdownOpen(item) ? 'pi-angle-up' : 'pi-angle-down',
-                      'text-gray-600',
-                    ]"
-                  ></i>
+                  <i :class="[
+                    'pi text-xs transition-transform duration-300',
+                    isDropdownOpen(item) ? 'pi-angle-up' : 'pi-angle-down',
+                    'text-gray-600',
+                  ]"></i>
                 </button>
                 <!-- Submenu Items -->
                 <Transition name="slide-fade">
-                  <div
-                    v-if="isDropdownOpen(item)"
+                  <div v-if="isDropdownOpen(item)"
                     class="flex flex-col gap-1 overflow-y-auto select-none duration-300 ml-3 dropdown-submenu max-h-[calc(100vh-200px)]"
-                    style="scrollbar-width: none; -ms-overflow-style: none"
-                  >
+                    style="scrollbar-width: none; -ms-overflow-style: none">
                     <!-- Storage submenu -->
-                    <template v-if="item.label === 'คลังสินค้า' || item.route === 'storage'">
-                      <MenuItem
-                        v-for="subItem in storageSubmenu"
-                        :key="subItem.categoryValue"
-                        :icon="subItem.icon"
-                        :label="subItem.label"
-                        :active="
-                          currentRoute === 'storage' &&
+                    <template v-if="item.label === 'คลัง' || item.route === 'storage'">
+                      <MenuItem v-for="subItem in storageSubmenu" :key="subItem.categoryValue" :icon="subItem.icon"
+                        :label="subItem.label" :active="currentRoute === 'storage' &&
                           route.query.category === subItem.categoryValue
-                        "
-                        :submenu="true"
-                        @click="navigateToStorageCategory(subItem.categoryValue)"
-                      />
+                          " :submenu="true" @click="navigateToStorageCategory(subItem.categoryValue)" />
                     </template>
 
                     <!-- Regular submenu -->
                     <template v-else>
-                      <MenuItem
-                        v-for="subItem in item.submenu"
-                        :key="subItem.route"
-                        :icon="subItem.icon"
-                        :label="subItem.label"
-                        :active="currentRoute === subItem.route"
-                        :submenu="true"
-                        @click="navigateTo(subItem.route)"
-                      />
+                      <MenuItem v-for="subItem in item.submenu" :key="subItem.route" :icon="subItem.icon"
+                        :label="subItem.label" :active="currentRoute === subItem.route" :submenu="true"
+                        @click="navigateTo(subItem.route)" />
                     </template>
                   </div>
                 </Transition>
               </div>
               <!-- Regular Menu Item -->
-              <MenuItem
-                v-else-if="item.route"
-                :icon="item.icon"
-                :label="item.label"
-                :active="currentRoute === item.route"
-                @click="navigateTo(item.route)"
-              />
+              <MenuItem v-else-if="item.route" :icon="item.icon" :label="item.label"
+                :active="currentRoute === item.route" @click="navigateTo(item.route)" />
             </template>
           </div>
         </div>
@@ -457,14 +425,17 @@ onUnmounted(() => {
 /* Hide scrollbar for dropdown submenu to prevent content shift */
 .dropdown-submenu {
   overflow-y: auto !important;
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE and Edge */
 }
 
 .dropdown-submenu::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
-  display: none !important; /* Chrome, Safari, Opera */
+  display: none !important;
+  /* Chrome, Safari, Opera */
 }
 
 .dropdown-submenu::-webkit-scrollbar-track {
@@ -475,4 +446,3 @@ onUnmounted(() => {
   display: none !important;
 }
 </style>
-
