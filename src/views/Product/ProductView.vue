@@ -8,22 +8,18 @@ import { useProductModals } from '@/composables/useProductModals'
 import { useCategoryFields } from '@/composables/useCategoryFields'
 
 import ProductHeader from '@/components/product/ProductHeader.vue'
-import CategorySelectionStep from '@/components/product/add_product/CategorySelectionStep.vue'
-import FishProductContent from '@/components/product/category/FishProduct.vue'
-import FoodProductContent from '@/components/product/category/FoodProduct.vue'
-import MicroorganismProductContent from '@/components/product/category/MicroorganismProduct.vue'
+import FoodProductContent from '@/components/product/category/food/FoodProduct.vue'
+import MicroorganismProductContent from '@/components/product/category/microorganism/MicroorganismProduct.vue'
 
-import FishStatsCards from '@/components/product/ProductStatsCards/FishStatsCards.vue'
-import FoodStatsCards from '@/components/product/ProductStatsCards/FoodStatsCards.vue'
-import MicroorganismStatsCards from '@/components/product/ProductStatsCards/MicroorganismStatsCards.vue'
-import OverviewStatsCards from '@/components/product/ProductStatsCards/OverviewStatsCards.vue'
+import FishStatsCards from '@/components/product/category/fish/FishStatsCards.vue'
+import FoodStatsCards from '@/components/product/category/food/FoodStatsCards.vue'
+import MicroorganismStatsCards from '@/components/product/category/microorganism/MicroorganismStatsCards.vue'
 
-import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
+import ModalAddProduct from '@/components/product/modal/add_product/ModalAddProduct.vue'
 import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
 import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
 import ModalDeleteProduct from '@/components/product/modal/ModalDeleteProduct.vue'
-import type { SaleFoodType } from '@/types/query'
 
 // Router & Stores
 const categoryStore = useCategoryStore()
@@ -53,7 +49,7 @@ const {
   closeDeleteModal,
 } = useProductModals()
 
-const { categoryFromQuery, saleTypeFromQuery, updateQuery, clearAllQuery } = useProductQuery()
+const { categoryFromQuery, saleTypeFromQuery, clearAllQuery } = useProductQuery()
 
 const selectedCategory = ref<ICategory | null>(null)
 const showCategorySelector = ref(true)
@@ -77,11 +73,11 @@ watch(
 )
 
 // ฟังก์ชันเลือก category
-const handleCategorySelect = (category: ICategory, type: SaleFoodType) => {
-  selectedCategory.value = category
-  showCategorySelector.value = false
-  updateQuery({ category: category.value, saleType: type })
-}
+// const handleCategorySelect = (category: ICategory, type: SaleFoodType) => {
+//   selectedCategory.value = category
+//   showCategorySelector.value = false
+//   updateQuery({ category: category.value, saleType: type })
+// }
 
 // ฟังก์ชันกลับไปหน้าเลือก category
 const updateCategorySelector = () => {
@@ -91,7 +87,7 @@ const updateCategorySelector = () => {
 }
 
 const statsComponent = computed(() => {
-  if (!selectedCategory.value) return OverviewStatsCards
+  if (!selectedCategory.value) return null
 
   switch (selectedCategory.value.value) {
     case 'fish':
@@ -101,7 +97,7 @@ const statsComponent = computed(() => {
     case 'microorganism':
       return MicroorganismStatsCards
     default:
-      return OverviewStatsCards
+      return null
   }
 })
 </script>
@@ -111,88 +107,47 @@ const statsComponent = computed(() => {
     <ProductHeader title="ภาพรวมคลังสินค้า" description="" />
     <component :is="statsComponent" :selected-category="selectedCategory" />
 
-    <div v-if="showCategorySelector">
+    <!-- <div v-if="showCategorySelector">
       <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
         <h2 class="font-semibold! text-gray-900 mb-2">เลือกหมวดหมู่สินค้า</h2>
 
-        <CategorySelectionStep
-          :category-options="categoryOptionsUI"
-          @select-category="handleCategorySelect"
-          show-count
-        />
+        <CategorySelectionStep :category-options="categoryOptionsUI" @select-category="handleCategorySelect"
+          show-count />
       </div>
-    </div>
+    </div> -->
 
-    <template v-else-if="selectedCategory">
-      <FishProductContent
-        v-if="selectedCategory?.value === 'fish'"
-        :selected-category="selectedCategory"
-        @open-edit-modal="openEditModal"
-        @open-detail-modal="openDetailModal"
-        @open-delete-modal="openDeleteModal"
-        @open-add-modal="openAddModal"
-        @open-export-modal="openExportModal"
-        @update-category-selector="updateCategorySelector"
-      />
+    <template>
+      <!-- <FishProductContent v-if="selectedCategory?.value === 'fish'" :selected-category="selectedCategory"
+        @open-edit-modal="openEditModal" @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal"
+        @open-add-modal="openAddModal" @open-export-modal="openExportModal"
+        @update-category-selector="updateCategorySelector" /> -->
 
-      <FoodProductContent
-        v-if="selectedCategory?.value === 'food'"
-        :selected-category="selectedCategory"
-        :sale-type="saleTypeFromQuery || 'wholesale'"
-        @open-edit-modal="openEditModal"
-        @open-detail-modal="openDetailModal"
-        @open-delete-modal="openDeleteModal"
-        @open-add-modal="openAddModal"
-        @open-export-modal="openExportModal"
-        @update-category-selector="updateCategorySelector"
-      />
+      <FoodProductContent v-if="selectedCategory?.value === 'food'" :selected-category="selectedCategory"
+        :sale-type="saleTypeFromQuery || 'wholesale'" @open-edit-modal="openEditModal"
+        @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal"
+        @open-export-modal="openExportModal" @update-category-selector="updateCategorySelector" />
 
-      <MicroorganismProductContent
-        v-if="selectedCategory?.value === 'microorganism'"
-        :selected-category="selectedCategory"
-        @open-edit-modal="openEditModal"
-        @open-detail-modal="openDetailModal"
-        @open-delete-modal="openDeleteModal"
-        @open-add-modal="openAddModal"
-        @open-export-modal="openExportModal"
-        @update-category-selector="updateCategorySelector"
-      />
+      <MicroorganismProductContent v-if="selectedCategory?.value === 'microorganism'"
+        :selected-category="selectedCategory" @open-edit-modal="openEditModal" @open-detail-modal="openDetailModal"
+        @open-delete-modal="openDeleteModal" @open-add-modal="openAddModal" @open-export-modal="openExportModal"
+        @update-category-selector="updateCategorySelector" />
     </template>
   </div>
 
   <!-- Modal Components -->
-  <ModalAddProduct
-    v-if="!showCategorySelector"
-    v-model:visible="showAddModal"
-    :categoryOptionsUI="categoryOptionsUI"
-    :selectedCategory="selectedCategory"
-  />
+  <ModalAddProduct v-if="!showCategorySelector" v-model:visible="showAddModal" :categoryOptionsUI="categoryOptionsUI"
+    :selectedCategory="selectedCategory" />
 
   <!-- Export Modal -->
   <ModalExportProduct v-if="!showCategorySelector" v-model:visible="showExportModal" />
 
-  <ModalEditProduct
-    v-if="!showCategorySelector"
-    v-model:visible="showEditModal"
-    :product-data="selectedProduct"
-    :categoryOptionsUI="categoryOptionsUI"
-    :selected-category="selectedCategory"
-    @close-edit-modal="closeEditModal"
-  />
+  <ModalEditProduct v-if="!showCategorySelector" v-model:visible="showEditModal" :product-data="selectedProduct"
+    :categoryOptionsUI="categoryOptionsUI" :selected-category="selectedCategory" @close-edit-modal="closeEditModal" />
 
-  <ModalProductDetail
-    v-if="selectedProduct"
-    v-model:visible="showDetailModal"
-    :product-data="selectedProduct"
-    :selected-category="selectedCategory"
-    :categoryOptionsUI="categoryOptionsUI"
-    @close-detail-modal="closeDetailModal"
-  />
+  <ModalProductDetail v-if="selectedProduct" v-model:visible="showDetailModal" :product-data="selectedProduct"
+    :selected-category="selectedCategory" :categoryOptionsUI="categoryOptionsUI"
+    @close-detail-modal="closeDetailModal" />
 
-  <ModalDeleteProduct
-    v-if="selectedProduct"
-    v-model:visible="showDeleteModal"
-    :product-data="selectedProduct"
-    @close-delete-modal="closeDeleteModal"
-  />
+  <ModalDeleteProduct v-if="selectedProduct" v-model:visible="showDeleteModal" :product-data="selectedProduct"
+    @close-delete-modal="closeDeleteModal" />
 </template>

@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 
 // Import components
 import DynamicRetailFormField from '@/components/product/category/food-retail/DynamicRetailFormField.vue'
-import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
+import ModalFooter from '@/components/product/modal/add_product/ModalFooter.vue'
 import { useSalePercentStore, type ISalePercent } from '@/stores/product/sale_percent'
 import {
   useFoodSaleStore,

@@ -18,14 +18,14 @@ import Production from '@/views/Production/ProductionView.vue'
 import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
 import Product from '@/views/Product/ProductView.vue'
-import ProductOptionSetting from '@/views/Product/ProductOptionSetting.vue'
-import GreenhouseMapView from '@/views/Product/GreenhouseMapView.vue'
+import ProductOptionSetting from '@/views/Product/Setting/ProductOptionSetting.vue'
+import GreenhouseMapView from '@/views/Product/Fish/GreenhouseMapView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
 import ProductionElectricView from '@/views/Production/ProductionElectricView.vue'
 
-import FishProductView from '@/views/Product/Category/FishProductView.vue'
+import FishProductView from '@/views/Product/Fish/FishProductView.vue'
 
 export default [
   {

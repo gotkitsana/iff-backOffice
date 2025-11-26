@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import type { ICategory } from '@/stores/product/category'
-import FishStatsCardItem from './StatsCardItem.vue'
+import StatsCardItem from '@/components/product/UI/StatsCardItem.vue'
 
 const props = defineProps<{
   selectedCategory: ICategory | null
@@ -134,19 +134,14 @@ const ageStats = computed(() => {
 
 <template>
   <div class="grid grid-cols-2 md:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-    <FishStatsCardItem v-for="card in summaryCards" :key="card.id" v-bind="card" />
+    <StatsCardItem v-for="card in summaryCards" :key="card.id" v-bind="card" />
 
-    <Card
-      :pt="{ body: 'p-3 md:p-4 h-full' }"
-      class="hover:shadow-lg transition-shadow duration-200 col-span-2 md:col-span-6 xl:col-span-5"
-    >
+    <Card :pt="{ body: 'p-3 md:p-4 h-full' }"
+      class="hover:shadow-lg transition-shadow duration-200 col-span-2 md:col-span-6 xl:col-span-5">
       <template #content>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 xl:gap-3">
-          <div
-            v-for="(count, label) in ageStats"
-            :key="label"
-            class="text-sm xl:text-sm text-gray-700 flex items-center gap-2"
-          >
+          <div v-for="(count, label) in ageStats" :key="label"
+            class="text-sm xl:text-sm text-gray-700 flex items-center gap-2">
             <span>{{ label }}:</span>
             <span class="font-semibold text-gray-900">{{ count }} ตัว</span>
           </div>

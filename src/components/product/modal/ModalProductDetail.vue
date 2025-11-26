@@ -4,7 +4,6 @@ import { Dialog, Button, Tag, Galleria, Panel, Image } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
-  useProductStore,
 } from '../../../stores/product/product'
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
@@ -14,7 +13,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import html2canvas from 'html2canvas'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
-import DownloadZipButton from '../DownloadZipButton.vue'
+import DownloadZipButton from '@/components/product/UI/DownloadZipButton.vue'
 import ModalUpdateFishData from './ModalUpdateFishData.vue'
 import {
   useFishGrowthHistoryStore,

@@ -3,11 +3,11 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useProductFilters } from '@/composables/useProductFilters'
-import CategoryFilter from '@/components/product/CategoryFilter.vue'
-import ProductTable from '@/components/product/ProductTable.vue'
+import FoodFilter from '@/components/product/category/food/FoodFilter.vue'
+import ProductTable from '@/components/product/UI/ProductTable.vue'
 import type { ICategory } from '@/stores/product/category'
 import type { SaleFoodType } from '@/types/query'
-import FoodRetail from './food-retail/FoodRetail.vue'
+import FoodRetail from '../food-retail/FoodRetail.vue'
 
 const props = defineProps<{
   selectedCategory: ICategory
@@ -40,28 +40,14 @@ const filteredProducts = computed(() => {
 
 <template>
   <div v-if="saleType === 'wholesale'" class="space-y-4">
-    <CategoryFilter
-      :selected-category="selectedCategory"
-      :food-filters="foodFilters"
-      @open-add-modal="emit('open-add-modal')"
-      @open-export-modal="emit('open-export-modal')"
-      @update-food-filters="(filters) => (foodFilters = filters)"
-      @update-category-selector="emit('update-category-selector')"
-    />
+    <FoodFilter :category="selectedCategory" :filters="foodFilters" @open-add-modal="emit('open-add-modal')"
+      @open-export-modal="emit('open-export-modal')" @update-filters="(filters) => (foodFilters = filters)" />
 
-    <ProductTable
-      :filtered-products="filteredProducts"
-      :is-loading-products="isLoading"
-      :selected-category="selectedCategory"
-      @open-edit-modal="emit('open-edit-modal', $event)"
-      @open-detail-modal="emit('open-detail-modal', $event)"
-      @open-delete-modal="emit('open-delete-modal', $event)"
-    />
+    <ProductTable :filtered-products="filteredProducts" :is-loading-products="isLoading"
+      :selected-category="selectedCategory" @open-edit-modal="emit('open-edit-modal', $event)"
+      @open-detail-modal="emit('open-detail-modal', $event)" @open-delete-modal="emit('open-delete-modal', $event)" />
   </div>
 
-  <FoodRetail
-    v-else-if="saleType === 'retail'"
-    :selected-category="selectedCategory"
-    @update-category-selector="emit('update-category-selector')"
-  />
+  <FoodRetail v-else-if="saleType === 'retail'" :selected-category="selectedCategory"
+    @update-category-selector="emit('update-category-selector')" />
 </template>
