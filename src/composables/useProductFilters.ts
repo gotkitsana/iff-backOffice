@@ -1,7 +1,7 @@
 import type { IFoodSale } from '@/stores/product/food_sale'
 import type { IFoodFilters, IMicroorganismFilters, IProduct } from '@/stores/product/product'
 import type { IFishFilters } from '@/stores/fish/fish_filters'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 // src/composables/useProductFilters.ts
 export function useProductFilters() {
@@ -113,6 +113,9 @@ export function useProductFilters() {
         filtered = filtered.filter((p) => p.waitQC === false && p.sold === false)
       } else if (fishFilters.value.saleStatus === 'sold') {
         filtered = filtered.filter((p) => p.waitQC === false && p.sold === true)
+      } else {
+        // Filter by dynamic fish status ID
+        filtered = filtered.filter((p) => p.fishStatus?._id === fishFilters.value.saleStatus)
       }
     }
     if (fishFilters.value.sizeMin && fishFilters.value.sizeMax) {
