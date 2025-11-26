@@ -487,10 +487,10 @@ const { navigateWithQuery } = useProductQuery()
           </div>
 
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะขาย</label>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะ</label>
             <Select :model-value="localFishFilters.saleStatus"
               @update:model-value="updateFishFilter('saleStatus', $event)" :options="saleStatusOptions"
-              optionLabel="label" optionValue="value" placeholder="เลือกสถานะขาย" size="small" fluid />
+              optionLabel="label" optionValue="value" placeholder="เลือกสถานะ" size="small" fluid />
           </div>
 
           <div class="col-span-2">
