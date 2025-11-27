@@ -184,13 +184,17 @@ const activeCustomersCount = computed(() => {
 const incompleteDataCustomersCount = computed(() => {
   return (
     data.value?.filter((member) => {
-      // ตรวจสอบว่าขาดข้อมูลใดข้อมูลหนึ่งใน 4 อย่างนี้
-      const missingName = !member.name || member.name.trim() === ''
+      // ตรวจสอบข้อมูลพื้นฐาน: ชื่อ, ที่อยู่, จังหวัด, เบอร์โทร
+      const missingName = !member.displayName || member.displayName.trim() === ''
       const missingAddress = !member.address || member.address.trim() === ''
       const missingProvince = !member.province || member.province.trim() === ''
       const missingPhone = !member.phone || member.phone.trim() === ''
 
-      return missingName || missingAddress || missingProvince || missingPhone
+      // ตรวจสอบความสนใจเพิ่ม (interests): ต้องมี array และมีข้อมูลอย่างน้อย 1 รายการ
+      const missingInterests = !member.interests || member.interests.length === 0
+
+      // ถ้าขาดข้อมูลใดข้อมูลหนึ่งใน 6 อย่างนี้ ถือว่าข้อมูลไม่ครบ
+      return missingName || missingAddress || missingProvince || missingPhone || missingInterests
     }).length || 0
   )
 })
@@ -217,8 +221,7 @@ const filteredMembersCount = computed(() => {
               </p>
             </div>
             <div
-              class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
+              class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="pi pi-users text-white text-xl"></i>
             </div>
           </div>
@@ -236,8 +239,7 @@ const filteredMembersCount = computed(() => {
               </p>
             </div>
             <div
-              class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
+              class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="pi pi-check-circle text-white text-xl"></i>
             </div>
           </div>
@@ -255,8 +257,7 @@ const filteredMembersCount = computed(() => {
               </p>
             </div>
             <div
-              class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
+              class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="pi pi-shopping-cart text-white text-xl"></i>
             </div>
           </div>
@@ -274,8 +275,7 @@ const filteredMembersCount = computed(() => {
               </p>
             </div>
             <div
-              class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg"
-            >
+              class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="pi pi-exclamation-triangle text-white text-xl"></i>
             </div>
           </div>
@@ -291,115 +291,71 @@ const filteredMembersCount = computed(() => {
             <div class="flex items-center gap-3">
               <!-- <p class="text-gray-600">ระบบจัดการข้อมูลลูกค้า</p> -->
               <span class="text-sm text-gray-500">
-                  จำนวนลูกค้า:
-                  <span>{{ filteredMembersCount }}</span>
+                จำนวนลูกค้า:
+                <span>{{ filteredMembersCount }}</span>
               </span>
             </div>
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
-            <Button
-              label="บันทึกข้อมูลลูกค้า"
-              icon="pi pi-plus"
-              size="small"
-              @click="openAddModal"
-            />
+            <Button label="บันทึกข้อมูลลูกค้า" icon="pi pi-plus" size="small" @click="openAddModal" />
 
             <InputText v-model="search" placeholder="ค้นหาลูกค้า" size="small" />
 
-            <Select
-              v-model="selectedStatus"
-              :options="statusOptions"
-              size="small"
-              placeholder="สถานะลูกค้า"
-              optionLabel="label"
-              optionValue="value"
-            />
+            <Select v-model="selectedStatus" :options="statusOptions" size="small" placeholder="สถานะลูกค้า"
+              optionLabel="label" optionValue="value" />
           </div>
         </div>
       </template>
       <template #content>
-        <DataTable
-          :value="orderBy(filterStatus, (item) => getLast4Digits(item.code), 'asc')"
-          dataKey="_id"
-          :loading="isLoading"
-          paginator
-          :rows="50"
-          :rowsPerPageOptions="[50, 100, 150, 200]"
-          scrollable
-          scrollHeight="600px"
-        >
+        <DataTable :value="orderBy(filterStatus, (item) => getLast4Digits(item.code), 'asc')" dataKey="_id"
+          :loading="isLoading" paginator :rows="50" :rowsPerPageOptions="[50, 100, 150, 200]" scrollable
+          scrollHeight="600px">
           <Column field="code" header="รหัสลูกค้า" :pt="{ columnHeaderContent: 'min-w-[4.25rem]' }">
             <template #body="slotProps">
-              <span
-                v-tooltip.top="'คลิกเพื่อแก้ไขข้อมูล'"
-                @click="openEditModal(slotProps.data)"
-                class="lowercase text-sm cursor-pointer text-blue-600 transition-colors duration-200"
-                >
+              <span v-tooltip.top="'คลิกเพื่อแก้ไขข้อมูล'" @click="openEditModal(slotProps.data)"
+                class="lowercase text-sm cursor-pointer text-blue-600 transition-colors duration-200">
                 {{ slotProps.data.code }}
               </span>
             </template>
           </Column>
 
-          <Column
-            field="displayName"
-            header="ชื่อเล่น"
-            :pt="{ columnHeaderContent: 'min-w-[4.25rem]', bodyCell: 'text-sm' }"
-          >
+          <Column field="displayName" header="ชื่อเล่น"
+            :pt="{ columnHeaderContent: 'min-w-[4.25rem]', bodyCell: 'text-sm' }">
             <template #body="slotProps">
-              <span
-                class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-200"
-                @click="openViewModal(slotProps.data)"
-                v-tooltip.top="'คลิกเพื่อดูรายละเอียด'"
-              >
+              <span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-200"
+                @click="openViewModal(slotProps.data)" v-tooltip.top="'คลิกเพื่อดูรายละเอียด'">
                 {{ slotProps.data.displayName }}
               </span>
             </template>
           </Column>
 
-          <Column
-            field="status"
-            header="สถานะลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[8.5rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="status" header="สถานะลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[8.5rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <template v-if="slotProps.data.status">
-                <Tag
-                  :value="
-                    memberStore.memberStatusOptions.find(
-                      (option) => option.value === slotProps.data.status
-                    )?.label
-                  "
-                  :severity="memberStore.getStatusTag(slotProps.data.status)"
-                  size="small"
-                />
+                <Tag :value="memberStore.memberStatusOptions.find(
+                  (option) => option.value === slotProps.data.status
+                )?.label
+                  " :severity="memberStore.getStatusTag(slotProps.data.status)" size="small" />
               </template>
               <template v-else></template>
             </template>
           </Column>
 
-          <Column
-            field="customerLevel"
-            header="ระดับลูกค้า"
-            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="customerLevel" header="ระดับลูกค้า"
+            :pt="{ columnHeaderContent: 'min-w-[5.5rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <template v-if="slotProps.data.customerLevel">
-                <Tag
-                  :value="
-                    memberStore.customerLevelOptions.find(
-                      (option) => option.value === slotProps.data.customerLevel
-                    )?.label || 'ไม่ระบุ'
-                  "
-                  :severity="
-                    slotProps.data.customerLevel === 'vvip'
-                      ? 'danger'
-                      : slotProps.data.customerLevel === 'vip'
+                <Tag :value="memberStore.customerLevelOptions.find(
+                  (option) => option.value === slotProps.data.customerLevel
+                )?.label || 'ไม่ระบุ'
+                  " :severity="slotProps.data.customerLevel === 'vvip'
+                    ? 'danger'
+                    : slotProps.data.customerLevel === 'vip'
                       ? 'warn'
                       : 'secondary'
-                  "
-                  size="small"
-                />
+                    " size="small" />
               </template>
               <template v-else>
                 <span class="text-gray-400 text-xs">-</span>
@@ -407,37 +363,24 @@ const filteredMembersCount = computed(() => {
             </template>
           </Column>
 
-          <Column
-            field="contacts"
-            header="ช่องทางติดต่อ"
-            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center ', bodyCell: 'text-center' }"
-          >
+          <Column field="contacts" header="ช่องทางติดต่อ"
+            :pt="{ columnHeaderContent: 'min-w-[9rem] justify-center ', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <div class="flex flex-wrap gap-1 justify-center">
                 <!-- แสดง contacts array -->
                 <template v-if="slotProps.data.contacts && slotProps.data.contacts.length > 0">
-                  <div
-                    v-for="contact in slotProps.data.contacts"
-                    :key="contact.index"
-                    class="w-6 h-6 cursor-pointer duration-300 hover:scale-110"
-                    @click="copyToClipboard(contact.value)"
+                  <div v-for="contact in slotProps.data.contacts" :key="contact.index"
+                    class="w-6 h-6 cursor-pointer duration-300 hover:scale-110" @click="copyToClipboard(contact.value)"
                     v-tooltip.top="{
                       value: createContactTooltip(contact.value),
                       showDelay: 300,
                       hideDelay: 100,
                       class: 'custom-tooltip',
-                    }"
-                  >
-                    <img
-                      v-if="getContactImage(contact.type)"
-                      :src="getContactImage(contact.type)"
-                      :alt="contact.type"
-                      class="w-6 h-6 object-contain rounded p-0"
-                    />
-                    <div
-                      v-else
-                      class="w-6 h-6 bg-gray-200 flex items-center rounded justify-center text-gray-600 text-xs"
-                    >
+                    }">
+                    <img v-if="getContactImage(contact.type)" :src="getContactImage(contact.type)" :alt="contact.type"
+                      class="w-6 h-6 object-contain rounded p-0" />
+                    <div v-else
+                      class="w-6 h-6 bg-gray-200 flex items-center rounded justify-center text-gray-600 text-xs">
                       ?
                     </div>
                   </div>
@@ -451,23 +394,13 @@ const filteredMembersCount = computed(() => {
             </template>
           </Column>
 
-          <Column
-            field="name"
-            header="ชื่อ/นามสกุล"
-            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }"
-          />
+          <Column field="name" header="ชื่อ/นามสกุล"
+            :pt="{ columnHeaderContent: 'min-w-[6rem]', bodyCell: 'text-sm' }" />
 
-          <Column
-            field="address"
-            header="ที่อยู่"
-            :pt="{ columnHeaderContent: 'min-w-[13rem]', bodyCell: 'text-xs' }"
-          />
+          <Column field="address" header="ที่อยู่"
+            :pt="{ columnHeaderContent: 'min-w-[13rem]', bodyCell: 'text-xs' }" />
 
-          <Column
-            field="province"
-            header="จังหวัด"
-            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
-          >
+          <Column field="province" header="จังหวัด" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }">
             <template #body="slotProps">
               <p>
                 {{
@@ -479,11 +412,7 @@ const filteredMembersCount = computed(() => {
             </template>
           </Column>
 
-          <Column
-            field="phone"
-            header="เบอร์โทร"
-            :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }"
-          />
+          <Column field="phone" header="เบอร์โทร" :pt="{ columnHeaderContent: 'min-w-[4rem]', bodyCell: 'text-sm' }" />
 
           <!-- <Column
             field="type"
@@ -506,10 +435,7 @@ const filteredMembersCount = computed(() => {
             </template>
           </Column> -->
 
-          <Column
-            header="จัดการ"
-            :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'justify-end' }"
-          >
+          <Column header="จัดการ" :pt="{ columnTitle: 'font-semibold!', columnHeaderContent: 'justify-end' }">
             <template #body="slotProps">
               <div class="flex space-x-2 justify-end">
                 <!-- <Button
@@ -521,15 +447,8 @@ const filteredMembersCount = computed(() => {
                   severity="info"
                   v-tooltip.top="'รายละเอียด'"
                 /> -->
-                <Button
-                  icon="pi pi-pencil"
-                  size="small"
-                  text
-                  rounded
-                  @click="openEditModal(slotProps.data)"
-                  severity="warning"
-                  v-tooltip.top="'แก้ไขข้อมูล'"
-                />
+                <Button icon="pi pi-pencil" size="small" text rounded @click="openEditModal(slotProps.data)"
+                  severity="warning" v-tooltip.top="'แก้ไขข้อมูล'" />
                 <!-- <Button
                   icon="pi pi-key"
                   size="small"
@@ -540,15 +459,8 @@ const filteredMembersCount = computed(() => {
                   v-tooltip.top="'เปลี่ยนรหัสผ่าน'"
                 /> -->
 
-                <Button
-                  icon="pi pi-trash"
-                  size="small"
-                  text
-                  rounded
-                  severity="danger"
-                  @click="openDeleteModal(slotProps.data)"
-                  v-tooltip.top="'ลบข้อมูล'"
-                />
+                <Button icon="pi pi-trash" size="small" text rounded severity="danger"
+                  @click="openDeleteModal(slotProps.data)" v-tooltip.top="'ลบข้อมูล'" />
               </div>
             </template>
           </Column>
@@ -557,36 +469,19 @@ const filteredMembersCount = computed(() => {
     </Card>
 
     <!-- Add Customer Modal -->
-    <ModalAddAndEditMember
-      :showAddModal="showAddAndEditModal"
-      @onCloseAddModal="closeAddAndEditModal"
-      :data="editCustomer || null"
-      :memberData="data || []"
-    />
+    <ModalAddAndEditMember :showAddModal="showAddAndEditModal" @onCloseAddModal="closeAddAndEditModal"
+      :data="editCustomer || null" :memberData="data || []" />
 
     <!-- View Customer Modal -->
-    <ModalDetailMember
-      v-if="!!selectedCustomer"
-      :showDetailModal="showViewModal"
-      @onCloseDetailModal="closeViewModal"
-      :id="selectedCustomer"
-    />
+    <ModalDetailMember v-if="!!selectedCustomer" :showDetailModal="showViewModal" @onCloseDetailModal="closeViewModal"
+      :id="selectedCustomer" />
 
-    <ModalDeleteMember
-      v-if="!!deleteCustomer"
-      :showDeleteModal="showDeleteModal"
-      @onCloseDeleteModal="closeDeleteModal"
-      :id="deleteCustomer.id"
-      :customerName="deleteCustomer.name"
-    />
+    <ModalDeleteMember v-if="!!deleteCustomer" :showDeleteModal="showDeleteModal" @onCloseDeleteModal="closeDeleteModal"
+      :id="deleteCustomer.id" :customerName="deleteCustomer.name" />
 
-    <ModalResetPassword
-      v-if="!!resetPasswordCustomer"
-      :showResetModal="showResetPasswordModal"
-      @onCloseResetModal="closeResetPasswordModal"
-      :customerId="resetPasswordCustomer.id"
-      :customerName="resetPasswordCustomer.name"
-    />
+    <ModalResetPassword v-if="!!resetPasswordCustomer" :showResetModal="showResetPasswordModal"
+      @onCloseResetModal="closeResetPasswordModal" :customerId="resetPasswordCustomer.id"
+      :customerName="resetPasswordCustomer.name" />
   </div>
 </template>
 
@@ -613,5 +508,3 @@ const filteredMembersCount = computed(() => {
   white-space: pre-line !important;
 }
 </style>
-
-

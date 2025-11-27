@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import StatsCardItem from './StatsCardItem.vue'
+import StatsCardItem from '@/components/product/UI/StatsCardItem.vue'
 
 import type { ICategory } from '@/stores/product/category'
 import { useProductStore, type IProduct } from '@/stores/product/product'

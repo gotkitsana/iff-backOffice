@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog, Button, Panel } from 'primevue'
-import ModalUpdateFishData from './ModalUpdateFishData.vue'
+import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
   type IUpdateProductPayload,
@@ -12,8 +11,8 @@ import {
 } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import type { ICategory } from '@/stores/product/category'
-import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
-import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
+import DynamicFormField from '@/components/product/UI/DynamicFormField.vue'
+import FileUploadSection from '@/components/product/UI/FileUploadSection.vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
@@ -359,10 +358,10 @@ const handleSubmit = async () => {
       selectedCategoryId.value?.value == 'fish'
         ? productForm.value.price
         : selectedCategoryId.value?.value === 'food'
-        ? productForm.value.food?.customerPrice || 0
-        : selectedCategoryId.value?.value === 'microorganism'
-        ? productForm.value.food?.customerPrice || 0
-        : 0,
+          ? productForm.value.food?.customerPrice || 0
+          : selectedCategoryId.value?.value === 'microorganism'
+            ? productForm.value.food?.customerPrice || 0
+            : 0,
     name:
       selectedCategoryId.value?.value !== 'fish'
         ? brandData.value?.find((brand) => brand._id === productForm.value.brand)?.name || ''
@@ -439,22 +438,15 @@ const handleUpdateVideoFile = (filename: string | undefined) => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '65rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '65rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-pencil text-white text-lg"></i>
         </div>
         <div>
@@ -465,48 +457,22 @@ const handleUpdateVideoFile = (filename: string | undefined) => {
 
     <div v-if="selectedCategoryInfo" class="space-y-4">
       <!-- Dynamic Form Fields -->
-      <DynamicFormField
-        v-if="dynamicFormData"
-        :category-id="selectedCategory"
-        :fields="editableFields"
-        :form-data="dynamicFormData"
-        :is-submitting="isSubmitting"
-        :pond-options="filteredPondOptions"
-        @update-field="updateDynamicField"
-        :is-edit="true"
-      />
+      <DynamicFormField v-if="dynamicFormData" :category-id="selectedCategory" :fields="editableFields"
+        :form-data="dynamicFormData" :is-submitting="isSubmitting" :pond-options="filteredPondOptions"
+        @update-field="updateDynamicField" :is-edit="true" />
 
       <!-- File Upload Section -->
-      <FileUploadSection
-        :show-video="isFishCategory"
-        :show-certificate="isFishCategory"
-        :product-images="productForm.images"
-        :certificate-file="productForm.certificate"
-        :video-file="productForm.youtube"
-        @update-product-images="updateProductImages"
-        @update-certificate-file="updateCertificateFile"
-        @update-video-file="handleUpdateVideoFile"
-        :is-edit="true"
-      />
+      <FileUploadSection :show-video="isFishCategory" :show-certificate="isFishCategory"
+        :product-images="productForm.images" :certificate-file="productForm.certificate"
+        :video-file="productForm.youtube" @update-product-images="updateProductImages"
+        @update-certificate-file="updateCertificateFile" @update-video-file="handleUpdateVideoFile" :is-edit="true" />
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-        />
-        <Button
-          label="ยืนยัน"
-          icon="pi pi-check"
-          @click="handleSubmit"
-          severity="success"
-          size="small"
-          :loading="isUpdatingProduct"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+        <Button label="ยืนยัน" icon="pi pi-check" @click="handleSubmit" severity="success" size="small"
+          :loading="isUpdatingProduct" />
       </div>
     </template>
   </Dialog>

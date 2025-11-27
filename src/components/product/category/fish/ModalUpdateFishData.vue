@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Dialog, Button, InputNumber, Select } from 'primevue'
-import { useProductStore } from '../../../stores/product/product'
 import {
   useFishGrowthHistoryStore,
   type IFishGrowthHistory,
   type IFishGrowthHistoryPayload,
   type IUpdateFishGrowthHistoryPayload,
-} from '../../../stores/fish/fish_growth_history'
+} from '@/stores/fish/fish_growth_history'
 import dayjs from 'dayjs'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
@@ -154,81 +153,40 @@ const handleClose = () => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    header="อัปเดตข้อมูลการเติบโต"
-    :style="{ width: '30rem' }"
-    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-  >
+  <Dialog :visible="visible" @update:visible="handleClose" modal header="อัปเดตข้อมูลการเติบโต"
+    :style="{ width: '30rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1">
           <label class="font-semibold text-gray-700 text-sm">ไซต์ (ซม.)</label>
-          <InputNumber
-            v-model="formData.size"
-            :minFractionDigits="0"
-            :maxFractionDigits="2"
-            placeholder="ระบุขนาด"
-            size="small"
-          />
+          <InputNumber v-model="formData.size" :minFractionDigits="0" :maxFractionDigits="2" placeholder="ระบุขนาด"
+            size="small" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="font-semibold text-gray-700 text-sm">น้ำหนัก (กก.)</label>
-          <InputNumber
-            v-model="formData.weight"
-            :minFractionDigits="0"
-            :maxFractionDigits="2"
-            placeholder="ระบุน้ำหนัก"
-            size="small"
-          />
+          <InputNumber v-model="formData.weight" :minFractionDigits="0" :maxFractionDigits="2" placeholder="ระบุน้ำหนัก"
+            size="small" />
         </div>
       </div>
 
       <div class="flex flex-col gap-1">
         <label class="font-semibold text-gray-700 text-sm">เพศ</label>
-        <Select
-          v-model="formData.gender"
-          :options="genderOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="เลือกเพศ"
-          size="small"
-          class="w-full"
-        />
+        <Select v-model="formData.gender" :options="genderOptions" optionLabel="label" optionValue="value"
+          placeholder="เลือกเพศ" size="small" class="w-full" />
       </div>
 
       <div class="flex flex-col gap-1">
         <label class="font-semibold text-gray-700 text-sm">ราคา</label>
-        <InputNumber
-          v-model="formData.price"
-          mode="currency"
-          currency="THB"
-          locale="th-TH"
-          placeholder="ระบุราคา"
-          size="small"
-        />
+        <InputNumber v-model="formData.price" mode="currency" currency="THB" locale="th-TH" placeholder="ระบุราคา"
+          size="small" />
       </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-2 pt-4">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-        />
-        <Button
-          label="บันทึก"
-          icon="pi pi-check"
-          :loading="isAddingFishGrowthHistory || isUpdatingFishGrowthHistory"
-          @click="handleSave"
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" text severity="secondary" @click="handleClose" size="small" />
+        <Button label="บันทึก" icon="pi pi-check" :loading="isAddingFishGrowthHistory || isUpdatingFishGrowthHistory"
+          @click="handleSave" size="small" />
       </div>
     </template>
   </Dialog>

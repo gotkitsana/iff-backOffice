@@ -4,7 +4,6 @@ import { Dialog, Button, Tag, Galleria, Panel, Image } from 'primevue'
 import {
   type IProduct,
   type ICategoryOption,
-  useProductStore,
 } from '../../../stores/product/product'
 import formatCurrency from '../../../utils/formatCurrency'
 import dayjs from 'dayjs'
@@ -14,8 +13,8 @@ import { useQuery } from '@tanstack/vue-query'
 import { getProductImageUrl } from '@/utils/imageUrl'
 import html2canvas from 'html2canvas'
 import { useSupplierStore, type ISupplier } from '@/stores/product/supplier'
-import DownloadZipButton from '../DownloadZipButton.vue'
-import ModalUpdateFishData from './ModalUpdateFishData.vue'
+import DownloadZipButton from '@/components/product/UI/DownloadZipButton.vue'
+import ModalUpdateFishData from '../category/fish/ModalUpdateFishData.vue'
 import {
   useFishGrowthHistoryStore,
   type IFishGrowthHistory,
@@ -602,14 +601,14 @@ const downloadWithOverlay = async (event: Event) => {
                             <p class="text-base lg:text-lg font-[600]! ">{{ productData.sku }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">เพศ: {{ getGenderTag(productData.gender ||
                               '').label || '-'
-                            }}</p>
+                              }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">แม่พันธุ์: {{ productData.breeders || '-' }}
                             </p>
                             <p class="text-sm lg:text-base font-[500]! ">วันเกิด: {{ formatBirthDate(productData.birth
                               || '') }}</p>
                             <p class="mt-3 text-sm lg:text-base font-[500]! ">วันที่บันทึก: {{
                               dayjs(productData.uat).add(543, 'year').format('D-M-YY')
-                            }}</p>
+                              }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">ไซต์: {{ productData.size || '-' }}</p>
                             <p class="text-sm lg:text-base font-[500]! ">น้ำหนัก: {{ productData.weight || '-' }}</p>
                           </div>

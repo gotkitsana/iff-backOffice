@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, h, computed, watch } from 'vue'
 import { DataTable, Column, Tag, Button, Dialog, Galleria } from 'primevue'
-import type { IProduct, IProductImage, IUpdateProductPayload } from '../../stores/product/product'
-import formatCurrency from '../../utils/formatCurrency'
+import type { IProduct, IProductImage, IUpdateProductPayload } from '../../../stores/product/product'
+import formatCurrency from '../../../utils/formatCurrency'
 import type { ICategory } from '@/stores/product/category'
 import dayjs from 'dayjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
@@ -271,34 +271,34 @@ const foodColumns = ref([
         [
           slotProps.data.images && slotProps.data.images.length > 0
             ? h('div', { class: 'relative' }, [
-                h('img', {
-                  src: getImageUrl(slotProps.data.images[0]),
-                  alt: 'product image',
-                  class: [
-                    'w-auto h-10 object-contain rounded cursor-pointer',
-                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
-                    'hover:scale-110 transform',
-                  ].join(' '),
-                  onClick: () => emit('open-detail-modal', slotProps.data),
-                  loading: 'lazy',
-                  fetchpriority: 'low',
-                  crossorigin: 'anonymous',
-                }),
-                // Badge แสดงจำนวนรูป
-                slotProps.data.images.length > 1
-                  ? h(
-                      'span',
-                      {
-                        class: [
-                          'absolute -top-1 -right-1 bg-blue-600 text-white',
-                          'text-[10px] font-semibold rounded-full',
-                          'w-4 h-4 flex items-center justify-center',
-                        ].join(' '),
-                      },
-                      slotProps.data.images.length
-                    )
-                  : null,
-              ])
+              h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'product image',
+                class: [
+                  'w-auto h-10 object-contain rounded cursor-pointer',
+                  'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                  'hover:scale-110 transform',
+                ].join(' '),
+                onClick: () => emit('open-detail-modal', slotProps.data),
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
+              }),
+              // Badge แสดงจำนวนรูป
+              slotProps.data.images.length > 1
+                ? h(
+                  'span',
+                  {
+                    class: [
+                      'absolute -top-1 -right-1 bg-blue-600 text-white',
+                      'text-[10px] font-semibold rounded-full',
+                      'w-4 h-4 flex items-center justify-center',
+                    ].join(' '),
+                  },
+                  slotProps.data.images.length
+                )
+                : null,
+            ])
             : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
         ]
       ),
@@ -341,13 +341,13 @@ const foodColumns = ref([
         [
           slotProps.data.brand.image
             ? h('img', {
-                src: getImageBrand(slotProps.data.brand.image),
-                alt: 'product image',
-                class: 'w-auto h-8 object-contain rounded',
-                loading: 'lazy',
-                fetchpriority: 'low',
-                crossorigin: 'anonymous',
-              })
+              src: getImageBrand(slotProps.data.brand.image),
+              alt: 'product image',
+              class: 'w-auto h-8 object-contain rounded',
+              loading: 'lazy',
+              fetchpriority: 'low',
+              crossorigin: 'anonymous',
+            })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
         ]
@@ -405,10 +405,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.produceDate
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
+        )
         : h('span', '-'),
   },
   {
@@ -418,10 +418,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.expireDate
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
+        )
         : h('span', '-'),
   },
   {
@@ -432,10 +432,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.marketPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.marketPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.marketPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -446,10 +446,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.costPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.costPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.costPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -460,10 +460,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.customerPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.customerPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.customerPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -474,10 +474,10 @@ const foodColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.dealerPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.dealerPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.dealerPrice)
+        )
         : h('span', '-'),
   },
 ])
@@ -497,34 +497,34 @@ const fishColumns = ref([
         [
           slotProps.data.images && slotProps.data.images.length > 0
             ? h('div', { class: 'relative' }, [
-                h('img', {
-                  src: getImageUrl(slotProps.data.images[0]),
-                  alt: 'fish image',
-                  class: [
-                    'w-auto h-10 object-contain rounded cursor-pointer',
-                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
-                    'hover:scale-110 transform',
-                  ].join(' '),
-                  onClick: () => emit('open-detail-modal', slotProps.data),
-                  loading: 'lazy',
-                  fetchpriority: 'low',
-                  crossorigin: 'anonymous',
-                }),
-                // Badge แสดงจำนวนรูป
-                slotProps.data.images.length > 1
-                  ? h(
-                      'span',
-                      {
-                        class: [
-                          'absolute -top-1 -right-1 bg-blue-600 text-white',
-                          'text-[10px] font-semibold rounded-full',
-                          'w-4 h-4 flex items-center justify-center',
-                        ].join(' '),
-                      },
-                      slotProps.data.images.length
-                    )
-                  : null,
-              ])
+              h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'fish image',
+                class: [
+                  'w-auto h-10 object-contain rounded cursor-pointer',
+                  'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                  'hover:scale-110 transform',
+                ].join(' '),
+                onClick: () => emit('open-detail-modal', slotProps.data),
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
+              }),
+              // Badge แสดงจำนวนรูป
+              slotProps.data.images.length > 1
+                ? h(
+                  'span',
+                  {
+                    class: [
+                      'absolute -top-1 -right-1 bg-blue-600 text-white',
+                      'text-[10px] font-semibold rounded-full',
+                      'w-4 h-4 flex items-center justify-center',
+                    ].join(' '),
+                  },
+                  slotProps.data.images.length
+                )
+                : null,
+            ])
             : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
         ]
       ),
@@ -543,18 +543,18 @@ const fishColumns = ref([
         [
           slotProps.data?.certificate
             ? h('img', {
-                src: getCertificateUrl(slotProps.data?.certificate),
-                alt: 'certificate image',
-                class: [
-                  'w-auto h-10 object-contain rounded cursor-pointer',
-                  'hover:ring hover:ring-purple-500/75 duration-150 transition-all',
-                  'hover:scale-110 transform',
-                ].join(' '),
-                onClick: () => emit('open-detail-modal', slotProps.data),
-                loading: 'lazy',
-                fetchpriority: 'low',
-                crossorigin: 'anonymous',
-              })
+              src: getCertificateUrl(slotProps.data?.certificate),
+              alt: 'certificate image',
+              class: [
+                'w-auto h-10 object-contain rounded cursor-pointer',
+                'hover:ring hover:ring-purple-500/75 duration-150 transition-all',
+                'hover:scale-110 transform',
+              ].join(' '),
+              onClick: () => emit('open-detail-modal', slotProps.data),
+              loading: 'lazy',
+              fetchpriority: 'low',
+              crossorigin: 'anonymous',
+            })
             : h('i', { class: 'pi pi-file text-gray-500 !text-xl' }),
         ]
       ),
@@ -578,12 +578,12 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps?.data?.fishpond
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            greenhouseData.value?.find(
-              (greenhouse) => greenhouse._id === slotProps?.data?.fishpond?.greenhouse
-            )?.name
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          greenhouseData.value?.find(
+            (greenhouse) => greenhouse._id === slotProps?.data?.fishpond?.greenhouse
+          )?.name
+        )
         : h('span', '-'),
   },
   {
@@ -612,10 +612,10 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps.data.price
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data.price)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data.price)
+        )
         : h('span', '-'),
   },
   {
@@ -719,10 +719,10 @@ const fishColumns = ref([
     render: (slotProps: any) =>
       slotProps.data.birth
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data.birth).format('DD/MM/YYYY')
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          dayjs(slotProps.data.birth).format('DD/MM/YYYY')
+        )
         : h('span', '-'),
   },
 
@@ -773,34 +773,34 @@ const microorganismColumns = ref([
         [
           slotProps.data.images && slotProps.data.images.length > 0
             ? h('div', { class: 'relative' }, [
-                h('img', {
-                  src: getImageUrl(slotProps.data.images[0]),
-                  alt: 'product image',
-                  class: [
-                    'w-auto h-10 object-contain rounded cursor-pointer',
-                    'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
-                    'hover:scale-110 transform',
-                  ].join(' '),
-                  onClick: () => emit('open-detail-modal', slotProps.data),
-                  loading: 'lazy',
-                  fetchpriority: 'low',
-                  crossorigin: 'anonymous',
-                }),
-                // Badge แสดงจำนวนรูป
-                slotProps.data.images.length > 1
-                  ? h(
-                      'span',
-                      {
-                        class: [
-                          'absolute -top-1 -right-1 bg-blue-600 text-white',
-                          'text-[10px] font-semibold rounded-full',
-                          'w-4 h-4 flex items-center justify-center',
-                        ].join(' '),
-                      },
-                      slotProps.data.images.length
-                    )
-                  : null,
-              ])
+              h('img', {
+                src: getImageUrl(slotProps.data.images[0]),
+                alt: 'product image',
+                class: [
+                  'w-auto h-10 object-contain rounded cursor-pointer',
+                  'hover:ring hover:ring-blue-500/75 duration-150 transition-all',
+                  'hover:scale-110 transform',
+                ].join(' '),
+                onClick: () => emit('open-detail-modal', slotProps.data),
+                loading: 'lazy',
+                fetchpriority: 'low',
+                crossorigin: 'anonymous',
+              }),
+              // Badge แสดงจำนวนรูป
+              slotProps.data.images.length > 1
+                ? h(
+                  'span',
+                  {
+                    class: [
+                      'absolute -top-1 -right-1 bg-blue-600 text-white',
+                      'text-[10px] font-semibold rounded-full',
+                      'w-4 h-4 flex items-center justify-center',
+                    ].join(' '),
+                  },
+                  slotProps.data.images.length
+                )
+                : null,
+            ])
             : h('i', { class: 'pi pi-image text-gray-500 !text-xl' }),
         ]
       ),
@@ -843,13 +843,13 @@ const microorganismColumns = ref([
         [
           slotProps.data?.brand?.image
             ? h('img', {
-                src: getImageBrand(slotProps.data.brand.image),
-                alt: 'product image',
-                class: 'w-auto h-8 object-contain rounded',
-                loading: 'lazy',
-                fetchpriority: 'low',
-                crossorigin: 'anonymous',
-              })
+              src: getImageBrand(slotProps.data.brand.image),
+              alt: 'product image',
+              class: 'w-auto h-8 object-contain rounded',
+              loading: 'lazy',
+              fetchpriority: 'low',
+              crossorigin: 'anonymous',
+            })
             : h('i', { class: 'pi pi-image text-gray-500 text-lg' }),
           h('span', { class: 'text-sm text-gray-900 font-medium' }, slotProps.data?.brand?.name),
         ]
@@ -872,10 +872,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.produceDate
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          dayjs(slotProps.data?.food?.produceDate).format('DD/MM/YYYY')
+        )
         : h('span', '-'),
   },
   {
@@ -885,10 +885,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.expireDate
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900' },
-            dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
-          )
+          'span',
+          { class: 'text-sm text-gray-900' },
+          dayjs(slotProps.data?.food?.expireDate).format('DD/MM/YYYY')
+        )
         : h('span', '-'),
   },
   {
@@ -899,10 +899,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.marketPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.marketPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.marketPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -913,10 +913,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.costPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.costPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.costPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -927,10 +927,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.customerPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.customerPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.customerPrice)
+        )
         : h('span', '-'),
   },
   {
@@ -941,10 +941,10 @@ const microorganismColumns = ref([
     render: (slotProps: any) =>
       slotProps.data?.food?.dealerPrice
         ? h(
-            'span',
-            { class: 'text-sm text-gray-900 font-medium' },
-            formatCurrency(slotProps.data?.food?.dealerPrice)
-          )
+          'span',
+          { class: 'text-sm text-gray-900 font-medium' },
+          formatCurrency(slotProps.data?.food?.dealerPrice)
+        )
         : h('span', '-'),
   },
 ])
@@ -966,10 +966,8 @@ const displayColumns = computed(() => {
     <div class="py-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div
-            v-if="props.selectedCategory"
-            :class="`w-10 h-10 rounded-lg flex items-center justify-center ${props.selectedCategory?.bgColor}`"
-          >
+          <div v-if="props.selectedCategory"
+            :class="`w-10 h-10 rounded-lg flex items-center justify-center ${props.selectedCategory?.bgColor}`">
             <i :class="`${props.selectedCategory?.icon} ${props.selectedCategory?.iconColor}`"></i>
           </div>
           <div>
@@ -982,16 +980,8 @@ const displayColumns = computed(() => {
       </div>
     </div>
 
-    <DataTable
-      :value="filteredProducts"
-      :loading="isLoadingProducts"
-      :paginator="true"
-      :rows="50"
-      :rowsPerPageOptions="[20, 50, 100]"
-      scrollHeight="600px"
-      scrollable
-      v-model:selection="selectedRows"
-      dataKey="_id"
+    <DataTable :value="filteredProducts" :loading="isLoadingProducts" :paginator="true" :rows="50"
+      :rowsPerPageOptions="[20, 50, 100]" scrollHeight="600px" scrollable v-model:selection="selectedRows" dataKey="_id"
       :pt="{
         table: 'text-sm',
         header: 'py-2',
@@ -999,28 +989,15 @@ const displayColumns = computed(() => {
         row: 'py-1',
         cell: 'py-1 px-2',
         columnHeader: 'py-2 px-2',
-      }"
-      @update:selection="handleSelectionChange"
-    >
-      <Column
-        v-if="props.selectable"
-        selectionMode="multiple"
-        headerClass="w-12 text-center"
-        bodyClass="text-center"
-        style="width: 3rem"
-      />
+      }" @update:selection="handleSelectionChange">
+      <Column v-if="props.selectable" selectionMode="multiple" headerClass="w-12 text-center" bodyClass="text-center"
+        style="width: 3rem" />
 
-      <Column
-        v-for="(item, index) in displayColumns"
-        :key="index"
-        :field="item.field"
-        :header="item.header"
-        :frozen="index === 0"
-        :pt="{
+      <Column v-for="(item, index) in displayColumns" :key="index" :field="item.field" :header="item.header"
+        :frozen="index === 0" :pt="{
           columnHeaderContent: { class: ['min-w-[4.5rem]', item.headCell] },
           bodyCell: { class: [item?.bodyCell || ''] },
-        }"
-      >
+        }">
         <template #body="slotProps">
           <component :is="item.render?.(slotProps)" v-if="item.render" />
           <span v-else>
@@ -1029,35 +1006,15 @@ const displayColumns = computed(() => {
         </template>
       </Column>
 
-      <Column
-        field="action"
-        header="จัดการ"
-        headCell="!min-w-[6rem]"
-        :pt="{ columnHeaderContent: 'justify-end' }"
-      >
+      <Column field="action" header="จัดการ" headCell="!min-w-[6rem]" :pt="{ columnHeaderContent: 'justify-end' }">
         <template #body="{ data }">
           <div class="flex items-center gap-2 justify-end">
-            <Button
-              v-tooltip.top="'ดูรายละเอียด'"
-              icon="pi pi-eye"
-              severity="info"
-              size="small"
-              @click="$emit('open-detail-modal', data)"
-            />
-            <Button
-              v-tooltip.top="'แก้ไขข้อมูล'"
-              icon="pi pi-pencil"
-              severity="success"
-              size="small"
-              @click="$emit('open-edit-modal', data)"
-            />
-            <Button
-              v-tooltip.top="'ลบข้อมูล'"
-              icon="pi pi-trash"
-              severity="danger"
-              size="small"
-              @click="$emit('open-delete-modal', data)"
-            />
+            <Button v-tooltip.top="'ดูรายละเอียด'" icon="pi pi-eye" severity="info" size="small"
+              @click="$emit('open-detail-modal', data)" />
+            <Button v-tooltip.top="'แก้ไขข้อมูล'" icon="pi pi-pencil" severity="success" size="small"
+              @click="$emit('open-edit-modal', data)" />
+            <Button v-tooltip.top="'ลบข้อมูล'" icon="pi pi-trash" severity="danger" size="small"
+              @click="$emit('open-delete-modal', data)" />
           </div>
         </template>
       </Column>
@@ -1065,20 +1022,14 @@ const displayColumns = computed(() => {
   </div>
 
   <!-- QC Status Confirmation Modal -->
-  <Dialog
-    v-model:visible="showQcConfirmModal"
-    modal
-    :style="{ width: '30rem' }"
-    :pt="{
-      header: 'p-4',
-      footer: 'p-4',
-    }"
-  >
+  <Dialog v-model:visible="showQcConfirmModal" modal :style="{ width: '30rem' }" :pt="{
+    header: 'p-4',
+    footer: 'p-4',
+  }">
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-white text-lg"></i>
         </div>
         <div>
@@ -1102,21 +1053,9 @@ const displayColumns = computed(() => {
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeQcModal"
-          size="small"
-        />
-        <Button
-          label="ยืนยัน"
-          icon="pi pi-check"
-          @click="confirmQcStatusChange"
-          severity="success"
-          size="small"
-          :loading="isUpdatingProduct"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeQcModal" size="small" />
+        <Button label="ยืนยัน" icon="pi pi-check" @click="confirmQcStatusChange" severity="success" size="small"
+          :loading="isUpdatingProduct" />
       </div>
     </template>
   </Dialog>
@@ -1248,6 +1187,3 @@ const displayColumns = computed(() => {
     </template>
   </Dialog> -->
 </template>
-
-
-

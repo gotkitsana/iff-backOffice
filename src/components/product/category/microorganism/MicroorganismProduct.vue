@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import { useProductFilters } from '@/composables/useProductFilters'
-import CategoryFilter from '@/components/product/CategoryFilter.vue'
-import ProductTable from '@/components/product/ProductTable.vue'
+import MicroorganismFilter from '@/components/product/category/microorganism/MicroorganismFilter.vue'
+import ProductTable from '@/components/product/UI/ProductTable.vue'
 import type { ICategory } from '@/stores/product/category'
 
 const props = defineProps<{
@@ -39,24 +39,12 @@ const filteredProducts = computed(() => {
 
 <template>
   <div class="space-y-4">
-    <CategoryFilter
-      :selected-category="selectedCategory"
-      :products-category="filteredProducts"
-      :microorganism-filters="microorganismFilters"
-      
-      @open-add-modal="emit('open-add-modal')"
-      @open-export-modal="emit('open-export-modal')"
-      @update-microorganism-filters="(filters) => (microorganismFilters = filters)"
-      @update-category-selector="emit('update-category-selector')"
-    />
+    <MicroorganismFilter :category="selectedCategory" :filters="microorganismFilters"
+      @open-add-modal="emit('open-add-modal')" @open-export-modal="emit('open-export-modal')"
+      @update-filters="(filters) => (microorganismFilters = filters)" />
 
-    <ProductTable
-      :filtered-products="filteredProducts"
-      :is-loading-products="isLoading"
-      :selected-category="selectedCategory"
-      @open-edit-modal="emit('open-edit-modal', $event)"
-      @open-detail-modal="emit('open-detail-modal', $event)"
-      @open-delete-modal="emit('open-delete-modal', $event)"
-    />
+    <ProductTable :filtered-products="filteredProducts" :is-loading-products="isLoading"
+      :selected-category="selectedCategory" @open-edit-modal="emit('open-edit-modal', $event)"
+      @open-detail-modal="emit('open-detail-modal', $event)" @open-delete-modal="emit('open-delete-modal', $event)" />
   </div>
 </template>

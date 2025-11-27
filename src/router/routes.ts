@@ -18,14 +18,34 @@ import Production from '@/views/Production/ProductionView.vue'
 import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
 import Product from '@/views/Product/ProductView.vue'
-import ProductOptionSetting from '@/views/Product/ProductOptionSetting.vue'
-import GreenhouseMapView from '@/views/Product/GreenhouseMapView.vue'
+import ProductOptionSetting from '@/views/Product/Setting/ProductOptionSetting.vue'
+import GreenhouseMapView from '@/views/Product/Fish/GreenhouseMapView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
 import Sales from '@/views/Sales/SalesView.vue'
 import Finance from '@/views/finance/FinanceView.vue'
 import ProductionElectricView from '@/views/Production/ProductionElectricView.vue'
 
-import FishProductView from '@/views/Product/Category/FishProductView.vue'
+import FishProductView from '@/views/Product/Fish/FishProductView.vue'
+import FoodProductView from '@/views/Product/Food/FoodProductView.vue'
+import MicroorganismView from '@/views/Product/Microorganism/MicroorganismView.vue'
+
+// Personnel views
+import CompanyAssets from '@/views/Personnel/CompanyAssetsView.vue'
+import AttendanceLeave from '@/views/Personnel/AttendanceLeaveView.vue'
+import Payroll from '@/views/Personnel/PayrollView.vue'
+import EmployeeEvaluation from '@/views/Personnel/EmployeeEvaluationView.vue'
+import Welfare from '@/views/Personnel/WelfareView.vue'
+import HRDocuments from '@/views/Personnel/HRDocumentsView.vue'
+import TrainingDevelopment from '@/views/Personnel/TrainingDevelopmentView.vue'
+
+// Finance views
+import ProfitLoss from '@/views/finance/ProfitLossView.vue'
+import BalanceSheet from '@/views/finance/BalanceSheetView.vue'
+import CashFlow from '@/views/finance/CashFlowView.vue'
+import CostAnalysis from '@/views/finance/CostAnalysisView.vue'
+import InvestmentPlanning from '@/views/finance/InvestmentPlanningView.vue'
+import RiskAssessment from '@/views/finance/RiskAssessmentView.vue'
+import BusinessDecision from '@/views/finance/BusinessDecisionView.vue'
 
 export default [
   {
@@ -116,6 +136,34 @@ export default [
         },
       },
       {
+        path: '/storage/food',
+        name: 'storage-food',
+        component: FoodProductView,
+        meta: {
+          title: 'คลังอาหาร',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'คลังสินค้า', path: '/storage' },
+            { label: 'คลังอาหาร' },
+          ],
+        },
+      },
+      {
+        path: '/storage/microorganism',
+        name: 'storage-microorganism',
+        component: MicroorganismView,
+        meta: {
+          title: 'คลังจุลินทรีย์',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'คลังสินค้า', path: '/storage' },
+            { label: 'คลังจุลินทรีย์' },
+          ],
+        },
+      },
+      {
         path: '/accounting',
         name: 'accounting',
         component: Accounting,
@@ -176,13 +224,73 @@ export default [
         },
       },
       {
-        path: '/finance',
-        name: 'finance',
-        component: Finance,
+        path: '/finance/profit-loss',
+        name: 'profit-loss',
+        component: ProfitLoss,
         meta: {
-          title: 'การเงิน',
+          title: 'งบกำไรขาดทุน',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'งบกำไรขาดทุน' }],
+        },
+      },
+      {
+        path: '/finance/balance-sheet',
+        name: 'balance-sheet',
+        component: BalanceSheet,
+        meta: {
+          title: 'งบดุล',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'งบดุล' }],
+        },
+      },
+      {
+        path: '/finance/cash-flow',
+        name: 'cash-flow',
+        component: CashFlow,
+        meta: {
+          title: 'กระแสเงินสด',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'กระแสเงินสด' }],
+        },
+      },
+      {
+        path: '/finance/cost-analysis',
+        name: 'cost-analysis',
+        component: CostAnalysis,
+        meta: {
+          title: 'การวิเคราะห์ต้นทุน',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การวิเคราะห์ต้นทุน' }],
+        },
+      },
+      {
+        path: '/finance/investment-planning',
+        name: 'investment-planning',
+        component: InvestmentPlanning,
+        meta: {
+          title: 'การวางแผนลงทุน',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การวางแผนลงทุน' }],
+        },
+      },
+      {
+        path: '/finance/risk-assessment',
+        name: 'risk-assessment',
+        component: RiskAssessment,
+        meta: {
+          title: 'การประเมินความเสี่ยง',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การประเมินความเสี่ยง' }],
+        },
+      },
+      {
+        path: '/finance/business-decision',
+        name: 'business-decision',
+        component: BusinessDecision,
+        meta: {
+          title: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ' }],
         },
       },
       {
@@ -190,9 +298,79 @@ export default [
         name: 'employee',
         component: Employee,
         meta: {
-          title: 'บุคลากร',
+          title: 'ข้อมูลพนักงาน',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'ข้อมูลพนักงาน' }],
+        },
+      },
+      {
+        path: '/personnel/company-assets',
+        name: 'company-assets',
+        component: CompanyAssets,
+        meta: {
+          title: 'ทรัพย์สินบริษัท',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'ทรัพย์สินบริษัท' }],
+        },
+      },
+      {
+        path: '/personnel/attendance-leave',
+        name: 'attendance-leave',
+        component: AttendanceLeave,
+        meta: {
+          title: 'ขาด-ลา-มาสาย',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'ขาด-ลา-มาสาย' }],
+        },
+      },
+      {
+        path: '/personnel/payroll',
+        name: 'payroll',
+        component: Payroll,
+        meta: {
+          title: 'เงินเดือน Payroll',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'เงินเดือน Payroll' }],
+        },
+      },
+      {
+        path: '/personnel/employee-evaluation',
+        name: 'employee-evaluation',
+        component: EmployeeEvaluation,
+        meta: {
+          title: 'การประเมินพนักงาน',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'การประเมินพนักงาน' }],
+        },
+      },
+      {
+        path: '/personnel/welfare',
+        name: 'welfare',
+        component: Welfare,
+        meta: {
+          title: 'สวัสดิการ',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'สวัสดิการ' }],
+        },
+      },
+      {
+        path: '/personnel/hr-documents',
+        name: 'hr-documents',
+        component: HRDocuments,
+        meta: {
+          title: 'เอกสาร HR',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'เอกสาร HR' }],
+        },
+      },
+      {
+        path: '/personnel/training-development',
+        name: 'training-development',
+        component: TrainingDevelopment,
+        meta: {
+          title: 'อบรม-พัฒนาบุคลากร (เสริม)',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'อบรม-พัฒนาบุคลากร (เสริม)' }],
         },
       },
 

@@ -3,9 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 
-import CategoryFilter from '@/components/product/CategoryFilter.vue'
-import FishProductTable from '@/components/product/fish/FishProductTable.vue'
-import FishStatsCards from '@/components/product/ProductStatsCards/FishStatsCards.vue'
+import FishFilter from '@/components/product/category/fish/FishFilter.vue'
+import FishProductTable from '@/components/product/category/fish/FishProductTable.vue'
+import FishStatsCards from '@/components/product/category/fish/FishStatsCards.vue'
 
 import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
 import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
@@ -128,10 +128,6 @@ const handleUpdateFishFilters = (filters: IFishFilters) => {
   fishFilters.value = filters
 }
 
-const handleBackToStorage = () => {
-  router.push({ path: '/storage', query: route.query })
-}
-
 const handleSelectionUpdate = (rows: IProduct[]) => {
   selectedRows.value = rows
 }
@@ -186,61 +182,27 @@ watch(
   <div class="space-y-4">
     <FishStatsCards :selected-category="selectedCategory" />
 
-    <CategoryFilter
-      v-if="selectedCategory"
-      :selected-category="selectedCategory"
-      :products-category="filteredProducts"
-      :fish-filters="fishFilters"
-      @open-add-modal="openAddModal"
-      @open-export-modal="openExportModal"
-      @update-fish-filters="handleUpdateFishFilters"
-      @update-category-selector="handleBackToStorage"
-    />
+    <FishFilter v-if="selectedCategory" :category="selectedCategory" :filters="fishFilters"
+      @open-add-modal="openAddModal" @open-export-modal="openExportModal" @update-filters="handleUpdateFishFilters" />
 
-    <FishProductTable
-      v-if="selectedCategory"
-      :filtered-products="filteredProducts"
-      :is-loading-products="isLoading"
-      :selected-category="selectedCategory"
-      selectable
-      @open-edit-modal="openEditModal"
-      @open-detail-modal="openDetailModal"
-      @open-delete-modal="openDeleteModal"
-      @update-selection="handleSelectionUpdate"
-    />
+    <FishProductTable v-if="selectedCategory" :filtered-products="filteredProducts" :is-loading-products="isLoading"
+      :selected-category="selectedCategory" selectable @open-edit-modal="openEditModal"
+      @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal"
+      @update-selection="handleSelectionUpdate" />
   </div>
 
-  <ModalAddProduct
-    v-if="selectedCategory"
-    v-model:visible="showAddModal"
-    :categoryOptionsUI="categoryOptionsUI"
-    :selectedCategory="selectedCategory"
-  />
+  <ModalAddProduct v-if="selectedCategory" v-model:visible="showAddModal" :categoryOptionsUI="categoryOptionsUI"
+    :selectedCategory="selectedCategory" />
 
   <ModalExportProduct v-model:visible="showExportModal" />
 
-  <ModalEditProduct
-    v-if="selectedCategory"
-    v-model:visible="showEditModal"
-    :product-data="selectedProduct"
-    :categoryOptionsUI="categoryOptionsUI"
-    :selected-category="selectedCategory"
-    @close-edit-modal="closeEditModal"
-  />
+  <ModalEditProduct v-if="selectedCategory" v-model:visible="showEditModal" :product-data="selectedProduct"
+    :categoryOptionsUI="categoryOptionsUI" :selected-category="selectedCategory" @close-edit-modal="closeEditModal" />
 
-  <ModalProductDetail
-    v-if="selectedProduct && selectedCategory"
-    v-model:visible="showDetailModal"
-    :product-data="selectedProduct"
-    :selected-category="selectedCategory"
-    :categoryOptionsUI="categoryOptionsUI"
-    @close-detail-modal="closeDetailModal"
-  />
+  <ModalProductDetail v-if="selectedProduct && selectedCategory" v-model:visible="showDetailModal"
+    :product-data="selectedProduct" :selected-category="selectedCategory" :categoryOptionsUI="categoryOptionsUI"
+    @close-detail-modal="closeDetailModal" />
 
-  <ModalDeleteProduct
-    v-if="selectedProduct"
-    v-model:visible="showDeleteModal"
-    :product-data="selectedProduct"
-    @close-delete-modal="closeDeleteModal"
-  />
+  <ModalDeleteProduct v-if="selectedProduct" v-model:visible="showDeleteModal" :product-data="selectedProduct"
+    @close-delete-modal="closeDeleteModal" />
 </template>

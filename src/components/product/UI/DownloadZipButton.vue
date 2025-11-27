@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Button } from 'primevue'
-import type { IProduct } from '../../stores/product/product'
+import type { IProduct } from '@/stores/product/product'
 import JSZip from 'jszip'
 
 // Props

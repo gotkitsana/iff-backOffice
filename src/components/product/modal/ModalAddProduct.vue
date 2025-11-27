@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Dialog } from 'primevue'
+import { Dialog, Button } from 'primevue'
 import {
   useProductStore,
   type ICategoryOption,
@@ -13,10 +13,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { type ICategory } from '@/stores/product/category'
 
 // Import components
-import DynamicFormField from '@/components/product/add_product/DynamicFormField.vue'
-import FileUploadSection from '@/components/product/add_product/FileUploadSection.vue'
-import ModalHeader from '@/components/product/add_product/ModalHeader.vue'
-import ModalFooter from '@/components/product/add_product/ModalFooter.vue'
+import DynamicFormField from '@/components/product/UI/DynamicFormField.vue'
+import FileUploadSection from '@/components/product/UI/FileUploadSection.vue'
+
 import dayjs from 'dayjs'
 import { useSpeciesStore, type ISpecies } from '@/stores/fish/species'
 import { usePondStore } from '@/stores/fish/pond'
@@ -305,10 +304,10 @@ const handleSubmit = async () => {
       selectedCategory.value.value == 'fish'
         ? productForm.value.price
         : selectedCategory.value.value == 'food'
-        ? productForm.value.food.customerPrice
-        : selectedCategory.value.value == 'microorganism'
-        ? productForm.value.food.customerPrice
-        : 0,
+          ? productForm.value.food.customerPrice
+          : selectedCategory.value.value == 'microorganism'
+            ? productForm.value.food.customerPrice
+            : 0,
   }
 
   createProduct(payload)
@@ -465,52 +464,46 @@ const validatePricePercent = (): boolean => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '70rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '70rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
-      <ModalHeader :selected-category="selectedCategory" />
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-plus text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold! text-gray-800">เพิ่มสินค้า {{ selectedCategory?.name }}</h3>
+          <p class="text-sm text-gray-600">
+            กรอกข้อมูลสินค้า
+          </p>
+        </div>
+      </div>
     </template>
 
     <div class="space-y-4">
       <!-- Step 2: Dynamic Form -->
       <div v-if="selectedCategoryInfo" class="space-y-4">
         <!-- Dynamic Form Fields -->
-        <DynamicFormField
-          v-if="dynamicFormData"
-          :fields="selectedCategoryInfo.fields"
-          :form-data="dynamicFormData"
-          :is-submitting="isSubmitting"
-          :pond-options="filteredPondOptions"
-          @update-field="updateDynamicField"
-          :category-id="selectedCategory"
-          :is-edit="false"
-        />
+        <DynamicFormField v-if="dynamicFormData" :fields="selectedCategoryInfo.fields" :form-data="dynamicFormData"
+          :is-submitting="isSubmitting" :pond-options="filteredPondOptions" @update-field="updateDynamicField"
+          :category-id="selectedCategory" :is-edit="false" />
 
         <!-- File Upload Section -->
-        <FileUploadSection
-          :show-certificate="isFishCategory"
-          :show-video="isFishCategory"
-          :product-images="productForm.images || []"
-          :certificate-file="productForm.certificate"
-          :video-file="productForm.youtube"
-          @update-product-images="updateProductImages"
-          @update-certificate-file="updateCertificateFile"
-          @update-video-file="handleUpdateVideoFile"
-        />
+        <FileUploadSection :show-certificate="isFishCategory" :show-video="isFishCategory"
+          :product-images="productForm.images || []" :certificate-file="productForm.certificate"
+          :video-file="productForm.youtube" @update-product-images="updateProductImages"
+          @update-certificate-file="updateCertificateFile" @update-video-file="handleUpdateVideoFile" />
       </div>
     </div>
 
     <template #footer>
-      <ModalFooter :is-submitting="isCreatingProduct" @close="handleClose" @submit="handleSubmit" />
+      <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+      <Button label="เพิ่มสินค้า" icon="pi pi-check" @click="handleSubmit" severity="success" size="small"
+        :loading="isCreatingProduct" />
     </template>
   </Dialog>
 </template>
