@@ -28,6 +28,11 @@ export const useProductStore = defineStore('product', () => {
     return data
   }
 
+  async function onUpdatePond(payload: FishSwitchPond) {
+    const { data } = await api.put(`/product`, payload)
+    return data
+  }
+
   async function onDeleteProduct(id: string) {
     const { data } = await api.delete(`/product?id=${id}`)
     return data
@@ -68,6 +73,8 @@ export const useProductStore = defineStore('product', () => {
     seedTypeOptions,
     genderOptions,
     ageOptions,
+
+    onUpdatePond,
   }
 })
 
@@ -265,6 +272,11 @@ export interface IUpdateProductPayload
   brand?: string
   fishStatus?: string | null
   waitQC?: boolean
+}
+
+export interface FishSwitchPond {
+  _id: string
+  fishpond: string
 }
 
 export type IType = 0 | 1 // 0 = ปลา 1 = สินค้าอื่นๆ

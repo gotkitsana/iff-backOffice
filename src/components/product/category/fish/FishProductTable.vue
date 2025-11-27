@@ -11,13 +11,13 @@ import { getProductImageUrl } from '@/utils/imageUrl'
 import { useProductStore } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import ModalPrintFish from './ModalPrintFish.vue'
+import ModalMovePond from './ModalMovePond.vue'
 
 // Props
 const props = defineProps<{
   filteredProducts: IProduct[]
   isLoadingProducts: boolean
   selectedCategory: ICategory | null
-  selectable?: boolean
 }>()
 
 // Emits
@@ -60,6 +60,7 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
 
 const selectedRows = ref<IProduct[]>([])
 const showPrintModal = ref(false)
+const showMovePondModal = ref(false)
 
 const handleSelectionChange = (value: IProduct[]) => {
   selectedRows.value = value
@@ -503,8 +504,12 @@ const displayColumns = computed(() => {
 
         <!-- Actions -->
         <div class="flex items-center gap-2">
+          <Button v-if="selectedRows.length > 0" label="ย้ายบ่อ" icon="pi pi-arrow-right-arrow-left" severity="info"
+            size="small" @click="showMovePondModal = true" />
+            
           <Button v-if="selectedRows.length > 0" label="สร้าง PDF" icon="pi pi-file-pdf" severity="danger" size="small"
             @click="showPrintModal = true" />
+
         </div>
       </div>
     </div>
@@ -519,8 +524,7 @@ const displayColumns = computed(() => {
         cell: 'py-1 px-2',
         columnHeader: 'py-2 px-2',
       }" @update:selection="handleSelectionChange">
-      <Column v-if="props.selectable" selectionMode="multiple" headerClass="w-12 text-center" bodyClass="text-center"
-        style="width: 3rem" />
+      <Column selectionMode="multiple" headerClass="w-12 text-center" bodyClass="text-center" style="width: 3rem" />
 
       <Column v-for="(item, index) in displayColumns" :key="index" :field="item.field" :header="item.header"
         :frozen="index === 0" :pt="{
@@ -570,9 +574,9 @@ const displayColumns = computed(() => {
     <div class="pt-4">
       <p class="text-gray-700 mb-2">
         {{
-          qcActionType === 'ready'
-            ? 'คุณต้องการเปลี่ยนสถานะจาก "รอประเมินราคา" เป็น "พร้อมขาย" หรือไม่?'
-            : 'คุณต้องการเปลี่ยนสถานะจาก "พร้อมขาย" เป็น "รอประเมินราคา" หรือไม่?'
+        qcActionType === 'ready'
+        ? 'คุณต้องการเปลี่ยนสถานะจาก "รอประเมินราคา" เป็น "พร้อมขาย" หรือไม่?'
+        : 'คุณต้องการเปลี่ยนสถานะจาก "พร้อมขาย" เป็น "รอประเมินราคา" หรือไม่?'
         }}
       </p>
       <p v-if="selectedQcProduct" class="text-sm text-gray-600">
@@ -594,7 +598,8 @@ const displayColumns = computed(() => {
     <div class="flex flex-col gap-4">
       <p class="text-gray-700">กรุณาเลือกสถานะที่ต้องการเปลี่ยน</p>
       <div class="flex flex-col gap-2">
-        <Button label="รอประเมินราคา" icon="pi pi-exclamation-triangle" severity="warn" @click="confirmStatusChange('wait-qc')" />
+        <Button label="รอประเมินราคา" icon="pi pi-exclamation-triangle" severity="warn"
+          @click="confirmStatusChange('wait-qc')" />
         <Button label="พร้อมขาย" icon="pi pi-check" severity="success" @click="confirmStatusChange('ready')" />
       </div>
     </div>
@@ -602,4 +607,7 @@ const displayColumns = computed(() => {
 
   <!-- Print Modal -->
   <ModalPrintFish v-model:visible="showPrintModal" :selected-products="selectedRows" />
+
+  <!-- Move Pond Modal -->
+  <ModalMovePond v-model:visible="showMovePondModal" :selected-products="selectedRows" />
 </template>
