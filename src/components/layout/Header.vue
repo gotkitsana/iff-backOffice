@@ -65,7 +65,7 @@ const route = useRoute()
           class="hover:bg-gray-100 duration-300"
           @click="$emit('toggle-sidebar')"
         />
-        <p class="font-semibold!">{{ route.meta.title }}</p>
+        <p class="font-semibold! text-black">{{ route.meta.title }}</p>
       </div>
 
       <!-- Right side - Settings, Notifications, Profile, Mobile menu -->
