@@ -194,7 +194,7 @@ const incompleteDataCustomersCount = computed(() => {
       const missingInterests = !member.interests || member.interests.length === 0
 
       // ถ้าขาดข้อมูลใดข้อมูลหนึ่งใน 6 อย่างนี้ ถือว่าข้อมูลไม่ครบ
-      return missingName || missingAddress || missingProvince || missingPhone || missingInterests || missingBehaviorNotes
+      return missingName || missingAddress || missingProvince || missingPhone || missingInterests
     }).length || 0
   )
 })
