@@ -208,7 +208,44 @@ const menuSections = [
       {
         icon: 'pi pi-money-bill',
         label: 'การเงิน',
-        route: 'finance',
+        isDropdown: true,
+        submenu: [
+          {
+            icon: 'pi pi-chart-line',
+            label: 'งบกำไรขาดทุน',
+            route: 'profit-loss',
+          },
+          {
+            icon: 'pi pi-table',
+            label: 'งบดุล',
+            route: 'balance-sheet',
+          },
+          {
+            icon: 'pi pi-arrow-right-arrow-left',
+            label: 'กระแสเงินสด',
+            route: 'cash-flow',
+          },
+          {
+            icon: 'pi pi-calculator',
+            label: 'การวิเคราะห์ต้นทุน',
+            route: 'cost-analysis',
+          },
+          {
+            icon: 'pi pi-briefcase',
+            label: 'การวางแผนลงทุน',
+            route: 'investment-planning',
+          },
+          {
+            icon: 'pi pi-shield',
+            label: 'การประเมินความเสี่ยง',
+            route: 'risk-assessment',
+          },
+          {
+            icon: 'pi pi-shopping-cart',
+            label: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ',
+            route: 'business-decision',
+          },
+        ],
       },
       {
         icon: 'pi pi-users',
@@ -221,9 +258,39 @@ const menuSections = [
             route: 'employee',
           },
           {
+            icon: 'pi pi-box',
+            label: 'ทรัพย์สินบริษัท',
+            route: 'company-assets',
+          },
+          {
+            icon: 'pi pi-calendar-times',
+            label: 'ขาด-ลา-มาสาย',
+            route: 'attendance-leave',
+          },
+          {
             icon: 'pi pi-money-bill',
             label: 'เงินเดือน Payroll',
             route: 'payroll',
+          },
+          {
+            icon: 'pi pi-check-square',
+            label: 'การประเมินพนักงาน',
+            route: 'employee-evaluation',
+          },
+          {
+            icon: 'pi pi-gift',
+            label: 'สวัสดิการ',
+            route: 'welfare',
+          },
+          {
+            icon: 'pi pi-file',
+            label: 'เอกสาร HR',
+            route: 'hr-documents',
+          },
+          {
+            icon: 'pi pi-book',
+            label: 'อบรม-พัฒนาบุคลากร (เสริม)',
+            route: 'training-development',
           },
         ],
       },
