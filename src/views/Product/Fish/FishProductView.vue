@@ -186,7 +186,7 @@ watch(
       @open-add-modal="openAddModal" @open-export-modal="openExportModal" @update-filters="handleUpdateFishFilters" />
 
     <FishProductTable v-if="selectedCategory" :filtered-products="filteredProducts" :is-loading-products="isLoading"
-      :selected-category="selectedCategory" selectable @open-edit-modal="openEditModal"
+      :selected-category="selectedCategory" @open-edit-modal="openEditModal"
       @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal"
       @update-selection="handleSelectionUpdate" />
   </div>
