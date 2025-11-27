@@ -32,12 +32,12 @@ export const useAccountCategoryStore = defineStore('AccountCategory', () => {
 
 export type IAccountCategory = {
   _id: string
-  name: string
-  type: string
-  detail: string
-  note: string
-  active: boolean
-  department: string | null
+  name: string // รายการ
+  type: string // ประเภท
+  detail: string // รายละเอียด
+  note: string // หมายเหตุ
+  active: boolean // สถานะ
+  department: string | null // แผนก
   cat: number
   uat: number
 }
