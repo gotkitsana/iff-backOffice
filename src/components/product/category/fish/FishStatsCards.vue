@@ -38,9 +38,11 @@ const formatCurrency = (value: number) => {
 }
 
 const totalValue = computed(() =>
-  fishProducts.value.reduce((sum, product) => sum + (product.price || 0), 0)
+  fishProducts.value
+    .filter((product) => !product.sold)
+    .reduce((sum, product) => sum + (product.price || 0), 0)
 )
-const totalCount = computed(() => fishProducts.value.length)
+const totalCount = computed(() => fishProducts.value.filter((product) => !product.sold).length)
 
 const missingDataCount = computed(
   () =>
@@ -150,4 +152,3 @@ const ageStats = computed(() => {
     </Card>
   </div>
 </template>
-

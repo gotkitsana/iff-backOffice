@@ -12,6 +12,7 @@ import { useProductStore } from '@/stores/product/product'
 import { toast } from 'vue3-toastify'
 import ModalPrintFish from './ModalPrintFish.vue'
 import ModalMovePond from './ModalMovePond.vue'
+import ModalFoodCalculation from './ModalFoodCalculation.vue'
 
 // Props
 const props = defineProps<{
@@ -61,6 +62,7 @@ const { data: greenhouseData } = useQuery<IGreenhouse[]>({
 const selectedRows = ref<IProduct[]>([])
 const showPrintModal = ref(false)
 const showMovePondModal = ref(false)
+const showFoodCalculationModal = ref(false)
 
 const handleSelectionChange = (value: IProduct[]) => {
   selectedRows.value = value
@@ -488,7 +490,7 @@ const displayColumns = computed(() => {
 <template>
   <div class="bg-white border border-gray-200 rounded-xl px-4 shadow-sm">
     <div class="py-4 border-b border-gray-200">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-3">
           <div v-if="props.selectedCategory"
             :class="`w-10 h-10 rounded-lg flex items-center justify-center ${props.selectedCategory?.bgColor}`">
@@ -503,13 +505,13 @@ const displayColumns = computed(() => {
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center  gap-2">
+          <Button v-if="selectedRows.length > 0" label="คำนวณอาหาร" icon="pi pi-calculator" severity="success"
+            size="small" @click="showFoodCalculationModal = true" />
           <Button v-if="selectedRows.length > 0" label="ย้ายบ่อ" icon="pi pi-arrow-right-arrow-left" severity="info"
             size="small" @click="showMovePondModal = true" />
-            
           <Button v-if="selectedRows.length > 0" label="สร้าง PDF" icon="pi pi-file-pdf" severity="danger" size="small"
             @click="showPrintModal = true" />
-
         </div>
       </div>
     </div>
@@ -585,7 +587,7 @@ const displayColumns = computed(() => {
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
+      <div class="flex justify-end  gap-3">
         <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeQcModal" size="small" />
         <Button label="ยืนยัน" icon="pi pi-check" @click="confirmQcStatusChange" severity="success" size="small"
           :loading="isUpdatingProduct" />
@@ -610,4 +612,7 @@ const displayColumns = computed(() => {
 
   <!-- Move Pond Modal -->
   <ModalMovePond v-model:visible="showMovePondModal" :selected-products="selectedRows" />
+
+  <!-- Food Calculation Modal -->
+  <ModalFoodCalculation v-model:visible="showFoodCalculationModal" :selected-products="selectedRows" />
 </template>
