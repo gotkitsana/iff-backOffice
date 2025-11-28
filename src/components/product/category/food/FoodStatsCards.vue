@@ -39,7 +39,11 @@ const inventoryStats = computed(() => {
     return { price: 0, count: 0 }
   }
 
-  const price = foodProducts.value.reduce(
+  const availableProducts = foodProducts.value.filter(
+    (product) => !product.sold && (product.balance || 0) > 0
+  )
+
+  const price = availableProducts.reduce(
     (sum, product) => sum + (product.food?.costPrice || 0) * (product.balance || 0),
     0
   )
