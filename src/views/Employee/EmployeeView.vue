@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import {
   Card,
   DataTable,
@@ -10,215 +10,299 @@ import {
   Textarea,
   Select,
   InputNumber,
-  Calendar,
-  Avatar,
+  DatePicker,
+  Tag
 } from 'primevue'
 import { toast } from 'vue3-toastify'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import {
+  useEmployeeStore,
+  type IEmployee,
+  type ICreateEmployeePayload,
+  type IUpdateEmployeePayload,
+} from '@/stores/hr/employee'
+import {
+  useDepartmentStore,
+  type IDepartment,
+  type ICreateDepartmentPayload,
+} from '@/stores/hr/department'
+import formatCurrency from '@/utils/formatCurrency'
+import BankData from '@/config/BankData'
+import dayjs from 'dayjs'
 
-// Data
-const showAddModal = ref(false)
-const showEditModal = ref(false)
-const showDetailModal = ref(false)
-const selectedEmployee = ref<{
-  id: number
-  employeeId: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  position: string
-  department: string
-  salary: number
-  startDate: Date
-  birthDate: Date | null
-  address: string
-  emergencyContact: string
-  emergencyPhone: string
-  avatar: null
-} | null>(null)
+// Stores
+const employeeStore = useEmployeeStore()
+const departmentStore = useDepartmentStore()
+const queryClient = useQueryClient()
 
-// Form data
-const employeeForm = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  position: '',
-  department: '',
-  salary: 0,
-  startDate: new Date(),
-  birthDate: null as Date | null,
-  address: '',
-  emergencyContact: '',
-  emergencyPhone: '',
-  employeeId: '',
+// Queries
+const { data: employees } = useQuery<IEmployee[]>({
+  queryKey: ['get_employees'],
+  queryFn: () => employeeStore.onGetEmployees(),
 })
 
-// Sample employees data
-const employees = ref([
-  {
-    id: 1,
-    employeeId: 'EMP001',
-    firstName: 'สมชาย',
-    lastName: 'ใจดี',
-    email: 'somchai@company.com',
-    phone: '081-234-5678',
-    position: 'ผู้จัดการฟาร์ม',
-    department: 'ฟาร์มปลา',
-    salary: 35000,
-    startDate: new Date('2023-01-15'),
-    birthDate: new Date('1990-05-20'),
-    avatar: null,
-    address: '123 ถนนสุขุมวิท กรุงเทพฯ 10110',
-    emergencyContact: 'นางสาวสมหญิง ใจดี',
-    emergencyPhone: '082-345-6789',
-  },
-  {
-    id: 2,
-    employeeId: 'EMP002',
-    firstName: 'นิดา',
-    lastName: 'สวยงาม',
-    email: 'nida@company.com',
-    phone: '082-345-6789',
-    position: 'พนักงานขาย',
-    department: 'ฝ่ายขาย',
-    salary: 25000,
-    startDate: new Date('2023-03-20'),
-    birthDate: new Date('1995-08-15'),
-    avatar: null,
-    address: '456 ถนนพระราม 4 กรุงเทพฯ 10500',
-    emergencyContact: 'นายสมศักดิ์ สวยงาม',
-    emergencyPhone: '083-456-7890',
-  },
-  {
-    id: 3,
-    employeeId: 'EMP003',
-    firstName: 'ปิยะ',
-    lastName: 'เก่งมาก',
-    email: 'piya@company.com',
-    phone: '083-456-7890',
-    position: 'พนักงานบัญชี',
-    department: 'ฝ่ายบัญชี',
-    salary: 28000,
-    startDate: new Date('2023-05-10'),
-    birthDate: new Date('1992-12-10'),
-    avatar: null,
-    address: '789 ถนนสีลม กรุงเทพฯ 10500',
-    emergencyContact: 'นางสาวจิรา เก่งมาก',
-    emergencyPhone: '084-567-8901',
-  },
-  {
-    id: 4,
-    employeeId: 'EMP004',
-    firstName: 'วิชัย',
-    lastName: 'ขยัน',
-    email: 'wichai@company.com',
-    phone: '084-567-8901',
-    position: 'ช่างเทคนิค',
-    department: 'ฟาร์มปลา',
-    salary: 22000,
-    startDate: new Date('2023-07-01'),
-    birthDate: new Date('1988-03-25'),
-    avatar: null,
-    address: '321 ถนนเพชรบุรี กรุงเทพฯ 10400',
-    emergencyContact: 'นายสมพร ขยัน',
-    emergencyPhone: '085-678-9012',
-  },
-  {
-    id: 5,
-    employeeId: 'EMP005',
-    firstName: 'มานี',
-    lastName: 'รวยเงิน',
-    email: 'manee@company.com',
-    phone: '085-678-9012',
-    position: 'พนักงานประมูล',
-    department: 'ฝ่ายการตลาด',
-    salary: 26000,
-    startDate: new Date('2023-09-15'),
-    birthDate: new Date('1993-07-18'),
-    avatar: null,
-    address: '654 ถนนรัชดาภิเษก กรุงเทพฯ 10310',
-    emergencyContact: 'นางสาวจันทร์ รวยเงิน',
-    emergencyPhone: '086-789-0123',
-  },
-])
+const { data: departments } = useQuery<IDepartment[]>({
+  queryKey: ['get_departments'],
+  queryFn: () => departmentStore.onGetDepartments(),
+})
 
-// Stats
-const totalEmployees = computed(() => employees.value.length)
-const totalSalary = computed(() => employees.value.reduce((sum, e) => sum + e.salary, 0))
+// Modals
+const showAddModal = ref(false)
+const showEditModal = ref(false)
+const showAddDepartmentModal = ref(false)
+const selectedEmployee = ref<IEmployee | null>(null)
+const searchQuery = ref('')
 
-// Departments
-const departments = computed(() => {
-  const depts = [...new Set(employees.value.map((e) => e.department))]
-  return depts.map((dept) => ({
-    name: dept,
-    count: employees.value.filter((e) => e.department === dept).length,
+// Form data
+const employeeForm = ref<{
+  displayName: string
+  name: string
+  code: string
+  status: string
+  position: string
+  startDate: Date | number
+  department: string
+  salaryPro: number
+  salary: number
+  bankCode: string
+  bankAccount: string
+  note: string
+}>({
+  displayName: '',
+  name: '',
+  code: '',
+  status: '',
+  position: '',
+  startDate: new Date(),
+  department: '',
+  salaryPro: 0,
+  salary: 0,
+  bankCode: '',
+  bankAccount: '',
+  note: '',
+})
+
+const departmentForm = ref<ICreateDepartmentPayload>({
+  name: '',
+  detail: '',
+  note: '',
+})
+
+// Computed
+const filteredEmployees = computed(() => {
+  if (!employees.value || !searchQuery.value) return employees.value || []
+  const query = searchQuery.value.toLowerCase()
+  return employees.value.filter(
+    (emp) =>
+      emp.displayName?.toLowerCase().includes(query) ||
+      emp.name?.toLowerCase().includes(query) ||
+      emp.code?.toLowerCase().includes(query)
+  )
+})
+
+const totalEmployees = computed(() => employees.value?.length || 0)
+const totalSalaryPro = computed(() => {
+  return employees.value?.reduce((sum, e) => sum + (e.salaryPro || 0), 0) || 0
+})
+const totalSalary = computed(() => {
+  return employees.value?.reduce((sum, e) => sum + (e.salary || 0), 0) || 0
+})
+
+// Department options
+const departmentOptions = computed(() => {
+  if (!departments.value) return []
+  return departments.value
+    .filter((dept) => dept.active !== false)
+    .map((dept) => ({
+      label: dept.name,
+      value: dept._id,
+    }))
+})
+
+// Bank options
+const bankOptions = computed(() => {
+  return Object.keys(BankData).map((key) => ({
+    label: (BankData as Record<string, { name: string, icon: string }>)[key]?.name || key,
+    value: key,
+    icon: (BankData as Record<string, { icon: string }>)[key]?.icon || '',
   }))
 })
 
-// Utility functions
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-  }).format(value)
+// Computed for date handling
+const startDateValue = computed({
+  get: () => {
+    if (employeeForm.value.startDate instanceof Date) {
+      return employeeForm.value.startDate
+    }
+    return new Date(employeeForm.value.startDate)
+  },
+  set: (val: Date | null) => {
+    if (val) {
+      employeeForm.value.startDate = val
+    }
+  },
+})
+
+const getBankName = (bankCode: string) => {
+  if (!bankCode) return null
+  const bank = (BankData as Record<string, { name: string, icon: string }>)[bankCode]
+  if (!bank) return null
+  return {
+    name: bank.name,
+    icon: bank.icon,
+  }
 }
 
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+// Auto-generate employee code
+const generateEmployeeCode = (): string => {
+  if (!employees.value || employees.value.length === 0) {
+    return 'EMP-001'
+  }
+
+  // Extract all employee codes and find the highest number
+  const codes = employees.value
+    .map((emp) => emp.code)
+    .filter((code) => code && code.startsWith('EMP-'))
+    .map((code) => {
+      const match = code.match(/EMP-(\d+)/)
+      return match ? parseInt(match[1], 10) : 0
+    })
+
+  const maxNumber = codes.length > 0 ? Math.max(...codes) : 0
+  const nextNumber = maxNumber + 1
+
+  // Format as EMP-001, EMP-002, etc. (3 digits)
+  return `EMP-${String(nextNumber).padStart(3, '0')}`
 }
 
-const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
-}
+// Employee Columns Definition
+const employeeColumns = ref([
+  {
+    field: 'code',
+    header: 'รหัสพนักงาน',
+    headCell: 'min-w-[5rem]',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.code || '-'),
+  },
+  {
+    field: 'displayName',
+    header: 'ชื่อเล่น',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.displayName || '-'),
+  },
+  {
+    field: 'name',
+    header: 'ชื่อ-นามสกุล',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.name || '-'),
+  },
+  {
+    field: 'status',
+    header: 'สถานะพนักงาน',
+    headCell: 'min-w-[6rem]',
+    bodyCell: 'text-center',
+    render: (slotProps: { data: IEmployee }) => {
+      const status = employeeStore.statusEmployee.find((status) => status.value === slotProps.data.status)
+      return h(Tag, {
+        value: status?.label || '-',
+        severity: status?.severity || 'secondary',
+        size: 'small'
+      })
+    }
+  },
+  {
+    field: 'position',
+    header: 'ตำแหน่ง',
+    headCell: 'min-w-[6.5rem]',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.position || '-'),
+  },
+  {
+    field: 'department',
+    header: 'แผนก',
+    headCell: 'min-w-[6.5rem]',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.department?.name || '-'),
+  },
+  {
+    field: 'startDate',
+    header: 'วันเริ่มงาน',
+    headCell: 'min-w-[6.5rem]',
+    render: (slotProps: { data: IEmployee }) =>
+      h(
+        'span',
+        { class: 'text-sm text-gray-900' },
+        slotProps.data.startDate ? dayjs(slotProps.data.startDate).format('DD/MM/YYYY') : '-'
+      ),
+  },
+  {
+    field: 'salaryPro',
+    header: 'เงินเดือน ช่วงทดลองงาน',
+    headCell: 'min-w-[9.5rem]',
+    bodyCell: 'text-end',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, formatCurrency(slotProps.data.salaryPro || 0)),
+  },
+  {
+    field: 'salary',
+    header: 'เงินเดือน หลังผ่านงาน',
+    headCell: 'min-w-[8.5rem]',
+    bodyCell: 'text-end',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, formatCurrency(slotProps.data.salary || 0)),
+  },
+  {
+    field: 'bankAccount',
+    header: 'เลขบัญชี',
+    render: (slotProps: { data: IEmployee }) =>
+      h('span', { class: 'text-sm text-gray-900' }, slotProps.data.bankAccount || '-'),
+  },
+  {
+    field: 'bankCode',
+    header: 'ธนาคาร',
+    headCell: 'min-w-[6.5rem]',
+    render: (slotProps: { data: IEmployee }) =>
+      h('div', { class: 'flex items-center gap-1.5' }, [
+        h('img', { src: getBankName(slotProps.data.bankCode)?.icon, alt: slotProps.data.bankCode, class: 'w-4 h-4' }),
+        h('span', { class: 'text-sm text-gray-600' }, getBankName(slotProps.data.bankCode)?.name || '-'),
+      ]),
+  },
+  {
+    field: 'diligence',
+    header: 'เบี้ยขยัน',
+    render: () => h('span', { class: 'text-sm text-gray-900' }, '0'),
+  },
+])
+
 
 // Modal functions
 const openAddModal = () => {
-  resetForm()
+  resetEmployeeForm()
+  // Auto-generate employee code
+  employeeForm.value.code = generateEmployeeCode()
   showAddModal.value = true
 }
 
 const closeAddModal = () => {
   showAddModal.value = false
-  resetForm()
+  resetEmployeeForm()
 }
 
-const openEditModal = (employee: {
-  id: number
-  employeeId: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  position: string
-  department: string
-  salary: number
-  startDate: Date
-  birthDate: Date | null
-  address: string
-  emergencyContact: string
-  emergencyPhone: string
-  avatar: null
-}) => {
+const openEditModal = (employee: IEmployee) => {
   selectedEmployee.value = employee
   employeeForm.value = {
-    firstName: employee.firstName,
-    lastName: employee.lastName,
-    email: employee.email,
-    phone: employee.phone,
-    position: employee.position,
-    department: employee.department,
-    salary: employee.salary,
-    startDate: employee.startDate,
-    birthDate: employee.birthDate,
-    address: employee.address,
-    emergencyContact: employee.emergencyContact,
-    emergencyPhone: employee.emergencyPhone,
-    employeeId: employee.employeeId,
+    displayName: employee.displayName || '',
+    name: employee.name || '',
+    code: employee.code || '',
+    status: employee.status || '',
+    position: employee.position || '',
+    startDate: employee.startDate ? new Date(employee.startDate) : new Date(),
+    department: employee.department?._id || '',
+    salaryPro: employee.salaryPro || 0,
+    salary: employee.salary || 0,
+    bankCode: employee.bankCode || '',
+    bankAccount: employee.bankAccount || '',
+    note: employee.note || '',
   }
   showEditModal.value = true
 }
@@ -226,328 +310,264 @@ const openEditModal = (employee: {
 const closeEditModal = () => {
   showEditModal.value = false
   selectedEmployee.value = null
-  resetForm()
+  resetEmployeeForm()
 }
 
-const openDetailModal = (employee: {
-  id: number
-  employeeId: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  position: string
-  department: string
-  salary: number
-  startDate: Date
-  birthDate: Date | null
-  address: string
-  emergencyContact: string
-  emergencyPhone: string
-  avatar: null
-}) => {
-  selectedEmployee.value = employee
-  showDetailModal.value = true
+const openAddDepartmentModal = () => {
+  resetDepartmentForm()
+  showAddDepartmentModal.value = true
 }
 
-const closeDetailModal = () => {
-  showDetailModal.value = false
-  selectedEmployee.value = null
+const closeAddDepartmentModal = () => {
+  showAddDepartmentModal.value = false
+  resetDepartmentForm()
 }
 
-const resetForm = () => {
+const resetEmployeeForm = () => {
   employeeForm.value = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
+    displayName: '',
+    name: '',
+    code: '',
+    status: '',
     position: '',
-    department: '',
-    salary: 0,
     startDate: new Date(),
-    birthDate: null,
-    address: '',
-    emergencyContact: '',
-    emergencyPhone: '',
-    employeeId: '',
+    department: '',
+    salaryPro: 0,
+    salary: 0,
+    bankCode: '',
+    bankAccount: '',
+    note: '',
   }
 }
 
+const resetDepartmentForm = () => {
+  departmentForm.value = {
+    name: '',
+    detail: '',
+    note: '',
+  }
+}
+
+// Mutations
+const { mutate: createEmployee, isPending: isCreatingEmployee } = useMutation({
+  mutationFn: (payload: ICreateEmployeePayload) => employeeStore.onCreateEmployee(payload),
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
+    if (data.data) {
+      toast.success('เพิ่มพนักงานสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_employees'] })
+      closeAddModal()
+    } else {
+      toast.error('เพิ่มพนักงานไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('เพิ่มพนักงานไม่สำเร็จ')
+  },
+})
+
+const { mutate: updateEmployee, isPending: isUpdatingEmployee } = useMutation({
+  mutationFn: (payload: IUpdateEmployeePayload) => employeeStore.onUpdateEmployee(payload),
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
+    if (data.data) {
+      toast.success('แก้ไขข้อมูลพนักงานสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_employees'] })
+      closeEditModal()
+    } else {
+      toast.error('แก้ไขข้อมูลพนักงานไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('แก้ไขข้อมูลพนักงานไม่สำเร็จ')
+  },
+})
+
+const { mutate: deleteEmployeeMutation, isPending: isDeletingEmployee } = useMutation({
+  mutationFn: (id: string) => employeeStore.onDeleteEmployee(id),
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
+    if (data.data) {
+      toast.success('ลบพนักงานสำเร็จ')
+      closeDeleteEmployeeModal()
+      queryClient.invalidateQueries({ queryKey: ['get_employees'] })
+    } else {
+      toast.error('ลบพนักงานไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('ลบพนักงานไม่สำเร็จ')
+  },
+})
+
+const { mutate: createDepartment, isPending: isCreatingDepartment } = useMutation({
+  mutationFn: (payload: ICreateDepartmentPayload) => departmentStore.onCreateDepartment(payload),
+  onSuccess: (data: { data?: unknown; error?: unknown }) => {
+    if (data.data) {
+      toast.success('เพิ่มแผนกสำเร็จ')
+      queryClient.invalidateQueries({ queryKey: ['get_departments'] })
+      closeAddDepartmentModal()
+    } else {
+      toast.error('เพิ่มแผนกไม่สำเร็จ')
+    }
+  },
+  onError: () => {
+    toast.error('เพิ่มแผนกไม่สำเร็จ')
+  },
+})
+
 // Handlers
 const handleCreateEmployee = () => {
-  if (
-    !employeeForm.value.firstName ||
-    !employeeForm.value.lastName ||
-    !employeeForm.value.email ||
-    !employeeForm.value.position
-  ) {
+  if (!employeeForm.value.displayName || !employeeForm.value.name || !employeeForm.value.status) {
     toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
     return
   }
 
-  const newEmployee = {
-    id: employees.value.length + 1,
-    employeeId: `EMP${String(employees.value.length + 1).padStart(3, '0')}`,
-    firstName: employeeForm.value.firstName,
-    lastName: employeeForm.value.lastName,
-    email: employeeForm.value.email,
-    phone: employeeForm.value.phone,
-    position: employeeForm.value.position,
-    department: employeeForm.value.department,
-    salary: employeeForm.value.salary,
-    startDate: employeeForm.value.startDate,
-    birthDate: employeeForm.value.birthDate || new Date(),
-    address: employeeForm.value.address,
-    emergencyContact: employeeForm.value.emergencyContact,
-    emergencyPhone: employeeForm.value.emergencyPhone,
-    avatar: null,
+  const payload: ICreateEmployeePayload = {
+    ...employeeForm.value,
+    startDate:
+      employeeForm.value.startDate instanceof Date
+        ? employeeForm.value.startDate.getTime()
+        : typeof employeeForm.value.startDate === 'number'
+          ? employeeForm.value.startDate
+          : Date.now(),
   }
 
-  employees.value.unshift(newEmployee)
-  toast.success('เพิ่มพนักงานสำเร็จ')
-  closeAddModal()
+  createEmployee(payload)
 }
 
 const handleUpdateEmployee = () => {
   if (!selectedEmployee.value) return
 
-  const index = employees.value.findIndex((e) => e.id === selectedEmployee.value!.id)
-  if (index !== -1) {
-    employees.value[index] = {
-      ...employees.value[index],
-      firstName: employeeForm.value.firstName,
-      lastName: employeeForm.value.lastName,
-      email: employeeForm.value.email,
-      phone: employeeForm.value.phone,
-      position: employeeForm.value.position,
-      department: employeeForm.value.department,
-      salary: employeeForm.value.salary,
-      startDate: employeeForm.value.startDate,
-      birthDate: employeeForm.value.birthDate || new Date(),
-      address: employeeForm.value.address,
-      emergencyContact: employeeForm.value.emergencyContact,
-      emergencyPhone: employeeForm.value.emergencyPhone,
-    }
-    toast.success('แก้ไขข้อมูลพนักงานสำเร็จ')
-    closeEditModal()
+  if (!employeeForm.value.displayName || !employeeForm.value.name || !employeeForm.value.status) {
+    toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
+    return
   }
+
+  const payload: IUpdateEmployeePayload = {
+    ...employeeForm.value,
+    _id: selectedEmployee.value._id,
+    startDate:
+      employeeForm.value.startDate instanceof Date
+        ? employeeForm.value.startDate.getTime()
+        : typeof employeeForm.value.startDate === 'number'
+          ? employeeForm.value.startDate
+          : Date.now(),
+  }
+
+  updateEmployee(payload)
 }
 
-const handleDeleteEmployee = (employee: {
-  id: number
-  employeeId: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  position: string
-  department: string
-  salary: number
-  startDate: Date
-  birthDate: Date | null
-  address: string
-  emergencyContact: string
-  emergencyPhone: string
-  avatar: null
-}) => {
-  if (confirm(`คุณต้องการลบพนักงาน "${employee.firstName} ${employee.lastName}" หรือไม่?`)) {
-    const index = employees.value.findIndex((e) => e.id === employee.id)
-    if (index !== -1) {
-      employees.value.splice(index, 1)
-      toast.success('ลบพนักงานสำเร็จ')
-    }
-  }
+const showDeleteEmployeeModal = ref(false)
+const handleDeleteEmployee = (employee: IEmployee) => {
+  selectedEmployee.value = employee
+  showDeleteEmployeeModal.value = true
 }
 
-// Options
-const positionOptions = [
-  { label: 'ผู้จัดการฟาร์ม', value: 'ผู้จัดการฟาร์ม' },
-  { label: 'พนักงานขาย', value: 'พนักงานขาย' },
-  { label: 'พนักงานบัญชี', value: 'พนักงานบัญชี' },
-  { label: 'ช่างเทคนิค', value: 'ช่างเทคนิค' },
-  { label: 'พนักงานประมูล', value: 'พนักงานประมูล' },
-  { label: 'พนักงานดูแลปลา', value: 'พนักงานดูแลปลา' },
-]
+const closeDeleteEmployeeModal = () => {
+  showDeleteEmployeeModal.value = false
+  selectedEmployee.value = null
+}
 
-const departmentOptions = [
-  { label: 'ฟาร์มปลา', value: 'ฟาร์มปลา' },
-  { label: 'ฝ่ายขาย', value: 'ฝ่ายขาย' },
-  { label: 'ฝ่ายบัญชี', value: 'ฝ่ายบัญชี' },
-  { label: 'ฝ่ายการตลาด', value: 'ฝ่ายการตลาด' },
-  { label: 'ฝ่ายปฏิบัติการ', value: 'ฝ่ายปฏิบัติการ' },
-]
+const handleCreateDepartment = () => {
+  if (!departmentForm.value.name) {
+    toast.error('กรุณากรอกชื่อแผนก')
+    return
+  }
+
+  createDepartment(departmentForm.value)
+}
 </script>
 
 <template>
-  <div class="md:space-y-4 space-y-3">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div>
-        <h1 class="text-xl font-semibold! text-gray-900">จัดการบุคลากร</h1>
-        <p class="text-gray-600">จัดการข้อมูลพนักงานและติดตามสถานะการทำงาน</p>
-      </div>
-      <div class="flex space-x-3">
-        <Button
-          label="เพิ่มพนักงาน"
-          icon="pi pi-plus"
-          severity="success"
-          size="small"
-          @click="openAddModal"
-        />
-      </div>
+
+  <!-- Page Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-lg font-semibold! text-gray-900">ข้อมูลบุคลากร</h1>
+      <p class="text-sm text-gray-600">จัดการข้อมูลพนักงานและติดตามสถานะการทำงาน</p>
     </div>
+    <div class="flex justify-end gap-2">
+      <Button label="เพิ่มแผนก" icon="pi pi-building" severity="info" size="small" @click="openAddDepartmentModal" />
+      <Button label="เพิ่มพนักงาน" icon="pi pi-plus" severity="success" size="small" @click="openAddModal" />
+    </div>
+  </div>
 
-    <!-- Departments Overview -->
-    <Card  :pt="{ body: 'p-4' }">
-      <template #header>
-        <div class="p-4 pb-0">
-          <h3 class="text-lg font-semibold! text-gray-900">แผนกต่างๆ</h3>
-          <p class="text-sm text-gray-600 lg:mt-1">จำนวนพนักงานในแต่ละแผนก</p>
-        </div>
-      </template>
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 my-3">
+    <Card :pt="{ body: 'p-4' }" class="bg-green-50 border-green-200">
       <template #content>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
-          <div
-            class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 lg:p-4 hover:shadow-md transition-shadow duration-200"
-          >
-            <div class="flex items-center gap-2.5 lg:gap-3">
-              <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-users text-blue-600 text-lg"></i>
-              </div>
-              <div>
-                <h4 class="!text-sm lg:!text-base text-gray-900">พนักงานทั้งหมด</h4>
-                <p class="text-xl text-blue-600 font-[600]!">{{ totalEmployees }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- <div
-            v-for="dept in departments"
-            :key="dept.name"
-            class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 lg:p-4 hover:shadow-md transition-shadow duration-200"
-          >
-            <div class="flex items-center gap-2.5 lg:gap-3">
-              <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="pi pi-briefcase text-blue-600 text-lg"></i>
-              </div>
-              <div>
-                <h4 class="!text-sm lg:!text-base text-gray-900">{{ dept.name }}</h4>
-                <p class="text-xl text-blue-600 font-[600]!">{{ dept.count }}</p>
-              </div>
-            </div>
-          </div> -->
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600">{{ totalEmployees }}</div>
+          <div class="text-sm text-green-700">พนักงานทั้งหมด</div>
         </div>
       </template>
     </Card>
 
-    <!-- Employees Table -->
-    <Card :pt="{ body: 'p-4' }">
+    <Card :pt="{ body: 'p-4' }" class="bg-yellow-50 border-yellow-200">
       <template #content>
-        <DataTable
-          :value="employees"
-          :paginator="true"
-          :rows="10"
-          class="p-datatable-sm"
-          :pt="{
-            table: 'min-w-full',
-            thead: 'bg-gray-50',
-            tbody: 'divide-y divide-gray-200',
-          }"
-        >
-          <Column field="employeeId" header="รหัสพนักงาน" sortable :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
-            <template #body="slotProps">
-              <span class="font-medium! text-sm text-blue-600">{{ slotProps.data.employeeId }}</span>
-            </template>
-          </Column>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-yellow-600">0</div>
+          <div class="text-sm text-yellow-700">ลา</div>
+        </div>
+      </template>
+    </Card>
 
-          <Column field="name" header="ชื่อ-นามสกุล" sortable >
-            <template #body="slotProps">
-              <div class="flex items-center gap-2">
-                <Avatar
-                  :label="getInitials(slotProps.data.firstName, slotProps.data.lastName)"
-                  class="bg-blue-100 text-blue-600"
-                  size="normal"
-                  shape="circle"
-                />
-                <div>
-                  <p class="font-medium! !text-sm text-gray-900">
-                    {{ slotProps.data.firstName }} {{ slotProps.data.lastName }}
-                  </p>
-                  <p class="text-xs text-gray-500">{{ slotProps.data.email }}</p>
-                </div>
-              </div>
-            </template>
-          </Column>
-
-          <Column field="position" header="ตำแหน่ง" sortable :pt="{ columnHeaderContent: 'min-w-[6rem]' }">
-            <template #body="slotProps">
-              <div>
-                <p class="font-medium! !text-sm text-gray-900">{{ slotProps.data.position }}</p>
-                <p class="text-xs text-gray-500">{{ slotProps.data.department }}</p>
-              </div>
-            </template>
-          </Column>
-
-          <Column field="phone" header="เบอร์โทร" sortable :pt="{ columnHeaderContent: 'min-w-[6.5rem]' }">
-            <template #body="slotProps">
-              <span class="text-sm text-gray-600">{{ slotProps.data.phone }}</span>
-            </template>
-          </Column>
-
-          <Column field="startDate" header="วันที่เริ่มงาน" sortable :pt="{ columnHeaderContent: 'min-w-[7.5rem]' }">
-            <template #body="slotProps">
-              <span class="text-sm text-gray-600">{{ formatDate(slotProps.data.startDate) }}</span>
-            </template>
-          </Column>
-
-          <Column header="การจัดการ" :exportable="false" :pt="{ columnHeaderContent: 'min-w-[7.25rem] justify-end' }">
-            <template #body="slotProps">
-              <div class="flex justify-end gap-2">
-                <Button
-                  icon="pi pi-eye"
-                  severity="info"
-                  size="small"
-                  outlined
-                  @click="openDetailModal(slotProps.data)"
-                />
-                <Button
-                  icon="pi pi-pencil"
-                  severity="warning"
-                  size="small"
-                  outlined
-                  @click="openEditModal(slotProps.data)"
-                />
-                <Button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  outlined
-                  @click="handleDeleteEmployee(slotProps.data)"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
+    <Card :pt="{ body: 'p-4' }" class="bg-red-50 border-red-200">
+      <template #content>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-red-600">0</div>
+          <div class="text-sm text-red-700">มาสาย</div>
+        </div>
       </template>
     </Card>
   </div>
 
+  <!-- Search and Table -->
+  <Card :pt="{ body: 'p-4' }">
+    <template #content>
+      <DataTable :value="filteredEmployees" :paginator="true" :rows="25" class="p-datatable-sm" :pt="{
+        table: 'min-w-full',
+        thead: 'bg-gray-50',
+        tbody: 'divide-y divide-gray-200',
+      }">
+        <Column v-for="(item, index) in employeeColumns" :key="index" :field="item.field" :header="item.header" :pt="{
+          columnHeaderContent: { class: [item.headCell ?? 'min-w-[4rem]'] },
+          columnTitle: { class: 'text-sm font-semibold!' },
+          bodyCell: { class: [item.bodyCell] },
+        }">
+          <template #body="slotProps">
+            <component :is="item.render?.(slotProps)" v-if="item.render" />
+            <span v-else>
+              {{ slotProps.data[item.field] }}
+            </span>
+          </template>
+        </Column>
+
+        <Column header="จัดการ" :exportable="false" :pt="{
+          columnTitle: { class: 'text-sm font-semibold! text-gray-900' },
+          columnHeaderContent: 'min-w-[4.5rem] justify-end',
+        }">
+          <template #body="slotProps">
+            <div class="flex justify-end gap-2">
+              <Button icon="pi pi-pencil" severity="warning" size="small" outlined
+                @click="openEditModal(slotProps.data)" v-tooltip.top="'แก้ไขข้อมูล'" />
+              <Button icon="pi pi-trash" severity="danger" size="small" outlined
+                @click="handleDeleteEmployee(slotProps.data)" v-tooltip.top="'ลบข้อมูล'" />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </template>
+  </Card>
+
   <!-- Add Employee Modal -->
-  <Dialog
-    v-model:visible="showAddModal"
-    modal
-    :style="{ width: '60rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog v-model:visible="showAddModal" modal :style="{ width: '60rem' }" @update:visible="closeAddModal"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-plus text-white text-lg"></i>
         </div>
         <div>
@@ -558,187 +578,82 @@ const departmentOptions = [
     </template>
 
     <div class="space-y-4">
-      <!-- Personal Information -->
+      <!-- Basic Information -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
           <i class="pi pi-user text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลส่วนตัว</h4>
+          <h4 class="text-lg font-semibold! text-gray-800">ข้อมูลพื้นฐาน</h4>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ *
-            </label>
-            <InputText v-model="employeeForm.firstName" placeholder="กรอกชื่อ" fluid size="small" />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อเล่น *</label>
+            <InputText v-model="employeeForm.displayName" placeholder="กรุณาระบุชื่อเล่น" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              นามสกุล *
-            </label>
-            <InputText
-              v-model="employeeForm.lastName"
-              placeholder="กรอกนามสกุล"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อ-นามสกุล *</label>
+            <InputText v-model="employeeForm.name" placeholder="กรุณาระบุชื่อ-นามสกุล" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-envelope mr-1.5 !text-sm"></i>
-              อีเมล *
-            </label>
-            <InputText
-              v-model="employeeForm.email"
-              type="email"
-              placeholder="กรอกอีเมล"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะพนักงาน *</label>
+            <Select v-model="employeeForm.status" :options="employeeStore.statusEmployee" optionLabel="label"
+              optionValue="value" placeholder="เลือกสถานะพนักงาน" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-phone mr-1.5 !text-sm"></i>
-              เบอร์โทรศัพท์ *
-            </label>
-            <InputText
-              v-model="employeeForm.phone"
-              placeholder="กรอกเบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ตำแหน่ง *</label>
+            <InputText v-model="employeeForm.position" placeholder="กรุณาระบุตำแหน่ง" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-calendar mr-1.5 !text-sm"></i>
-              วันเกิด
-            </label>
-            <Calendar v-model="employeeForm.birthDate" showIcon fluid size="small" />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">วันเริ่มงาน *</label>
+            <DatePicker v-model="startDateValue" dateFormat="dd/mm/yy" showIcon iconDisplay="input" fluid
+              size="small" />
           </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก</label>
+            <Select v-model="employeeForm.department" :options="departmentOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกแผนก" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เงินเดือนช่วงทดลองงาน</label>
+            <InputNumber v-model="employeeForm.salaryPro" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุเงินเดือน" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เงินเดือนหลังผ่านงาน</label>
+            <InputNumber v-model="employeeForm.salary" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุเงินเดือน" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ธนาคาร</label>
+            <Select v-model="employeeForm.bankCode" :options="bankOptions" optionLabel="label" optionValue="value"
+              placeholder="เลือกธนาคาร" fluid size="small">
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <img :src="slotProps.option.icon" :alt="slotProps.option.label" class="w-5 h-5" />
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขบัญชี</label>
+            <InputText v-model="employeeForm.bankAccount" placeholder="กรุณาระบุเลขบัญชี" fluid size="small" />
+          </div>
+
+
 
           <div class="md:col-span-2">
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-map-marker mr-1.5 !text-sm"></i>
-              ที่อยู่
-            </label>
-            <Textarea
-              v-model="employeeForm.address"
-              placeholder="กรอกที่อยู่"
-              rows="2"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Work Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-briefcase text-green-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลการทำงาน</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-id-card mr-1.5 !text-sm"></i>
-              ตำแหน่ง *
-            </label>
-            <Select
-              v-model="employeeForm.position"
-              :options="positionOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกตำแหน่ง"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-building mr-1.5 !text-sm"></i>
-              แผนก *
-            </label>
-            <Select
-              v-model="employeeForm.department"
-              :options="departmentOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกแผนก"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-              เงินเดือน (บาท) *
-            </label>
-            <InputNumber
-              v-model="employeeForm.salary"
-              :min="0"
-              :max="999999999"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-calendar mr-1.5 !text-sm"></i>
-              วันที่เริ่มงาน *
-            </label>
-            <Calendar v-model="employeeForm.startDate" showIcon fluid size="small" />
-          </div>
-
-          <div></div>
-        </div>
-      </div>
-
-      <!-- Emergency Contact -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-exclamation-circle text-red-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ผู้ติดต่อฉุกเฉิน</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อผู้ติดต่อ
-            </label>
-            <InputText
-              v-model="employeeForm.emergencyContact"
-              placeholder="กรอกชื่อผู้ติดต่อฉุกเฉิน"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-phone mr-1.5 !text-sm"></i>
-              เบอร์โทรศัพท์
-            </label>
-            <InputText
-              v-model="employeeForm.emergencyPhone"
-              placeholder="กรอกเบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">หมายเหตุ</label>
+            <Textarea v-model="employeeForm.note" placeholder="กรอกหมายเหตุ (ถ้ามี)" rows="3" fluid size="small" />
           </div>
         </div>
       </div>
@@ -746,40 +661,22 @@ const departmentOptions = [
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeAddModal"
-          size="small"
-        />
-        <Button
-          label="เพิ่มพนักงาน"
-          icon="pi pi-check"
-          @click="handleCreateEmployee"
-          severity="success"
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeAddModal" size="small" />
+        <Button label="เพิ่มพนักงาน" icon="pi pi-check" @click="handleCreateEmployee" :loading="isCreatingEmployee"
+          severity="success" size="small" />
       </div>
     </template>
   </Dialog>
 
   <!-- Edit Employee Modal -->
-  <Dialog
-    v-model:visible="showEditModal"
-    modal
-    :style="{ width: '60rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog v-model:visible="showEditModal" modal :style="{ width: '60rem' }" @update:visible="closeEditModal"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center"
-        >
+        <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-pencil text-white text-lg"></i>
         </div>
         <div>
@@ -789,189 +686,81 @@ const departmentOptions = [
       </div>
     </template>
 
-    <!-- Same form as Add Modal -->
     <div class="space-y-4">
-      <!-- Personal Information -->
+      <!-- Basic Information -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
           <i class="pi pi-user text-blue-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลส่วนตัว</h4>
+          <h4 class="text-lg font-semibold! text-gray-800">ข้อมูลพื้นฐาน</h4>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อ *
-            </label>
-            <InputText v-model="employeeForm.firstName" placeholder="กรอกชื่อ" fluid size="small" />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อเล่น *</label>
+            <InputText v-model="employeeForm.displayName" placeholder="กรุณาระบุชื่อเล่น" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              นามสกุล *
-            </label>
-            <InputText
-              v-model="employeeForm.lastName"
-              placeholder="กรอกนามสกุล"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อ-นามสกุล *</label>
+            <InputText v-model="employeeForm.name" placeholder="กรุณาระบุชื่อ-นามสกุล" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-envelope mr-1.5 !text-sm"></i>
-              อีเมล *
-            </label>
-            <InputText
-              v-model="employeeForm.email"
-              type="email"
-              placeholder="กรอกอีเมล"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะพนักงาน *</label>
+            <Select v-model="employeeForm.status" :options="employeeStore.statusEmployee" optionLabel="label"
+              optionValue="value" placeholder="เลือกสถานะพนักงาน" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-phone mr-1.5 !text-sm"></i>
-              เบอร์โทรศัพท์ *
-            </label>
-            <InputText
-              v-model="employeeForm.phone"
-              placeholder="กรอกเบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ตำแหน่ง *</label>
+            <InputText v-model="employeeForm.position" placeholder="กรุณาระบุตำแหน่ง" fluid size="small" />
           </div>
 
           <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-calendar mr-1.5 !text-sm"></i>
-              วันเกิด
-            </label>
-            <Calendar v-model="employeeForm.birthDate" showIcon fluid size="small" />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">วันเริ่มงาน *</label>
+            <DatePicker v-model="startDateValue" dateFormat="dd/mm/yy" showIcon iconDisplay="input" fluid
+              size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก</label>
+            <Select v-model="employeeForm.department" :options="departmentOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกแผนก" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เงินเดือนช่วงทดลองงาน</label>
+            <InputNumber v-model="employeeForm.salaryPro" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุเงินเดือน" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เงินเดือนหลังผ่านงาน</label>
+            <InputNumber v-model="employeeForm.salary" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุเงินเดือน" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">เลขบัญชี</label>
+            <InputText v-model="employeeForm.bankAccount" placeholder="กรุณาระบุเลขบัญชี" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ธนาคาร</label>
+            <Select v-model="employeeForm.bankCode" :options="bankOptions" optionLabel="label" optionValue="value"
+              placeholder="เลือกธนาคาร" fluid size="small">
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <img :src="slotProps.option.icon" :alt="slotProps.option.label" class="w-5 h-5" />
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </Select>
           </div>
 
           <div class="md:col-span-2">
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-map-marker mr-1.5 !text-sm"></i>
-              ที่อยู่
-            </label>
-            <Textarea
-              v-model="employeeForm.address"
-              placeholder="กรอกที่อยู่"
-              rows="2"
-              fluid
-              size="small"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Work Information -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-briefcase text-green-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ข้อมูลการทำงาน</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-id-card mr-1.5 !text-sm"></i>
-              ตำแหน่ง *
-            </label>
-            <Select
-              v-model="employeeForm.position"
-              :options="positionOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกตำแหน่ง"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-building mr-1.5 !text-sm"></i>
-              แผนก *
-            </label>
-            <Select
-              v-model="employeeForm.department"
-              :options="departmentOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกแผนก"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-money-bill mr-1.5 !text-sm"></i>
-              เงินเดือน (บาท) *
-            </label>
-            <InputNumber
-              v-model="employeeForm.salary"
-              :min="0"
-              :max="999999999"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-calendar mr-1.5 !text-sm"></i>
-              วันที่เริ่มงาน *
-            </label>
-            <Calendar v-model="employeeForm.startDate" showIcon fluid size="small" />
-          </div>
-
-          <div></div>
-        </div>
-      </div>
-
-      <!-- Emergency Contact -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="pi pi-exclamation-circle text-red-600"></i>
-          <h4 class="text-lg font-[500]! text-gray-800">ผู้ติดต่อฉุกเฉิน</h4>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-user mr-1.5 !text-sm"></i>
-              ชื่อผู้ติดต่อ
-            </label>
-            <InputText
-              v-model="employeeForm.emergencyContact"
-              placeholder="กรอกชื่อผู้ติดต่อฉุกเฉิน"
-              fluid
-              size="small"
-            />
-          </div>
-
-          <div>
-            <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
-              <i class="pi pi-phone mr-1.5 !text-sm"></i>
-              เบอร์โทรศัพท์
-            </label>
-            <InputText
-              v-model="employeeForm.emergencyPhone"
-              placeholder="กรอกเบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
+            <label class="text-sm font-medium text-gray-700 mb-1 block">หมายเหตุ</label>
+            <Textarea v-model="employeeForm.note" placeholder="กรอกหมายเหตุ (ถ้ามี)" rows="3" fluid size="small" />
           </div>
         </div>
       </div>
@@ -979,186 +768,91 @@ const departmentOptions = [
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeEditModal"
-          size="small"
-        />
-        <Button
-          label="บันทึกการแก้ไข"
-          icon="pi pi-check"
-          @click="handleUpdateEmployee"
-          severity="success"
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeEditModal" size="small" />
+        <Button label="บันทึกการแก้ไข" icon="pi pi-check" @click="handleUpdateEmployee" :loading="isUpdatingEmployee"
+          severity="success" size="small" />
       </div>
     </template>
   </Dialog>
 
-  <!-- Detail Employee Modal -->
-  <Dialog
-    v-model:visible="showDetailModal"
-    modal
-    :style="{ width: '50rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <!-- Add Department Modal -->
+  <Dialog v-model:visible="showAddDepartmentModal" modal :style="{ width: '40rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
-          <i class="pi pi-user text-white text-lg"></i>
+        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-building text-white text-lg"></i>
         </div>
         <div>
-          <h3 class="text-lg font-semibold! text-gray-800">รายละเอียดพนักงาน</h3>
-          <p class="text-sm text-gray-600">ข้อมูลพนักงานโดยละเอียด</p>
+          <h3 class="text-lg font-semibold! text-gray-800">เพิ่มแผนกใหม่</h3>
+          <p class="text-sm text-gray-600">กรอกข้อมูลแผนกให้ครบถ้วน</p>
         </div>
       </div>
     </template>
 
-    <div v-if="selectedEmployee" class="space-y-6">
-      <!-- Profile Header -->
-      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-        <div class="flex items-center gap-4">
-          <Avatar
-            :label="getInitials(selectedEmployee.firstName, selectedEmployee.lastName)"
-            class="bg-blue-500 text-white"
-            size="xlarge"
-            shape="circle"
-          />
-          <div class="flex-1">
-            <h3 class="text-2xl font-bold text-gray-900">
-              {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}
-            </h3>
-            <p class="text-gray-600">{{ selectedEmployee.position }}</p>
-            <div class="flex items-center gap-2 mt-2">
-              <span class="text-sm text-gray-500">รหัส: {{ selectedEmployee.employeeId }}</span>
-            </div>
+    <div class="space-y-4">
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="space-y-3">
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแผนก *</label>
+            <InputText v-model="departmentForm.name" placeholder="กรุณาระบุชื่อแผนก" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
+            <Textarea v-model="departmentForm.detail" placeholder="กรอกรายละเอียดแผนก" rows="3" fluid size="small" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">หมายเหตุ</label>
+            <Textarea v-model="departmentForm.note" placeholder="กรอกหมายเหตุ (ถ้ามี)" rows="2" fluid size="small" />
           </div>
         </div>
       </div>
-
-      <!-- Information Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Personal Information -->
-        <Card>
-          <template #header>
-            <div class="flex items-center gap-2 px-6 pt-6">
-              <i class="pi pi-user text-blue-600"></i>
-              <h4 class="text-lg font-semibold text-gray-900">ข้อมูลส่วนตัว</h4>
-            </div>
-          </template>
-          <template #content>
-            <div class="space-y-3 px-6 pb-6">
-              <div>
-                <label class="text-sm text-gray-600">อีเมล</label>
-                <p class="font-medium text-gray-900">{{ selectedEmployee.email }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">เบอร์โทรศัพท์</label>
-                <p class="font-medium text-gray-900">{{ selectedEmployee.phone }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">วันเกิด</label>
-                <p class="font-medium text-gray-900">
-                  {{ selectedEmployee.birthDate ? formatDate(selectedEmployee.birthDate) : '-' }}
-                </p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">ที่อยู่</label>
-                <p class="font-medium text-gray-900">{{ selectedEmployee.address || '-' }}</p>
-              </div>
-            </div>
-          </template>
-        </Card>
-
-        <!-- Work Information -->
-        <Card>
-          <template #header>
-            <div class="flex items-center gap-2 px-6 pt-6">
-              <i class="pi pi-briefcase text-green-600"></i>
-              <h4 class="text-lg font-semibold text-gray-900">ข้อมูลการทำงาน</h4>
-            </div>
-          </template>
-          <template #content>
-            <div class="space-y-3 px-6 pb-6">
-              <div>
-                <label class="text-sm text-gray-600">ตำแหน่ง</label>
-                <p class="font-medium text-gray-900">{{ selectedEmployee.position }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">แผนก</label>
-                <p class="font-medium text-gray-900">{{ selectedEmployee.department }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">เงินเดือน</label>
-                <p class="font-medium text-green-600">
-                  {{ formatCurrency(selectedEmployee.salary) }}
-                </p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">วันที่เริ่มงาน</label>
-                <p class="font-medium text-gray-900">
-                  {{ formatDate(selectedEmployee.startDate) }}
-                </p>
-              </div>
-            </div>
-          </template>
-        </Card>
-      </div>
-
-      <!-- Emergency Contact -->
-      <Card>
-        <template #header>
-          <div class="flex items-center gap-2 px-6 pt-6">
-            <i class="pi pi-exclamation-circle text-red-600"></i>
-            <h4 class="text-lg font-semibold text-gray-900">ผู้ติดต่อฉุกเฉิน</h4>
-          </div>
-        </template>
-        <template #content>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pb-6">
-            <div>
-              <label class="text-sm text-gray-600">ชื่อผู้ติดต่อ</label>
-              <p class="font-medium text-gray-900">
-                {{ selectedEmployee.emergencyContact || '-' }}
-              </p>
-            </div>
-            <div>
-              <label class="text-sm text-gray-600">เบอร์โทรศัพท์</label>
-              <p class="font-medium text-gray-900">{{ selectedEmployee.emergencyPhone || '-' }}</p>
-            </div>
-          </div>
-        </template>
-      </Card>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeDetailModal"
-          size="small"
-        />
-        <Button
-          label="แก้ไข"
-          icon="pi pi-pencil"
-          severity="warning"
-          @click="
-            () => {
-              closeDetailModal()
-              if (selectedEmployee) openEditModal(selectedEmployee)
-            }
-          "
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeAddDepartmentModal" size="small" />
+        <Button label="เพิ่มแผนก" icon="pi pi-check" @click="handleCreateDepartment" :loading="isCreatingDepartment"
+          severity="success" size="small" />
+      </div>
+    </template>
+  </Dialog>
+
+  <Dialog v-model:visible="showDeleteEmployeeModal" v-if="selectedEmployee" modal :style="{ width: '30rem' }"
+    @update:visible="closeDeleteEmployeeModal" :pt="{
+      header: 'p-4',
+      footer: 'p-4',
+    }">
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-trash text-white text-lg"></i>
+        </div>
+        <div>
+          <h3 class=" font-semibold! text-gray-800">ลบข้อมูลพนักงาน</h3>
+          <p class="text-sm text-gray-600">คุณต้องการลบข้อมูลพนักงานนี้หรือไม่?</p>
+        </div>
+      </div>
+    </template>
+
+    <div class="space-y-4">
+      <div class="flex items-center gap-3">
+        <i class="pi pi-exclamation-triangle text-red-600 !text-2xl"></i>
+        <p class="text-gray-800 font-medium!">คุณต้องการลบข้อมูลพนักงาน <span class="font-bold">{{
+            selectedEmployee.displayName || selectedEmployee.name }}</span> หรือไม่?</p>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeDeleteEmployeeModal" size="small" />
+        <Button label="ลบข้อมูล" icon="pi pi-trash" @click="deleteEmployeeMutation(selectedEmployee._id)"
+          :loading="isDeletingEmployee" severity="danger" size="small" />
       </div>
     </template>
   </Dialog>
