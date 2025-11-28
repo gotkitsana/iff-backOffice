@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
+import type { IDepartment } from './department'
 
 export const useEmployeeStore = defineStore('Employee', () => {
   async function onGetEmployees() {
@@ -27,12 +28,20 @@ export const useEmployeeStore = defineStore('Employee', () => {
     return data
   }
 
+  const statusEmployee = [
+    { label: 'ประจำ', value: 'active', severity: 'success' },
+    { label: 'รายวัน(ทดลองงาน)', value: 'trial', severity: 'warn' },
+    { label: 'รายวัน', value: 'daily', severity: 'info' },
+    { label: 'ทดลองงาน', value: 'test', severity: 'warn' },
+  ]
+
   return {
     onGetEmployees,
     onGetEmployeeByID,
     onCreateEmployee,
     onUpdateEmployee,
     onDeleteEmployee,
+    statusEmployee,
   }
 })
 
@@ -44,7 +53,7 @@ export type IEmployee = {
   status: string
   position: string
   startDate: number
-  department: string | null
+  department: IDepartment | null
   salaryPro: number
   salary: number
   bankCode: string
@@ -69,6 +78,7 @@ export type ICreateEmployeePayload = {
   note: string
 }
 
-export interface IUpdateEmployeePayload extends ICreateEmployeePayload {
+export interface IUpdateEmployeePayload extends ICreateEmployeePayload  {
+  department: string
   _id: string
 }

@@ -29,7 +29,7 @@ export type ICreateSalesPayload = {
   paymentDueDate?: Date | string // สำหรับเครดิต
   shippingAddress?: string // ที่อยู่จัดส่ง
   shippingProvince?: string // จังหวัดจัดส่ง
-  customProducts?: Array<{ name: string; quantity: number; description: string }> // สำหรับออเดอร์
+  customProducts?: Array<{ name: string; quantity: number; description: string; image?: string }> // สำหรับออเดอร์
   // Fields สำหรับการชำระเงิน
   payment?: 'cash' | 'transfer' | 'credit' | 'promptpay' | 'other'
   bankCode?: string
@@ -68,7 +68,7 @@ export type IUpdateSalesPayload = {
   paymentDueDate?: Date | string // สำหรับเครดิต
   shippingAddress?: string // ที่อยู่จัดส่ง
   shippingProvince?: string // จังหวัดจัดส่ง
-  customProducts?: Array<{ name: string; quantity: number; description: string }> // สำหรับออเดอร์
+  customProducts?: Array<{ name: string; quantity: number; description: string; image?: string }> // สำหรับออเดอร์
 
   cat: number
 }
@@ -105,7 +105,7 @@ export type ISales = {
   paymentDueDate?: Date | string // สำหรับเครดิต
   shippingAddress?: string // ที่อยู่จัดส่ง
   shippingProvince?: string // จังหวัดจัดส่ง
-  customProducts?: Array<{ name: string; quantity: number; description: string }> // สำหรับออเดอร์
+  customProducts?: Array<{ name: string; quantity: number; description: string; image?: string }> // สำหรับออเดอร์
 }
 
 export type StatusWorkflow = Record<

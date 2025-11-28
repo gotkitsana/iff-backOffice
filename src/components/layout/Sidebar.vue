@@ -253,6 +253,11 @@ const menuSections = [
         isDropdown: true,
         submenu: [
           {
+            icon: 'pi pi-building-columns',
+            label: 'โครงสร้างองค์กร',
+            route: 'organization-structure',
+          },
+          {
             icon: 'pi pi-users',
             label: 'ข้อมูลพนักงาน',
             route: 'employee',
