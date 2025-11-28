@@ -15,6 +15,7 @@ import {
 } from 'primevue'
 import { toast } from 'vue3-toastify'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useRouter } from 'vue-router'
 import {
   useEmployeeStore,
   type IEmployee,
@@ -24,7 +25,6 @@ import {
 import {
   useDepartmentStore,
   type IDepartment,
-  type ICreateDepartmentPayload,
 } from '@/stores/hr/department'
 import formatCurrency from '@/utils/formatCurrency'
 import BankData from '@/config/BankData'
@@ -34,6 +34,7 @@ import dayjs from 'dayjs'
 const employeeStore = useEmployeeStore()
 const departmentStore = useDepartmentStore()
 const queryClient = useQueryClient()
+const router = useRouter()
 
 // Queries
 const { data: employees } = useQuery<IEmployee[]>({
@@ -49,7 +50,6 @@ const { data: departments } = useQuery<IDepartment[]>({
 // Modals
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-const showAddDepartmentModal = ref(false)
 const selectedEmployee = ref<IEmployee | null>(null)
 const searchQuery = ref('')
 
@@ -82,11 +82,6 @@ const employeeForm = ref<{
   note: '',
 })
 
-const departmentForm = ref<ICreateDepartmentPayload>({
-  name: '',
-  detail: '',
-  note: '',
-})
 
 // Computed
 const filteredEmployees = computed(() => {
@@ -313,15 +308,6 @@ const closeEditModal = () => {
   resetEmployeeForm()
 }
 
-const openAddDepartmentModal = () => {
-  resetDepartmentForm()
-  showAddDepartmentModal.value = true
-}
-
-const closeAddDepartmentModal = () => {
-  showAddDepartmentModal.value = false
-  resetDepartmentForm()
-}
 
 const resetEmployeeForm = () => {
   employeeForm.value = {
@@ -340,13 +326,6 @@ const resetEmployeeForm = () => {
   }
 }
 
-const resetDepartmentForm = () => {
-  departmentForm.value = {
-    name: '',
-    detail: '',
-    note: '',
-  }
-}
 
 // Mutations
 const { mutate: createEmployee, isPending: isCreatingEmployee } = useMutation({
@@ -397,21 +376,6 @@ const { mutate: deleteEmployeeMutation, isPending: isDeletingEmployee } = useMut
   },
 })
 
-const { mutate: createDepartment, isPending: isCreatingDepartment } = useMutation({
-  mutationFn: (payload: ICreateDepartmentPayload) => departmentStore.onCreateDepartment(payload),
-  onSuccess: (data: { data?: unknown; error?: unknown }) => {
-    if (data.data) {
-      toast.success('เพิ่มแผนกสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['get_departments'] })
-      closeAddDepartmentModal()
-    } else {
-      toast.error('เพิ่มแผนกไม่สำเร็จ')
-    }
-  },
-  onError: () => {
-    toast.error('เพิ่มแผนกไม่สำเร็จ')
-  },
-})
 
 // Handlers
 const handleCreateEmployee = () => {
@@ -466,14 +430,6 @@ const closeDeleteEmployeeModal = () => {
   selectedEmployee.value = null
 }
 
-const handleCreateDepartment = () => {
-  if (!departmentForm.value.name) {
-    toast.error('กรุณากรอกชื่อแผนก')
-    return
-  }
-
-  createDepartment(departmentForm.value)
-}
 </script>
 
 <template>
@@ -485,8 +441,11 @@ const handleCreateDepartment = () => {
       <p class="text-sm text-gray-600">จัดการข้อมูลพนักงานและติดตามสถานะการทำงาน</p>
     </div>
     <div class="flex justify-end gap-2">
-      <Button label="เพิ่มแผนก" icon="pi pi-building" severity="info" size="small" @click="openAddDepartmentModal" />
+
       <Button label="เพิ่มพนักงาน" icon="pi pi-plus" severity="success" size="small" @click="openAddModal" />
+      <Button label="ตั้งค่าแผนก" icon="pi pi-cog" severity="info" size="small"
+        @click="router.push('/employee/setting-department')" />
+
     </div>
   </div>
 
@@ -775,53 +734,6 @@ const handleCreateDepartment = () => {
     </template>
   </Dialog>
 
-  <!-- Add Department Modal -->
-  <Dialog v-model:visible="showAddDepartmentModal" modal :style="{ width: '40rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
-      header: 'p-4',
-      footer: 'p-4',
-    }">
-    <template #header>
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-          <i class="pi pi-building text-white text-lg"></i>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold! text-gray-800">เพิ่มแผนกใหม่</h3>
-          <p class="text-sm text-gray-600">กรอกข้อมูลแผนกให้ครบถ้วน</p>
-        </div>
-      </div>
-    </template>
-
-    <div class="space-y-4">
-      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="space-y-3">
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อแผนก *</label>
-            <InputText v-model="departmentForm.name" placeholder="กรุณาระบุชื่อแผนก" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
-            <Textarea v-model="departmentForm.detail" placeholder="กรอกรายละเอียดแผนก" rows="3" fluid size="small" />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-700 mb-1 block">หมายเหตุ</label>
-            <Textarea v-model="departmentForm.note" placeholder="กรอกหมายเหตุ (ถ้ามี)" rows="2" fluid size="small" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-end gap-3">
-        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeAddDepartmentModal" size="small" />
-        <Button label="เพิ่มแผนก" icon="pi pi-check" @click="handleCreateDepartment" :loading="isCreatingDepartment"
-          severity="success" size="small" />
-      </div>
-    </template>
-  </Dialog>
 
   <Dialog v-model:visible="showDeleteEmployeeModal" v-if="selectedEmployee" modal :style="{ width: '30rem' }"
     @update:visible="closeDeleteEmployeeModal" :pt="{

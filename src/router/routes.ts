@@ -14,6 +14,7 @@ import Unauthorized from '@/views/UnauthorizedView.vue'
 import NotFound from '@/views/NotFoundView.vue'
 import DashboardLayout from '@/components/layout/DashboardLayout.vue'
 import Employee from '@/views/Employee/EmployeeView.vue'
+import SettingDepartment from '@/views/Employee/SettingDepartmentView.vue'
 import Production from '@/views/Production/ProductionView.vue'
 import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
@@ -301,6 +302,21 @@ export default [
           title: 'ข้อมูลพนักงาน',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'ข้อมูลพนักงาน' }],
+        },
+      },
+      {
+        path: '/employee/setting-department',
+        name: 'employee-setting-department',
+        component: SettingDepartment,
+        meta: {
+          title: 'ตั้งค่าแผนก',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'บุคลากร' },
+            { label: 'ข้อมูลพนักงาน', path: '/employee' },
+            { label: 'ตั้งค่าแผนก' },
+          ],
         },
       },
       {
