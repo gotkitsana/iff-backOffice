@@ -18,6 +18,7 @@ import SettingDepartment from '@/views/Employee/SettingDepartmentView.vue'
 import Production from '@/views/Production/ProductionView.vue'
 import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
+import ProductionFoodCalculation from '@/views/Production/ProductionFoodCalculationView.vue'
 import Product from '@/views/Product/ProductView.vue'
 import ProductOptionSetting from '@/views/Product/Setting/ProductOptionSetting.vue'
 import GreenhouseMapView from '@/views/Product/Fish/GreenhouseMapView.vue'
@@ -436,6 +437,20 @@ export default [
           { label: 'ระบบการผลิต' },
           { label: 'ผลิต' },
           { label: 'ระบบวิเคราะห์ควบคุมการใช้ไฟฟ้า' },
+        ],
+      },
+      {
+        path: '/production/food-calculation',
+        name: 'production-food-calculation',
+        component: ProductionFoodCalculation,
+        meta: {
+          title: 'สูตรคำนวณปริมาณอาหาร',
+        },
+        roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+        breadcrumb: [
+          { label: 'ระบบการผลิต' },
+          { label: 'ผลิต' },
+          { label: 'สูตรคำนวณปริมาณอาหาร' },
         ],
       },
       {

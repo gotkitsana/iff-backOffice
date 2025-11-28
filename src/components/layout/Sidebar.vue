@@ -334,6 +334,11 @@ const menuSections = [
             label: 'ระบบวิเคราะห์ควบคุมการใช้ไฟฟ้า',
             route: 'production-electricity-analysis',
           },
+          {
+            icon: 'pi pi-calculator',
+            label: 'สูตรคำนวณปริมาณอาหาร',
+            route: 'production-food-calculation',
+          },
         ],
       },
       // {
