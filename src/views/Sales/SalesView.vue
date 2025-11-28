@@ -350,8 +350,7 @@ const getPaymentMethodSeverity = (
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div
           class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 text-white cursor-pointer hover:shadow-lg !transition !ease-in-out !duration-150 hover:scale-105"
-          @click="openKPIModal"
-        >
+          @click="openKPIModal">
           <div class="flex flex-col">
             <div class="flex items-center justify-between mb-1">
               <h2 class="text-lg font-semibold!">สรุปยอดขาย</h2>
@@ -391,9 +390,7 @@ const getPaymentMethodSeverity = (
           <TabList class="flex border-b border-gray-200 overflow-x-auto bg-gray-50/50">
             <!-- All Tab -->
             <Tab value="all" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-list text-blue-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ทั้งหมด</span>
                 <Tag :value="allCount.toString()" severity="info" size="small" class="ml-1" />
@@ -402,69 +399,42 @@ const getPaymentMethodSeverity = (
 
             <!-- Status Tabs -->
             <Tab value="order" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-shopping-cart text-orange-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ออเดอร์</span>
-                <Tag
-                  :value="orderStatusCount.toString()"
-                  severity="warning"
-                  size="small"
-                  class="ml-1"
-                />
+                <Tag :value="orderStatusCount.toString()" severity="warning" size="small" class="ml-1" />
               </div>
             </Tab>
             <Tab value="wait_payment" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-credit-card text-blue-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">รอชำระเงิน</span>
-                <Tag
-                  :value="waitPaymentCount.toString()"
-                  severity="warning"
-                  size="small"
-                  class="ml-1"
-                />
+                <Tag :value="waitPaymentCount.toString()" severity="warning" size="small" class="ml-1" />
               </div>
             </Tab>
             <Tab value="preparing" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-box text-purple-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">แพ็ครอจัดส่ง</span>
                 <Tag :value="preparingCount.toString()" severity="info" size="small" class="ml-1" />
               </div>
             </Tab>
             <Tab value="shipping" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-truck text-indigo-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ระหว่างขนส่ง</span>
                 <Tag :value="shippingCount.toString()" severity="info" size="small" class="ml-1" />
               </div>
             </Tab>
             <Tab value="received" class="flex-shrink-0">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-home text-green-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">ได้รับสินค้าแล้ว</span>
-                <Tag
-                  :value="deliveredCount.toString()"
-                  severity="success"
-                  size="small"
-                  class="ml-1"
-                />
+                <Tag :value="deliveredCount.toString()" severity="success" size="small" class="ml-1" />
               </div>
             </Tab>
             <Tab value="damaged" class="flex-shrink-0 pr-10">
-              <div
-                class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg"
-              >
+              <div class="flex items-center gap-1.5 px-3 transition-all duration-200 hover:bg-white/80 rounded-t-lg">
                 <i class="pi pi-exclamation-triangle text-red-600 text-sm"></i>
                 <span class="text-sm font-medium text-gray-700">สินค้าเสียหาย</span>
                 <Tag :value="damagedCount.toString()" severity="danger" size="small" class="ml-1" />
@@ -485,9 +455,7 @@ const getPaymentMethodSeverity = (
               <span class="font-medium text-gray-700">แสดงข้อมูล:</span>
             </div>
             <div class="flex items-center gap-2">
-              <Tag
-                :value="currentFilterDisplay"
-                :severity="
+              <Tag :value="currentFilterDisplay" :severity="
                   activeTab === 'all'
                     ? 'info'
                     : activeTab === 'received'
@@ -495,43 +463,27 @@ const getPaymentMethodSeverity = (
                     : activeTab === 'damaged'
                     ? 'danger'
                     : 'warning'
-                "
-                size="small"
-              />
+                " size="small" />
               <span class="text-sm text-gray-600"> ({{ filteredSales.length }} รายการ) </span>
             </div>
           </div>
-          <Button
-            label="สร้างรายการขาย"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="openAddModal"
-          />
+          <Button label="สร้างรายการขาย" icon="pi pi-plus" severity="success" size="small" @click="openAddModal" />
         </div>
       </template>
       <template #content>
-        <DataTable
-          :value="filteredSales"
-          :loading="isLoadingSales"
-          :paginator="true"
-          :rows="10"
-          scrollHeight="600px"
-        >
+        <DataTable :value="filteredSales" :loading="isLoadingSales" :paginator="true" :rows="10" scrollHeight="600px">
           <Column field="uat" header="วันที่ขาย" :pt="{ columnHeaderContent: 'min-w-[4rem]' }">
             <template #body="slotProps">
               <span class="text-sm text-gray-600">{{
                 formatDate(new Date(slotProps.data.uat))
-              }}</span>
+                }}</span>
             </template>
           </Column>
 
           <Column field="item" header="เลขรายการ" :pt="{ columnHeaderContent: 'min-w-[7rem]' }">
             <template #body="slotProps">
-              <span
-                class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm uppercase"
-                @click="openDetailModal(slotProps.data)"
-              >
+              <span class="font-medium! text-blue-600 cursor-pointer hover:underline text-sm uppercase"
+                @click="openDetailModal(slotProps.data)">
                 {{ slotProps.data.item }}
               </span>
             </template>
@@ -539,68 +491,42 @@ const getPaymentMethodSeverity = (
 
           <Column field="user.displayName" header="ชื่อเล่น">
             <template #body="slotProps">
-              <div
-                class="cursor-pointer duration-200"
-                @click="openMemberDetailModal(slotProps.data.user)"
-                v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'"
-              >
-                <p
-                  class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors"
-                >
+              <div class="cursor-pointer duration-200" @click="openMemberDetailModal(slotProps.data.user)"
+                v-tooltip.top="'คลิกเพื่อดูรายละเอียดลูกค้า'">
+                <p class="text-gray-700 text-sm truncate group-hover:text-blue-600 transition-colors">
                   {{ findMemberData(slotProps.data.user)?.displayName || '-' }}
                 </p>
               </div>
             </template>
           </Column>
 
-          <Column
-            field="status"
-            header="สถานะรายการ"
-            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="status" header="สถานะรายการ"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <div class="flex flex-col items-center gap-2">
-                <Tag
-                  :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
-                  :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity"
-                  size="small"
+                <Tag :value="salesStore.getStatusTag(slotProps.data.sellingStatus).label"
+                  :severity="salesStore.getStatusTag(slotProps.data.sellingStatus).severity" size="small"
                   class="cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  @click="openStatusManager(slotProps.data)"
-                  v-tooltip.top="'คลิกเพื่อเปลี่ยนสถานะ'"
-                />
+                  @click="openStatusManager(slotProps.data)" v-tooltip.top="'คลิกเพื่อเปลี่ยนสถานะ'" />
               </div>
             </template>
           </Column>
 
-          <Column
-            field="paymentMethod"
-            header="สถานะการชำระ"
-            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="paymentMethod" header="สถานะการชำระ"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
-              <Tag
-                :value="
+              <Tag :value="
                   salesStore.paymentMethods.find((pm) => pm.value === slotProps.data.paymentMethod)
                     ?.label || '-'
-                "
-                :severity="getPaymentMethodSeverity(slotProps.data.paymentMethod)"
-                size="small"
-              />
+                " :severity="getPaymentMethodSeverity(slotProps.data.paymentMethod)" size="small" />
             </template>
           </Column>
 
-          <Column
-            field="products"
-            header="สินค้า"
-            :pt="{ columnHeaderContent: 'min-w-[9rem]', bodyCell: 'p-2' }"
-          >
+          <Column field="products" header="สินค้า" :pt="{ columnHeaderContent: 'min-w-[9rem]', bodyCell: 'p-2' }">
             <template #body="slotProps">
-              <div
-                class="cursor-pointer group"
-                @click="openProductDetailModal(slotProps.data)"
-                v-tooltip.top="'ดูรายละเอียดสินค้า'"
-              >
-                <div class="flex items-center justify-between gap-x-1.5">
+              <div class="cursor-pointer group" @click="openProductDetailModal(slotProps.data)"
+                v-tooltip.top="'ดูรายละเอียดสินค้า'">
+                <div  class="flex items-center justify-between gap-x-1.5">
                   <p class="text-sm text-gray-600 group-hover:text-blue-500">
                     รายการสินค้า {{ slotProps.data.products?.length }} รายการ
                   </p>
@@ -612,11 +538,8 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="totalAmount"
-            header="ราคารวม"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
-          >
+          <Column field="totalAmount" header="ราคารวม"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }">
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-semibold text-green-600 text-sm">
@@ -629,11 +552,8 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="deposit-discount"
-            header="มัดจำ/ส่วนลด"
-            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-end', bodyCell: 'text-end' }"
-          >
+          <Column field="deposit-discount" header="มัดจำ/ส่วนลด"
+            :pt="{ columnHeaderContent: 'min-w-[7rem] justify-end', bodyCell: 'text-end' }">
             <template #body="slotProps">
               <div class="text-end space-y-0.5">
                 <div v-if="slotProps.data.deposit > 0" class="text-gray-900 text-sm">
@@ -642,21 +562,15 @@ const getPaymentMethodSeverity = (
                 <div v-if="slotProps.data.discount > 0" class="text-red-600 text-sm">
                   ส่วนลด: {{ formatCurrency(slotProps.data.discount) }}
                 </div>
-                <div
-                  v-if="slotProps.data.deposit === 0 && slotProps.data.discount === 0"
-                  class="text-gray-400 text-xs"
-                >
+                <div v-if="slotProps.data.deposit === 0 && slotProps.data.discount === 0" class="text-gray-400 text-xs">
                   ไม่มี
                 </div>
               </div>
             </template>
           </Column>
 
-          <Column
-            field="deliveryNo"
-            header="ค่าจัดส่ง"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }"
-          >
+          <Column field="deliveryNo" header="ค่าจัดส่ง"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-end', bodyCell: 'text-end' }">
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-medium! text-green-600 text-sm">
@@ -666,11 +580,8 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="netAmount"
-            header="ยอดสุทธิ"
-            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }"
-          >
+          <Column field="netAmount" header="ยอดสุทธิ"
+            :pt="{ columnHeaderContent: 'min-w-[6rem] justify-end', bodyCell: 'text-end' }">
             <template #body="slotProps">
               <div class="text-end">
                 <div class="font-semibold text-green-600 text-sm">
@@ -683,19 +594,13 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="paymentMethod"
-            header="ช่องทางการชำระเงิน"
-            :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="paymentMethod" header="ช่องทางการชำระเงิน"
+            :pt="{ columnHeaderContent: 'min-w-[8.25rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <div class="flex flex-col items-center">
                 <div v-if="slotProps.data.bankCode" class="flex items-center gap-1.5">
-                  <img
-                    :src="BankData[slotProps.data.bankCode]?.icon"
-                    :alt="slotProps.data.bankCode"
-                    class="w-6 h-6 mx-auto"
-                  />
+                  <img :src="BankData[slotProps.data.bankCode]?.icon" :alt="slotProps.data.bankCode"
+                    class="w-6 h-6 mx-auto" />
                   <div class="text-sm text-gray-600">
                     {{ BankData[slotProps.data.bankCode]?.name || slotProps.data.bankCode }}
                   </div>
@@ -707,11 +612,8 @@ const getPaymentMethodSeverity = (
             </template>
           </Column>
 
-          <Column
-            field="seller"
-            header="ผู้ขาย"
-            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }"
-          >
+          <Column field="seller" header="ผู้ขาย"
+            :pt="{ columnHeaderContent: 'min-w-[5rem] justify-center', bodyCell: 'text-center' }">
             <template #body="slotProps">
               <p class="text-sm text-gray-900 font-medium">
                 {{ admins?.find((admin) => admin._id === slotProps.data.seller)?.name }}
@@ -721,39 +623,15 @@ const getPaymentMethodSeverity = (
 
           <Column field="note" header="หมายเหตุ" :pt="{ columnHeaderContent: 'min-w-[5rem]' }" />
 
-          <Column
-            header="จัดการ"
-            :exportable="false"
-            frozen
-            :pt="{ columnHeaderContent: 'justify-end' }"
-          >
+          <Column header="จัดการ" :exportable="false" frozen :pt="{ columnHeaderContent: 'justify-end' }">
             <template #body="slotProps">
               <div class="flex gap-2 justify-end">
-                <Button
-                  v-if="slotProps.data.sellingStatus < 5 && false"
-                  icon="pi pi-sync"
-                  severity="info"
-                  size="small"
-                  outlined
-                  @click="openStatusManager(slotProps.data)"
-                  v-tooltip.top="'เปลี่ยนสถานะ'"
-                />
-                <Button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  outlined
-                  @click="openDeleteModal(slotProps.data)"
-                  v-tooltip.top="'ลบรายการขาย'"
-                />
-                <Button
-                  icon="pi pi-pencil"
-                  severity="warning"
-                  size="small"
-                  outlined
-                  @click="openEditModal(slotProps.data)"
-                  v-tooltip.top="'แก้ไขข้อมูล'"
-                />
+                <Button v-if="slotProps.data.sellingStatus < 5 && false" icon="pi pi-sync" severity="info" size="small"
+                  outlined @click="openStatusManager(slotProps.data)" v-tooltip.top="'เปลี่ยนสถานะ'" />
+                <Button icon="pi pi-trash" severity="danger" size="small" outlined
+                  @click="openDeleteModal(slotProps.data)" v-tooltip.top="'ลบรายการขาย'" />
+                <Button icon="pi pi-pencil" severity="warning" size="small" outlined
+                  @click="openEditModal(slotProps.data)" v-tooltip.top="'แก้ไขข้อมูล'" />
               </div>
             </template>
           </Column>
@@ -766,61 +644,33 @@ const getPaymentMethodSeverity = (
   <ModalAddSale v-model:visible="showAddModal" :admins="admins || []" />
 
   <!-- แก้ไขรายการขาย -->
-  <ModalEditSale
-    v-if="selectedSaleForEdit"
-    :visible="showEditModal"
-    @close-edit-modal="closeEditModal"
-    :sale-data="selectedSaleForEdit"
-    :admins="admins || []"
-  />
+  <ModalEditSale v-if="selectedSaleForEdit" :visible="showEditModal" @close-edit-modal="closeEditModal"
+    :sale-data="selectedSaleForEdit" :admins="admins || []" />
 
   <!-- รายละเอียดรายการขาย -->
-  <ModalSaleDetail
-    v-if="selectedSaleForDetail"
-    :visible="showDetailModal"
-    @close-detail-modal="closeDetailModal"
-    :sale-data="selectedSaleForDetail"
-  />
+  <ModalSaleDetail v-if="selectedSaleForDetail" :visible="showDetailModal" @close-detail-modal="closeDetailModal"
+    :sale-data="selectedSaleForDetail" />
 
   <!-- จัดการสถานะการขาย -->
-  <StatusManager
-    v-if="selectedSale"
-    v-model:visible="showStatusManager"
-    :current-status="
+  <StatusManager v-if="selectedSale" v-model:visible="showStatusManager" :current-status="
       selectedSale
         ? typeof selectedSale.sellingStatus === 'number'
           ? convertStatusNumberToString(selectedSale.sellingStatus)
           : selectedSale.sellingStatus
         : ''
-    "
-    :order-number="selectedSale?.item || ''"
-    :current-data="selectedSale"
-    :target-status="targetStatus"
-  />
+    " :order-number="selectedSale?.item || ''" :current-data="selectedSale" :target-status="targetStatus" />
 
   <!-- รายละเอียดสินค้า -->
-  <ModalProductDetail
-    v-if="selectedSaleForProductDetail"
-    :visible="showProductDetailModal"
-    @close-product-detail-modal="closeProductDetailModal"
-    :sale-data="selectedSaleForProductDetail"
-  />
+  <ModalProductDetail v-if="selectedSaleForProductDetail" :visible="showProductDetailModal"
+    @close-product-detail-modal="closeProductDetailModal" :sale-data="selectedSaleForProductDetail" />
 
   <!-- ลบรายการขาย -->
-  <ModalDeleteSale
-    v-if="!!selectedSaleForDelete"
-    :showDeleteModal="showDeleteModal"
-    @onCloseDeleteModal="closeDeleteModal"
-    :saleData="selectedSaleForDelete"
-  />
+  <ModalDeleteSale v-if="!!selectedSaleForDelete" :showDeleteModal="showDeleteModal"
+    @onCloseDeleteModal="closeDeleteModal" :saleData="selectedSaleForDelete" />
 
   <!-- รายละเอียดลูกค้า -->
-  <ModalDetailMember
-    v-if="!!selectedMemberId"
-    :showDetailModal="showMemberDetailModal"
-    @onCloseDetailModal="closeMemberDetailModal"
-    :id="selectedMemberId"
-  />
+  <ModalDetailMember v-if="!!selectedMemberId" :showDetailModal="showMemberDetailModal"
+    @onCloseDetailModal="closeMemberDetailModal" :id="selectedMemberId" />
 
   <!-- KPI Modal -->
   <ModalKPI v-model:visible="showKPIModal" :sales-data="salesData || []" />

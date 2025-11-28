@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, Button, Card, Divider } from 'primevue'
+import { Dialog, Button, Card, Divider, Image } from 'primevue'
 import formatCurrency from '@/utils/formatCurrency'
 import type { ISales } from '@/types/sales'
 import CardProductList from '../shared/CardProductList.vue'
@@ -30,7 +30,7 @@ const totalAmount = computed(() => {
   const productTotal = products.value.reduce((sum, product) => {
     return sum + (product.price || 0) * product.quantity
   }, 0)
-  return (productTotal || 0)- (props.saleData.discount || 0) - (props.saleData.deliveryNo || 0)
+  return (productTotal || 0) - (props.saleData.discount || 0) - (props.saleData.deliveryNo || 0)
 })
 
 const productTotal = computed(() => {
@@ -67,23 +67,15 @@ const getProductImage = (productId: string) => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '60rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '60rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       content: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
+        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-box text-white text-lg"></i>
         </div>
         <div>
@@ -109,7 +101,7 @@ const getProductImage = (productId: string) => {
           <template #content>
             <div class="text-center">
               <div class="text-2xl font-bold text-green-600">
-                {{ products.reduce((sum, p) => sum + p.quantity, 0) }}
+                {{products.reduce((sum, p) => sum + p.quantity, 0)}}
               </div>
               <div class="text-sm text-green-700">จำนวนชิ้นรวม</div>
             </div>
@@ -129,37 +121,37 @@ const getProductImage = (productId: string) => {
       </div>
 
       <!-- Custom Products (for order) -->
-      <div
-        v-if="customProducts.length > 0 && saleData?.sellingStatus === 1"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="customProducts.length > 0 && saleData?.sellingStatus === 1"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <h4 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <i class="pi pi-shopping-cart text-orange-600"></i>
           สินค้านอกเหนือรายการ
         </h4>
         <div class="space-y-3">
-          <div
-            v-for="(product, index) in customProducts"
-            :key="index"
-            class="p-3 bg-gray-50 rounded-lg border border-gray-200"
-          >
+          <div v-for="(product, index) in customProducts" :key="index"
+            class="p-3 bg-gray-50 rounded-lg border border-gray-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
               <div>
                 <span class="text-sm font-medium text-gray-600">ชื่อสินค้า:</span>
                 <span class="text-sm font-semibold text-gray-900 ml-2">{{
                   product.name || '-'
-                }}</span>
+                  }}</span>
               </div>
               <div>
                 <span class="text-sm font-medium text-gray-600">จำนวน:</span>
                 <span class="text-sm font-semibold text-gray-900 ml-2">{{
                   product.quantity || 0
-                }}</span>
+                  }}</span>
               </div>
             </div>
             <div v-if="product.description">
               <span class="text-sm font-medium text-gray-600">รายละเอียด:</span>
               <p class="text-sm text-gray-700 mt-1">{{ product.description }}</p>
+            </div>
+            <div v-if="product.image" class="mt-3">
+              <span class="text-sm font-medium text-gray-600 block mb-1">รูปภาพสินค้า:</span>
+              <Image :src="getProductImageUrl(product.image)" :alt="product.name || 'Product image'"
+              width="150px" preview class="border border-gray-200 rounded-lg" />
             </div>
           </div>
         </div>
@@ -174,16 +166,9 @@ const getProductImage = (productId: string) => {
 
         <div class="space-y-2">
           <template v-for="(product, index) in products" :key="index">
-            <CardProductList
-              :name="product.name || ''"
-              :quantity="product.quantity || 0"
-              :price="product.price || 0"
-              :detail="''"
-              :category="handleFindCategory(product.category || '')"
-              :isMissing="!product.category"
-              :image="getProductImage(product.id)"
-              :sku="productsData?.find((p) => p._id === product.id)?.sku || ''"
-            />
+            <CardProductList :name="product.name || ''" :quantity="product.quantity || 0" :price="product.price || 0"
+              :detail="''" :category="handleFindCategory(product.category || '')" :isMissing="!product.category"
+              :image="getProductImage(product.id)" :sku="productsData?.find((p) => p._id === product.id)?.sku || ''" />
           </template>
         </div>
       </div>
@@ -198,31 +183,28 @@ const getProductImage = (productId: string) => {
               <span class="text-sm text-gray-600">มูลค่าสินค้ารวม:</span>
               <span class="text-sm font-semibold text-gray-900">{{
                 formatCurrency(productTotal)
-              }}</span>
+                }}</span>
             </div>
 
             <div class="flex justify-between items-center">
               <span class="text-sm text-gray-600">ค่าจัดส่ง:</span>
               <span class="text-sm font-semibold text-green-600">{{
                 formatCurrency(saleData?.deliveryNo || 0)
-              }}</span>
+                }}</span>
             </div>
 
             <div class="flex justify-between items-center">
               <span class="text-sm text-gray-600">ส่วนลด:</span>
               <span class="text-sm font-semibold text-red-600">{{
                 formatCurrency(saleData?.discount || 0)
-              }}</span>
+                }}</span>
             </div>
 
-            <div
-              v-if="saleData?.deposit && saleData.deposit > 0"
-              class="flex justify-between items-center"
-            >
+            <div v-if="saleData?.deposit && saleData.deposit > 0" class="flex justify-between items-center">
               <span class="text-sm text-gray-600">มัดจำ:</span>
               <span class="text-sm font-semibold text-blue-600">{{
                 formatCurrency(saleData.deposit)
-              }}</span>
+                }}</span>
             </div>
 
             <Divider class="my-2" />
@@ -231,7 +213,7 @@ const getProductImage = (productId: string) => {
               <span class="text-base font-semibold text-gray-800">ยอดสุทธิ:</span>
               <span class="text-lg font-bold text-green-600">{{
                 formatCurrency(totalAmount)
-              }}</span>
+                }}</span>
             </div>
           </div>
         </template>
@@ -240,13 +222,7 @@ const getProductImage = (productId: string) => {
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-        />
+        <Button label="ปิด" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
       </div>
     </template>
   </Dialog>

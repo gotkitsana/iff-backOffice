@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, provide } from 'vue'
-import { Dialog, Textarea, Select, InputNumber, Button } from 'primevue'
+import { Dialog, Textarea, Select, InputNumber, Button, FileUpload } from 'primevue'
 import {
   useProductStore,
   type IProduct,
   type IUpdateProductPayload,
+  type IUploadImageResponse,
 } from '@/stores/product/product'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -29,6 +30,12 @@ import { useProductManagement } from '@/composables/useProductManagement'
 import { useFormFieldUpdates } from '@/composables/useFormFieldUpdates'
 import { useSalesVisibility } from '@/composables/useSalesVisibility'
 import { useStatusHelpers } from '@/composables/useStatusHelpers'
+import { useUploadFileStore } from '@/stores/product/upload_file'
+import {
+  validateFileName,
+  ALLOWED_IMAGE_EXTENSIONS,
+} from '@/utils/fileNameGenerator'
+import { getProductImageUrl } from '@/utils/imageUrl'
 
 // Props
 const props = defineProps<{
@@ -98,7 +105,7 @@ const { getStatusStepIndex } = useStatusHelpers({
 })
 
 // Use product management
-const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+const customProducts = ref<Array<{ name: string; quantity: number; description: string; image?: string }>>([])
 const productManagement = useProductManagement({
   products: computed(() => saleForm.value.products || []),
   productsData: products,
@@ -217,14 +224,14 @@ const handleSubmit = () => {
   // Format products
   let formattedProducts:
     | {
-        id: string
-        category: string
-        price: number
-        quantity: number
-        retailID?: string
-        name?: string
-        unit?: string
-      }[]
+      id: string
+      category: string
+      price: number
+      quantity: number
+      retailID?: string
+      name?: string
+      unit?: string
+    }[]
     | null = null
 
   if (saleForm.value.paymentMethod !== 'order' && saleForm.value.products) {
@@ -263,12 +270,12 @@ const handleSubmit = () => {
       saleForm.value.paymentMethod === 'cash'
         ? 'cash'
         : saleForm.value.paymentMethod === 'transfer'
-        ? 'transfer'
-        : saleForm.value.paymentMethod === 'card'
-        ? 'credit'
-        : saleForm.value.paymentMethod === 'credit'
-        ? 'credit'
-        : 'other',
+          ? 'transfer'
+          : saleForm.value.paymentMethod === 'card'
+            ? 'credit'
+            : saleForm.value.paymentMethod === 'credit'
+              ? 'credit'
+              : 'other',
     bankCode: bankForm.value.bankCode || undefined,
     bankAccount: bankForm.value.bankAccount || undefined,
   }
@@ -351,6 +358,99 @@ const { data: allSales } = useQuery<ISales[]>({
 const { mutate: updateProduct } = useMutation({
   mutationFn: (payload: IUpdateProductPayload) => productStore.onUpdateProduct(payload),
 })
+
+// Upload file store
+const uploadFileStore = useUploadFileStore()
+
+// Generate custom product image filename
+const generateCustomProductImageName = (originalFilename: string): string => {
+  const extension = originalFilename.substring(originalFilename.lastIndexOf('.'))
+  const timestamp = Date.now().toString()
+  return `custom_product_${timestamp}${extension}`
+}
+
+// Validate file upload
+const validateFileUpload = (file: File, maxSize: number = 2000000) => {
+  if (file.size > maxSize) {
+    toast.error(`ขนาดไฟล์ใหญ่เกินไป (สูงสุด ${maxSize / 1000000}MB)`)
+    return false
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น')
+    return false
+  }
+
+  return true
+}
+
+// Handle custom product image upload
+const onCustomProductImageSelect = (event: { files: File[] }, productIndex: number) => {
+  const file = event.files[0]
+  if (!file) return
+
+  const product = customProducts.value[productIndex]
+
+  // Validate product name exists
+  if (!product.name || product.name.trim() === '') {
+    toast.error('กรุณากรอกชื่อสินค้าก่อนอัพโหลดรูปภาพ')
+    return
+  }
+
+  // Validate file type
+  if (!validateFileName(file.name, ALLOWED_IMAGE_EXTENSIONS)) {
+    toast.error(`ไฟล์ ${file.name} ไม่ใช่รูปภาพที่รองรับ`)
+    return
+  }
+
+  // Validate file size
+  if (!validateFileUpload(file)) {
+    return
+  }
+
+  // Generate new filename
+  const newFileName = generateCustomProductImageName(file.name)
+  const renamedFile = new File([file], newFileName, { type: file.type })
+
+  // Upload file
+  uploadCustomProductImageWithIndex(renamedFile, productIndex)
+}
+
+// Upload mutation for custom product images
+const { mutate: uploadCustomProductImage, isPending: isUploadingCustomProductImage } = useMutation({
+  mutationFn: (file: File) => uploadFileStore.onUploadImage(file),
+  onSuccess: (data: IUploadImageResponse) => {
+    // Find the product index by matching the filename pattern
+    // We need to track which product this upload is for
+    const filename = data.filename
+    // We'll use a ref to track the current uploading index
+    if (currentUploadingIndex.value !== null) {
+      customProducts.value[currentUploadingIndex.value].image = filename
+      toast.success('อัปโหลดรูปภาพสำเร็จ')
+      currentUploadingIndex.value = null
+    }
+  },
+  onError: (error: unknown) => {
+    console.error('Upload error:', error)
+    const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'อัปโหลดรูปภาพไม่สำเร็จ'
+    toast.error(errorMessage)
+    currentUploadingIndex.value = null
+  },
+})
+
+// Track which product is currently uploading
+const currentUploadingIndex = ref<number | null>(null)
+
+// Wrapper function to upload with index tracking
+const uploadCustomProductImageWithIndex = (file: File, productIndex: number) => {
+  currentUploadingIndex.value = productIndex
+  uploadCustomProductImage(file)
+}
+
+// Remove custom product image
+const removeCustomProductImage = (productIndex: number) => {
+  customProducts.value[productIndex].image = undefined
+}
 
 const isSubmitting = ref(false)
 const handleClose = () => {
@@ -475,22 +575,15 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '70rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '70rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center"
-        >
+          class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-plus text-white text-lg"></i>
         </div>
         <div>
@@ -506,88 +599,43 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">เลือกลูกค้า</label>
-            <Select
-              v-model="saleForm.user"
-              :options="memberOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกลูกค้า"
-              fluid
-              size="small"
-              :loading="membersLoading"
-              :invalid="!saleForm.user && isSubmitting"
-              filter
-            />
-            <small v-if="!saleForm.user && isSubmitting" class="text-red-500"
-              >กรุณาเลือกลูกค้า</small
-            >
+            <Select v-model="saleForm.user" :options="memberOptions" optionLabel="label" optionValue="value"
+              placeholder="เลือกลูกค้า" fluid size="small" :loading="membersLoading"
+              :invalid="!saleForm.user && isSubmitting" filter />
+            <small v-if="!saleForm.user && isSubmitting" class="text-red-500">กรุณาเลือกลูกค้า</small>
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">วิธีชำระเงิน</label>
-            <Select
-              v-model="saleForm.paymentMethod"
-              :options="salesStore.paymentMethods"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              placeholder="เลือกวิธีชำระเงิน"
-              :invalid="!saleForm.paymentMethod && isSubmitting"
-            />
-            <small v-if="!saleForm.paymentMethod && isSubmitting" class="text-red-500"
-              >กรุณาเลือกวิธีชำระเงิน</small
-            >
+            <Select v-model="saleForm.paymentMethod" :options="salesStore.paymentMethods" optionLabel="label"
+              optionValue="value" fluid size="small" placeholder="เลือกวิธีชำระเงิน"
+              :invalid="!saleForm.paymentMethod && isSubmitting" />
+            <small v-if="!saleForm.paymentMethod && isSubmitting" class="text-red-500">กรุณาเลือกวิธีชำระเงิน</small>
           </div>
 
           <!-- Delivery Status (for cash) -->
           <div v-if="visibility.showDeliveryStatus.value">
             <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
-            <Select
-              v-model="saleForm.deliveryStatus"
-              :options="[
-                { label: 'ได้รับสินค้าแล้ว', value: 'received' },
-                { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              placeholder="เลือกสถานะการส่ง"
-              :invalid="!saleForm.deliveryStatus && isSubmitting"
-            />
-            <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
-              >กรุณาเลือกสถานะการส่ง</small
-            >
+            <Select v-model="saleForm.deliveryStatus" :options="[
+              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+            ]" optionLabel="label" optionValue="value" fluid size="small" placeholder="เลือกสถานะการส่ง"
+              :invalid="!saleForm.deliveryStatus && isSubmitting" />
+            <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500">กรุณาเลือกสถานะการส่ง</small>
           </div>
 
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
-            <Select
-              v-model="saleForm.seller"
-              :options="sellers"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              placeholder="เลือกผู้ขาย"
-              :invalid="!saleForm.seller && isSubmitting"
-            />
-            <small v-if="!saleForm.seller && isSubmitting" class="text-red-500"
-              >กรุณาเลือกผู้ขาย</small
-            >
+            <Select v-model="saleForm.seller" :options="sellers" optionLabel="label" optionValue="value" fluid
+              size="small" placeholder="เลือกผู้ขาย" :invalid="!saleForm.seller && isSubmitting" />
+            <small v-if="!saleForm.seller && isSubmitting" class="text-red-500">กรุณาเลือกผู้ขาย</small>
           </div>
         </div>
 
         <!-- Selected Member Details -->
-        <div
-          v-if="selectedMemberDetails"
-          class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-        >
+        <div v-if="selectedMemberDetails" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center gap-3">
-            <div
-              class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center"
-            >
+            <div class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center">
               <i class="pi pi-user text-green-600 text-xl"></i>
             </div>
             <div class="flex-1">
@@ -604,8 +652,8 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
                 {{
                   selectedMemberDetails.province
                     ? memberStore.provinceOptions.find(
-                        (option) => option.value === selectedMemberDetails?.province
-                      )?.label
+                      (option) => option.value === selectedMemberDetails?.province
+                    )?.label
                     : '-'
                 }}
               </p>
@@ -616,156 +664,101 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
         <!-- Payment Due Date (for credit) -->
         <div v-if="visibility.showPaymentDueDate.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
-          <DatePicker
-            v-model="saleForm.paymentDueDate as Date | undefined"
-            dateFormat="dd/mm/yy"
-            showIcon
-            iconDisplay="input"
-            fluid
-            size="small"
-            :invalid="!saleForm.paymentDueDate && isSubmitting"
-          />
-          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500"
-            >กรุณาระบุวันชำระเงิน</small
-          >
+          <DatePicker v-model="saleForm.paymentDueDate as Date | undefined" dateFormat="dd/mm/yy" showIcon
+            iconDisplay="input" fluid size="small" :invalid="!saleForm.paymentDueDate && isSubmitting" />
+          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500">กรุณาระบุวันชำระเงิน</small>
         </div>
 
         <!-- Bank Selection (for transfer/card) -->
         <div v-if="visibility.showBankSelection.value" class="mt-4">
-          <BankSelectionSection
-            :selected-bank-code="bankForm.bankCode || ''"
-            :is-submitting="isSubmitting"
-            :is-current-bank="''"
-            :is-current-status="''"
-            @update:selected-bank-code="(bankCode) => bankForm.bankCode = bankCode"
-          />
+          <BankSelectionSection :selected-bank-code="bankForm.bankCode || ''" :is-submitting="isSubmitting"
+            :is-current-bank="''" :is-current-status="''"
+            @update:selected-bank-code="(bankCode) => bankForm.bankCode = bankCode" />
         </div>
 
         <!-- Shipping Address -->
         <div v-if="visibility.showShippingAddress.value" class="mt-4 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
-            <Button
-              v-if="selectedMemberDetails"
-              label="ใช้ที่อยู่เดิม"
-              icon="pi pi-refresh"
-              severity="secondary"
-              size="small"
-              outlined
-              @click="formFieldUpdates.updateShippingAddressFromMember"
-            />
+            <Button v-if="selectedMemberDetails" label="ใช้ที่อยู่เดิม" icon="pi pi-refresh" severity="secondary"
+              size="small" outlined @click="formFieldUpdates.updateShippingAddressFromMember" />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <InputText
-                v-model="saleForm.shippingAddress"
-                placeholder="ที่อยู่"
-                fluid
-                size="small"
-                :invalid="
-                  !saleForm.shippingAddress &&
-                  isSubmitting &&
-                  visibility.requiresShippingAddress.value
-                "
-              />
-              <small
-                v-if="
-                  !saleForm.shippingAddress &&
-                  isSubmitting &&
-                  visibility.requiresShippingAddress.value
-                "
-                class="text-red-500"
-                >กรุณากรอกที่อยู่จัดส่ง</small
-              >
+              <InputText v-model="saleForm.shippingAddress" placeholder="ที่อยู่" fluid size="small" :invalid="!saleForm.shippingAddress &&
+                isSubmitting &&
+                visibility.requiresShippingAddress.value
+                " />
+              <small v-if="
+                !saleForm.shippingAddress &&
+                isSubmitting &&
+                visibility.requiresShippingAddress.value
+              " class="text-red-500">กรุณากรอกที่อยู่จัดส่ง</small>
             </div>
             <div>
-              <Select
-                v-model="saleForm.shippingProvince"
-                :options="memberStore.provinceOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกจังหวัด"
-                fluid
-                size="small"
-                :invalid="
-                  !saleForm.shippingProvince &&
+              <Select v-model="saleForm.shippingProvince" :options="memberStore.provinceOptions" optionLabel="label"
+                optionValue="value" placeholder="เลือกจังหวัด" fluid size="small" :invalid="!saleForm.shippingProvince &&
                   isSubmitting &&
                   visibility.requiresShippingAddress.value
-                "
-              />
-              <small
-                v-if="
-                  !saleForm.shippingProvince &&
-                  isSubmitting &&
-                  visibility.requiresShippingAddress.value
-                "
-                class="text-red-500"
-                >กรุณาเลือกจังหวัด</small
-              >
+                  " />
+              <small v-if="
+                !saleForm.shippingProvince &&
+                isSubmitting &&
+                visibility.requiresShippingAddress.value
+              " class="text-red-500">กรุณาเลือกจังหวัด</small>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Custom Products (for order) -->
-      <div
-        v-if="visibility.showCustomProducts.value"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="visibility.showCustomProducts.value" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-shopping-cart text-orange-600"></i>
             สินค้านอกเหนือรายการ
           </h4>
-          <Button
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="() => customProducts.push({ name: '', quantity: 1, description: '' })"
-          />
+          <Button label="เพิ่มสินค้า" icon="pi pi-plus" severity="success" size="small"
+            @click="() => customProducts.push({ name: '', quantity: 1, description: '', image: undefined })" />
         </div>
         <div class="space-y-3">
-          <div
-            v-for="(product, index) in customProducts"
-            :key="index"
-            class="p-3 bg-gray-50 rounded-lg space-y-3"
-          >
+          <div v-for="(product, index) in customProducts" :key="index" class="p-3 bg-gray-50 rounded-lg space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
                 <InputText v-model="product.name" placeholder="ชื่อสินค้า" fluid size="small" />
+                <small v-if="!product.name" class="text-red-500">กรุณากรอกชื่อสินค้า</small>
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
-                <InputNumber
-                  v-model="product.quantity"
-                  :min="1"
-                  placeholder="จำนวน"
-                  fluid
-                  size="small"
-                />
+                <InputNumber v-model="product.quantity" :min="1" placeholder="จำนวน" fluid size="small" />
               </div>
             </div>
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
-              <Textarea
-                v-model="product.description"
-                placeholder="รายละเอียดสินค้า"
-                rows="3"
-                fluid
-                size="small"
-              />
+              <Textarea v-model="product.description" placeholder="รายละเอียดสินค้า" rows="3" fluid size="small" />
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รูปภาพสินค้า</label>
+              <div v-if="product.image" class="mb-3">
+                <div class="relative inline-block">
+                  <img :src="getProductImageUrl(product.image)" :alt="product.name || 'Product image'"
+                    class="w-full max-w-xs h-48 object-contain rounded-lg border border-gray-200" loading="lazy" />
+                  <Button icon="pi pi-times" severity="danger" size="small" text rounded class="absolute top-1 right-1"
+                    @click="removeCustomProductImage(index)" />
+                </div>
+              </div>
+              <FileUpload mode="basic" name="customProductImage" accept="image/*" :maxFileSize="2000000"
+                :disabled="!product.name || product.name.trim() === '' || isUploadingCustomProductImage"
+                :chooseLabel="isUploadingCustomProductImage ? 'กำลังอัปโหลด...' : 'อัพโหลดรูปภาพ'" size="small"
+                @select="(event) => onCustomProductImageSelect(event, index)" />
+              <small v-if="!product.name || product.name.trim() === ''" class="text-gray-500 block mt-1">
+                กรุณากรอกชื่อสินค้าก่อนอัพโหลดรูปภาพ
+              </small>
             </div>
             <div class="flex justify-end">
-              <Button
-                icon="pi pi-trash"
-                label="ลบ"
-                severity="danger"
-                size="small"
-                outlined
-                @click="() => customProducts.splice(index, 1)"
-              />
+              <Button icon="pi pi-trash" label="ลบ" severity="danger" size="small" outlined
+                @click="() => customProducts.splice(index, 1)" />
             </div>
           </div>
           <p v-if="customProducts.length === 0" class="text-sm text-gray-500 text-center py-4">
@@ -775,90 +768,50 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
       </div>
 
       <!-- Product Information -->
-      <div
-        v-if="visibility.showProductSelection.value"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="visibility.showProductSelection.value"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-box text-blue-600"></i>
             รายการสินค้า
           </h4>
-          <Button
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="productManagement.addProduct"
-          />
+          <Button label="เพิ่มสินค้า" icon="pi pi-plus" severity="success" size="small"
+            @click="productManagement.addProduct" />
         </div>
 
         <div class="space-y-4">
-          <ProductItemForm
-            v-for="(product, index) in saleForm.products"
-            :key="index"
-            :product="product"
-            :index="index"
-            :is-submitting="isSubmitting"
-            :products-data="products"
+          <ProductItemForm v-for="(product, index) in saleForm.products" :key="index" :product="product" :index="index"
+            :is-submitting="isSubmitting" :products-data="products"
             :can-remove="!!saleForm.products && saleForm.products.length > 1"
-            @update:product="(idx, value) => updateProducts(idx, value)"
-            @update:quantity="
+            @update:product="(idx, value) => updateProducts(idx, value)" @update:quantity="
               (idx, qty) => (saleForm.products ? (saleForm.products[idx].quantity = qty) : 1)
-            "
-            @remove="productManagement.removeProduct"
-          />
+            " @remove="productManagement.removeProduct" />
         </div>
 
         <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
-        >
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 md:col-span-2 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               มัดจำ (บาท)
             </label>
-            <InputNumber
-              v-model="saleForm.deposit"
-              :min="0"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-              placeholder="ระบุยอดมัดจำ"
-            />
+            <InputNumber v-model="saleForm.deposit" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุยอดมัดจำ" />
           </div>
 
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               ส่วนลด (บาท)
             </label>
-            <InputNumber
-              v-model="saleForm.discount"
-              :min="0"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-              placeholder="ระบุส่วนลด"
-            />
+            <InputNumber v-model="saleForm.discount" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุส่วนลด" />
           </div>
 
           <div>
             <label class="text-sm font-[500]! text-gray-700 mb-1 flex items-center">
               ค่าจัดส่ง (บาท)
             </label>
-            <InputNumber
-              v-model="saleForm.deliveryNo"
-              :min="0"
-              mode="currency"
-              currency="THB"
-              locale="th-TH"
-              fluid
-              size="small"
-              placeholder="ระบุค่าจัดส่ง"
-            />
+            <InputNumber v-model="saleForm.deliveryNo" :min="0" mode="currency" currency="THB" locale="th-TH" fluid
+              size="small" placeholder="ระบุค่าจัดส่ง" />
           </div>
         </div>
 
@@ -912,33 +865,15 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
           <h4 class="text-lg font-[500]! text-gray-800">หมายเหตุ</h4>
         </div>
 
-        <Textarea
-          v-model="saleForm.note"
-          placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
-          rows="3"
-          fluid
-          size="small"
-        />
+        <Textarea v-model="saleForm.note" placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)" rows="3" fluid size="small" />
       </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-        />
-        <Button
-          label="บันทึกข้อมูล"
-          icon="pi pi-check"
-          @click="handleSubmit"
-          :loading="isCreatingSale"
-          severity="success"
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+        <Button label="บันทึกข้อมูล" icon="pi pi-check" @click="handleSubmit" :loading="isCreatingSale"
+          severity="success" size="small" />
       </div>
     </template>
   </Dialog>
@@ -970,5 +905,3 @@ const updateProducts = (index: number, value: string | Record<string, any>) => {
   visibility: hidden !important;
 }
 </style>
-
-

@@ -8,7 +8,7 @@ import {
   InputText,
   InputNumber,
   DatePicker,
-  FileUpload,
+  Image as PrimeImage
 } from 'primevue'
 import { useMemberStore, type IMember } from '@/stores/member/member'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -50,8 +50,7 @@ import {
   canEditField,
   validatePaymentMethod,
 } from '@/utils/salesStatusValidation'
-import { useUploadFileStore } from '@/stores/product/upload_file'
-import { getShippingSlipUrl } from '@/utils/imageUrl'
+import { getShippingSlipUrl, getProductImageUrl } from '@/utils/imageUrl'
 import dayjs from 'dayjs'
 // Props
 const props = defineProps<{
@@ -68,7 +67,6 @@ const emit = defineEmits<{
 // Stores
 const memberStore = useMemberStore()
 const salesStore = useSalesStore()
-const uploadFileStore = useUploadFileStore()
 const productStore = useProductStore()
 const categoryStore = useCategoryStore()
 
@@ -128,7 +126,7 @@ const selectedMemberDetails = computed(() => {
 })
 
 // Use product management
-const customProducts = ref<Array<{ name: string; quantity: number; description: string }>>([])
+const customProducts = ref<Array<{ name: string; quantity: number; description: string; image?: string }>>([])
 const productManagement = useProductManagement({
   products: computed(() => saleForm.value.products || []),
   productsData,
@@ -722,25 +720,18 @@ const readOnly = computed(() => {
     currentStatusString.value === 'damaged'
   )
 })
+
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="handleClose"
-    modal
-    :style="{ width: '50rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '99vw' }"
-    :pt="{
+  <Dialog :visible="visible" @update:visible="handleClose" modal :style="{ width: '50rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '99vw' }" :pt="{
       header: 'p-4',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div class="flex items-center gap-3">
-        <div
-          class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-        >
+        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
           <i class="pi pi-pencil text-white text-lg"></i>
         </div>
         <div>
@@ -754,14 +745,9 @@ const readOnly = computed(() => {
       <!-- Customer Information -->
       <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <!-- Selected Member Details -->
-        <div
-          v-if="selectedMemberDetails"
-          class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-        >
+        <div v-if="selectedMemberDetails" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center gap-3">
-            <div
-              class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center"
-            >
+            <div class="md:flex hidden w-14 h-14 bg-green-100 rounded-lg items-center justify-center">
               <i class="pi pi-user text-green-600 text-xl"></i>
             </div>
             <div class="flex-1">
@@ -778,8 +764,8 @@ const readOnly = computed(() => {
                 {{
                   selectedMemberDetails.province
                     ? memberStore.provinceOptions.find(
-                        (option) => option.value === selectedMemberDetails?.province
-                      )?.label
+                      (option) => option.value === selectedMemberDetails?.province
+                    )?.label
                     : '-'
                 }}
               </p>
@@ -791,35 +777,18 @@ const readOnly = computed(() => {
           <!-- Status (Read-only) -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะรายการขาย</label>
-            <Select
-              :model-value="
-                typeof saleForm.sellingStatus === 'number'
-                  ? convertStatusNumberToString(saleForm.sellingStatus)
-                  : saleForm.sellingStatus
-              "
-              :options="statusOptionsForSelect"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              disabled
-              class="opacity-60"
-            />
+            <Select :model-value="typeof saleForm.sellingStatus === 'number'
+              ? convertStatusNumberToString(saleForm.sellingStatus)
+              : saleForm.sellingStatus
+              " :options="statusOptionsForSelect" optionLabel="label" optionValue="value" fluid size="small" disabled
+              class="opacity-60" />
           </div>
 
           <!-- Seller (Read-only) -->
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">ผู้ขาย</label>
-            <Select
-              :model-value="saleForm.seller"
-              :options="sellers"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-              size="small"
-              disabled
-              class="opacity-60"
-            />
+            <Select :model-value="saleForm.seller" :options="sellers" optionLabel="label" optionValue="value" fluid
+              size="small" disabled class="opacity-60" />
           </div>
 
           <!-- Payment Method (Read-only) -->
@@ -840,73 +809,43 @@ const readOnly = computed(() => {
       </div>
 
       <!-- Custom Products (for order) -->
-      <div
-        v-if="visibility.showCustomProducts.value"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="visibility.showCustomProducts.value" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-shopping-cart text-orange-600"></i>
             สินค้านอกเหนือรายการ
           </h4>
-          <Button
-            v-if="canEditProducts"
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="addCustomProduct"
-          />
+          <Button v-if="canEditProducts" label="เพิ่มสินค้า" icon="pi pi-plus" severity="success" size="small"
+            @click="addCustomProduct" />
         </div>
         <div class="space-y-3">
-          <div
-            v-for="(product, index) in customProducts"
-            :key="index"
-            class="p-3 bg-gray-50 rounded-lg space-y-3"
-          >
+          <div v-for="(product, index) in customProducts" :key="index" class="p-3 bg-gray-50 rounded-lg space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">ชื่อสินค้า</label>
-                <InputText
-                  v-model="product.name"
-                  placeholder="ชื่อสินค้า"
-                  fluid
-                  size="small"
-                  :disabled="!canEditProducts"
-                />
+                <InputText v-model="product.name" placeholder="ชื่อสินค้า" fluid size="small"
+                  :disabled="!canEditProducts" />
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-700 mb-1 block">จำนวน</label>
-                <InputNumber
-                  v-model="product.quantity"
-                  :min="1"
-                  placeholder="จำนวน"
-                  fluid
-                  size="small"
-                  :disabled="!canEditProducts"
-                />
+                <InputNumber v-model="product.quantity" :min="1" placeholder="จำนวน" fluid size="small"
+                  :disabled="!canEditProducts" />
               </div>
             </div>
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">รายละเอียด</label>
-              <Textarea
-                v-model="product.description"
-                placeholder="รายละเอียดสินค้า"
-                rows="3"
-                fluid
-                size="small"
-                :disabled="!canEditProducts"
-              />
+              <Textarea v-model="product.description" placeholder="รายละเอียดสินค้า" rows="3" fluid size="small"
+                :disabled="!canEditProducts" />
             </div>
+            <div v-if="product.image" class="relative inline-block">
+              <label class="text-sm font-medium text-gray-700 mb-1 block">รูปภาพสินค้า</label>
+              <PrimeImage :src="getProductImageUrl(product.image)" :alt="product.name || 'Product image'" width="150px"
+                preview class="border border-gray-200 rounded-lg" />
+            </div>
+
             <div v-if="canEditProducts" class="flex justify-end">
-              <Button
-                icon="pi pi-trash"
-                label="ลบ"
-                severity="danger"
-                size="small"
-                outlined
-                @click="removeCustomProduct(index)"
-              />
+              <Button icon="pi pi-trash" label="ลบ" severity="danger" size="small" outlined
+                @click="removeCustomProduct(index)" />
             </div>
           </div>
           <p v-if="customProducts.length === 0" class="text-sm text-gray-500 text-center py-4">
@@ -916,60 +855,33 @@ const readOnly = computed(() => {
       </div>
 
       <!-- Product Management -->
-      <div
-        v-if="showProductSelection"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="showProductSelection" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <i class="pi pi-box text-blue-600"></i>
             รายการสินค้า
           </h4>
-          <Button
-            v-if="canEditProducts"
-            label="เพิ่มสินค้า"
-            icon="pi pi-plus"
-            severity="success"
-            size="small"
-            @click="productManagement.addProduct"
-            :disabled="saleForm.products.length >= 10"
-          />
+          <Button v-if="canEditProducts" label="เพิ่มสินค้า" icon="pi pi-plus" severity="success" size="small"
+            @click="productManagement.addProduct" :disabled="saleForm.products.length >= 10" />
         </div>
 
         <div class="space-y-4">
-          <ProductItemForm
-            v-for="(product, index) in saleForm.products"
-            :key="index"
-            :product="product"
-            :index="index"
-            :is-submitting="isSubmitting"
-            :products-data="productsData"
-            :can-remove="saleForm.products.length > 1 && canEditProducts"
-            :is-read-only="!canEditProducts"
+          <ProductItemForm v-for="(product, index) in saleForm.products" :key="index" :product="product" :index="index"
+            :is-submitting="isSubmitting" :products-data="productsData"
+            :can-remove="saleForm.products.length > 1 && canEditProducts" :is-read-only="!canEditProducts"
             @update:product="productManagement.updateProductForIndex"
             @update:quantity="(idx, qty) => (saleForm.products[idx].quantity = qty)"
-            @remove="productManagement.removeProduct"
-          />
+            @remove="productManagement.removeProduct" />
         </div>
       </div>
 
       <!-- Payment Calculation -->
-      <PaymentCalculationSection
-        :total-amount="productManagement.totalAmount.value"
-        :deposit="saleForm.deposit"
-        :discount="saleForm.discount"
-        :delivery-no="saleForm.deliveryNo"
-        :is-submitting="isSubmitting"
-        :read-only="readOnly"
-        @update:deposit="formFieldUpdates.updateDeposit"
-        @update:discount="formFieldUpdates.updateDiscount"
-        @update:delivery-no="formFieldUpdates.updateDeliveryNo"
-      />
+      <PaymentCalculationSection :total-amount="productManagement.totalAmount.value" :deposit="saleForm.deposit"
+        :discount="saleForm.discount" :delivery-no="saleForm.deliveryNo" :is-submitting="isSubmitting"
+        :read-only="readOnly" @update:deposit="formFieldUpdates.updateDeposit"
+        @update:discount="formFieldUpdates.updateDiscount" @update:delivery-no="formFieldUpdates.updateDeliveryNo" />
 
-      <div
-        v-if="visibility.showAdditionalInfo.value"
-        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-      >
+      <div v-if="visibility.showAdditionalInfo.value" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <!-- Payment Due Date (for credit) -->
         <div class="flex items-center gap-2 mb-4">
           <i class="pi pi-info-circle text-blue-600"></i>
@@ -978,148 +890,81 @@ const readOnly = computed(() => {
 
         <div v-if="visibility.showPaymentDueDate.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">กำหนดวันชำระเงิน</label>
-          <DatePicker
-            v-model="saleForm.paymentDueDate as Date"
-            dateFormat="dd/mm/yy"
-            showIcon
-            iconDisplay="input"
-            fluid
-            size="small"
-            :invalid="!saleForm.paymentDueDate && isSubmitting"
-            :disabled="!canEditProducts"
-          />
-          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500"
-            >กรุณาระบุวันชำระเงิน</small
-          >
+          <DatePicker v-model="saleForm.paymentDueDate as Date" dateFormat="dd/mm/yy" showIcon iconDisplay="input" fluid
+            size="small" :invalid="!saleForm.paymentDueDate && isSubmitting" :disabled="!canEditProducts" />
+          <small v-if="!saleForm.paymentDueDate && isSubmitting" class="text-red-500">กรุณาระบุวันชำระเงิน</small>
         </div>
 
         <!-- Delivery Status (for cash) -->
         <div v-if="visibility.showDeliveryStatus.value" class="mt-4">
           <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการส่ง</label>
-          <Select
-            v-model="saleForm.deliveryStatus"
-            :options="[
-              { label: 'ได้รับสินค้าแล้ว', value: 'received' },
-              { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            fluid
-            size="small"
-            placeholder="เลือกสถานะการส่ง"
-            :invalid="!saleForm.deliveryStatus && isSubmitting"
-            :disabled="!canEditProducts"
-          />
-          <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500"
-            >กรุณาเลือกสถานะการส่ง</small
-          >
+          <Select v-model="saleForm.deliveryStatus" :options="[
+            { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+            { label: 'แพ็ครอจัดส่ง', value: 'preparing' },
+          ]" optionLabel="label" optionValue="value" fluid size="small" placeholder="เลือกสถานะการส่ง"
+            :invalid="!saleForm.deliveryStatus && isSubmitting" :disabled="!canEditProducts" />
+          <small v-if="!saleForm.deliveryStatus && isSubmitting" class="text-red-500">กรุณาเลือกสถานะการส่ง</small>
         </div>
 
         <!-- Bank Selection (for transfer/card) -->
         <div v-if="visibility.showBankSelection.value" class="mt-4">
-          <BankSelectionSection
-            :selected-bank-code="saleForm.bankCode || ''"
-            :is-submitting="isSubmitting"
-            :is-current-bank="props.saleData.bankCode"
-            :is-current-status="currentStatusString"
-            :is-read-only="!canEditBankInfo"
-            @update:selected-bank-code="formFieldUpdates.updateBankCode"
-          />
+          <BankSelectionSection :selected-bank-code="saleForm.bankCode || ''" :is-submitting="isSubmitting"
+            :is-current-bank="props.saleData.bankCode" :is-current-status="currentStatusString"
+            :is-read-only="!canEditBankInfo" @update:selected-bank-code="formFieldUpdates.updateBankCode" />
         </div>
 
         <!-- Shipping Address -->
         <div v-if="visibility.showShippingAddress.value" class="mt-4 space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium text-gray-700">ที่อยู่จัดส่ง</label>
-            <Button
-              v-if="selectedMemberDetails && canEditProducts"
-              label="ใช้ที่อยู่เดิม"
-              icon="pi pi-refresh"
-              severity="secondary"
-              size="small"
-              outlined
-              @click="formFieldUpdates.updateShippingAddressFromMember"
-            />
+            <Button v-if="selectedMemberDetails && canEditProducts" label="ใช้ที่อยู่เดิม" icon="pi pi-refresh"
+              severity="secondary" size="small" outlined @click="formFieldUpdates.updateShippingAddressFromMember" />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <InputText
-                v-model="saleForm.shippingAddress"
-                placeholder="ที่อยู่"
-                fluid
-                size="small"
+              <InputText v-model="saleForm.shippingAddress" placeholder="ที่อยู่" fluid size="small"
                 :invalid="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
-                :disabled="!canEditProducts"
-              />
-              <small
-                v-if="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
-                class="text-red-500"
-                >กรุณากรอกที่อยู่จัดส่ง</small
-              >
+                :disabled="!canEditProducts" />
+              <small v-if="!saleForm.shippingAddress && isSubmitting && requiresShippingAddress"
+                class="text-red-500">กรุณากรอกที่อยู่จัดส่ง</small>
             </div>
             <div>
-              <Select
-                v-model="saleForm.shippingProvince"
-                :options="memberStore.provinceOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกจังหวัด"
-                fluid
-                size="small"
+              <Select v-model="saleForm.shippingProvince" :options="memberStore.provinceOptions" optionLabel="label"
+                optionValue="value" placeholder="เลือกจังหวัด" fluid size="small"
                 :invalid="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
-                :disabled="!canEditProducts"
-              />
-              <small
-                v-if="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
-                class="text-red-500"
-                >กรุณาเลือกจังหวัด</small
-              >
+                :disabled="!canEditProducts" />
+              <small v-if="!saleForm.shippingProvince && isSubmitting && requiresShippingAddress"
+                class="text-red-500">กรุณาเลือกจังหวัด</small>
             </div>
           </div>
         </div>
 
         <!-- Slip Upload Section (for order/transfer/card when status >= wait_payment) -->
-        <SlipUploadSection
-          v-if="visibility.showSlipUpload.value"
-          :sale-id="props.saleData._id || ''"
-          :selected-status="currentStatusString"
-          :is-current-status="currentStatusString"
-          :is-submitting="isSubmitting"
+        <SlipUploadSection v-if="visibility.showSlipUpload.value" :sale-id="props.saleData._id || ''"
+          :selected-status="currentStatusString" :is-current-status="currentStatusString" :is-submitting="isSubmitting"
           @slip-status-changed="slipManagement.handleSlipStatusChanged"
           @slip-pending-upload="slipManagement.handleSlipPendingUpload"
-          @slip-uploaded="(saleId) => slipManagement.handleSlipUploaded(saleId, saleForm)"
-        />
+          @slip-uploaded="(saleId) => slipManagement.handleSlipUploaded(saleId, saleForm)" />
 
         <!-- Shipping Slip Upload Section -->
-        <ShippingSlipUploadSection
-          v-if="visibility.showShippingSlipUpload.value"
-          :sale-id="props.saleData._id || ''"
-          :selected-status="currentStatusString"
-          :is-current-status="currentStatusString"
-          :is-submitting="isSubmitting"
+        <ShippingSlipUploadSection v-if="visibility.showShippingSlipUpload.value" :sale-id="props.saleData._id || ''"
+          :selected-status="currentStatusString" :is-current-status="currentStatusString" :is-submitting="isSubmitting"
           :skip-upload="slipManagement.skipShippingSlipUpload.value"
-          :require-upload="slipManagement.requireShippingSlipUpload.value"
-          :delivery="saleForm.delivery"
+          :require-upload="slipManagement.requireShippingSlipUpload.value" :delivery="saleForm.delivery"
           :is-read-only="currentStatusString === 'received' || currentStatusString === 'damaged'"
           @shipping-slip-status-changed="slipManagement.handleShippingSlipStatusChanged"
-          @shipping-slip-pending-upload="slipManagement.handleShippingSlipPendingUpload"
-          @shipping-slip-uploaded="
+          @shipping-slip-pending-upload="slipManagement.handleShippingSlipPendingUpload" @shipping-slip-uploaded="
             (saleId) => slipManagement.handleShippingSlipUploaded(saleId, saleForm)
-          "
-          @skip-upload-changed="slipManagement.handleSkipShippingSlipUploadChanged"
+          " @skip-upload-changed="slipManagement.handleSkipShippingSlipUploadChanged"
           @require-upload-changed="slipManagement.handleRequireShippingSlipUploadChanged"
-          @delivery-changed="formFieldUpdates.handleDeliveryChanged"
-        />
+          @delivery-changed="formFieldUpdates.handleDeliveryChanged" />
 
         <!-- Complete Sale Section (for shipping status) -->
-        <div
-          v-if="
-            currentStatusString === 'shipping' ||
-            currentStatusString === 'received' ||
-            currentStatusString === 'damaged'
-          "
-          class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg"
-        >
+        <div v-if="
+          currentStatusString === 'shipping' ||
+          currentStatusString === 'received' ||
+          currentStatusString === 'damaged'
+        " class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
           <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
               <i class="pi pi-check-circle text-white text-lg"></i>
@@ -1134,23 +979,13 @@ const readOnly = computed(() => {
             <!-- Final Status Selection -->
             <div>
               <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะการขาย *</label>
-              <Select
-                v-model="finalSaleStatus"
-                :options="[
-                  { label: 'ได้รับสินค้าแล้ว', value: 'received' },
-                  { label: 'สินค้าเสียหาย', value: 'damaged' },
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกสถานะการขาย"
-                fluid
-                size="small"
+              <Select v-model="finalSaleStatus" :options="[
+                { label: 'ได้รับสินค้าแล้ว', value: 'received' },
+                { label: 'สินค้าเสียหาย', value: 'damaged' },
+              ]" optionLabel="label" optionValue="value" placeholder="เลือกสถานะการขาย" fluid size="small"
                 :disabled="currentStatusString == 'received' || currentStatusString == 'damaged'"
-                :invalid="!finalSaleStatus && isSubmitting"
-              />
-              <small v-if="!finalSaleStatus && isSubmitting" class="text-red-500"
-                >กรุณาเลือกสถานะการขาย</small
-              >
+                :invalid="!finalSaleStatus && isSubmitting" />
+              <small v-if="!finalSaleStatus && isSubmitting" class="text-red-500">กรุณาเลือกสถานะการขาย</small>
             </div>
           </div>
         </div>
@@ -1163,44 +998,20 @@ const readOnly = computed(() => {
           <h4 class="text-lg font-[500]! text-gray-800">หมายเหตุ</h4>
         </div>
 
-        <Textarea
-          v-model="saleForm.note"
-          placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"
-          rows="3"
-          fluid
-          size="small"
-        />
+        <Textarea v-model="saleForm.note" placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)" rows="3" fluid size="small" />
       </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button
-          v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'"
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="handleClose"
-          size="small"
-        />
-        <Button
-          v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'"
-          label="อัปเดตข้อมูล"
-          icon="pi pi-check"
-          @click="currentStatusString === 'shipping' ? handleCompleteSale() : handleSubmit()"
-          :loading="isUpdatingSale"
-          severity="success"
-          size="small"
-        />
+        <Button v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'" label="ยกเลิก"
+          icon="pi pi-times" severity="secondary" @click="handleClose" size="small" />
+        <Button v-if="currentStatusString !== 'received' && currentStatusString !== 'damaged'" label="อัปเดตข้อมูล"
+          icon="pi pi-check" @click="currentStatusString === 'shipping' ? handleCompleteSale() : handleSubmit()"
+          :loading="isUpdatingSale" severity="success" size="small" />
 
-        <Button
-          v-if="currentStatusString == 'received' || currentStatusString == 'damaged'"
-          label="ปิด"
-          icon="pi pi-times"
-          severity="danger"
-          @click="handleClose"
-          size="small"
-        />
+        <Button v-if="currentStatusString == 'received' || currentStatusString == 'damaged'" label="ปิด"
+          icon="pi pi-times" severity="danger" @click="handleClose" size="small" />
       </div>
     </template>
   </Dialog>
