@@ -785,15 +785,9 @@ const existingPurchaseHistory = computed(() => {
 </script>
 
 <template>
-  <Dialog
-    v-model:visible="showAddModal"
-    @update:visible="closeAddModal"
-    modal
-    :header="props.data ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'"
-    :style="{ width: '65rem' }"
-    :breakpoints="{ '1199px': '85vw', '575px': '90vw' }"
-    :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }"
-  >
+  <Dialog v-model:visible="showAddModal" @update:visible="closeAddModal" modal
+    :header="props.data ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'" :style="{ width: '65rem' }"
+    :breakpoints="{ '1199px': '85vw', '575px': '90vw' }" :pt="{ header: 'p-4', title: 'text-lg font-semibold!' }">
     <div class="space-y-4">
       <!-- ข้อมูลลูกค้า - Panel -->
       <Panel toggleable collapsed>
@@ -811,142 +805,79 @@ const existingPurchaseHistory = computed(() => {
           <!-- ข้อมูลส่วนตัว -->
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อเล่น *</label>
-            <InputText
-              v-model="newMember.displayName"
-              placeholder="กรุณาใส่ชื่อเล่น"
-              :invalid="!newMember.displayName && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.displayName && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาระบุชื่อเล่น</small
-            >
+            <InputText v-model="newMember.displayName" placeholder="กรุณาใส่ชื่อเล่น"
+              :invalid="!newMember.displayName && isSubmitting" fluid size="small" />
+            <small v-if="!newMember.displayName && isSubmitting"
+              class="text-red-500 text-xs mt-1">กรุณาระบุชื่อเล่น</small>
           </div>
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อ-นามสกุล</label>
-            <InputText
-              v-model="newMember.name"
-              placeholder="กรุณาใส่ชื่อ-นามสกุล"
-              fluid
-              size="small"
-            />
+            <InputText v-model="newMember.name" placeholder="กรุณาใส่ชื่อ-นามสกุล" fluid size="small" />
           </div>
 
           <div class="md:col-span-2">
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ที่อยู่</label>
-            <Textarea
-              v-model="newMember.address"
-              placeholder="กรุณาใส่ที่อยู่"
-              rows="3"
-              fluid
-              size="small"
-            />
+            <Textarea v-model="newMember.address" placeholder="กรุณาใส่ที่อยู่" rows="3" fluid size="small" />
           </div>
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">จังหวัด</label>
-            <Select
-              v-model="newMember.province"
-              :options="memberStore.provinceOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกจังหวัด"
-              fluid
-              size="small"
-            />
+            <Select v-model="newMember.province" :options="memberStore.provinceOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกจังหวัด" fluid size="small" />
           </div>
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">เบอร์โทรศัพท์</label>
-            <InputText
-              v-model="newMember.phone"
-              placeholder="กรุณาใส่เบอร์โทรศัพท์"
-              fluid
-              size="small"
-            />
+            <InputText v-model="newMember.phone" placeholder="กรุณาใส่เบอร์โทรศัพท์" fluid size="small" />
           </div>
           <!-- Dynamic Contacts -->
-          <div
-            v-for="(contact, contactIndex) in newMember.contacts"
-            :key="contact.index"
-            class="border border-gray-200 rounded-lg p-3 md:col-span-2"
-          >
+          <div v-for="(contact, contactIndex) in newMember.contacts" :key="contact.index"
+            class="border border-gray-200 rounded-lg p-3 md:col-span-2">
             <div class="flex items-center justify-between mb-1">
               <h4 class="font-semibold! text-gray-700">
                 ช่องทางติดต่อ {{ contactIndex + 1 }}
                 <span v-if="contactIndex === 0" class="text-red-500">*</span>
               </h4>
-              <Button
-                v-if="newMember.contacts.length > 1 && contactIndex !== 0"
-                icon="pi pi-trash"
-                size="small"
-                severity="danger"
-                text
-                rounded
-                @click="removeContact(contact.index)"
-                v-tooltip.top="'ลบช่องทางติดต่อ'"
-              />
+              <Button v-if="newMember.contacts.length > 1 && contactIndex !== 0" icon="pi pi-trash" size="small"
+                severity="danger" text rounded @click="removeContact(contact.index)"
+                v-tooltip.top="'ลบช่องทางติดต่อ'" />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <Select
-                  :modelValue="contact.type"
+                <Select :modelValue="contact.type"
                   @update:modelValue="(value) => updateContact(contact.index, 'type', value)"
-                  :options="memberStore.memberContactOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกช่องทางติดต่อ"
-                  :invalid="isSubmitting && contactIndex === 0 && !contact.type"
-                  fluid
-                  size="small"
-                >
+                  :options="memberStore.memberContactOptions" optionLabel="label" optionValue="value"
+                  placeholder="เลือกช่องทางติดต่อ" :invalid="isSubmitting && contactIndex === 0 && !contact.type" fluid
+                  size="small">
                   <template #option="slotProps">
                     <div class="flex items-center gap-2">
-                      <img
-                        v-if="slotProps.option.icon"
-                        :src="getContactIcon(slotProps.option.icon)"
-                        :alt="slotProps.option.label"
-                        class="w-5 h-5 object-contain"
-                      />
+                      <img v-if="slotProps.option.icon" :src="getContactIcon(slotProps.option.icon)"
+                        :alt="slotProps.option.label" class="w-5 h-5 object-contain" />
                       <span>{{ slotProps.option.label }}</span>
                     </div>
                   </template>
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center gap-2">
-                      <img
-                        v-if="getSelectedContactIcon(slotProps.value)"
-                        :src="getSelectedContactIcon(slotProps.value)"
-                        :alt="getSelectedContactLabel(slotProps.value)"
-                        class="w-5 h-5 object-contain"
-                      />
+                      <img v-if="getSelectedContactIcon(slotProps.value)" :src="getSelectedContactIcon(slotProps.value)"
+                        :alt="getSelectedContactLabel(slotProps.value)" class="w-5 h-5 object-contain" />
                       <span>{{ getSelectedContactLabel(slotProps.value) }}</span>
                     </div>
                     <span v-else>{{ slotProps.placeholder }}</span>
                   </template>
                 </Select>
-                <small
-                  v-if="isSubmitting && contactIndex === 0 && !contact.type"
-                  class="text-red-500 text-xs mt-1"
-                >
+                <small v-if="isSubmitting && contactIndex === 0 && !contact.type" class="text-red-500 text-xs mt-1">
                   กรุณาเลือกช่องทางติดต่อ
                 </small>
               </div>
 
               <div>
-                <InputText
-                  :modelValue="contact.value"
+                <InputText :modelValue="contact.value"
                   @update:modelValue="(value) => updateContact(contact.index, 'value', value)"
                   placeholder="กรุณาใส่ชื่อช่องทางติดต่อ"
-                  :invalid="isSubmitting && contactIndex === 0 && !contact.value"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && contactIndex === 0 && !contact.value"
-                  class="text-red-500 text-xs mt-1"
-                >
+                  :invalid="isSubmitting && contactIndex === 0 && !contact.value" fluid size="small" />
+                <small v-if="isSubmitting && contactIndex === 0 && !contact.value" class="text-red-500 text-xs mt-1">
                   กรุณาระบุชื่อช่องทางติดต่อ
                 </small>
               </div>
@@ -955,15 +886,8 @@ const existingPurchaseHistory = computed(() => {
 
           <!-- Add Contact Button -->
           <div class="flex justify-center md:col-span-2">
-            <Button
-              v-if="newMember.contacts.length < 5"
-              label="เพิ่มช่องทางติดต่อ"
-              icon="pi pi-plus"
-              size="small"
-              severity="secondary"
-              outlined
-              @click="addContact"
-            />
+            <Button v-if="newMember.contacts.length < 5" label="เพิ่มช่องทางติดต่อ" icon="pi pi-plus" size="small"
+              severity="secondary" outlined @click="addContact" />
             <div v-else class="text-sm text-gray-500 text-center">
               เพิ่มช่องทางติดต่อได้สูงสุด 5 ช่องทาง
             </div>
@@ -971,49 +895,26 @@ const existingPurchaseHistory = computed(() => {
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะลูกค้า *</label>
-            <Select
-              v-model="newMember.status"
-              :options="memberStore.memberStatusOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกสถานะลูกค้า"
-              :invalid="!newMember.status && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.status && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกสถานะลูกค้า</small
-            >
+            <Select v-model="newMember.status" :options="memberStore.memberStatusOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกสถานะลูกค้า" :invalid="!newMember.status && isSubmitting" fluid
+              size="small" />
+            <small v-if="!newMember.status && isSubmitting"
+              class="text-red-500 text-xs mt-1">กรุณาเลือกสถานะลูกค้า</small>
           </div>
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับลูกค้า *</label>
-            <Select
-              v-model="newMember.customerLevel"
-              :options="memberStore.customerLevelOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกระดับลูกค้า"
-              :invalid="!newMember.customerLevel && isSubmitting"
-              fluid
-              size="small"
-            />
-            <small v-if="!newMember.customerLevel && isSubmitting" class="text-red-500 text-xs mt-1"
-              >กรุณาเลือกระดับลูกค้า</small
-            >
+            <Select v-model="newMember.customerLevel" :options="memberStore.customerLevelOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกระดับลูกค้า" :invalid="!newMember.customerLevel && isSubmitting"
+              fluid size="small" />
+            <small v-if="!newMember.customerLevel && isSubmitting"
+              class="text-red-500 text-xs mt-1">กรุณาเลือกระดับลูกค้า</small>
           </div>
 
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ประเภทลูกค้า</label>
-            <Select
-              v-model="newMember.type"
-              :options="memberStore.customerTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกประเภทลูกค้า"
-              fluid
-              size="small"
-            />
+            <Select v-model="newMember.type" :options="memberStore.customerTypeOptions" optionLabel="label"
+              optionValue="value" placeholder="เลือกประเภทลูกค้า" fluid size="small" />
           </div>
         </div>
       </Panel>
@@ -1023,7 +924,7 @@ const existingPurchaseHistory = computed(() => {
         <template #header>
           <div class="flex items-center gap-2">
             <i class="pi pi-heart text-purple-600"></i>
-            <span class="font-semibold! text-gray-900">ข้อมูลพฤติกรรมความสนใจของลูกค้า</span>
+            <span class="font-semibold! text-gray-900">พฤติกรรมลูกค้า</span>
           </div>
         </template>
 
@@ -1031,15 +932,8 @@ const existingPurchaseHistory = computed(() => {
           <!-- พฤติกรรมการเลี้ยง -->
           <div>
             <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับในการเลี้ยง</label>
-            <Select
-              v-model="newMember.breedingBehavior"
-              :options="memberStore.breedingBehaviorOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="เลือกพฤติกรรมการเลี้ยง"
-              fluid
-              size="small"
-            >
+            <Select v-model="newMember.breedingBehavior" :options="memberStore.breedingBehaviorOptions"
+              optionLabel="label" optionValue="value" placeholder="เลือกพฤติกรรมการเลี้ยง" fluid size="small">
               <template #option="slotProps">
                 <div class="flex flex-col">
                   <span class="font-bold text-gray-900">{{ slotProps.option.title }}</span>
@@ -1054,63 +948,30 @@ const existingPurchaseHistory = computed(() => {
             <h4 class="font-semibold! text-gray-800 mb-1.5">สายพันธุ์ที่ชอบ</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >Gosanke ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label
-                >
-                <Select
-                  v-model="newMember.gosanke"
-                  :options="memberStore.gosankeOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก Gosanke"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">Gosanke
+                  ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label>
+                <Select v-model="newMember.gosanke" :options="memberStore.gosankeOptions" optionLabel="label"
+                  optionValue="value" placeholder="เลือก Gosanke" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >Non-Gosanke ลูกค้าชอบสายพันธุ์อะไร</label
-                >
-                <Select
-                  v-model="newMember.nonGosanke"
-                  :options="memberStore.nonGosankeOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก Non-Gosanke"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">Non-Gosanke
+                  ลูกค้าชอบสายพันธุ์อะไร</label>
+                <Select v-model="newMember.nonGosanke" :options="memberStore.nonGosankeOptions" optionLabel="label"
+                  optionValue="value" placeholder="เลือก Non-Gosanke" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >Variety สีล้วน ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label
-                >
-                <Select
-                  v-model="newMember.variety"
-                  :options="memberStore.varietyOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก Variety สีล้วน"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">Variety สีล้วน
+                  ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label>
+                <Select v-model="newMember.variety" :options="memberStore.varietyOptions" optionLabel="label"
+                  optionValue="value" placeholder="เลือก Variety สีล้วน" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ชอบเลี้ยงปลาอายุเท่าไร</label
-                >
-                <Select
-                  v-model="newMember.fishAge"
-                  :options="memberStore.fishAgeOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกอายุปลา"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ชอบเลี้ยงปลาอายุเท่าไร</label>
+                <Select v-model="newMember.fishAge" :options="memberStore.fishAgeOptions" optionLabel="label"
+                  optionValue="value" placeholder="เลือกอายุปลา" fluid size="small" />
               </div>
             </div>
           </div>
@@ -1120,105 +981,47 @@ const existingPurchaseHistory = computed(() => {
             <h4 class="font-semibold! text-gray-800 mb-1.5">ข้อมูลการเลี้ยง</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับงบประมาณ</label>
-                <Select
-                  v-model="newMember.budgetLevel"
-                  :options="memberStore.budgetLevelOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกระดับงบประมาณ"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ระดับงบประมาณ ร้านคาเฟ่</label>
+                <Select v-model="newMember.budgetLevel" :options="memberStore.budgetLevelOptions" optionLabel="label"
+                  optionValue="value" placeholder="เลือกระดับงบประมาณ" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ใช้จุลินทรีย์ยี่ห้ออะไร</label
-                >
-                <Select
-                  v-model="newMember.bacteriaUsage"
-                  :options="memberStore.bacteriaUsageOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกใช้จุลินทรีย์หรือไม่"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ใช้จุลินทรีย์ยี่ห้ออะไร</label>
+                <Select v-model="newMember.bacteriaUsage" :options="memberStore.bacteriaUsageOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือกใช้จุลินทรีย์หรือไม่" fluid size="small" />
               </div>
 
               <div v-if="newMember.bacteriaUsage === 'yes'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ยี่ห้อจุลินทรีย์</label
-                >
-                <InputText
-                  v-model="newMember.bacteriaBrand"
-                  placeholder="กรอกยี่ห้อจุลินทรีย์"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ยี่ห้อจุลินทรีย์</label>
+                <InputText v-model="newMember.bacteriaBrand" placeholder="กรอกยี่ห้อจุลินทรีย์" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ใช้อาหารยี่ห้ออะไร</label
-                >
-                <InputText
-                  v-model="newMember.foodBrand"
-                  placeholder="กรอกยี่ห้ออาหาร"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ใช้อาหารยี่ห้ออะไร</label>
+                <InputText v-model="newMember.foodBrand" placeholder="กรอกยี่ห้ออาหาร" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ล้างกรองเองหรือมีบริษัทล้างให้</label
-                >
-                <Select
-                  v-model="newMember.filterCleaning"
-                  :options="memberStore.filterCleaningOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกวิธีการล้างกรอง"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ล้างกรองเองหรือมีบริษัทล้างให้</label>
+                <Select v-model="newMember.filterCleaning" :options="memberStore.filterCleaningOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือกวิธีการล้างกรอง" fluid size="small" />
               </div>
 
               <div v-if="newMember.filterCleaning === 'company'">
                 <label class="block text-sm font-semibold! text-gray-700 mb-1">บริษัทรับล้าง</label>
-                <InputText
-                  v-model="newMember.filterCleaningCompany"
-                  placeholder="กรอกชื่อบริษัท"
-                  fluid
-                  size="small"
-                />
+                <InputText v-model="newMember.filterCleaningCompany" placeholder="กรอกชื่อบริษัท" fluid size="small" />
               </div>
 
               <div>
                 <label class="block text-sm font-semibold! text-gray-700 mb-1">ขนาดบ่อเลี้ยง</label>
-                <InputText
-                  v-model="newMember.pondSize"
-                  placeholder="กรอกขนาดบ่อเลี้ยง"
-                  fluid
-                  size="small"
-                />
+                <InputText v-model="newMember.pondSize" placeholder="กรอกขนาดบ่อเลี้ยง" fluid size="small" />
               </div>
 
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >วิธีการให้อาหาร</label
-                >
-                <Select
-                  v-model="newMember.feedingMethod"
-                  :options="memberStore.feedingMethodOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือกวิธีการให้อาหาร"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">วิธีการให้อาหาร</label>
+                <Select v-model="newMember.feedingMethod" :options="memberStore.feedingMethodOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือกวิธีการให้อาหาร" fluid size="small" />
               </div>
             </div>
           </div>
@@ -1241,193 +1044,98 @@ const existingPurchaseHistory = computed(() => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <!-- ชอบส่งปลางานประกวดหรือไม่ -->
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ชอบส่งปลางานประกวดหรือไม่</label
-                >
-                <Select
-                  v-model="newMember.contestParticipation"
-                  :options="memberStore.contestParticipationOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ชอบส่งปลางานประกวดหรือไม่</label>
+                <Select v-model="newMember.contestParticipation" :options="memberStore.contestParticipationOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือก" fluid size="small" />
               </div>
 
               <div v-if="newMember.contestParticipation === 'no'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เหตุผล <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.contestParticipationReason"
-                  placeholder="กรอกเหตุผล"
-                  :invalid="isSubmitting && !newMember.contestParticipationReason?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.contestParticipationReason?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกเหตุผล</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เหตุผล <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.contestParticipationReason" placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.contestParticipationReason?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.contestParticipationReason?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกเหตุผล</small>
               </div>
 
               <!-- เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่ -->
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่</label
-                >
-                <Select
-                  v-model="newMember.competitionParticipation"
-                  :options="memberStore.competitionParticipationOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล
+                  หรือไม่</label>
+                <Select v-model="newMember.competitionParticipation"
+                  :options="memberStore.competitionParticipationOptions" optionLabel="label" optionValue="value"
+                  placeholder="เลือก" fluid size="small" />
               </div>
 
               <div v-if="newMember.competitionParticipation === 'yes'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ฟาร์มไหน <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.competitionFarm"
-                  placeholder="กรอกฟาร์ม"
-                  :invalid="isSubmitting && !newMember.competitionFarm?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.competitionFarm?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกฟาร์ม</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ฟาร์มไหน <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.competitionFarm" placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.competitionFarm?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.competitionFarm?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกฟาร์ม</small>
               </div>
 
               <div v-if="newMember.competitionParticipation === 'no'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เหตุผล <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.competitionReason"
-                  placeholder="กรอกเหตุผล"
-                  :invalid="isSubmitting && !newMember.competitionReason?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.competitionReason?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกเหตุผล</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เหตุผล <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.competitionReason" placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.competitionReason?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.competitionReason?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกเหตุผล</small>
               </div>
 
               <!-- เคยประมูลปลาออนไลน์หรือไม่ -->
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เคยประมูลปลาออนไลน์หรือไม่ เช่น Sakai Auction Online , Dainishi Auction Online
-                  เป็นต้นฯ</label
-                >
-                <Select
-                  v-model="newMember.onlineAuction"
-                  :options="memberStore.onlineAuctionOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก"
-                  fluid
-                  size="small"
-                />
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เคยประมูลปลาออนไลน์หรือไม่ เช่น Sakai
+                  Auction Online , Dainishi Auction Online
+                  เป็นต้นฯ</label>
+                <Select v-model="newMember.onlineAuction" :options="memberStore.onlineAuctionOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือก" fluid size="small" />
               </div>
 
               <div v-if="newMember.onlineAuction === 'yes'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ประมูลกับฟาร์มไหน <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.auctionFarm"
-                  placeholder="กรอกฟาร์ม"
-                  :invalid="isSubmitting && !newMember.auctionFarm?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.auctionFarm?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกฟาร์ม</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ประมูลกับฟาร์มไหน <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.auctionFarm" placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.auctionFarm?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.auctionFarm?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกฟาร์ม</small>
               </div>
 
               <div v-if="newMember.onlineAuction === 'no'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เหตุผล <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.auctionReason"
-                  placeholder="กรอกเหตุผล"
-                  :invalid="isSubmitting && !newMember.auctionReason?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.auctionReason?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกเหตุผล</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เหตุผล <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.auctionReason" placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.auctionReason?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.auctionReason?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกเหตุผล</small>
               </div>
 
               <!-- เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่ -->
               <div>
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label
-                >
-                <Select
-                  v-model="newMember.japanPurchase"
-                  :options="memberStore.japanPurchaseOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="เลือก"
-                  fluid
-                  size="small"
-                />
+                <label
+                  class="block text-sm font-semibold! text-gray-700 mb-1">เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label>
+                <Select v-model="newMember.japanPurchase" :options="memberStore.japanPurchaseOptions"
+                  optionLabel="label" optionValue="value" placeholder="เลือก" fluid size="small" />
               </div>
 
               <div v-if="newMember.japanPurchase === 'yes'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >ไปกับฟาร์มไหน <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.japanFarm"
-                  placeholder="กรอกฟาร์ม"
-                  :invalid="isSubmitting && !newMember.japanFarm?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.japanFarm?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกฟาร์ม</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">ไปกับฟาร์มไหน <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.japanFarm" placeholder="กรอกฟาร์ม"
+                  :invalid="isSubmitting && !newMember.japanFarm?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.japanFarm?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกฟาร์ม</small>
               </div>
 
               <div v-if="newMember.japanPurchase === 'no'">
-                <label class="block text-sm font-semibold! text-gray-700 mb-1"
-                  >เหตุผล <span class="text-red-500">*</span></label
-                >
-                <InputText
-                  v-model="newMember.japanReason"
-                  placeholder="กรอกเหตุผล"
-                  :invalid="isSubmitting && !newMember.japanReason?.trim()"
-                  fluid
-                  size="small"
-                />
-                <small
-                  v-if="isSubmitting && !newMember.japanReason?.trim()"
-                  class="text-red-500 text-xs mt-1"
-                  >กรุณากรอกเหตุผล</small
-                >
+                <label class="block text-sm font-semibold! text-gray-700 mb-1">เหตุผล <span
+                    class="text-red-500">*</span></label>
+                <InputText v-model="newMember.japanReason" placeholder="กรอกเหตุผล"
+                  :invalid="isSubmitting && !newMember.japanReason?.trim()" fluid size="small" />
+                <small v-if="isSubmitting && !newMember.japanReason?.trim()"
+                  class="text-red-500 text-xs mt-1">กรุณากรอกเหตุผล</small>
               </div>
             </div>
           </div>
@@ -1449,26 +1157,11 @@ const existingPurchaseHistory = computed(() => {
             <label class="block text-sm font-[600]! text-gray-700 mb-1">เพิ่มรายการซื้อ</label>
             <!-- Select dropdown สำหรับเลือกรายการขาย -->
             <div class="flex gap-2 mb-3">
-              <Select
-                v-model="selectedSaleId"
-                :options="saleOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกรายการขาย"
-                fluid
-                filter
-                filterBy="sale.item"
-                size="small"
-                :disabled="!saleOptions.length"
-              />
-              <Button
-                icon="pi pi-plus"
-                size="small"
-                severity="success"
-                v-tooltip.top="'เพิ่มรายการซื้อ'"
-                @click="addPurchaseHistory"
-                :disabled="!selectedSaleId"
-              />
+              <Select v-model="selectedSaleId" :options="saleOptions" optionLabel="label" optionValue="value"
+                placeholder="เลือกรายการขาย" fluid filter filterBy="sale.item" size="small"
+                :disabled="!saleOptions.length" />
+              <Button icon="pi pi-plus" size="small" severity="success" v-tooltip.top="'เพิ่มรายการซื้อ'"
+                @click="addPurchaseHistory" :disabled="!selectedSaleId" />
             </div>
 
             <!-- แสดง card สรุปข้อมูลรายการซื้อใหม่ (ยังไม่ได้บันทึก) -->
@@ -1476,15 +1169,8 @@ const existingPurchaseHistory = computed(() => {
               <label class="block text-sm font-[600]! text-gray-700 mb-2">
                 รายการใหม่ (ยังไม่ได้บันทึก) ({{ newlyAddedPurchaseHistory.length }})
               </label>
-              <PurchaseHistoryPanel
-                v-for="saleId in newlyAddedPurchaseHistory"
-                :key="`new-${saleId}`"
-                :sale-id="saleId"
-                :sale="getSaleById(saleId)"
-                :is-setting="true"
-                :is-new="true"
-                @on-delete="removePurchaseHistory"
-              />
+              <PurchaseHistoryPanel v-for="saleId in newlyAddedPurchaseHistory" :key="`new-${saleId}`" :sale-id="saleId"
+                :sale="getSaleById(saleId)" :is-setting="true" :is-new="true" @on-delete="removePurchaseHistory" />
             </div>
           </div>
 
@@ -1495,15 +1181,9 @@ const existingPurchaseHistory = computed(() => {
             </label>
 
             <div class="space-y-3">
-              <PurchaseHistoryPanel
-                v-for="saleId in existingPurchaseHistory"
-                :key="`existing-${saleId}`"
-                :sale-id="saleId"
-                :sale="getSaleById(saleId)"
-                :is-setting="true"
-                :is-new="false"
-                @on-delete="removePurchaseHistory"
-              />
+              <PurchaseHistoryPanel v-for="saleId in existingPurchaseHistory" :key="`existing-${saleId}`"
+                :sale-id="saleId" :sale="getSaleById(saleId)" :is-setting="true" :is-new="false"
+                @on-delete="removePurchaseHistory" />
             </div>
           </div>
         </div>
@@ -1522,44 +1202,24 @@ const existingPurchaseHistory = computed(() => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-semibold! text-gray-700 mb-1">ชื่อผู้ใช้</label>
-              <InputText
-                v-model="newMember.username"
-                placeholder="กรุณาใส่ชื่อผู้ใช้"
-                fluid
-                size="small"
-                autocomplete="off"
-              />
+              <InputText v-model="newMember.username" placeholder="กรุณาใส่ชื่อผู้ใช้" fluid size="small"
+                autocomplete="off" />
             </div>
 
             <!-- แสดงรหัสผ่านเฉพาะเมื่อสร้างใหม่ และยังไม่มีประวัติการซื้อ -->
             <div v-if="!props.data">
               <label class="block text-sm font-semibold! text-gray-700 mb-1">รหัสผ่าน</label>
-              <Password
-                v-model="newMember.password"
-                placeholder="กรุณาใส่รหัสผ่าน"
-                :feedback="false"
-                toggleMask
-                fluid
-                size="small"
-                autocomplete="new-password"
-              />
+              <Password v-model="newMember.password" placeholder="กรุณาใส่รหัสผ่าน" :feedback="false" toggleMask fluid
+                size="small" autocomplete="new-password" />
             </div>
 
             <!-- แสดงสถานะยูสเซอร์เฉพาะเมื่อสร้างใหม่ -->
             <div v-if="!props.data">
               <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะยูสเซอร์</label>
-              <Select
-                v-model="newMember.bidder"
-                :options="[
+              <Select v-model="newMember.bidder" :options="[
                   { label: 'เปิดใช้งาน', value: true },
                   { label: 'ล็อค', value: false },
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="เลือกสถานะยูสเซอร์"
-                fluid
-                size="small"
-              />
+                ]" optionLabel="label" optionValue="value" placeholder="เลือกสถานะยูสเซอร์" fluid size="small" />
             </div>
           </div>
 
@@ -1568,11 +1228,9 @@ const existingPurchaseHistory = computed(() => {
             <div class="space-y-4">
               <!-- Header Section -->
               <div
-                class="flex items-center space-x-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-100"
-              >
+                class="flex items-center space-x-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-100">
                 <div
-                  class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center"
-                >
+                  class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center">
                   <i class="pi pi-key text-white text-lg"></i>
                 </div>
                 <div class="flex-1">
@@ -1587,51 +1245,35 @@ const existingPurchaseHistory = computed(() => {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1">
                   <label class="block text-sm font-semibold! text-gray-700">รหัสผ่านใหม่ *</label>
-                  <Password
-                    v-model="newPassword"
-                    placeholder="กรุณาใส่รหัสผ่านใหม่"
-                    :feedback="true"
-                    :invalid="!passwordValidation?.isValid && newPassword.length > 0"
-                    toggleMask
-                    fluid
-                    size="small"
-                    :pt="{
+                  <Password v-model="newPassword" placeholder="กรุณาใส่รหัสผ่านใหม่" :feedback="true"
+                    :invalid="!passwordValidation?.isValid && newPassword.length > 0" toggleMask fluid size="small" :pt="{
                       input: 'w-full',
                       panel: 'mt-2',
-                    }"
-                  />
+                    }" />
 
                   <!-- Password Requirements -->
                   <div v-if="newPassword" class="mt-3 space-y-2">
                     <p class="text-xs font-medium text-gray-600 mb-2">เงื่อนไขรหัสผ่าน:</p>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                       <div class="flex items-center space-x-2">
-                        <i
-                          :class="
+                        <i :class="
                             passwordValidation?.minLength
                               ? 'pi pi-check text-green-500'
                               : 'pi pi-times text-red-500'
-                          "
-                        ></i>
-                        <span
-                          :class="passwordValidation?.minLength ? 'text-green-600' : 'text-red-600'"
-                        >
+                          "></i>
+                        <span :class="passwordValidation?.minLength ? 'text-green-600' : 'text-red-600'">
                           อย่างน้อย 8 ตัวอักษร
                         </span>
                       </div>
                       <div class="flex items-center space-x-2">
-                        <i
-                          :class="
+                        <i :class="
                             passwordValidation?.hasNumbers
                               ? 'pi pi-check text-green-500'
                               : 'pi pi-times text-red-500'
-                          "
-                        ></i>
-                        <span
-                          :class="
+                          "></i>
+                        <span :class="
                             passwordValidation?.hasNumbers ? 'text-green-600' : 'text-red-600'
-                          "
-                        >
+                          ">
                           ตัวเลข 1 ตัวขึ้นไป
                         </span>
                       </div>
@@ -1641,19 +1283,9 @@ const existingPurchaseHistory = computed(() => {
 
                 <div class="space-y-1">
                   <label class="block text-sm font-semibold! text-gray-700">ยืนยันรหัสผ่าน *</label>
-                  <Password
-                    v-model="confirmPassword"
-                    placeholder="กรุณายืนยันรหัสผ่าน"
-                    :feedback="false"
-                    :invalid="!!(confirmPassword && newPassword !== confirmPassword)"
-                    toggleMask
-                    fluid
-                    size="small"
-                  />
-                  <small
-                    v-if="confirmPassword && newPassword !== confirmPassword"
-                    class="text-red-500 text-xs"
-                  >
+                  <Password v-model="confirmPassword" placeholder="กรุณายืนยันรหัสผ่าน" :feedback="false"
+                    :invalid="!!(confirmPassword && newPassword !== confirmPassword)" toggleMask fluid size="small" />
+                  <small v-if="confirmPassword && newPassword !== confirmPassword" class="text-red-500 text-xs">
                     รหัสผ่านไม่ตรงกัน
                   </small>
                 </div>
@@ -1675,15 +1307,8 @@ const existingPurchaseHistory = computed(() => {
 
               <!-- Reset Password Button -->
               <div class="flex justify-end">
-                <Button
-                  label="รีเซ็ตรหัสผ่าน"
-                  icon="pi pi-key"
-                  @click="handleResetPassword"
-                  :loading="isPendingResetPassword"
-                  :disabled="!isPasswordFormValid"
-                  severity="danger"
-                  size="small"
-                />
+                <Button label="รีเซ็ตรหัสผ่าน" icon="pi pi-key" @click="handleResetPassword"
+                  :loading="isPendingResetPassword" :disabled="!isPasswordFormValid" severity="danger" size="small" />
               </div>
             </div>
           </div>
@@ -1693,22 +1318,9 @@ const existingPurchaseHistory = computed(() => {
 
     <template #footer>
       <div class="pt-2 flex gap-3">
-        <Button
-          label="ยกเลิก"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeAddModal"
-          size="small"
-          outlined
-        />
-        <Button
-          label="ยืนยัน"
-          icon="pi pi-check"
-          @click="handleAddMember"
-          :loading="isPending || isPendingUpdate"
-          severity="success"
-          size="small"
-        />
+        <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeAddModal" size="small" outlined />
+        <Button label="ยืนยัน" icon="pi pi-check" @click="handleAddMember" :loading="isPending || isPendingUpdate"
+          severity="success" size="small" />
       </div>
     </template>
   </Dialog>

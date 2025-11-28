@@ -182,9 +182,10 @@ export const useMemberStore = defineStore('member', () => {
 
   // ระดับงบประมาณ (สำหรับ CRM)
   const budgetLevelOptions = ref([
-    { label: 'งบน้อย (ไม่เกิน 5,000฿)', value: 'low' },
-    { label: 'งบปานกลาง (ไม่เกิน 30,000฿)', value: 'medium' },
-    { label: 'งบมาก (ไม่จำกัดถ้าถูกใจ)', value: 'high' },
+    { label: 'งบหลักร้อย — ไม่เกิน 1,000 บาท', value: 'low' },
+    { label: 'งบหลักพัน — 1,001 ถึง 10,000 บาท', value: 'medium' },
+    { label: 'งบหลักหมื่น — 10,001 ถึง 100,000 บาท', value: 'high' },
+    { label: 'งบไม่จำกัด — เน้นคุณภาพ / เหมาะสมกับราคา', value: 'unlimited' },
   ])
 
   // พฤติกรรมการเลี้ยง

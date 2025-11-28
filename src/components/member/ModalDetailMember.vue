@@ -103,18 +103,12 @@ const getSaleById = (saleId: string): ISales | undefined => {
 </script>
 
 <template>
-  <Dialog
-    v-model:visible="showDetailModal"
-    @update:visible="closeDetailModal"
-    modal
-    :style="{ width: '56rem' }"
-    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
-    :pt="{
+  <Dialog v-model:visible="showDetailModal" @update:visible="closeDetailModal" modal :style="{ width: '56rem' }"
+    :breakpoints="{ '1199px': '90vw', '575px': '95vw' }" :pt="{
       header: 'py-3',
       content: 'p-0',
       footer: 'p-4',
-    }"
-  >
+    }">
     <template #header>
       <div v-if="isLoading">
         <Skeleton height="20px" width="80px" />
@@ -126,33 +120,21 @@ const getSaleById = (saleId: string): ISales | undefined => {
         </h2>
         <div class="flex items-center gap-2 flex-wrap capitalize">
           <span class="text-sm text-blue-600">รหัส: {{ data?.code }}</span>
-          <Tag
-            v-if="data?.status"
-            :value="
+          <Tag v-if="data?.status" :value="
               memberStore.memberStatusOptions.find((option) => option.value === data?.status)
                 ?.label || ''
-            "
-            :severity="memberStore.getStatusTag(data?.status)"
-            size="small"
-            class="text-xs"
-          />
-          <Tag
-            v-if="data?.customerLevel"
-            :value="
+            " :severity="memberStore.getStatusTag(data?.status)" size="small" class="text-xs" />
+          <Tag v-if="data?.customerLevel" :value="
               memberStore.customerLevelOptions.find(
                 (option) => option.value === data?.customerLevel
               )?.label || ''
-            "
-            :severity="
+            " :severity="
               data.customerLevel === 'vvip'
                 ? 'danger'
                 : data.customerLevel === 'vip'
                 ? 'warn'
                 : 'secondary'
-            "
-            size="small"
-            class="text-xs"
-          />
+            " size="small" class="text-xs" />
         </div>
       </div>
     </template>
@@ -173,35 +155,29 @@ const getSaleById = (saleId: string): ISales | undefined => {
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ยอดซื้อรวม</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ยอดซื้อรวม</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 formatCurrency(data.totalPurchaseAmount)
-              }}</span>
+                }}</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >จำนวนครั้งที่ซื้อ</label
-            >
+            <label
+              class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">จำนวนครั้งที่ซื้อ</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
-              <span class="text-gray-900 text-sm font-medium"
-                >{{ data.purchaseCount || 0 }} ครั้ง</span
-              >
+              <span class="text-gray-900 text-sm font-medium">{{ data.purchaseCount || 0 }} ครั้ง</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >วันที่ซื้อล่าสุด</label
-            >
+            <label
+              class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">วันที่ซื้อล่าสุด</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 dayjs(data.lastPurchaseDate).format('DD/MM/YYYY HH:mm:ss')
-              }}</span>
+                }}</span>
             </div>
           </div>
         </div>
@@ -219,37 +195,23 @@ const getSaleById = (saleId: string): ISales | undefined => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- ช่องทางติดต่อ -->
           <div class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ช่องทางติดต่อ</label
-            >
-            <div
-              v-if="data.contacts && data.contacts.length > 0"
-              class="grid grid-cols-1 sm:grid-cols-2 gap-2"
-            >
-              <div
-                v-for="contact in data.contacts"
-                :key="contact.index"
-                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ช่องทางติดต่อ</label>
+            <div v-if="data.contacts && data.contacts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div v-for="contact in data.contacts" :key="contact.index"
+                class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                  <img
-                    v-if="getContactImage(contact.type)"
-                    :src="getContactImage(contact.type)"
-                    :alt="contact.type"
-                    class="w-8 h-8 object-contain rounded"
-                  />
-                  <div
-                    v-else
-                    class="w-8 h-8 bg-gray-300 flex items-center rounded justify-center text-gray-600 text-xs"
-                  >
+                  <img v-if="getContactImage(contact.type)" :src="getContactImage(contact.type)" :alt="contact.type"
+                    class="w-8 h-8 object-contain rounded" />
+                  <div v-else
+                    class="w-8 h-8 bg-gray-300 flex items-center rounded justify-center text-gray-600 text-xs">
                     ?
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-600">
                     {{
-                      memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
-                        ?.label || contact.type
+                    memberStore.memberContactOptions.find((opt) => opt.value === contact.type)
+                    ?.label || contact.type
                     }}
                   </p>
                   <p class="text-sm font-semibold text-gray-900 truncate">{{ contact.value }}</p>
@@ -260,61 +222,49 @@ const getSaleById = (saleId: string): ISales | undefined => {
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ชื่อเล่น</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ชื่อเล่น</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 data.displayName || 'ไม่ระบุ'
-              }}</span>
+                }}</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ชื่อ-นามสกุล</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ชื่อ-นามสกุล</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{ data.name || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ที่อยู่</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ที่อยู่</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
               <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
                 data.address || 'ไม่ระบุ'
-              }}</span>
+                }}</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >จังหวัด</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">จังหวัด</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{
                 memberStore.provinceOptions.find((option) => option.value === data?.province)
-                  ?.label || 'ไม่ระบุ'
-              }}</span>
+                ?.label || 'ไม่ระบุ'
+                }}</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >เบอร์โทรศัพท์</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เบอร์โทรศัพท์</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{ data.phone || 'ไม่ระบุ' }}</span>
             </div>
           </div>
 
           <div v-if="data.requirements" class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-              >ความต้องการ</label
-            >
+            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ความต้องการ</label>
             <div class="bg-gray-50 rounded-lg py-2 px-3">
               <span class="text-gray-900 text-sm font-medium">{{ data.requirements }}</span>
             </div>
@@ -325,8 +275,8 @@ const getSaleById = (saleId: string): ISales | undefined => {
             <div class="bg-gray-50 rounded-lg py-1.5 px-3">
               <span class="text-gray-900 text-sm">{{
                 memberStore.customerTypeOptions.find((option) => option.value === data?.type)
-                  ?.label || 'ไม่ระบุ'
-              }}</span>
+                ?.label || 'ไม่ระบุ'
+                }}</span>
             </div>
           </div>
         </div>
@@ -343,15 +293,14 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
         <!-- พฤติกรรมการเลี้ยง -->
         <div>
-          <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-            >พฤติกรรมการเลี้ยง</label
-          >
+          <label
+            class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">พฤติกรรมการเลี้ยง</label>
           <div class="bg-gray-50 rounded-lg py-2 px-3">
             <span class="text-gray-900 text-sm font-medium">{{
               memberStore.breedingBehaviorOptions.find(
-                (option) => option.value === getInterestValue('breeding_behavior')
+              (option) => option.value === getInterestValue('breeding_behavior')
               )?.label || 'ไม่ระบุ'
-            }}</span>
+              }}</span>
           </div>
         </div>
 
@@ -360,54 +309,50 @@ const getSaleById = (saleId: string): ISales | undefined => {
           <h4 class="font-semibold! text-gray-800 mb-1.5 text-sm">สายพันธุ์ที่ชอบ</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Gosanke ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">Gosanke
+                ลูกค้าชอบปลาสายพันธุ์อะไรมากที่สุด</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.gosankeOptions.find(
-                    (option) => option.value === getInterestValue('gosanke')
+                  (option) => option.value === getInterestValue('gosanke')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Non-Gosanke ลูกค้าชอบสายพันธุ์อะไร</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">Non-Gosanke
+                ลูกค้าชอบสายพันธุ์อะไร</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.nonGosankeOptions.find(
-                    (option) => option.value === getInterestValue('non_gosanke')
+                  (option) => option.value === getInterestValue('non_gosanke')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >Variety สีล้วน ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">Variety สีล้วน
+                ลูกค้าชอบสายพันธุ์อะไรมากที่สุด</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.varietyOptions.find(
-                    (option) => option.value === getInterestValue('variety')
+                  (option) => option.value === getInterestValue('variety')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ชอบเลี้ยงปลาอายุเท่าไร</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ชอบเลี้ยงปลาอายุเท่าไร</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.fishAgeOptions.find(
-                    (option) => option.value === getInterestValue('fish_age')
+                  (option) => option.value === getInterestValue('fish_age')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
           </div>
@@ -418,98 +363,88 @@ const getSaleById = (saleId: string): ISales | undefined => {
           <h4 class="font-semibold! text-sm text-gray-800 mb-1.5">ข้อมูลการเลี้ยง</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ระดับงบประมาณ</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ระดับงบประมาณ
+                ร้านคาเฟ่</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.budgetLevelOptions.find(
-                    (option) => option.value === getInterestValue('budget_level')
+                  (option) => option.value === getInterestValue('budget_level')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ใช้จุลินทรีย์</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ใช้จุลินทรีย์</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.bacteriaUsageOptions.find(
-                    (option) => option.value === getInterestValue('bacteria_usage')
+                  (option) => option.value === getInterestValue('bacteria_usage')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('bacteria_usage') === 'yes'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ยี่ห้อจุลินทรีย์</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ยี่ห้อจุลินทรีย์</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('bacteria_brand') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ยี่ห้ออาหาร</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ยี่ห้ออาหาร</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('food_brand') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ล้างกรอง</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ล้างกรอง</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.filterCleaningOptions.find(
-                    (option) => option.value === getInterestValue('filter_cleaning')
+                  (option) => option.value === getInterestValue('filter_cleaning')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('filter_cleaning') === 'company'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >บริษัทรับล้าง</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">บริษัทรับล้าง</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('filter_cleaning_company') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ขนาดบ่อเลี้ยง</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ขนาดบ่อเลี้ยง</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('pond_size') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >วิธีการให้อาหาร</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">วิธีการให้อาหาร</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.feedingMethodOptions.find(
-                    (option) => option.value === getInterestValue('feeding_method')
+                  (option) => option.value === getInterestValue('feeding_method')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
           </div>
@@ -521,135 +456,121 @@ const getSaleById = (saleId: string): ISales | undefined => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <!-- ชอบส่งปลางานประกวดหรือไม่ -->
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ชอบส่งปลางานประกวดหรือไม่</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ชอบส่งปลางานประกวดหรือไม่</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.contestParticipationOptions.find(
-                    (option) => option.value === getInterestValue('contest_participation')
+                  (option) => option.value === getInterestValue('contest_participation')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('contest_participation') === 'no'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เหตุผล</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เหตุผล</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('contest_participation_reason') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <!-- เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่ -->
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เคยร่วมกิจกรรมแข่งเลี้ยง รับเงินรางวัล หรือไม่</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เคยร่วมกิจกรรมแข่งเลี้ยง
+                รับเงินรางวัล หรือไม่</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.competitionParticipationOptions.find(
-                    (option) => option.value === getInterestValue('competition_participation')
+                  (option) => option.value === getInterestValue('competition_participation')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('competition_participation') === 'yes'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ฟาร์มไหน</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ฟาร์มไหน</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('competition_farm') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('competition_participation') === 'no'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เหตุผล</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เหตุผล</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('competition_reason') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <!-- เคยประมูลปลาออนไลน์หรือไม่ -->
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เคยประมูลปลาออนไลน์หรือไม่ เช่น Sakai Auction Online , Dainishi Auction Online
-                เป็นต้นฯ</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เคยประมูลปลาออนไลน์หรือไม่
+                เช่น Sakai Auction Online , Dainishi Auction Online
+                เป็นต้นฯ</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.onlineAuctionOptions.find(
-                    (option) => option.value === getInterestValue('online_auction')
+                  (option) => option.value === getInterestValue('online_auction')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('online_auction') === 'yes'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ประมูลกับฟาร์มไหน</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ประมูลกับฟาร์มไหน</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('auction_farm') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('online_auction') === 'no'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เหตุผล</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เหตุผล</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('auction_reason') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <!-- เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่ -->
             <div>
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เคยไปซื้อปลาคาร์ฟที่ญี่ปุ่นหรือไม่</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   memberStore.japanPurchaseOptions.find(
-                    (option) => option.value === getInterestValue('japan_purchase')
+                  (option) => option.value === getInterestValue('japan_purchase')
                   )?.label || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('japan_purchase') === 'yes'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >ไปกับฟาร์มไหน</label
-              >
+              <label
+                class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ไปกับฟาร์มไหน</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('japan_farm') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
 
             <div v-if="getInterestValue('japan_purchase') === 'no'">
-              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-                >เหตุผล</label
-              >
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">เหตุผล</label>
               <div class="bg-gray-50 rounded-lg py-2 px-3">
                 <span class="text-gray-900 text-sm font-medium">{{
                   getInterestValue('japan_reason') || 'ไม่ระบุ'
-                }}</span>
+                  }}</span>
               </div>
             </div>
           </div>
@@ -657,21 +578,18 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
         <!-- โน้ตพฤติกรรมลูกค้า -->
         <div v-if="data.behaviorNotes" class="md:col-span-2">
-          <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide"
-            >โน้ตพฤติกรรมลูกค้า</label
-          >
+          <label
+            class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">โน้ตพฤติกรรมลูกค้า</label>
           <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
             <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
               data.behaviorNotes
-            }}</span>
+              }}</span>
           </div>
         </div>
       </div>
 
-      <div
-        v-if="data.purchaseHistory && data.purchaseHistory.length > 0"
-        class="bg-white rounded-xl p-5 border border-gray-200"
-      >
+      <div v-if="data.purchaseHistory && data.purchaseHistory.length > 0"
+        class="bg-white rounded-xl p-5 border border-gray-200">
         <h3 class="text-base font-semibold! text-gray-900 mb-4 flex items-center gap-2">
           <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
             <i class="pi pi-shopping-bag text-blue-600 text-xs"></i>
@@ -680,13 +598,8 @@ const getSaleById = (saleId: string): ISales | undefined => {
         </h3>
 
         <div class="space-y-3">
-          <PurchaseHistoryPanel
-            v-for="saleId in data.purchaseHistory"
-            :key="saleId"
-            :sale-id="saleId"
-            :sale="getSaleById(saleId)"
-            :is-setting="false"
-          />
+          <PurchaseHistoryPanel v-for="saleId in data.purchaseHistory" :key="saleId" :sale-id="saleId"
+            :sale="getSaleById(saleId)" :is-setting="false" />
         </div>
       </div>
 
@@ -754,14 +667,7 @@ const getSaleById = (saleId: string): ISales | undefined => {
 
     <template #footer>
       <div class="flex justify-end">
-        <Button
-          label="ปิด"
-          icon="pi pi-times"
-          @click="closeDetailModal"
-          severity="secondary"
-          size="small"
-          outlined
-        />
+        <Button label="ปิด" icon="pi pi-times" @click="closeDetailModal" severity="secondary" size="small" outlined />
       </div>
     </template>
   </Dialog>
