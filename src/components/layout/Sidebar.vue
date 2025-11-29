@@ -71,7 +71,7 @@ const isDropdownActive = (item: {
   if (!item.label) return false
 
   // Special case for storage dropdown (uses query parameter)
-  if (item.label === 'คลัง' || item.route === 'storage') {
+  if (item.label === 'สต็อกขาย' || item.route === 'storage') {
     return currentRoute.value === 'storage' && !!route.query.category
   }
 
@@ -134,6 +134,13 @@ const menuSections = [
         route: 'dashboard',
       },
       {
+        icon: 'pi pi-building-columns',
+        label: 'สต็อกขาย',
+        route: 'storage',
+        isDropdown: true,
+        submenu: [], // Will be populated dynamically from categories
+      },
+      {
         icon: 'pi pi-cart-plus',
         label: 'ขาย',
         isDropdown: true,
@@ -160,13 +167,7 @@ const menuSections = [
         label: 'จัดส่ง',
         route: 'shipping',
       },
-      {
-        icon: 'pi pi-building-columns',
-        label: 'คลัง',
-        route: 'storage',
-        isDropdown: true,
-        submenu: [], // Will be populated dynamically from categories
-      },
+
       // {
       //   icon: 'pi pi-calculator',
       //   label: 'บัญชี',
@@ -341,11 +342,6 @@ const menuSections = [
           },
         ],
       },
-      // {
-      //   icon: 'pi pi-shop',
-      //   label: 'คลัง',
-      //   route: 'koi-store',
-      // },
     ],
   },
   {
@@ -400,7 +396,7 @@ watch(
         if (!item.isDropdown || !item.label) return
 
         // Special case for storage dropdown
-        if (item.label === 'คลัง' || item.route === 'storage') {
+        if (item.label === 'สต็อกขาย' || item.route === 'storage') {
           if (routeName === 'storage' && route.query.category) {
             dropdownStates.value[item.label] = true
           }
@@ -476,7 +472,7 @@ onUnmounted(() => {
                     class="flex flex-col gap-1 overflow-y-auto select-none duration-300 ml-3 dropdown-submenu max-h-[calc(100vh-200px)]"
                     style="scrollbar-width: none; -ms-overflow-style: none">
                     <!-- Storage submenu -->
-                    <template v-if="item.label === 'คลัง' || item.route === 'storage'">
+                    <template v-if="item.label === 'สต็อกขาย' || item.route === 'storage'">
                       <MenuItem v-for="subItem in storageSubmenu" :key="subItem.categoryValue" :icon="subItem.icon"
                         :label="subItem.label" :active="currentRoute === 'storage' &&
                           route.query.category === subItem.categoryValue
