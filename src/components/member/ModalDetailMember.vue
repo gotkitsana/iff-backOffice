@@ -237,12 +237,27 @@ const getSaleById = (saleId: string): ISales | undefined => {
             </div>
           </div>
 
-          <div class="md:col-span-2">
-            <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ที่อยู่</label>
-            <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
-              <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
-                data.address || 'ไม่ระบุ'
-                }}</span>
+          <div class="md:col-span-2 space-y-2">
+            <div>
+              <label class="block text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wide">ที่อยู่</label>
+              <div class="bg-gray-50 rounded-lg py-2 px-3 min-h-[60px]">
+                <span class="text-gray-900 whitespace-pre-line text-sm leading-relaxed">{{
+                  data.address || 'ไม่ระบุ'
+                  }}</span>
+              </div>
+            </div>
+
+            <div v-if="data.locationUrl" class="flex flex-col items-start gap-1">
+              <div>
+                <label class="block text-sm font-semibold text-gray-600 mb-0.5 uppercase tracking-wide">
+                  ลิงก์แผนที่
+                </label>
+                <p class="text-xs text-gray-500">
+                  ใช้เปิดตำแหน่งลูกค้าในแอปแผนที่ (Google Maps / Apple Maps ฯลฯ)
+                </p>
+              </div>
+              <Button as="a" :href="data.locationUrl" target="_blank" rel="noopener noreferrer" icon="pi pi-map-marker"
+                label="เปิดแผนที่" size="small" link severity="info" class="whitespace-nowrap" />
             </div>
           </div>
 

@@ -89,6 +89,7 @@ const newMember = ref<
   password: undefined,
   bidder: false,
   address: '',
+  locationUrl: '',
   province: '',
   phone: '',
   type: '',
@@ -131,6 +132,7 @@ const closeAddModal = () => {
     bidder: false,
     username: undefined,
     address: '',
+    locationUrl: '',
     province: '',
     phone: '',
     type: '',
@@ -219,8 +221,8 @@ const calculateSaleTotal = (sale: ISales | undefined): number => {
   if (!sale) return 0
   const productsTotal = sale.products
     ? sale.products.reduce((total, product) => {
-        return total + (product.price || 0) * (product.quantity || 1)
-      }, 0)
+      return total + (product.price || 0) * (product.quantity || 1)
+    }, 0)
     : 0
   return productsTotal - sale.discount - (sale.deliveryNo || 0)
 }
@@ -431,6 +433,7 @@ watch(
         password: newMemberData.password || null,
         bidder: newMemberData.bidder || false,
         address: newMemberData.address || '',
+        locationUrl: newMemberData.locationUrl || '',
         province: newMemberData.province || '',
         phone: newMemberData.phone || '',
         type: newMemberData.type || '',
@@ -816,9 +819,19 @@ const existingPurchaseHistory = computed(() => {
             <InputText v-model="newMember.name" placeholder="กรุณาใส่ชื่อ-นามสกุล" fluid size="small" />
           </div>
 
-          <div class="md:col-span-2">
-            <label class="block text-sm font-semibold! text-gray-700 mb-1">ที่อยู่</label>
-            <Textarea v-model="newMember.address" placeholder="กรุณาใส่ที่อยู่" rows="3" fluid size="small" />
+          <div class="md:col-span-2 space-y-2">
+            <div>
+              <label class="block text-sm font-semibold! text-gray-700 mb-1">ที่อยู่</label>
+              <Textarea v-model="newMember.address" placeholder="กรุณาใส่ที่อยู่ (บ้านเลขที่, ซอย, เขต/อำเภอ ฯลฯ)"
+                rows="3" fluid size="small" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold! text-gray-700 mb-1">ลิงก์แผนที่ (Google Maps / อื่นๆ)</label>
+              <InputText v-model="newMember.locationUrl"
+                placeholder="วางลิงก์จากปุ่มแชร์แผนที่ เช่น https://maps.app.goo.gl/..." fluid size="small" />
+              <small class="text-xs text-gray-500">แนะนำให้คัดลอกลิงก์จากปุ่มแชร์ตำแหน่งในแอปแผนที่
+                เพื่อให้ทีมงานเปิดดูตำแหน่งได้ง่าย</small>
+            </div>
           </div>
 
           <div>
@@ -1217,9 +1230,9 @@ const existingPurchaseHistory = computed(() => {
             <div v-if="!props.data">
               <label class="block text-sm font-semibold! text-gray-700 mb-1">สถานะยูสเซอร์</label>
               <Select v-model="newMember.bidder" :options="[
-                  { label: 'เปิดใช้งาน', value: true },
-                  { label: 'ล็อค', value: false },
-                ]" optionLabel="label" optionValue="value" placeholder="เลือกสถานะยูสเซอร์" fluid size="small" />
+                { label: 'เปิดใช้งาน', value: true },
+                { label: 'ล็อค', value: false },
+              ]" optionLabel="label" optionValue="value" placeholder="เลือกสถานะยูสเซอร์" fluid size="small" />
             </div>
           </div>
 
@@ -1256,23 +1269,20 @@ const existingPurchaseHistory = computed(() => {
                     <p class="text-xs font-medium text-gray-600 mb-2">เงื่อนไขรหัสผ่าน:</p>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                       <div class="flex items-center space-x-2">
-                        <i :class="
-                            passwordValidation?.minLength
-                              ? 'pi pi-check text-green-500'
-                              : 'pi pi-times text-red-500'
+                        <i :class="passwordValidation?.minLength
+                          ? 'pi pi-check text-green-500'
+                          : 'pi pi-times text-red-500'
                           "></i>
                         <span :class="passwordValidation?.minLength ? 'text-green-600' : 'text-red-600'">
                           อย่างน้อย 8 ตัวอักษร
                         </span>
                       </div>
                       <div class="flex items-center space-x-2">
-                        <i :class="
-                            passwordValidation?.hasNumbers
-                              ? 'pi pi-check text-green-500'
-                              : 'pi pi-times text-red-500'
+                        <i :class="passwordValidation?.hasNumbers
+                          ? 'pi pi-check text-green-500'
+                          : 'pi pi-times text-red-500'
                           "></i>
-                        <span :class="
-                            passwordValidation?.hasNumbers ? 'text-green-600' : 'text-red-600'
+                        <span :class="passwordValidation?.hasNumbers ? 'text-green-600' : 'text-red-600'
                           ">
                           ตัวเลข 1 ตัวขึ้นไป
                         </span>

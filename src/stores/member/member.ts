@@ -345,7 +345,8 @@ export interface IMember {
   customerLevel: CustomerLevel //ระดับลูกค้า (general, important, very_important)
   displayName: string //ชื่อเล่น
   name?: string //ชื่อ/สกุล
-  address?: string //ที่อยู่
+  address?: string //ที่อยู่ (สำหรับจัดส่งหลัก)
+  locationUrl?: string //ลิงก์แผนที่ (เช่น Google Maps)
   province?: string //จังหวัด
   phone?: string //เบอร์โทร
   type: string //ประเภทลูกค้า
@@ -386,6 +387,7 @@ export interface CreateMemberPayload {
   displayName: string
   name?: string
   address?: string
+  locationUrl?: string
   province?: string
   phone?: string
   type?: string
