@@ -310,7 +310,7 @@ const onSave = () => {
         <small class="text-gray-500">รองรับไฟล์: JPG, PNG (ขนาดไม่เกิน 5MB)</small>
         <div v-if="previewImage || existingImageUrl" class="mt-2">
           <Image
-            :src="previewImage || existingImageUrl"
+            :src="previewImage || existingImageUrl || ''"
             alt="Preview"
             width="150"
             preview
