@@ -18,6 +18,7 @@ import { useFilterState } from '@/composables/useFilterState'
 const props = defineProps<{
   filters: IFishFilters
   category: ICategory
+  hideActions?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -189,7 +190,7 @@ const saleStatusOptions = computed(() => {
 <template>
   <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
     <FilterHeader :category-name="props.category.name" @open-add-modal="$emit('open-add-modal')"
-      @open-export-modal="$emit('open-export-modal')">
+      @open-export-modal="$emit('open-export-modal')" :hideActions="hideActions">
       <template #extra-actions>
         <Button label="แผนผัง" icon="pi pi-map" severity="secondary" size="small"
           @click="navigateWithQuery('/product/greenhouse-map')" />
@@ -253,7 +254,7 @@ const saleStatusOptions = computed(() => {
             filter :disabled="!localFilters.greenhouse" />
         </div>
 
-        <div>
+        <div v-if="!hideActions">
           <label class="text-sm font-medium text-gray-700 mb-1 block">สถานะ</label>
           <Select :model-value="localFilters.saleStatus" @update:model-value="updateFilter('saleStatus', $event)"
             :options="saleStatusOptions" optionLabel="label" optionValue="value" placeholder="เลือกสถานะ" size="small"

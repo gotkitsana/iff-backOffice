@@ -25,7 +25,7 @@ import {
   useDepartmentStore,
   type IDepartment,
 } from '@/stores/hr/department'
-import { useAccountExpenseStore } from '@/stores/accounting/expense'
+import { useAccountExpenseStore, type IExpenseTypeValue } from '@/stores/accounting/expense'
 
 // Stores
 const categoryStore = useAccountCategoryStore()
@@ -57,19 +57,24 @@ const categoryForm = ref<ICreateAccountCategoryPayload & { active?: boolean }>({
   name: '',
   detail: '',
   department: '',
-  type: 'รายจ่าย', // Fixed value for expense categories
+  type: '' as IExpenseTypeValue | '',
   note: '',
   active: true,
 })
 
-// Expense type for the form (separate from category type)
-const expenseTypeForm = ref<string>('')
+
+// Filter categories for expense type only (categories where type is one of expense types)
+const expenseCategories = computed(() => {
+  if (!categories.value) return []
+  const expenseTypeValues = expenseStore.expense_types.map(t => t.value)
+  return categories.value.filter((cat) => expenseTypeValues.includes(cat.type))
+})
 
 // Computed
 const filteredCategories = computed(() => {
-  if (!categories.value || !searchQuery.value) return categories.value || []
+  if (!expenseCategories.value || !searchQuery.value) return expenseCategories.value || []
   const query = searchQuery.value.toLowerCase()
-  return categories.value.filter(
+  return expenseCategories.value.filter(
     (cat) =>
       cat.name?.toLowerCase().includes(query) ||
       cat.detail?.toLowerCase().includes(query) ||
@@ -77,7 +82,7 @@ const filteredCategories = computed(() => {
   )
 })
 
-const totalCategories = computed(() => categories.value?.length || 0)
+const totalCategories = computed(() => expenseCategories.value?.length || 0)
 
 // Department options
 const departmentOptions = computed(() => {
@@ -91,46 +96,20 @@ const departmentOptions = computed(() => {
 })
 
 // Helper functions
-const getDepartmentName = (departmentId: string | null) => {
-  if (!departmentId || !departments.value) return '-'
-  const dept = departments.value.find((d) => d._id === departmentId)
+const getDepartmentName = (department: IDepartment | string | null) => {
+  if (!department || !departments.value) return '-'
+  // If department is an object, get the name directly
+  if (typeof department === 'object' && 'name' in department) {
+    return department.name || '-'
+  }
+  // If department is a string (ID), find it
+  const dept = departments.value.find((d) => d._id === department)
   return dept ? dept.name : '-'
 }
 
-const getExpenseTypeLabel = (type: string) => {
+const getExpenseTypeLabel = (type: IExpenseTypeValue | string) => {
   const expenseType = expenseStore.expense_types.find((t) => t.value === type)
   return expenseType ? expenseType.label : type
-}
-
-// Extract expenseType from note field (stored as JSON)
-const extractExpenseType = (note: string | undefined): string => {
-  if (!note) return ''
-  try {
-    const parsed = JSON.parse(note)
-    return parsed.expenseType || ''
-  } catch {
-    // If not JSON, try to find expenseType in note
-    return note.includes('expenseType') ? note.split('expenseType:')[1]?.trim() || '' : ''
-  }
-}
-
-// Store expenseType in note field as JSON
-const buildNoteWithExpenseType = (expenseType: string, originalNote: string): string => {
-  const noteObj: { expenseType?: string; note?: string } = {}
-  if (expenseType) noteObj.expenseType = expenseType
-  if (originalNote && !originalNote.startsWith('{')) {
-    noteObj.note = originalNote
-  } else if (originalNote) {
-    try {
-      const parsed = JSON.parse(originalNote)
-      Object.assign(noteObj, parsed)
-      noteObj.expenseType = expenseType
-    } catch {
-      noteObj.note = originalNote
-      noteObj.expenseType = expenseType
-    }
-  }
-  return Object.keys(noteObj).length > 0 ? JSON.stringify(noteObj) : ''
 }
 
 // Category Columns Definition
@@ -147,9 +126,15 @@ const categoryColumns = ref([
     header: 'ประเภทค่าใช้จ่าย',
     headCell: 'min-w-[8rem]',
     render: (slotProps: { data: IAccountCategory }) => {
-      const expenseType = extractExpenseType(slotProps.data.note)
-      return h('span', { class: 'text-sm text-gray-600' }, expenseType ? getExpenseTypeLabel(expenseType) : '-')
+      return h('span', { class: 'text-sm text-gray-600' }, slotProps.data.type ? getExpenseTypeLabel(slotProps.data.type) : '-')
     },
+  },
+  {
+    field: 'note',
+    header: 'หมายเหตุ',
+    headCell: 'min-w-[10rem]',
+    render: (slotProps: { data: IAccountCategory }) =>
+      h('span', { class: 'text-sm text-gray-600' }, slotProps.data.note || '-'),
   },
   {
     field: 'department',
@@ -194,31 +179,14 @@ const closeAddModal = () => {
 
 const openEditModal = (category: IAccountCategory) => {
   selectedCategory.value = category
-  const expenseType = extractExpenseType(category.note)
-  let originalNote = ''
-
-  if (category.note) {
-    if (category.note.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(category.note)
-        originalNote = parsed.note || ''
-      } catch {
-        originalNote = category.note
-      }
-    } else {
-      originalNote = category.note
-    }
-  }
-
   categoryForm.value = {
     name: category.name || '',
     detail: category.detail || '',
-    department: category.department || '',
-    type: category.type || 'รายจ่าย',
-    note: originalNote,
+    department: typeof category.department === 'string' ? category.department : (category.department?._id || ''),
+    type: category.type || ('' as IExpenseTypeValue | ''),
+    note: category.note || '',
     active: category.active !== false,
   }
-  expenseTypeForm.value = expenseType
   showEditModal.value = true
 }
 
@@ -243,11 +211,10 @@ const resetCategoryForm = () => {
     name: '',
     detail: '',
     department: '',
-    type: '',
+    type: '' as IExpenseTypeValue | '',
     note: '',
     active: true,
   }
-  expenseTypeForm.value = ''
 }
 
 // Mutations
@@ -256,7 +223,7 @@ const { mutate: createCategory, isPending: isCreatingCategory } = useMutation({
   onSuccess: (data: { data?: unknown; error?: unknown }) => {
     if (data.data) {
       toast.success('เพิ่มรายการค่าใช้จ่ายสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['get_categories'] })
+      queryClient.invalidateQueries({ queryKey: ['get_categories_accounting'] })
       closeAddModal()
     } else {
       toast.error('เพิ่มรายการค่าใช้จ่ายไม่สำเร็จ')
@@ -272,7 +239,7 @@ const { mutate: updateCategory, isPending: isUpdatingCategory } = useMutation({
   onSuccess: (data: { data?: unknown; error?: unknown }) => {
     if (data.data) {
       toast.success('แก้ไขข้อมูลรายการค่าใช้จ่ายสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['get_categories'] })
+      queryClient.invalidateQueries({ queryKey: ['get_categories_accounting'] })
       closeEditModal()
     } else {
       toast.error('แก้ไขข้อมูลรายการค่าใช้จ่ายไม่สำเร็จ')
@@ -288,7 +255,7 @@ const { mutate: deleteCategory, isPending: isDeletingCategory } = useMutation({
   onSuccess: (data: { data?: unknown; error?: unknown }) => {
     if (data.data) {
       toast.success('ลบรายการค่าใช้จ่ายสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['get_categories'] })
+      queryClient.invalidateQueries({ queryKey: ['get_categories_accounting'] })
       closeDeleteModal()
     } else {
       toast.error('ลบรายการค่าใช้จ่ายไม่สำเร็จ')
@@ -309,7 +276,7 @@ const handleCreateCategory = () => {
     toast.error('กรุณาเลือกแผนก')
     return
   }
-  if (!expenseTypeForm.value) {
+  if (!categoryForm.value.type) {
     toast.error('กรุณาเลือกประเภทค่าใช้จ่าย')
     return
   }
@@ -318,8 +285,8 @@ const handleCreateCategory = () => {
     name: categoryForm.value.name,
     detail: categoryForm.value.detail || '',
     department: categoryForm.value.department,
-    type: categoryForm.value.type, // 'รายจ่าย'
-    note: buildNoteWithExpenseType(expenseTypeForm.value, categoryForm.value.note || ''),
+    type: categoryForm.value.type as IExpenseTypeValue,
+    note: categoryForm.value.note || '',
   }
 
   createCategory(payload)
@@ -336,7 +303,7 @@ const handleUpdateCategory = () => {
     toast.error('กรุณาเลือกแผนก')
     return
   }
-  if (!expenseTypeForm.value) {
+  if (!categoryForm.value.type) {
     toast.error('กรุณาเลือกประเภทค่าใช้จ่าย')
     return
   }
@@ -346,8 +313,8 @@ const handleUpdateCategory = () => {
     name: categoryForm.value.name,
     detail: categoryForm.value.detail || '',
     department: categoryForm.value.department,
-    type: categoryForm.value.type, // 'รายจ่าย'
-    note: buildNoteWithExpenseType(expenseTypeForm.value, categoryForm.value.note || ''),
+    type: categoryForm.value.type as IExpenseTypeValue,
+    note: categoryForm.value.note || '',
     active: categoryForm.value.active !== false,
   }
 
@@ -389,7 +356,7 @@ const handleDeleteCategory = () => {
       <template #content>
         <div class="text-center">
           <div class="text-2xl font-bold text-green-600">
-            {{ categories?.filter((c) => c.active !== false).length || 0 }}
+            {{expenseCategories?.filter((c) => c.active !== false).length || 0}}
           </div>
           <div class="text-sm text-green-700">รายการที่ใช้งาน</div>
         </div>
@@ -400,7 +367,7 @@ const handleDeleteCategory = () => {
       <template #content>
         <div class="text-center">
           <div class="text-2xl font-bold text-amber-600">
-            {{ categories?.filter((c) => c.active === false).length || 0 }}
+            {{expenseCategories?.filter((c) => c.active === false).length || 0}}
           </div>
           <div class="text-sm text-amber-700">รายการที่ปิดใช้งาน</div>
         </div>
@@ -468,14 +435,14 @@ const handleDeleteCategory = () => {
     <div class="space-y-3">
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก *</label>
-        <Select v-model="categoryForm.department" :options="departmentOptions" optionLabel="label"
-          optionValue="value" placeholder="เลือกแผนก" fluid size="small" />
+        <Select v-model="categoryForm.department" :options="departmentOptions" optionLabel="label" optionValue="value"
+          placeholder="เลือกแผนก" fluid size="small" />
       </div>
 
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทค่าใช้จ่าย *</label>
-        <Select v-model="expenseTypeForm" :options="expenseStore.expense_types" optionLabel="label" optionValue="value"
-          placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
+        <Select v-model="categoryForm.type" :options="expenseStore.expense_types" optionLabel="label"
+          optionValue="value" placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
       </div>
 
       <div>
@@ -524,14 +491,14 @@ const handleDeleteCategory = () => {
     <div class="space-y-3">
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก *</label>
-        <Select v-model="categoryForm.department" :options="departmentOptions" optionLabel="label"
-          optionValue="value" placeholder="เลือกแผนก" fluid size="small" />
+        <Select v-model="categoryForm.department" :options="departmentOptions" optionLabel="label" optionValue="value"
+          placeholder="เลือกแผนก" fluid size="small" />
       </div>
 
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทค่าใช้จ่าย *</label>
-        <Select v-model="expenseTypeForm" :options="expenseStore.expense_types" optionLabel="label" optionValue="value"
-          placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
+        <Select v-model="categoryForm.type" :options="expenseStore.expense_types" optionLabel="label"
+          optionValue="value" placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
       </div>
 
       <div>
@@ -560,8 +527,8 @@ const handleDeleteCategory = () => {
     <template #footer>
       <div class="flex justify-end gap-3">
         <Button label="ยกเลิก" icon="pi pi-times" severity="secondary" @click="closeEditModal" size="small" />
-        <Button label="บันทึกการแก้ไข" icon="pi pi-check" @click="handleUpdateCategory"
-          :loading="isUpdatingCategory" severity="success" size="small" />
+        <Button label="บันทึกการแก้ไข" icon="pi pi-check" @click="handleUpdateCategory" :loading="isUpdatingCategory"
+          severity="success" size="small" />
       </div>
     </template>
   </Dialog>
@@ -603,4 +570,3 @@ const handleDeleteCategory = () => {
     </template>
   </Dialog>
 </template>
-

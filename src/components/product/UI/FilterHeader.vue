@@ -4,6 +4,7 @@ import { useProductQuery } from '@/composables/useProductQuery'
 
 const props = defineProps<{
   categoryName: string
+  hideActions?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -23,13 +24,13 @@ const { navigateWithQuery } = useProductQuery()
     </div>
 
     <div class="flex items-center flex-wrap gap-2">
-      <Button label="นำเข้า" icon="pi pi-file-import" severity="success" size="small"
+      <Button v-if="!hideActions" label="นำเข้า" icon="pi pi-file-import" severity="success" size="small"
         @click="$emit('open-add-modal')" />
 
-      <Button label="เบิกออก" icon="pi pi-file-export" severity="success" size="small"
+      <Button v-if="!hideActions" label="เบิกออก" icon="pi pi-file-export" severity="success" size="small"
         @click="$emit('open-export-modal')" />
 
-      <Button label="ตั้งค่า" icon="pi pi-cog" severity="info" size="small"
+      <Button v-if="!hideActions" label="ตั้งค่า" icon="pi pi-cog" severity="info" size="small"
         @click="navigateWithQuery('/product/options-settings')" />
 
       <slot name="extra-actions"></slot>
