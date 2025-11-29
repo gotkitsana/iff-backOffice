@@ -62,6 +62,13 @@ export const useAccountExpenseStore = defineStore('AccountExpense', () => {
     return data.data
   }
 
+  const expense_types = [
+    { label: 'ไม่ประจำ', value: 'unfixed' },
+    { label: 'ประจำ', value: 'fixed' },
+    { label: 'โครงการ', value: 'project' },
+    { label: 'ลงทุน', value: 'investment' },
+  ]
+
   return {
     onGetExpenses,
     onGetExpenseByID,
@@ -71,6 +78,8 @@ export const useAccountExpenseStore = defineStore('AccountExpense', () => {
     onUpdateExpense,
     onDeleteExpense,
     onSendExpenseSlip,
+
+    expense_types,
   }
 })
 

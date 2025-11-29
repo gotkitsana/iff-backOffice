@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 
 // Components
-import { Button, Select, DatePicker, DataTable, Column, InputText, Image, Tag } from 'primevue'
+import { Button, Select, DatePicker, DataTable, Column, Card, Image, Tag } from 'primevue'
 import ModalAddIncome from '@/components/accounting/ModalAddIncome.vue'
 
 // Stores
@@ -202,42 +202,39 @@ const formatDate = (timestamp: number) => {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 lg:gap-3">
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 md:p-4">
-        <h3 class="text-gray-500 text-sm">รายรับ</h3>
-        <p class="text-xl font-bold text-green-600">{{ formatCurrency(totalIncome) }}</p>
-      </div>
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3  md:p-4">
-        <h3 class="text-gray-500 text-sm">รายจ่าย</h3>
-        <p class="text-xl font-bold text-red-600">{{ formatCurrency(totalExpense) }}</p>
-      </div>
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3  md:p-4">
-        <h3 class="text-gray-500 text-sm">กำไร/ขาดทุน</h3>
-        <p class="text-xl font-bold" :class="profit >= 0 ? 'text-green-600' : 'text-red-600'">
-          {{ formatCurrency(profit) }}
-        </p>
-      </div>
+  <!-- Page Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-lg font-semibold! text-gray-900">รายรับ</h1>
+      <p class="text-sm text-gray-600">จัดการข้อมูลรายรับและติดตามสถานะการรับเงิน</p>
     </div>
+    <div class="flex justify-end gap-2">
+      <Button label="บันทึกรายรับ" icon="pi pi-plus" severity="success" size="small" @click="modalVisible = true" />
+      <Button label="ตั้งค่า" icon="pi pi-cog" severity="info" size="small" />
+    </div>
+  </div>
 
-    <!-- Filters -->
-    <div class="mb-3 bg-white p-3 md:p-4 rounded-lg shadow">
-      <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
-        <div class="flex items-center gap-2">
-          <h3 class="text-lg font-[600]! text-gray-800">
-            รายรับ
-          </h3>
-        </div>
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 my-3">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 md:p-4">
+      <h3 class="text-gray-500 text-sm">รายรับ</h3>
+      <p class="text-xl font-bold text-green-600">{{ formatCurrency(totalIncome) }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3  md:p-4">
+      <h3 class="text-gray-500 text-sm">รายจ่าย</h3>
+      <p class="text-xl font-bold text-red-600">{{ formatCurrency(totalExpense) }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3  md:p-4">
+      <h3 class="text-gray-500 text-sm">กำไร/ขาดทุน</h3>
+      <p class="text-xl font-bold" :class="profit >= 0 ? 'text-green-600' : 'text-red-600'">
+        {{ formatCurrency(profit) }}
+      </p>
+    </div>
+  </div>
 
-        <div class="flex items-center flex-wrap gap-2">
-          <Button label="บันทึกรายรับ" icon="pi pi-plus" severity="success" size="small" @click="modalVisible = true" />
-
-          <Button label="ตั้งค่า" icon="pi pi-cog" severity="info" size="small" />
-        </div>
-      </div>
-
-      <div class="space-y-3">
+  <Card class="mt-4">
+    <template #content>
+      <div class="space-y-2 mb-3">
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก</label>
@@ -261,30 +258,23 @@ const formatDate = (timestamp: number) => {
         <Button label="รีเซ็ตตัวกรอง" icon="pi pi-refresh" variant="text" severity="danger" size="small"
           @click="onResetFilter" />
       </div>
-    </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-      <!-- DataTable -->
       <DataTable :value="incomes" :paginator="true" :rows="10" :rowsPerPageOptions="[10, 20, 50]" :loading="loading"
         stripedRows removableSort
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
         currentPageReportTemplate="แสดง {first} ถึง {last} จาก {totalRecords}">
         <template #empty> ไม่พบข้อมูล </template>
 
-        <Column field="cat" header="วันที่" class="text-sm"
-        :pt="{
+        <Column field="cat" header="วันที่" class="text-sm" :pt="{
           headerCell: ['!min-w-[6.5rem]']
-        }"
-        >
+        }">
           <template #body="slotProps">
             {{ formatDate(slotProps.data.cat) }}
           </template>
         </Column>
-        <Column field="type" header="ประเภทค่าใช้จ่าย" class="text-sm"
-        :pt="{
+        <Column field="type" header="ประเภทค่าใช้จ่าย" class="text-sm" :pt="{
           headerCell: ['!min-w-[9.5rem]']
-        }"
-        >
+        }">
           <template #body="slotProps">
             <Tag :value="slotProps.data.type" :severity="slotProps.data.type === 'รายรับ' ? 'success' : 'danger'"
               size="small" />
@@ -321,9 +311,10 @@ const formatDate = (timestamp: number) => {
         </Column>
         <Column field="note" header="หมายเหตุ" class="text-sm"></Column>
       </DataTable>
-    </div>
+    </template>
+  </Card>
 
-    <ModalAddIncome v-model:visible="modalVisible" :categories="categories" :departments="departments"
-      @save="onSaveIncome" />
-  </div>
+  <ModalAddIncome v-model:visible="modalVisible" :categories="categories" :departments="departments"
+    @save="onSaveIncome" />
+
 </template>

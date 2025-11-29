@@ -5,10 +5,11 @@ import dayjs from 'dayjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 
 // Components
-import { Button, Select, DatePicker, DataTable, Column, Image, Tag } from 'primevue'
+import { Button, Select, DatePicker, DataTable, Column, Image, Tag, Card } from 'primevue'
 import ModalAddExpense from '@/components/accounting/ModalAddExpense.vue'
 import ModalDeleteExpense from '@/components/accounting/ModalDeleteExpense.vue'
 import ModalDetailExpense from '@/components/accounting/ModalDetailExpense.vue'
+import { useRouter } from 'vue-router'
 
 // Stores
 import { useAccountExpenseStore } from '@/stores/accounting/expense'
@@ -25,6 +26,7 @@ defineOptions({
 })
 
 const queryClient = useQueryClient()
+const router = useRouter()
 const expenseStore = useAccountExpenseStore()
 const categoryStore = useAccountCategoryStore()
 const departmentStore = useDepartmentStore()
@@ -312,37 +314,55 @@ const getExpenseImage = (expense: IExpense): string | undefined => {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 lg:gap-3">
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 md:p-4">
-        <h3 class="text-gray-500 text-sm">ยอดรวมรายจ่าย</h3>
-        <p class="text-xl font-bold text-red-600">{{ formatCurrency(totalExpenses) }}</p>
-      </div>
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 md:p-4">
-        <h3 class="text-gray-500 text-sm">จำนวนรายการ</h3>
-        <p class="text-xl font-bold text-gray-700">{{ totalCount }}</p>
-      </div>
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 md:p-4">
-        <h3 class="text-gray-500 text-sm">รายจ่ายเฉลี่ย</h3>
-        <p class="text-xl font-bold text-blue-600">{{ formatCurrency(averageExpense) }}</p>
-      </div>
+  <!-- Page Header -->
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-lg font-semibold! text-gray-900">รายจ่าย</h1>
+      <p class="text-sm text-gray-600">จัดการข้อมูลรายจ่ายและติดตามสถานะการชำระเงิน</p>
     </div>
+    <div class="flex justify-end gap-2">
+      <Button label="บันทึกรายจ่าย" icon="pi pi-plus" severity="success" size="small"
+        @click="editingExpense = null; modalVisible = true" />
+      <Button label="ตั้งค่ารายการ" icon="pi pi-cog" severity="info" size="small"
+        @click="router.push('/accounting/expense/category-settings')" />
+    </div>
+  </div>
 
-    <!-- Filters -->
-    <div class="mb-3 bg-white p-3 md:p-4 rounded-lg shadow">
-      <div class="flex items-center flex-wrap justify-between gap-3 mb-3">
-        <div class="flex items-center gap-2">
-          <h3 class="text-lg font-[600]! text-gray-800">รายจ่าย</h3>
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 my-3">
+    <Card :pt="{ body: 'p-4' }" class="bg-red-50 border-red-200">
+      <template #content>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-red-600">{{ formatCurrency(totalExpenses) }}</div>
+          <div class="text-sm text-red-700">ยอดรวมรายจ่าย</div>
         </div>
+      </template>
+    </Card>
 
-        <div class="flex items-center flex-wrap gap-2">
-          <Button label="บันทึกรายจ่าย" icon="pi pi-plus" severity="success" size="small"
-            @click="editingExpense = null; modalVisible = true" />
+    <Card :pt="{ body: 'p-4' }" class="bg-gray-50 border-gray-200">
+      <template #content>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600">{{ totalCount }}</div>
+          <div class="text-sm text-gray-700">จำนวนรายการ</div>
         </div>
-      </div>
+      </template>
+    </Card>
 
-      <div class="space-y-3">
+    <Card :pt="{ body: 'p-4' }" class="bg-amber-50 border-amber-200">
+      <template #content>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-amber-600">{{ formatCurrency(averageExpense) }}</div>
+          <div class="text-sm text-amber-700">รายจ่ายเฉลี่ย</div>
+        </div>
+      </template>
+    </Card>
+  </div>
+
+  <!-- DataTable -->
+  <Card class="mt-4">
+    <template #content>
+      <!-- DataTable -->
+      <div class="space-y-2 mb-3">
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
           <div>
             <label class="text-sm font-medium text-gray-700 mb-1 block">แผนก</label>
@@ -372,10 +392,7 @@ const getExpenseImage = (expense: IExpense): string | undefined => {
         <Button label="รีเซ็ตตัวกรอง" icon="pi pi-refresh" variant="text" severity="danger" size="small"
           @click="onResetFilter" />
       </div>
-    </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-      <!-- DataTable -->
       <DataTable :value="expenses" :paginator="true" :rows="10" :rowsPerPageOptions="[10, 20, 50]" :loading="loading"
         stripedRows removableSort
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -453,15 +470,15 @@ const getExpenseImage = (expense: IExpense): string | undefined => {
           </template>
         </Column>
       </DataTable>
-    </div>
+    </template>
+  </Card>
 
-    <!-- Modals -->
-    <ModalAddExpense v-model:visible="modalVisible" :categories="categories" :departments="departments"
-      :expense="editingExpense" @save="onSaveExpense" />
+  <!-- Modals -->
+  <ModalAddExpense v-model:visible="modalVisible" :categories="categories" :departments="departments"
+    :expense="editingExpense" @save="onSaveExpense" />
 
-    <ModalDeleteExpense v-model:visible="deleteModalVisible" :expense="selectedExpense"
-      @confirm-delete="onConfirmDelete" />
+  <ModalDeleteExpense v-model:visible="deleteModalVisible" :expense="selectedExpense"
+    @confirm-delete="onConfirmDelete" />
 
-    <ModalDetailExpense v-model:visible="detailModalVisible" :expense="selectedExpense" />
-  </div>
+  <ModalDetailExpense v-model:visible="detailModalVisible" :expense="selectedExpense" />
 </template>

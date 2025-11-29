@@ -3,6 +3,7 @@ import Members from '@/views/Member/MembersView.vue'
 import Accounting from '@/views/Accounting/AccountingView.vue'
 import Income from '@/views/Accounting/IncomeView.vue'
 import Expense from '@/views/Accounting/ExpenseView.vue'
+import CategorySettings from '@/views/Accounting/CategorySettingsView.vue'
 import Assets from '@/views/Accounting/AssetsView.vue'
 import Debt from '@/views/Accounting/DebtView.vue'
 import Loan from '@/views/Accounting/LoanView.vue'
@@ -118,9 +119,9 @@ export default [
         name: 'storage',
         component: Product,
         meta: {
-          title: 'คลังสินค้า',
+          title: 'สต็อกขาย',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'คลังสินค้า' }],
+          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'สต็อกขาย' }],
         },
       },
       {
@@ -128,12 +129,12 @@ export default [
         name: 'storage-fish',
         component: FishProductView,
         meta: {
-          title: 'คลังปลา',
+          title: 'สต็อกปลา',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [
             { label: 'ระบบหลัก' },
-            { label: 'คลังสินค้า', path: '/storage' },
-            { label: 'คลังปลา' },
+            { label: 'สต็อกขาย', path: '/storage' },
+            { label: 'สต็อกปลา' },
           ],
         },
       },
@@ -142,12 +143,12 @@ export default [
         name: 'storage-food',
         component: FoodProductView,
         meta: {
-          title: 'คลังอาหาร',
+          title: 'สต็อกอาหาร',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [
             { label: 'ระบบหลัก' },
-            { label: 'คลังสินค้า', path: '/storage' },
-            { label: 'คลังอาหาร' },
+            { label: 'สต็อกขาย', path: '/storage' },
+            { label: 'สต็อกอาหาร' },
           ],
         },
       },
@@ -156,12 +157,12 @@ export default [
         name: 'storage-microorganism',
         component: MicroorganismView,
         meta: {
-          title: 'คลังจุลินทรีย์',
+          title: 'สต็อกจุลินทรีย์',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [
             { label: 'ระบบหลัก' },
-            { label: 'คลังสินค้า', path: '/storage' },
-            { label: 'คลังจุลินทรีย์' },
+            { label: 'สต็อกขาย', path: '/storage' },
+            { label: 'สต็อกจุลินทรีย์' },
           ],
         },
       },
@@ -193,6 +194,21 @@ export default [
           title: 'รายจ่าย',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บัญชี' }, { label: 'รายจ่าย' }],
+        },
+      },
+      {
+        path: '/accounting/expense/category-settings',
+        name: 'expense-category-settings',
+        component: CategorySettings,
+        meta: {
+          title: 'ตั้งค่ารายการค่าใช้จ่าย',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'บัญชี' },
+            { label: 'รายจ่าย', path: '/accounting/expense' },
+            { label: 'ตั้งค่ารายการค่าใช้จ่าย' },
+          ],
         },
       },
       {
@@ -262,7 +278,11 @@ export default [
         meta: {
           title: 'การวิเคราะห์ต้นทุน',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การวิเคราะห์ต้นทุน' }],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'การเงิน' },
+            { label: 'การวิเคราะห์ต้นทุน' },
+          ],
         },
       },
       {
@@ -282,7 +302,11 @@ export default [
         meta: {
           title: 'การประเมินความเสี่ยง',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การประเมินความเสี่ยง' }],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'การเงิน' },
+            { label: 'การประเมินความเสี่ยง' },
+          ],
         },
       },
       {
@@ -292,7 +316,11 @@ export default [
         meta: {
           title: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'การเงิน' }, { label: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ' }],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'การเงิน' },
+            { label: 'การตัดสินใจซื้อ-กู้-ขยายธุรกิจ' },
+          ],
         },
       },
       {
@@ -387,7 +415,11 @@ export default [
         meta: {
           title: 'อบรม-พัฒนาบุคลากร (เสริม)',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
-          breadcrumb: [{ label: 'ระบบหลัก' }, { label: 'บุคลากร' }, { label: 'อบรม-พัฒนาบุคลากร (เสริม)' }],
+          breadcrumb: [
+            { label: 'ระบบหลัก' },
+            { label: 'บุคลากร' },
+            { label: 'อบรม-พัฒนาบุคลากร (เสริม)' },
+          ],
         },
       },
 
