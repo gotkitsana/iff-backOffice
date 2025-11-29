@@ -97,7 +97,8 @@ const summaryCards = computed(() => [
     iconClass: 'pi pi-exclamation-triangle text-white ',
     iconBgClass: 'bg-gradient-to-br from-amber-500 to-amber-600',
     valueClass: ' text-amber-600',
-    cardClass: props.hideActions ? 'col-span-2 md:col-span-3 lg:col-span-2' : 'md:col-span-2',
+    cardClass: 'md:col-span-2',
+    hidden: props.hideActions,
 
   },
 
@@ -142,7 +143,7 @@ const ageStats = computed(() => {
 
     <Card :pt="{ body: 'p-3 md:p-4 h-full' }"
       class="hover:shadow-lg transition-shadow duration-200 col-span-2 md:col-span-6"
-      :class="[hideActions ? ' xl:col-span-4' : 'xl:col-span-5']">
+      :class="[hideActions ? ' lg:col-span-4' : 'xl:col-span-5']">
       <template #content>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 xl:gap-3">
           <div v-for="(count, label) in ageStats" :key="label"
