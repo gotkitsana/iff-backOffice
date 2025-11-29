@@ -304,7 +304,7 @@ const formatDate = (timestamp: number) => {
 
 // Filter categories for expense type
 const expenseCategories = computed(() => {
-  return categories.value.filter((c) => c.type === 'รายจ่าย' && c.active)
+  return categories.value.filter((c) => c.active)
 })
 
 // Helper to get image from expense (image field may not be in type definition)

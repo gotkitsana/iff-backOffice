@@ -21,6 +21,7 @@ import ProductionGuide from '@/views/Production/ProductionGuideView.vue'
 import ProductionMES from '@/views/Production/ProductionMESView.vue'
 import ProductionFoodCalculation from '@/views/Production/ProductionFoodCalculationView.vue'
 import Product from '@/views/Product/ProductView.vue'
+import ProductionFish from '@/views/Production/ProductionFishView.vue'
 import ProductOptionSetting from '@/views/Product/Setting/ProductOptionSetting.vue'
 import GreenhouseMapView from '@/views/Product/Fish/GreenhouseMapView.vue'
 import AdminSettings from '@/views/Admin/AdminSettingView.vue'
@@ -431,6 +432,16 @@ export default [
           title: 'ผลิต',
           roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
           breadcrumb: [{ label: 'ระบบการผลิต' }, { label: 'ผลิต' }],
+        },
+      },
+      {
+        path: '/production/fish',
+        name: 'production-fish',
+        component: ProductionFish,
+        meta: {
+          title: 'คลังผลิต',
+          roles: ['system', 'super_admin', 'admin', 'user', 'sales'],
+          breadcrumb: [{ label: 'ระบบการผลิต' }, { label: 'ผลิต' }, { label: 'คลังผลิต' }],
         },
       },
       {

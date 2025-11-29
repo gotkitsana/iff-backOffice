@@ -62,7 +62,7 @@ export const useAccountExpenseStore = defineStore('AccountExpense', () => {
     return data.data
   }
 
-  const expense_types = [
+  const expense_types: IExpenseType[] = [
     { label: 'ไม่ประจำ', value: 'unfixed' },
     { label: 'ประจำ', value: 'fixed' },
     { label: 'โครงการ', value: 'project' },
@@ -115,5 +115,12 @@ export type ICreateExpensePayload = {
 export interface IUpdateExpensePayload extends ICreateExpensePayload {
   _id: string
 }
+
+export type IExpenseType = {
+  label: string
+  value: IExpenseTypeValue
+}
+
+export type IExpenseTypeValue = 'unfixed' | 'fixed' | 'project' | 'investment'
 
 
