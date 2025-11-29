@@ -36,7 +36,7 @@ const router = useRouter()
 
 // Queries
 const { data: categories } = useQuery<IAccountCategory[]>({
-  queryKey: ['get_categories'],
+  queryKey: ['get_categories_accounting'], // get_categories_accounting
   queryFn: () => categoryStore.onGetCategories(),
 })
 
@@ -45,26 +45,12 @@ const { data: departments } = useQuery<IDepartment[]>({
   queryFn: () => departmentStore.onGetDepartments(),
 })
 
-// Filter categories for expense type only
-const expenseCategories = computed(() => {
-  if (!categories.value) return []
-  return categories.value.filter((cat) => cat.type === 'รายจ่าย')
-})
-
 // Modals
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedCategory = ref<IAccountCategory | null>(null)
 const searchQuery = ref('')
-
-// Expense types from expense store
-const expenseTypes = [
-  { label: 'ไม่ประจำ', value: 'unfixed' },
-  { label: 'ประจำ', value: 'fixed' },
-  { label: 'โครงการ', value: 'project' },
-  { label: 'ลงทุน', value: 'investment' },
-]
 
 // Form data
 const categoryForm = ref<ICreateAccountCategoryPayload & { active?: boolean }>({
@@ -81,9 +67,9 @@ const expenseTypeForm = ref<string>('')
 
 // Computed
 const filteredCategories = computed(() => {
-  if (!expenseCategories.value || !searchQuery.value) return expenseCategories.value || []
+  if (!categories.value || !searchQuery.value) return categories.value || []
   const query = searchQuery.value.toLowerCase()
-  return expenseCategories.value.filter(
+  return categories.value.filter(
     (cat) =>
       cat.name?.toLowerCase().includes(query) ||
       cat.detail?.toLowerCase().includes(query) ||
@@ -91,7 +77,7 @@ const filteredCategories = computed(() => {
   )
 })
 
-const totalCategories = computed(() => expenseCategories.value?.length || 0)
+const totalCategories = computed(() => categories.value?.length || 0)
 
 // Department options
 const departmentOptions = computed(() => {
@@ -112,7 +98,7 @@ const getDepartmentName = (departmentId: string | null) => {
 }
 
 const getExpenseTypeLabel = (type: string) => {
-  const expenseType = expenseTypes.find((t) => t.value === type)
+  const expenseType = expenseStore.expense_types.find((t) => t.value === type)
   return expenseType ? expenseType.label : type
 }
 
@@ -210,7 +196,7 @@ const openEditModal = (category: IAccountCategory) => {
   selectedCategory.value = category
   const expenseType = extractExpenseType(category.note)
   let originalNote = ''
-  
+
   if (category.note) {
     if (category.note.startsWith('{')) {
       try {
@@ -223,7 +209,7 @@ const openEditModal = (category: IAccountCategory) => {
       originalNote = category.note
     }
   }
-  
+
   categoryForm.value = {
     name: category.name || '',
     detail: category.detail || '',
@@ -257,7 +243,7 @@ const resetCategoryForm = () => {
     name: '',
     detail: '',
     department: '',
-    type: 'รายจ่าย',
+    type: '',
     note: '',
     active: true,
   }
@@ -403,7 +389,7 @@ const handleDeleteCategory = () => {
       <template #content>
         <div class="text-center">
           <div class="text-2xl font-bold text-green-600">
-            {{ expenseCategories?.filter((c) => c.active !== false).length || 0 }}
+            {{ categories?.filter((c) => c.active !== false).length || 0 }}
           </div>
           <div class="text-sm text-green-700">รายการที่ใช้งาน</div>
         </div>
@@ -414,7 +400,7 @@ const handleDeleteCategory = () => {
       <template #content>
         <div class="text-center">
           <div class="text-2xl font-bold text-amber-600">
-            {{ expenseCategories?.filter((c) => c.active === false).length || 0 }}
+            {{ categories?.filter((c) => c.active === false).length || 0 }}
           </div>
           <div class="text-sm text-amber-700">รายการที่ปิดใช้งาน</div>
         </div>
@@ -488,7 +474,7 @@ const handleDeleteCategory = () => {
 
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทค่าใช้จ่าย *</label>
-        <Select v-model="expenseTypeForm" :options="expenseTypes" optionLabel="label" optionValue="value"
+        <Select v-model="expenseTypeForm" :options="expenseStore.expense_types" optionLabel="label" optionValue="value"
           placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
       </div>
 
@@ -544,7 +530,7 @@ const handleDeleteCategory = () => {
 
       <div>
         <label class="text-sm font-medium text-gray-700 mb-1 block">ประเภทค่าใช้จ่าย *</label>
-        <Select v-model="expenseTypeForm" :options="expenseTypes" optionLabel="label" optionValue="value"
+        <Select v-model="expenseTypeForm" :options="expenseStore.expense_types" optionLabel="label" optionValue="value"
           placeholder="เลือกประเภทค่าใช้จ่าย" fluid size="small" />
       </div>
 

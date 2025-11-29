@@ -58,7 +58,7 @@ const itemStatuses = [
 
 // Filter categories based on type (รายจ่าย)
 const filteredCategories = computed(() => {
-  return props.categories.filter((c) => c.type === 'รายจ่าย' && c.active)
+  return props.categories.filter((c) => c.active)
 })
 
 watch(

@@ -316,6 +316,11 @@ const menuSections = [
         isDropdown: true,
         submenu: [
           {
+            icon: 'pi pi-warehouse',
+            label: 'คลังผลิต',
+            route: 'production-fish',
+          },
+          {
             icon: 'pi pi-book',
             label: 'คู่มือ',
             route: 'production-guide',
