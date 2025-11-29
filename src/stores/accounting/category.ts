@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '@/utils/axios'
 import type { IExpenseTypeValue } from './expense'
+import type { IDepartment } from '../hr/department'
 
 export const useAccountCategoryStore = defineStore('AccountCategory', () => {
   async function onGetCategories() {
@@ -38,7 +39,7 @@ export type IAccountCategory = {
   detail: string // รายละเอียด
   note: string // หมายเหตุ
   active: boolean // สถานะ
-  department: string | null // แผนก
+  department: IDepartment | null // แผนก
   cat: number
   uat: number
 }
@@ -47,7 +48,7 @@ export type ICreateAccountCategoryPayload = {
   name: string
   detail: string
   department: string
-  type: string
+  type: IExpenseTypeValue | ''
   note: string
 }
 

@@ -27,6 +27,7 @@ const props = defineProps<{
   productData: IProduct | null
   selectedCategory: ICategory | null
   categoryOptionsUI: ICategoryOption[]
+  hideActions?: boolean
 }>()
 
 // Emits
@@ -389,7 +390,7 @@ const downloadWithOverlay = async (event: Event) => {
                 </div>
                 ข้อมูลตัวปลา
               </h5>
-              <Button text severity="success" size="small" label="อัปเดตข้อมูล" @click="handleAddHistory" />
+              <Button v-if="!hideActions" text severity="success" size="small" label="อัปเดตข้อมูล" @click="handleAddHistory" />
             </div>
 
             <div class="space-y-2 overflow-y-auto pr-1 custom-scrollbar" style="max-height: 355px; min-height: 355px">
@@ -406,7 +407,7 @@ const downloadWithOverlay = async (event: Event) => {
                       <span class="text-sm font-bold text-gray-900">
                         ข้อมูลล่าสุด {{ dayjs(latestRecord.date).format('DD/MM/YYYY HH:mm:ss') }}
                       </span>
-                      <Button icon="pi pi-pencil" text rounded severity="warn" size="small"
+                      <Button v-if="!hideActions" icon="pi pi-pencil" text rounded severity="warn" size="small"
                         @click="handleUpdateHistory(latestRecord)" v-tooltip.top="'แก้ไขข้อมูล'" />
                     </div>
                   </template>
@@ -473,7 +474,7 @@ const downloadWithOverlay = async (event: Event) => {
                     </div>
                   </template>
                   <template #icons>
-                    <Button icon="pi pi-pencil" text rounded severity="warn" size="small"
+                    <Button v-if="!hideActions" icon="pi pi-pencil" text rounded severity="warn" size="small"
                       @click="handleUpdateHistory(item)" v-tooltip.top="'แก้ไขข้อมูล'" />
                   </template>
                   <div class="grid grid-cols-2 gap-2">

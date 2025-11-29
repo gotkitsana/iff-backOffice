@@ -7,12 +7,7 @@ import FishFilter from '@/components/product/category/fish/FishFilter.vue'
 import FishProductTable from '@/components/product/category/fish/FishProductTable.vue'
 import FishStatsCards from '@/components/product/category/fish/FishStatsCards.vue'
 
-import ModalAddProduct from '@/components/product/modal/ModalAddProduct.vue'
-import ModalExportProduct from '@/components/product/modal/ModalExportProduct.vue'
-import ModalEditProduct from '@/components/product/modal/ModalEditProduct.vue'
 import ModalProductDetail from '@/components/product/modal/ModalProductDetail.vue'
-import ModalDeleteProduct from '@/components/product/modal/ModalDeleteProduct.vue'
-
 import { useProductStore, type IProduct } from '@/stores/product/product'
 import {
   useFishGrowthHistoryStore,
@@ -39,20 +34,14 @@ const { data: categories } = useQuery({
 const { categoryOptionsUI } = useCategoryFields(categories)
 const { fishFilters, applyFishFilters } = useProductFilters()
 const {
-  showAddModal,
-  showEditModal,
   showDetailModal,
-  showDeleteModal,
-  showExportModal,
   selectedProduct,
   openAddModal,
   openEditModal,
   openDetailModal,
   openDeleteModal,
   openExportModal,
-  closeEditModal,
   closeDetailModal,
-  closeDeleteModal,
 } = useProductModals()
 
 const selectedCategory = ref<ICategory | null>(null)
@@ -121,7 +110,10 @@ const processedProducts = computed(() => {
 
 const filteredProducts = computed(() => {
   if (!products.value) return []
-  return applyFishFilters(processedProducts.value)
+  const readyToSell = processedProducts.value.filter(
+    (product) => !product.waitQC && !product.sold
+  )
+  return applyFishFilters(readyToSell)
 })
 
 const handleUpdateFishFilters = (filters: IFishFilters) => {
@@ -180,29 +172,18 @@ watch(
 
 <template>
   <div class="space-y-4">
-    <FishStatsCards :selected-category="selectedCategory" />
+    <FishStatsCards :selected-category="selectedCategory" :hideActions="true" />
 
-    <FishFilter v-if="selectedCategory" :category="selectedCategory" :filters="fishFilters"
+    <FishFilter v-if="selectedCategory" :hideActions="true" :category="selectedCategory" :filters="fishFilters"
       @open-add-modal="openAddModal" @open-export-modal="openExportModal" @update-filters="handleUpdateFishFilters" />
 
-    <FishProductTable v-if="selectedCategory" :filtered-products="filteredProducts" :is-loading-products="isLoading"
-      :selected-category="selectedCategory" @open-edit-modal="openEditModal"
+    <FishProductTable v-if="selectedCategory" :hideActions="true" :filtered-products="filteredProducts"
+      :is-loading-products="isLoading" :selected-category="selectedCategory" @open-edit-modal="openEditModal"
       @open-detail-modal="openDetailModal" @open-delete-modal="openDeleteModal"
       @update-selection="handleSelectionUpdate" />
   </div>
 
-  <ModalAddProduct v-if="selectedCategory" v-model:visible="showAddModal" :categoryOptionsUI="categoryOptionsUI"
-    :selectedCategory="selectedCategory" />
-
-  <ModalExportProduct v-model:visible="showExportModal" />
-
-  <ModalEditProduct v-if="selectedCategory" v-model:visible="showEditModal" :product-data="selectedProduct"
-    :categoryOptionsUI="categoryOptionsUI" :selected-category="selectedCategory" @close-edit-modal="closeEditModal" />
-
-  <ModalProductDetail v-if="selectedProduct && selectedCategory" v-model:visible="showDetailModal"
+  <ModalProductDetail v-if="selectedProduct && selectedCategory" v-model:visible="showDetailModal" :hideActions="true"
     :product-data="selectedProduct" :selected-category="selectedCategory" :categoryOptionsUI="categoryOptionsUI"
     @close-detail-modal="closeDetailModal" />
-
-  <ModalDeleteProduct v-if="selectedProduct" v-model:visible="showDeleteModal" :product-data="selectedProduct"
-    @close-delete-modal="closeDeleteModal" />
 </template>

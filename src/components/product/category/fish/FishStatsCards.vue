@@ -9,6 +9,7 @@ import StatsCardItem from '@/components/product/UI/StatsCardItem.vue'
 
 const props = defineProps<{
   selectedCategory: ICategory | null
+  hideActions?: boolean
 }>()
 
 const productStore = useProductStore()
@@ -37,12 +38,19 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-const totalValue = computed(() =>
-  fishProducts.value
-    .filter((product) => !product.sold)
-    .reduce((sum, product) => sum + (product.price || 0), 0)
-)
-const totalCount = computed(() => fishProducts.value.filter((product) => !product.sold).length)
+const dataFilter = computed(() => {
+  if (props.hideActions) {
+    return fishProducts.value.filter((product) => !product.sold && !product.waitQC)
+  } else {
+    return fishProducts.value.filter((product) => !product.sold)
+  }
+})
+
+const totalValue = computed(() => {
+  return dataFilter.value.reduce((sum, product) => sum + (product.price || 0), 0)
+})
+
+const totalCount = computed(() => dataFilter.value.length)
 
 const missingDataCount = computed(
   () =>
@@ -65,12 +73,12 @@ const waitQcCount = computed(() => fishProducts.value.filter((product) => produc
 const summaryCards = computed(() => [
   {
     id: 'totalValue',
-    label: 'มูลค่าปลาในคลัง',
+    label: 'มูลค่าปลาในสต๊อก',
     value: `${formatCurrency(totalValue.value)} / ${totalCount.value} ตัว`,
     iconClass: 'pi pi-wallet text-white ',
     iconBgClass: 'bg-gradient-to-br from-green-500 to-green-600',
     valueClass: 'text-green-600',
-    cardClass: 'col-span-2 md:col-span-3 lg:col-span-2',
+    cardClass:  'col-span-2 md:col-span-3 lg:col-span-2',
   },
   {
     id: 'soldValue',
@@ -80,16 +88,8 @@ const summaryCards = computed(() => [
     iconBgClass: 'bg-gradient-to-br from-purple-500 to-purple-600',
     valueClass: ' text-purple-600',
     cardClass: 'col-span-2 md:col-span-3 lg:col-span-2',
+    hidden: props.hideActions,
   },
-  // {
-  //   id: 'totalCount',
-  //   label: 'จำนวนปลาทั้งหมด',
-  //   value: totalCount.value,
-  //   iconClass: 'pi pi-box text-white ',
-  //   iconBgClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
-  //   valueClass: ' text-blue-600',
-  //   cardClass: 'md:col-span-2',
-  // },
   {
     id: 'missingData',
     label: 'ข้อมูลไม่ครบ',
@@ -97,7 +97,8 @@ const summaryCards = computed(() => [
     iconClass: 'pi pi-exclamation-triangle text-white ',
     iconBgClass: 'bg-gradient-to-br from-amber-500 to-amber-600',
     valueClass: ' text-amber-600',
-    cardClass: 'md:col-span-2',
+    cardClass: props.hideActions ? 'col-span-2 md:col-span-3 lg:col-span-2' : 'md:col-span-2',
+
   },
 
   {
@@ -108,6 +109,7 @@ const summaryCards = computed(() => [
     iconBgClass: 'bg-gradient-to-br from-red-500 to-red-600',
     valueClass: ' text-red-600',
     cardClass: 'md:col-span-2',
+    hidden: props.hideActions,
   },
 ])
 
@@ -120,7 +122,7 @@ const ageStats = computed(() => {
     'Rokusai (4-5ปี)': 0,
   }
 
-  fishProducts.value.forEach((product) => {
+  dataFilter.value.forEach((product) => {
     if (!product.age) return
 
     if (product.age.includes('tosai')) stats['Tosai (6เดือน-1ปี)'] += 1
@@ -136,10 +138,11 @@ const ageStats = computed(() => {
 
 <template>
   <div class="grid grid-cols-2 md:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-    <StatsCardItem v-for="card in summaryCards" :key="card.id" v-bind="card" />
+    <StatsCardItem v-for="card in summaryCards.filter((card) => !card.hidden)" :key="card.id" v-bind="card" />
 
     <Card :pt="{ body: 'p-3 md:p-4 h-full' }"
-      class="hover:shadow-lg transition-shadow duration-200 col-span-2 md:col-span-6 xl:col-span-5">
+      class="hover:shadow-lg transition-shadow duration-200 col-span-2 md:col-span-6"
+      :class="[hideActions ? ' xl:col-span-4' : 'xl:col-span-5']">
       <template #content>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2 xl:gap-3">
           <div v-for="(count, label) in ageStats" :key="label"

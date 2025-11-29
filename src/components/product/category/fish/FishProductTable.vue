@@ -19,6 +19,7 @@ const props = defineProps<{
   filteredProducts: IProduct[]
   isLoadingProducts: boolean
   selectedCategory: ICategory | null
+  hideActions?: boolean
 }>()
 
 // Emits
@@ -369,8 +370,8 @@ const fishColumns = ref([
               value: 'พร้อมขาย',
               severity: 'success',
               size: 'small',
-              style: { cursor: 'pointer' },
-              onClick: () => handleQcStatusClick(product, 'wait-qc'),
+              style: { cursor: props.hideActions ? 'default' : 'pointer' },
+              onClick: () => !props.hideActions ? handleQcStatusClick(product, 'wait-qc') : null,
             },
             { default: () => 'พร้อมขาย' }
           )
@@ -506,9 +507,9 @@ const displayColumns = computed(() => {
 
         <!-- Actions -->
         <div class="flex items-center  gap-2">
-          <Button v-if="selectedRows.length > 0" label="คำนวณอาหาร" icon="pi pi-calculator" severity="success"
+          <Button v-if="selectedRows.length > 0 && !hideActions" label="คำนวณอาหาร" icon="pi pi-calculator" severity="success"
             size="small" @click="showFoodCalculationModal = true" />
-          <Button v-if="selectedRows.length > 0" label="ย้ายบ่อ" icon="pi pi-arrow-right-arrow-left" severity="info"
+          <Button v-if="selectedRows.length > 0 && !hideActions" label="ย้ายบ่อ" icon="pi pi-arrow-right-arrow-left" severity="info"
             size="small" @click="showMovePondModal = true" />
           <Button v-if="selectedRows.length > 0" label="สร้าง PDF" icon="pi pi-file-pdf" severity="danger" size="small"
             @click="showPrintModal = true" />
@@ -541,7 +542,7 @@ const displayColumns = computed(() => {
         </template>
       </Column>
 
-      <Column field="action" header="จัดการ" headCell="!min-w-[6rem]" :pt="{ columnHeaderContent: 'justify-end' }">
+      <Column v-if="!hideActions" field="action" header="จัดการ" headCell="!min-w-[6rem]" :pt="{ columnHeaderContent: 'justify-end' }">
         <template #body="{ data }">
           <div class="flex items-center gap-2 justify-end">
             <Button v-tooltip.top="'ดูรายละเอียด'" icon="pi pi-eye" severity="info" size="small"
